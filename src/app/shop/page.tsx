@@ -131,7 +131,7 @@ export default function ShopPage() {
               <div className="flex items-start justify-between">
                 <div className="flex flex-col gap-1">
                   <h2 className="font-display text-[1.6rem] font-light tracking-[0.04em]">
-                    T-shirt IRS
+                    T-shirt In Real Society
                   </h2>
                   <p className="font-ui text-[0.52rem] text-brand-gray/40">
                     Comfort Colors 1717 · {colorLabel} · QR code imprimé dans le dos
@@ -146,7 +146,7 @@ export default function ShopPage() {
                   'Patch brodé doré à l\'avant',
                   'QR code premium imprimé en DTFlex dans le dos',
                   'Code d\'activation unique par email',
-                  'Accès à la plateforme InRealSociety',
+                  'Accès à la plateforme In Real Society',
                   'Profil configurable en 2 minutes',
                 ].map((item) => (
                   <div key={item} className="flex items-center gap-3">
@@ -216,7 +216,7 @@ export default function ShopPage() {
         </section>
 
         <footer className="py-12 border-t border-brand-gray/10 flex items-center justify-between">
-          <span className="font-ui text-[0.45rem] text-brand-gray/20 tracking-[0.2em] uppercase">InRealSociety</span>
+          <span className="font-ui text-[0.45rem] text-brand-gray/20 tracking-[0.2em] uppercase">In Real Society</span>
           <Link href="/" className="font-ui text-[0.45rem] text-brand-gray/20 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray/40 transition-colors">
             L'application →
           </Link>
