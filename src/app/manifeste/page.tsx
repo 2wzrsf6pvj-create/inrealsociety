@@ -123,7 +123,7 @@ export default function ManifestePage() {
           </p>
           <div className="flex flex-col gap-3 w-full max-w-xs">
             <Link
-              href="/auth/signup"
+              href="/register"
               className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-[0.65rem] tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 block text-center"
             >
               Rejoindre le club

@@ -119,7 +119,7 @@ export default function LoginPage() {
 
         <div className="flex flex-col items-center gap-3 animate-stagger-3">
           <Link
-            href="/auth/signup"
+            href="/register"
             className="font-ui text-[0.58rem] text-brand-gray/50 tracking-[0.1em] hover:text-brand-white transition-colors"
           >
             Pas encore membre ? Créer un compte →

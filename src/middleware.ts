@@ -14,7 +14,6 @@ const PUBLIC_PAGES = new Set([
   '/register',
   '/migrate',        // page migration legacy — doit être accessible sans session
   '/auth/login',
-  '/auth/signup',
   '/auth/callback',
   '/auth/forgot-password',
   '/auth/reset-password',
@@ -79,7 +78,7 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  if (user && (pathname === '/auth/login' || pathname === '/auth/signup')) {
+  if (user && pathname === '/auth/login') {
     return NextResponse.redirect(new URL('/dashboard', req.url));
   }
 
