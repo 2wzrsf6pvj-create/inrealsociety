@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase';
 interface ConversationMessage {
   id: string; member_id: string; content: string; sender_contact: string | null;
   reply: string | null; replied_at: string | null; read_at: string | null; created_at: string;
-  members: { name: string; photo_url: string | null; instagram: string | null; };
+  members: { name: string; photo_url: string | null; instagram: string | null; auth_user_id?: string | null; };
 }
 
 function getInitials(name: string): string {
@@ -39,34 +39,117 @@ async function subscribePush(messageId: string): Promise<void> {
     const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
     const j   = sub.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } };
 
-    await fetch('/api/push-subscribe', {
+    await fetch('/api/push/subscribe', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, conversationId: messageId }),
+      body: JSON.stringify({
+        subscription: { endpoint: j.endpoint, keys: { p256dh: j.keys.p256dh, auth: j.keys.auth } },
+        messageId,
+      }),
     });
   } catch {}
 }
 
-export default function ConversationClient({ message: initialMessage }: { message: ConversationMessage }) {
-  const [message, setMessage]           = useState(initialMessage);
+// ─── Formulaire de réponse (visible uniquement pour le membre propriétaire) ──
+
+function ReplyForm({ messageId, memberId, onReplied }: {
+  messageId: string;
+  memberId: string;
+  onReplied: (reply: string) => void;
+}) {
+  const [reply,   setReply]   = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState('');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!reply.trim()) return;
+    setLoading(true);
+    setError('');
+
+    try {
+      const res = await fetch('/api/reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messageId, memberId, reply: reply.trim() }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || 'Erreur lors de l\'envoi.');
+      }
+
+      onReplied(reply.trim());
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erreur serveur.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="w-full flex flex-col gap-3">
+      <p className="font-ui text-[0.45rem] text-brand-gray/25 tracking-[0.15em] uppercase">
+        Votre réponse
+      </p>
+      <textarea
+        value={reply}
+        onChange={e => setReply(e.target.value)}
+        maxLength={2000}
+        rows={4}
+        placeholder="Écrivez votre réponse..."
+        className="w-full bg-transparent border border-brand-gray/20 focus:border-brand-white/50 text-brand-white font-ui font-light text-[0.78rem] p-3 outline-none transition-colors placeholder:text-brand-gray/20 rounded-[2px] resize-none"
+      />
+      {error && <p className="font-ui text-[0.5rem] text-red-400">{error}</p>}
+      <button
+        type="submit"
+        disabled={loading || !reply.trim()}
+        className="w-full py-3 bg-brand-white text-brand-black font-ui font-bold text-[0.55rem] tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        {loading ? 'Envoi...' : 'Répondre'}
+      </button>
+    </form>
+  );
+}
+
+// ─── Composant principal ──────────────────────────────────────────────────────
+
+export default function ConversationClient({
+  message: initialMessage,
+  isOwner = false,
+}: {
+  message: ConversationMessage;
+  isOwner?: boolean;
+}) {
+  const [message, setMessage]                   = useState(initialMessage);
   const [replyJustArrived, setReplyJustArrived] = useState(false);
-  const [pushAsked, setPushAsked]       = useState(false);
-  const [pushGranted, setPushGranted]   = useState(false);
-  const [vuStatus, setVuStatus]         = useState<string | null>(initialMessage.read_at);
+  const [pushAsked, setPushAsked]               = useState(false);
+  const [pushGranted, setPushGranted]           = useState(false);
+  const [vuStatus, setVuStatus]                 = useState<string | null>(initialMessage.read_at);
 
   const memberName = message.members?.name || 'Ce membre';
 
-  // Marque le message comme lu par le scanner
+  // Marque le message comme lu par le membre (quand il ouvre la conversation)
   useEffect(() => {
-    if (!message.reply) return; // N'affiche "vu" que si le membre a répondu
+    if (!isOwner || message.read_at) return;
     fetch('/api/mark-read', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messageId: message.id }),
-    }).then(r => r.json()).then(d => { if (d.ok) setVuStatus(new Date().toISOString()); }).catch(() => {});
-  }, [message.id, message.reply]);
+      body: JSON.stringify({ messageId: message.id, memberId: message.member_id }),
+    }).catch(() => {});
+  }, [isOwner, message.id, message.member_id, message.read_at]);
 
-  // Realtime — attend la réponse
+  // Marque le reply comme lu par le scanner
+  useEffect(() => {
+    if (isOwner || !message.reply) return;
+    fetch('/api/mark-read', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messageId: message.id, memberId: message.member_id }),
+    }).then(r => r.json()).then(d => { if (d.ok) setVuStatus(new Date().toISOString()); }).catch(() => {});
+  }, [isOwner, message.id, message.member_id, message.reply]);
+
+  // Realtime — attend la réponse (pour le scanneur)
   useEffect(() => {
     if (message.reply) return;
     const channel = supabase.channel(`conv-${message.id}`)
@@ -76,8 +159,7 @@ export default function ConversationClient({ message: initialMessage }: { messag
           if (updated.reply) {
             setMessage(m => ({ ...m, reply: updated.reply, replied_at: updated.replied_at }));
             setReplyJustArrived(true);
-            // Notification navigateur si permission accordée
-            if (Notification.permission === 'granted') {
+            if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
               new Notification(`${memberName} vous a répondu.`, {
                 body: updated.reply?.slice(0, 80) || '',
                 icon: '/icon-192.png',
@@ -91,8 +173,12 @@ export default function ConversationClient({ message: initialMessage }: { messag
 
   const handleSubscribePush = async () => {
     await subscribePush(message.id);
-    setPushGranted(Notification.permission === 'granted');
+    setPushGranted(typeof Notification !== 'undefined' && Notification.permission === 'granted');
     setPushAsked(true);
+  };
+
+  const handleReplied = (reply: string) => {
+    setMessage(m => ({ ...m, reply, replied_at: new Date().toISOString() }));
   };
 
   return (
@@ -112,7 +198,9 @@ export default function ConversationClient({ message: initialMessage }: { messag
           </div>
           <div>
             <p className="font-ui text-[0.62rem] font-medium tracking-[0.2em]">{memberName.toUpperCase()}</p>
-            <p className="font-ui text-[0.48rem] text-brand-gray/30 tracking-[0.05em]">Votre conversation</p>
+            <p className="font-ui text-[0.48rem] text-brand-gray/30 tracking-[0.05em]">
+              {isOwner ? 'Message reçu' : 'Votre conversation'}
+            </p>
           </div>
         </div>
 
@@ -121,9 +209,9 @@ export default function ConversationClient({ message: initialMessage }: { messag
         {/* Message du scanner */}
         <div className="animate-stagger-2 flex flex-col gap-1">
           <p className="font-ui text-[0.45rem] text-brand-gray/25 tracking-[0.15em] uppercase mb-1">
-            Votre message · {formatDate(message.created_at)}
+            {isOwner ? 'Message reçu' : 'Votre message'} · {formatDate(message.created_at)}
           </p>
-          <div className="self-end max-w-[85%] ml-auto p-4 bg-brand-white/5 border border-brand-gray/15 rounded-[2px] rounded-tr-none">
+          <div className={`max-w-[85%] p-4 bg-brand-white/5 border border-brand-gray/15 rounded-[2px] ${isOwner ? 'self-start rounded-tl-none' : 'self-end ml-auto rounded-tr-none'}`}>
             <p className="font-display text-[0.9rem] font-light italic leading-relaxed text-brand-white/80">
               &ldquo;{message.content}&rdquo;
             </p>
@@ -133,48 +221,53 @@ export default function ConversationClient({ message: initialMessage }: { messag
           </div>
         </div>
 
-        {/* Réponse ou attente */}
+        {/* Réponse ou formulaire ou attente */}
         <div className="animate-stagger-3 flex flex-col gap-1">
           {message.reply ? (
             <>
               <div className="flex items-center justify-between mb-1">
                 <p className="font-ui text-[0.45rem] text-brand-gray/25 tracking-[0.15em] uppercase">
-                  {memberName} a répondu · {message.replied_at ? formatDate(message.replied_at) : ''}
+                  {isOwner ? 'Votre réponse' : `${memberName} a répondu`} · {message.replied_at ? formatDate(message.replied_at) : ''}
                 </p>
-                {/* "Vu" receipt */}
-                {vuStatus && (
+                {!isOwner && vuStatus && (
                   <p className="font-ui text-[0.42rem] text-brand-gray/20 italic">Lu ✓</p>
                 )}
               </div>
-              <div className={`self-start max-w-[85%] p-4 border border-brand-white/20 rounded-[2px] rounded-tl-none ${replyJustArrived ? 'animate-slide-right' : ''}`}>
+              <div className={`max-w-[85%] p-4 border border-brand-white/20 rounded-[2px] ${replyJustArrived ? 'animate-slide-right' : ''} ${isOwner ? 'self-end ml-auto rounded-tr-none' : 'self-start rounded-tl-none'}`}>
                 <p className="font-display text-[0.9rem] font-light italic leading-relaxed text-brand-white/90">
                   &ldquo;{message.reply}&rdquo;
                 </p>
               </div>
             </>
+          ) : isOwner ? (
+            /* Le membre peut répondre */
+            <ReplyForm
+              messageId={message.id}
+              memberId={message.member_id}
+              onReplied={handleReplied}
+            />
           ) : (
+            /* Le scanneur attend */
             <div className="flex flex-col items-start gap-3 py-2">
               <p className="font-ui text-[0.45rem] text-brand-gray/25 tracking-[0.15em] uppercase">
                 En attente de réponse
               </p>
-              {/* Typing dots */}
               <div className="flex items-center gap-1.5 px-4 py-3 border border-brand-gray/10 rounded-[2px] rounded-tl-none">
                 <div className="w-1.5 h-1.5 rounded-full bg-brand-gray/30 animate-typing-1" />
                 <div className="w-1.5 h-1.5 rounded-full bg-brand-gray/30 animate-typing-2" />
                 <div className="w-1.5 h-1.5 rounded-full bg-brand-gray/30 animate-typing-3" />
               </div>
 
-              {/* Notification push */}
               {!pushAsked ? (
                 <button onClick={handleSubscribePush}
                   className="w-full py-3 border border-brand-gray/15 text-center font-ui text-[0.52rem] font-light tracking-[0.1em] hover:border-brand-gray/35 transition-colors"
                   style={{ minHeight: '44px' }}
                 >
-                  🔔 Me notifier quand il répond
+                  Me notifier quand il répond
                 </button>
               ) : pushGranted ? (
                 <p className="font-ui text-[0.48rem] text-brand-gray/30 italic">
-                  ✓ Vous serez notifié(e) dès qu&apos;il répond.
+                  Vous serez notifié(e) dès qu&apos;il répond.
                 </p>
               ) : (
                 <p className="font-ui text-[0.48rem] text-brand-gray/20 italic">
@@ -192,7 +285,7 @@ export default function ConversationClient({ message: initialMessage }: { messag
         <div className="w-full h-px bg-brand-gray/10" />
 
         <div className="flex flex-col gap-3 animate-stagger-4">
-          {message.members?.instagram && (
+          {!isOwner && message.members?.instagram && (
             <a href={`https://instagram.com/${message.members.instagram.replace('@', '')}`}
               target="_blank" rel="noopener noreferrer"
               className="w-full py-3 border border-brand-gray/15 text-center font-ui text-[0.55rem] font-light tracking-[0.15em] hover:border-brand-gray/40 transition-colors"
@@ -201,11 +294,11 @@ export default function ConversationClient({ message: initialMessage }: { messag
               @{message.members.instagram.replace('@', '')}
             </a>
           )}
-          <Link href="/"
+          <Link href={isOwner ? '/dashboard' : '/'}
             className="font-ui text-[0.48rem] text-brand-gray/20 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray/50 transition-colors text-center py-2"
             style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
-            ↩ retour à l&apos;accueil
+            {isOwner ? '← retour au dashboard' : '← retour à l\'accueil'}
           </Link>
         </div>
       </div>

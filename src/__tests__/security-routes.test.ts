@@ -30,6 +30,7 @@ const PUBLIC_ROUTES = [
   'api/activate',
   'api/order-code',
   'api/push/subscribe',
+  'api/shop/checkout',
 ];
 
 /** Routes protégées par un secret header (pas par session) */

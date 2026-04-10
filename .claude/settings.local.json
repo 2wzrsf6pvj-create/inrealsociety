@@ -17,7 +17,17 @@
       "Bash(grep -l \"supabase-admin\\\\|supabaseAdmin\" /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/*/*.tsx /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/*/*/*.tsx)",
       "Bash(xargs ls:*)",
       "Bash(npm install:*)",
-      "Bash(npx vitest:*)"
+      "Bash(npx vitest:*)",
+      "Bash(grep -n \"handleReply\\\\|POST\\\\|/api/reply\" /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/conversation/[messageId]/ConversationClient.tsx)",
+      "Bash(grep -A 50 \"export default function ConversationClient\" /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/conversation/[messageId]/ConversationClient.tsx)",
+      "Bash(grep -n \"Répondre\\\\|reply\\\\|conversation\" /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/dashboard/[memberId]/DashboardClient.tsx)",
+      "Bash(grep -A 30 \"InboxSection\" /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/dashboard/[memberId]/DashboardClient.tsx)",
+      "Bash(grep -A 5 \"export default async function ConversationPage\" /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/conversation/[messageId]/page.tsx)",
+      "Bash(xargs grep:*)",
+      "Bash(grep -B 2 -A 5 \"fetch.*api.*referral\\\\|fetch.*api.*member.*update\" /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/dashboard/[memberId]/DashboardClient.tsx)",
+      "Bash(ls -la /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/r/[code]/)",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)"
     ]
   }
 }
