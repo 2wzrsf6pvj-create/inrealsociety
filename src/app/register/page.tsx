@@ -364,17 +364,7 @@ function RegisterContent() {
 
   return (
     <div className="z-10 flex flex-col items-center w-full max-w-sm gap-8">
-      {!isEditing && (
-        <div className="flex items-center gap-2">
-          {[1,2,3].map((s,i) => (
-            <React.Fragment key={s}>
-              {i > 0 && <div className="w-8 h-px bg-brand-gray/20" />}
-              <div className={`w-6 h-6 rounded-full border flex items-center justify-center font-ui text-[0.45rem] transition-all ${step===s ? 'border-brand-white bg-brand-white text-brand-black' : step>s ? 'border-brand-white/30 text-brand-white/30' : 'border-brand-gray/20 text-brand-gray/20'}`}>{s}</div>
-            </React.Fragment>
-          ))}
-        </div>
-      )}
-      {step === 1 && <StepAccount onNext={(em) => { setStep(2); }} initialCode={activationCode} />}
+      {step === 1 && <StepAccount onNext={() => { setStep(2); }} initialCode={activationCode} />}
       {step === 2 && <StepProfile form={form} onChange={setForm} onNext={() => setStep(3)} onBack={() => setStep(1)} isEditing={isEditing} activationCode={activationCode} onCodeChange={setActivationCode} />}
       {step === 3 && <StepOptional form={form} onChange={setForm} onSubmit={handleSubmit} onBack={() => setStep(2)} loading={loading} error={error} isEditing={isEditing} />}
     </div>

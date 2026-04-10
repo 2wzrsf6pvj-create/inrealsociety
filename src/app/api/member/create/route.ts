@@ -20,9 +20,14 @@ export async function POST(req: NextRequest) {
     const auth = await requireAuth(req);
     if (isHttpError(auth)) return auth;
 
-    const rl = await checkAuthRateLimit(auth.user.id);
-    if (!rl.success) {
-      return NextResponse.json({ error: 'Trop de requêtes.' }, { status: 429, headers: rateLimitHeaders(rl) });
+    try {
+      const rl = await checkAuthRateLimit(auth.user.id);
+      if (!rl.success) {
+        return NextResponse.json({ error: 'Trop de requêtes.' }, { status: 429, headers: rateLimitHeaders(rl) });
+      }
+    } catch (rlErr) {
+      // Rate limiting indisponible (Redis down) — on laisse passer
+      console.warn('[api/member/create] Rate limit unavailable:', rlErr);
     }
 
     const body = schema.safeParse(await req.json());
@@ -55,7 +60,12 @@ export async function POST(req: NextRequest) {
     }
 
     // ─── Génère un code court unique pour l'URL du QR code ─────────────────
-    const shortCode = await generateUniqueShortCode();
+    let shortCode: string | null = null;
+    try {
+      shortCode = await generateUniqueShortCode();
+    } catch (scErr) {
+      console.warn('[api/member/create] Short code generation failed:', scErr);
+    }
 
     // ─── Création du membre lié au compte auth ────────────────────────────
     const { data: member, error: memberError } = await supabaseAdmin
@@ -86,6 +96,7 @@ export async function POST(req: NextRequest) {
 
   } catch (err) {
     console.error('[api/member/create]', err);
-    return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });
+    const message = err instanceof Error ? err.message : 'Erreur serveur.';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
