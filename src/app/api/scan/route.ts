@@ -3,6 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { sendEmail, emailNouveauScan } from '@/lib/email-templates';
 import { checkScanRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
 import { audit } from '@/lib/audit';
@@ -48,12 +49,12 @@ export async function POST(req: NextRequest) {
     if (member.is_paused) return NextResponse.json({ ok: true, paused: true });
 
     // ─── Insertion scan ───────────────────────────────────────────────────
-    const { error: scanError } = await supabase.from('scans')
+    const { error: scanError } = await supabaseAdmin.from('scans')
       .insert({ member_id: memberId, scanner_name: scannerName || null });
 
     if (scanError && scanError.code !== '23505') throw scanError;
 
-    const { error: rpcError } = await supabase.rpc('increment_scan_count', { member_id: memberId });
+    const { error: rpcError } = await supabaseAdmin.rpc('increment_scan_count', { member_id: memberId });
     if (rpcError) console.warn('[api/scan] RPC failed');
 
     // ─── Audit ────────────────────────────────────────────────────────────

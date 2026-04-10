@@ -4,16 +4,26 @@
 // Double vérification : session_id ET email du payeur.
 
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { supabase } from '@/lib/supabase';
 import Stripe from 'stripe';
 
-export async function GET(req: NextRequest) {
-  const sessionId = req.nextUrl.searchParams.get('session');
-  const email     = req.nextUrl.searchParams.get('email');
+const querySchema = z.object({
+  session: z.string().min(1).max(200),
+  email:   z.string().email().max(320),
+});
 
-  if (!sessionId || !email) {
+export async function GET(req: NextRequest) {
+  const parsed = querySchema.safeParse({
+    session: req.nextUrl.searchParams.get('session'),
+    email:   req.nextUrl.searchParams.get('email'),
+  });
+
+  if (!parsed.success) {
     return NextResponse.json({ error: 'session et email requis' }, { status: 400 });
   }
+
+  const { session: sessionId, email } = parsed.data;
 
   // ─── Récupère la session Stripe pour vérifier l'email du payeur ───────
   // Cela empêche qu'une personne connaissant un session_id récupère un code qui ne lui appartient pas.

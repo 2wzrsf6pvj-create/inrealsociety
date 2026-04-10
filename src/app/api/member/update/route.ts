@@ -1,12 +1,11 @@
 // src/app/api/member/update/route.ts
 // PATCH { name, pitch, instagram } — met à jour le profil du membre authentifié.
-// Remplace l'appel direct à updateMember() depuis le client.
-// Protégé : session + vérification ownership serveur.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAuth, isHttpError } from '@/lib/require-auth';
+import { checkAuthRateLimit, rateLimitHeaders } from '@/lib/ratelimit';
 
 const schema = z.object({
   name:      z.string().min(1).max(50).trim().optional(),
@@ -17,24 +16,14 @@ const schema = z.object({
 
 export async function PATCH(req: NextRequest) {
   try {
-    // ─── Vérification session ─────────────────────────────────────────────
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) { return req.cookies.get(name)?.value; },
-          set() {}, remove() {},
-        },
-      }
-    );
+    const auth = await requireAuth(req);
+    if (isHttpError(auth)) return auth;
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Non authentifié.' }, { status: 401 });
+    const rl = await checkAuthRateLimit(auth.user.id);
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Trop de requêtes.' }, { status: 429, headers: rateLimitHeaders(rl) });
     }
 
-    // ─── Validation ───────────────────────────────────────────────────────
     const body = schema.safeParse(await req.json());
     if (!body.success) {
       return NextResponse.json({ error: body.error.flatten().fieldErrors }, { status: 400 });
@@ -44,19 +33,18 @@ export async function PATCH(req: NextRequest) {
     const { data: member } = await supabaseAdmin
       .from('members')
       .select('id')
-      .eq('auth_user_id', user.id)
+      .eq('auth_user_id', auth.user.id)
       .single();
 
     if (!member) {
       return NextResponse.json({ error: 'Profil introuvable.' }, { status: 404 });
     }
 
-    // ─── Mise à jour — uniquement sur le membre de ce user ────────────────
     const { error: updateError } = await supabaseAdmin
       .from('members')
       .update(body.data)
       .eq('id', member.id)
-      .eq('auth_user_id', user.id); // Double sécurité
+      .eq('auth_user_id', auth.user.id);
 
     if (updateError) {
       console.error('[api/member/update]', updateError);

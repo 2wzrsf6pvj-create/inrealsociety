@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { generateSecureCode } from '@/lib/generate-code';
 import { sendEmail, emailActivation } from '@/lib/email-templates';
 import type { PrintfulOrderPayload, PrintfulOrderResponse, PrintfulAddress } from '@/lib/printful.types';
@@ -60,7 +60,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
   if (email) {
     const code = await generateUniqueActivationCode();
 
-    const { error: orderError } = await supabase
+    const { error: orderError } = await supabaseAdmin
       .from('orders')
       .update({
         status:            'paid',
@@ -84,8 +84,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
     const shipping = getShippingDetails(session);
     if (shipping) {
       if (!PRINTFUL_VARIANT_ID) throw new Error('PRINTFUL_VARIANT_ID non défini.');
-      const order = await createPrintfulOrder({ recipient: shipping, qrCodeUrl });
-      console.log(`[webhook] Commande Printful créée — ID: ${order.result.id} | Membre: ${userId}`);
+      await createPrintfulOrder({ recipient: shipping, qrCodeUrl });
+      console.log('[webhook] Commande Printful créée.');
     } else {
       console.warn('[webhook] Adresse de livraison manquante — commande Printful ignorée.');
     }
@@ -96,7 +96,7 @@ async function generateUniqueActivationCode(): Promise<string> {
   const MAX_ATTEMPTS = 10;
   for (let i = 0; i < MAX_ATTEMPTS; i++) {
     const code = generateSecureCode(8);
-    const { error } = await supabase.from('activation_codes').insert({ code });
+    const { error } = await supabaseAdmin.from('activation_codes').insert({ code });
     if (!error) return code;
     if (error.code !== '23505') throw new Error(`Erreur insertion code: ${error.message}`);
   }

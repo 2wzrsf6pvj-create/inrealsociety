@@ -3,8 +3,16 @@
 // Route interne protégée par un secret header.
 
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import webpush from 'web-push';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase-admin';
+
+const schema = z.object({
+  messageId: z.string().uuid(),
+  title:     z.string().min(1).max(200),
+  body:      z.string().max(1000).optional(),
+  url:       z.string().url().max(2048).optional(),
+});
 
 // Initialisation lazy — évite le crash au build si les variables sont absentes
 let vapidInitialized = false;
@@ -30,15 +38,16 @@ export async function POST(req: NextRequest) {
     }
 
     // ─── Validation ───────────────────────────────────────────────────────
-    const { messageId, title, body, url } = await req.json();
-    if (!messageId || !title) {
-      return NextResponse.json({ error: 'messageId et title requis' }, { status: 400 });
+    const parsed = schema.safeParse(await req.json());
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.flatten().fieldErrors }, { status: 400 });
     }
+    const { messageId, title, body, url } = parsed.data;
 
     // ─── Init VAPID ───────────────────────────────────────────────────────
     initVapid();
 
-    const { data: subs } = await supabase
+    const { data: subs } = await supabaseAdmin
       .from('push_subscriptions')
       .select('endpoint, p256dh, auth')
       .eq('message_id', messageId);
@@ -69,7 +78,7 @@ export async function POST(req: NextRequest) {
     );
 
     if (expired.length) {
-      await supabase.from('push_subscriptions').delete().in('endpoint', expired);
+      await supabaseAdmin.from('push_subscriptions').delete().in('endpoint', expired);
     }
 
     return NextResponse.json({ ok: true, sent, expired: expired.length });

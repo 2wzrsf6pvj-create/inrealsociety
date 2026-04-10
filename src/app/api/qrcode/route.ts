@@ -1,31 +1,36 @@
 // app/api/qrcode/route.ts
 // POST /api/qrcode { memberId }
-// Génère un QR code pour un membre, l'upload dans Supabase Storage,
-// et retourne l'URL publique.
-//
-// Nécessite : npm install qrcode @types/qrcode
 
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import QRCode from 'qrcode';
-import { createClient, getUser } from '@/lib/supabase-server';
+import { createClient } from '@/lib/supabase-server';
+import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAuth, requireOwnership, isHttpError } from '@/lib/require-auth';
+import { checkAuthRateLimit, rateLimitHeaders } from '@/lib/ratelimit';
+
+const schema = z.object({
+  memberId: z.string().uuid(),
+});
 
 export async function POST(req: NextRequest) {
   try {
-    // ─── Vérification auth ────────────────────────────────────────────────
-    const user = await getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Non authentifié.' }, { status: 401 });
+    const auth = await requireAuth(req);
+    if (isHttpError(auth)) return auth;
+
+    const rl = await checkAuthRateLimit(auth.user.id);
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Trop de requêtes.' }, { status: 429, headers: rateLimitHeaders(rl) });
     }
 
-    const { memberId } = await req.json() as { memberId?: string };
-    if (!memberId) {
-      return NextResponse.json({ error: 'memberId requis.' }, { status: 400 });
+    const body = schema.safeParse(await req.json());
+    if (!body.success) {
+      return NextResponse.json({ error: body.error.flatten().fieldErrors }, { status: 400 });
     }
+    const { memberId } = body.data;
 
-    // ─── Fix IDOR : le membre authentifié ne peut générer que SON QR code ─
-    if (memberId !== user.id) {
-      return NextResponse.json({ error: 'Action non autorisée.' }, { status: 403 });
-    }
+    const own = await requireOwnership(auth.user.id, memberId);
+    if (isHttpError(own)) return own;
 
     const appUrl     = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
     const profileUrl = `${appUrl}/?id=${memberId}`;
@@ -55,15 +60,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Erreur upload Storage.' }, { status: 500 });
     }
 
-    // ─── URL publique ──────────────────────────────────────────────────────
     const { data: { publicUrl } } = supabase.storage
       .from('qrcodes')
       .getPublicUrl(filePath);
 
-    // ─── Sauvegarde dans la table members (colonne dédiée) ────────────────
-    // ⚠️ Utiliser une colonne `qr_code_url` dédiée, pas `photo_url`
-    // Migration SQL : ALTER TABLE members ADD COLUMN IF NOT EXISTS qr_code_url TEXT;
-    await supabase
+    await supabaseAdmin
       .from('members')
       .update({ qr_code_url: publicUrl })
       .eq('id', memberId);

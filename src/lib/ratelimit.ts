@@ -48,6 +48,20 @@ const limitScanByMember = () => new Ratelimit({
   prefix:  'rl:scan:member',
 });
 
+/** 5 requêtes par user authentifié par 10 minutes (routes coûteuses) */
+const limitAuthByUser = () => new Ratelimit({
+  redis:   getRedis(),
+  limiter: Ratelimit.slidingWindow(5, '10 m'),
+  prefix:  'rl:auth:user',
+});
+
+/** 30 requêtes par IP par minute (routes publiques à faible coût) */
+const limitPublicByIp = () => new Ratelimit({
+  redis:   getRedis(),
+  limiter: Ratelimit.slidingWindow(30, '1 m'),
+  prefix:  'rl:public:ip',
+});
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface RateLimitResult {
@@ -139,6 +153,34 @@ export async function checkScanRateLimit(
     limit:     byIp.limit,
     remaining: byIp.remaining,
     reset:     byIp.reset,
+  };
+}
+
+/**
+ * Rate limit pour les routes authentifiées coûteuses (checkout, send-email, reply).
+ * Limite par userId Supabase Auth.
+ */
+export async function checkAuthRateLimit(userId: string): Promise<RateLimitResult> {
+  const result = await limitAuthByUser().limit(userId);
+  return {
+    success:   result.success,
+    limit:     result.limit,
+    remaining: result.remaining,
+    reset:     result.reset,
+  };
+}
+
+/**
+ * Rate limit pour les routes publiques légères (push/subscribe).
+ * Limite par IP.
+ */
+export async function checkPublicRateLimit(ip: string): Promise<RateLimitResult> {
+  const result = await limitPublicByIp().limit(ip);
+  return {
+    success:   result.success,
+    limit:     result.limit,
+    remaining: result.remaining,
+    reset:     result.reset,
   };
 }
 

@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -n \"localStorage\" /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/dashboard/**/*.tsx)",
+      "Bash(grep -n \"import.*supabase\\\\|import.*supabase-\" /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/register/page.tsx /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/conversation/[messageId]/ConversationClient.tsx /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/dashboard/[memberId]/DashboardClient.tsx)",
+      "Bash(grep -n \"process.env\\\\|INTERNAL_SECRET\\\\|ADMIN_SECRET\" /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/api/**/*.ts)",
+      "Bash(npm audit:*)",
+      "Bash(npx next:*)",
+      "Bash(grep -l \"use client\" /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/**/*.tsx)",
+      "Bash(grep -n \"\\\\.select\\\\|\\\\.insert\\\\|\\\\.update\\\\|\\\\.delete\\\\|\\\\.from\" /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/api/*/route.ts)",
+      "Bash(grep -A2 \"schema = z.object\" /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/api/*/route.ts)",
+      "Bash(grep -B3 \"\\\\.eq\\('member_id'\" /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/api/*/route.ts)",
+      "Bash(cat)",
+      "Bash(bash /tmp/check_routes.sh)",
+      "Bash(bash /tmp/analyze.sh)",
+      "Read(//tmp/**)",
+      "Bash(grep -l \"supabase-admin\\\\|supabaseAdmin\" /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/*/*.tsx /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/*/*/*.tsx)",
+      "Bash(xargs ls:*)",
+      "Bash(npm install:*)",
+      "Bash(npx vitest:*)"
+    ]
+  }
+}

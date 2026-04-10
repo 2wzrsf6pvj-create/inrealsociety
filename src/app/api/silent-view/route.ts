@@ -2,18 +2,32 @@
 // Vue silencieuse (sans email) — incrémente uniquement le compteur de scans.
 
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase-admin';
+import { checkScanRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
+
+const schema = z.object({
+  memberId:    z.string().uuid(),
+  scannerName: z.string().max(100).optional(),
+});
 
 export async function POST(req: NextRequest) {
   try {
-    const { memberId, scannerName } = await req.json();
-
-    if (!memberId || typeof memberId !== 'string') {
-      return NextResponse.json({ error: 'memberId requis' }, { status: 400 });
+    const body = schema.safeParse(await req.json());
+    if (!body.success) {
+      return NextResponse.json({ error: body.error.flatten().fieldErrors }, { status: 400 });
     }
+    const { memberId, scannerName } = body.data;
 
-    if (scannerName && (typeof scannerName !== 'string' || scannerName.length > 100)) {
-      return NextResponse.json({ error: 'scannerName invalide' }, { status: 400 });
+    // ─── Rate limiting ────────────────────────────────────────────────────
+    const ip = getIp(req);
+    const rl = await checkScanRateLimit(ip, memberId);
+    if (!rl.success) {
+      return NextResponse.json(
+        { error: 'Trop de requêtes.' },
+        { status: 429, headers: rateLimitHeaders(rl) },
+      );
     }
 
     // Vérifie que le membre existe
@@ -23,12 +37,12 @@ export async function POST(req: NextRequest) {
     if (!member) return NextResponse.json({ error: 'Membre introuvable' }, { status: 404 });
     if (member.is_paused) return NextResponse.json({ ok: true, paused: true });
 
-    await supabase.from('silent_views').insert({
+    await supabaseAdmin.from('silent_views').insert({
       member_id:    memberId,
       scanner_name: scannerName || null,
     });
 
-    await supabase.rpc('increment_scan_count', { member_id: memberId });
+    await supabaseAdmin.rpc('increment_scan_count', { member_id: memberId });
 
     return NextResponse.json({ ok: true });
   } catch (err) {

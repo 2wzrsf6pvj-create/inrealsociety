@@ -24,7 +24,6 @@ const PUBLIC_PAGE_PREFIXES = [
   '/profil/',
   '/join/',
   '/shop/',
-  '/dashboard/',
 ];
 
 const PUBLIC_API_PREFIXES = [
@@ -33,9 +32,7 @@ const PUBLIC_API_PREFIXES = [
   '/api/scan',
   '/api/silent-view',
   '/api/push/',
-  '/api/checkout',
   '/api/order-code',
-  '/api/referral',
   '/api/activate',
   '/api/member/link',    // liaison legacy — protégée par session dans le handler
   '/api/member/migrate', // migration email — protégée par admin secret

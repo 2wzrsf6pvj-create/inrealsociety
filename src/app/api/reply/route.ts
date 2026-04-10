@@ -3,10 +3,11 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAuth, requireOwnership, isHttpError } from '@/lib/require-auth';
 import { sendEmail, emailReponse } from '@/lib/email-templates';
 import { audit } from '@/lib/audit';
-import { getIp } from '@/lib/ratelimit';
+import { getIp, checkAuthRateLimit, rateLimitHeaders } from '@/lib/ratelimit';
 
 const schema = z.object({
   messageId: z.string().uuid(),
@@ -24,6 +25,14 @@ function isInstagramHandle(str: string): boolean {
 
 export async function POST(req: NextRequest) {
   try {
+    const auth = await requireAuth(req);
+    if (isHttpError(auth)) return auth;
+
+    const rl = await checkAuthRateLimit(auth.user.id);
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Trop de requêtes.' }, { status: 429, headers: rateLimitHeaders(rl) });
+    }
+
     const body = schema.safeParse(await req.json());
     if (!body.success) {
       return NextResponse.json({ error: body.error.flatten().fieldErrors }, { status: 400 });
@@ -32,7 +41,10 @@ export async function POST(req: NextRequest) {
     const { messageId, reply, memberId } = body.data;
     const ip = getIp(req);
 
-    const { data: msg } = await supabase
+    const own = await requireOwnership(auth.user.id, memberId);
+    if (isHttpError(own)) return own;
+
+    const { data: msg } = await supabaseAdmin
       .from('messages')
       .select('id, member_id, sender_contact')
       .eq('id', messageId)
@@ -43,7 +55,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Message introuvable' }, { status: 404 });
     }
 
-    const { error } = await supabase
+    const { error } = await supabaseAdmin
       .from('messages')
       .update({ reply: reply.trim(), replied_at: new Date().toISOString() })
       .eq('id', messageId);
@@ -61,7 +73,7 @@ export async function POST(req: NextRequest) {
     let emailSent = false;
 
     if (contact && isValidEmail(contact)) {
-      const { data: memberData } = await supabase
+      const { data: memberData } = await supabaseAdmin
         .from('members').select('name').eq('id', memberId).single();
 
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://inrealsociety.vercel.app';

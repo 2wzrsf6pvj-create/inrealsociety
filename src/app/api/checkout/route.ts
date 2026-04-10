@@ -4,9 +4,17 @@
 export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
+import { z } from 'zod';
 import Stripe from 'stripe';
+import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAuth, isHttpError } from '@/lib/require-auth';
+import { checkAuthRateLimit, rateLimitHeaders } from '@/lib/ratelimit';
 
-// ⚠️ Définir STRIPE_PRICE_ID dans vos variables d'environnement
+const schema = z.object({
+  userId:    z.string().uuid(),
+  qrCodeUrl: z.string().url().max(2048),
+});
+
 const TSHIRT_PRICE_ID = process.env.STRIPE_PRICE_ID!;
 
 export async function POST(req: NextRequest) {
@@ -15,20 +23,36 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Configuration serveur manquante.' }, { status: 500 });
   }
 
+  const auth = await requireAuth(req);
+  if (isHttpError(auth)) return auth;
+
+  const rl = await checkAuthRateLimit(auth.user.id);
+  if (!rl.success) {
+    return NextResponse.json({ error: 'Trop de requêtes.' }, { status: 429, headers: rateLimitHeaders(rl) });
+  }
+
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    // Version stable — mettre à jour manuellement lors des migrations Stripe
     apiVersion: '2026-03-25.dahlia',
   });
 
   try {
-    const body = await req.json();
-    const { userId, qrCodeUrl } = body as { userId: string; qrCodeUrl: string };
+    const body = schema.safeParse(await req.json());
+    if (!body.success) {
+      return NextResponse.json({ error: body.error.flatten().fieldErrors }, { status: 400 });
+    }
 
-    if (!userId || !qrCodeUrl) {
-      return NextResponse.json(
-        { error: 'userId et qrCodeUrl sont requis.' },
-        { status: 400 }
-      );
+    const { userId, qrCodeUrl } = body.data;
+
+    // ─── Vérifie ownership ───────────────────────────────────────────────
+    const { data: member } = await supabaseAdmin
+      .from('members')
+      .select('id')
+      .eq('id', userId)
+      .eq('auth_user_id', auth.user.id)
+      .single();
+
+    if (!member) {
+      return NextResponse.json({ error: 'Action non autorisée.' }, { status: 403 });
     }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';

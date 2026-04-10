@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { sendEmail, emailNouveauMessage } from '@/lib/email-templates';
 import { checkMessageRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
 import { audit } from '@/lib/audit';
@@ -69,7 +70,7 @@ export async function POST(req: NextRequest) {
       : false;
 
     // ─── Insertion BDD ────────────────────────────────────────────────────
-    const { data: message, error: msgError } = await supabase
+    const { data: message, error: msgError } = await supabaseAdmin
       .from('messages')
       .insert({
         member_id:      memberId,

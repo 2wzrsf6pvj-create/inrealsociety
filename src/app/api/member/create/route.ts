@@ -1,12 +1,11 @@
 // src/app/api/member/create/route.ts
 // POST { name, pitch, instagram?, activationCode }
-// Crée un membre lié à l'utilisateur authentifié (auth_user_id = auth.uid()).
-// Protégé : session Supabase obligatoire.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAuth, isHttpError } from '@/lib/require-auth';
+import { checkAuthRateLimit, rateLimitHeaders } from '@/lib/ratelimit';
 
 const schema = z.object({
   name:           z.string().min(1).max(50).trim(),
@@ -17,26 +16,14 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    // ─── Vérification session ─────────────────────────────────────────────
-    const res = new Response();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) { return req.cookies.get(name)?.value; },
-          set(name: string, value: string, options: CookieOptions) {},
-          remove(name: string, options: CookieOptions) {},
-        },
-      }
-    );
+    const auth = await requireAuth(req);
+    if (isHttpError(auth)) return auth;
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Non authentifié.' }, { status: 401 });
+    const rl = await checkAuthRateLimit(auth.user.id);
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Trop de requêtes.' }, { status: 429, headers: rateLimitHeaders(rl) });
     }
 
-    // ─── Validation ───────────────────────────────────────────────────────
     const body = schema.safeParse(await req.json());
     if (!body.success) {
       return NextResponse.json({ error: body.error.flatten().fieldErrors }, { status: 400 });
@@ -59,7 +46,7 @@ export async function POST(req: NextRequest) {
     const { data: existing } = await supabaseAdmin
       .from('members')
       .select('id')
-      .eq('auth_user_id', user.id)
+      .eq('auth_user_id', auth.user.id)
       .single();
 
     if (existing) {
@@ -73,8 +60,8 @@ export async function POST(req: NextRequest) {
         name,
         pitch,
         instagram:    instagram?.trim() || null,
-        email:        user.email || null,
-        auth_user_id: user.id,
+        email:        auth.user.email || null,
+        auth_user_id: auth.user.id,
       })
       .select('id')
       .single();

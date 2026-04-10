@@ -1,11 +1,11 @@
 // src/app/api/member/link/route.ts
 // POST { memberId } — lie un profil legacy (sans auth_user_id) au compte Auth connecté.
-// Protégé : session Supabase obligatoire.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { requireAuth, isHttpError } from '@/lib/require-auth';
+import { checkAuthRateLimit, rateLimitHeaders } from '@/lib/ratelimit';
 
 const schema = z.object({
   memberId: z.string().uuid(),
@@ -13,24 +13,14 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    // ─── Vérification session ─────────────────────────────────────────────
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) { return req.cookies.get(name)?.value; },
-          set() {}, remove() {},
-        },
-      }
-    );
+    const auth = await requireAuth(req);
+    if (isHttpError(auth)) return auth;
 
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return NextResponse.json({ error: 'Non authentifié.' }, { status: 401 });
+    const rl = await checkAuthRateLimit(auth.user.id);
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Trop de requêtes.' }, { status: 429, headers: rateLimitHeaders(rl) });
     }
 
-    // ─── Validation ───────────────────────────────────────────────────────
     const body = schema.safeParse(await req.json());
     if (!body.success) {
       return NextResponse.json({ error: 'memberId invalide.' }, { status: 400 });
@@ -42,7 +32,7 @@ export async function POST(req: NextRequest) {
     const { data: existingMember } = await supabaseAdmin
       .from('members')
       .select('id')
-      .eq('auth_user_id', user.id)
+      .eq('auth_user_id', auth.user.id)
       .single();
 
     if (existingMember) {
@@ -65,17 +55,16 @@ export async function POST(req: NextRequest) {
     }
 
     // ─── Sécurité : vérifie que l'email du compte Auth correspond au membre ─
-    // Évite qu'un utilisateur A lie le profil d'un utilisateur B.
-    if (member.email && user.email && member.email.toLowerCase() !== user.email.toLowerCase()) {
+    if (member.email && auth.user.email && member.email.toLowerCase() !== auth.user.email.toLowerCase()) {
       return NextResponse.json({ error: 'Ce profil ne correspond pas à votre compte.' }, { status: 403 });
     }
 
     // ─── Lie le profil au compte Auth ─────────────────────────────────────
     const { error: updateError } = await supabaseAdmin
       .from('members')
-      .update({ auth_user_id: user.id })
+      .update({ auth_user_id: auth.user.id })
       .eq('id', memberId)
-      .is('auth_user_id', null); // Double sécurité : uniquement si encore null
+      .is('auth_user_id', null);
 
     if (updateError) {
       console.error('[api/member/link]', updateError);

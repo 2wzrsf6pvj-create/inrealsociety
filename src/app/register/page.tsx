@@ -3,7 +3,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
-import { updateMember, getMemberByAuthUserId } from '@/lib/supabase';
 
 const AI_PITCHES = [
   "Je traverse les villes les yeux ouverts. Si vous êtes là, c'est que votre instinct vous a bien guidé.",
@@ -281,7 +280,8 @@ function RegisterContent() {
     const supabase = createClient();
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return;
-      const member = await getMemberByAuthUserId(user.id);
+      const { data: member } = await supabase
+        .from('members').select('*').eq('auth_user_id', user.id).single();
       if (!member) return;
       setIsEditing(true);
       setExistingId(member.id);
@@ -290,13 +290,13 @@ function RegisterContent() {
     });
   }, [searchParams]);
 
-  const uploadPhoto = async (memberId: string, file: File): Promise<string | null> => {
-    const supabase = createClient();
-    const ext  = file.name.split('.').pop();
-    const path = `${memberId}/avatar.${ext}`;
-    const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true });
-    if (error) return null;
-    return supabase.storage.from('avatars').getPublicUrl(path).data.publicUrl;
+  const uploadPhoto = async (file: File): Promise<string | null> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch('/api/member/avatar', { method: 'POST', body: formData });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.photoUrl ?? null;
   };
 
   const handleSubmit = async () => {
@@ -304,19 +304,21 @@ function RegisterContent() {
     try {
       const pitch = composePitch(form);
       if (isEditing && existingId) {
-        const ok = await updateMember(existingId, { name: form.name.trim(), pitch: pitch.trim(), instagram: form.instagram.trim() || undefined });
-        if (!ok) throw new Error('Erreur de mise à jour.');
+        const res = await fetch('/api/member/update', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: form.name.trim(), pitch: pitch.trim(), instagram: form.instagram.trim() || undefined }),
+        });
+        if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Erreur de mise à jour.'); }
         if (form.photo) {
-          const url = await uploadPhoto(existingId, form.photo);
-          if (url) { const s = createClient(); await s.from('members').update({ photo_url: url }).eq('id', existingId); }
+          await uploadPhoto(form.photo);
         }
       } else {
         const res  = await fetch('/api/member/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: form.name.trim(), pitch: pitch.trim(), instagram: form.instagram.trim() || undefined, activationCode }) });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Erreur de création.');
         if (form.photo && data.memberId) {
-          const url = await uploadPhoto(data.memberId, form.photo);
-          if (url) { const s = createClient(); await s.from('members').update({ photo_url: url }).eq('id', data.memberId); }
+          await uploadPhoto(form.photo);
         }
       }
       router.push('/dashboard');
