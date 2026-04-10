@@ -209,6 +209,12 @@ export default function ShopPage() {
                 <p className="font-ui text-[0.42rem] text-brand-gray/20 text-center leading-relaxed">
                   Paiement sécurisé par Stripe · Livraison 5-7 jours ouvrés
                 </p>
+                <p className="font-ui text-[0.38rem] text-brand-gray/15 text-center leading-relaxed">
+                  En commandant, vous acceptez les{' '}
+                  <Link href="/cgv" className="underline underline-offset-2 hover:text-brand-gray/40 transition-colors">
+                    Conditions Générales de Vente
+                  </Link>
+                </p>
               </form>
             </div>
           </div>
@@ -239,11 +245,21 @@ export default function ShopPage() {
           </div>
         </section>
 
-        <footer className="py-12 border-t border-brand-gray/10 flex items-center justify-between">
-          <span className="font-ui text-[0.45rem] text-brand-gray/20 tracking-[0.2em] uppercase">In Real Society</span>
-          <Link href="/" className="font-ui text-[0.45rem] text-brand-gray/20 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray/40 transition-colors">
-            L'application →
-          </Link>
+        <footer className="py-12 border-t border-brand-gray/10 flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <span className="font-ui text-[0.45rem] text-brand-gray/20 tracking-[0.2em] uppercase">In Real Society</span>
+            <Link href="/" className="font-ui text-[0.45rem] text-brand-gray/20 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray/40 transition-colors">
+              L'application →
+            </Link>
+          </div>
+          <div className="flex items-center gap-4">
+            <Link href="/cgv" className="font-ui text-[0.38rem] text-brand-gray/15 hover:text-brand-gray/40 transition-colors">
+              CGV
+            </Link>
+            <Link href="/manifeste" className="font-ui text-[0.38rem] text-brand-gray/15 hover:text-brand-gray/40 transition-colors">
+              Manifeste
+            </Link>
+          </div>
         </footer>
       </div>
     </main>
