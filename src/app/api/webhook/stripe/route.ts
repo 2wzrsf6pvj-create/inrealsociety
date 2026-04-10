@@ -1,6 +1,12 @@
 // src/app/api/webhook/stripe/route.ts
 // ⚠️ WEBHOOK UNIQUE — Configurer cette URL dans le dashboard Stripe.
-// L'ancien /api/webhook/route.ts est obsolète et peut être supprimé.
+//
+// Flux :
+// 1. Stripe envoie checkout.session.completed
+// 2. On génère un code d'activation + email
+// 3. On génère le QR code SVG premium (couleur adaptée au t-shirt)
+// 4. On upload le SVG dans Supabase Storage
+// 5. On envoie la commande Printful avec le bon variant (noir/blanc)
 
 export const dynamic = 'force-dynamic';
 
@@ -9,9 +15,23 @@ import Stripe from 'stripe';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { generateSecureCode } from '@/lib/generate-code';
 import { sendEmail, emailActivation } from '@/lib/email-templates';
+import { generatePremiumQRCode } from '@/lib/generate-qr-svg';
+import { buildShortUrl } from '@/lib/short-code';
 import type { PrintfulOrderPayload, PrintfulOrderResponse, PrintfulAddress } from '@/lib/printful.types';
 
-const PRINTFUL_VARIANT_ID = parseInt(process.env.PRINTFUL_VARIANT_ID || '0', 10);
+// ─── Variant IDs Printful — Comfort Colors 1717 ──────────────────────────────
+// À configurer dans .env.local :
+//   PRINTFUL_VARIANT_ID_DARK=xxx   (Comfort Colors 1717 Black)
+//   PRINTFUL_VARIANT_ID_LIGHT=xxx  (Comfort Colors 1717 White)
+// Fallback : l'ancien PRINTFUL_VARIANT_ID unique
+const VARIANT_DARK  = parseInt(process.env.PRINTFUL_VARIANT_ID_DARK  || process.env.PRINTFUL_VARIANT_ID || '0', 10);
+const VARIANT_LIGHT = parseInt(process.env.PRINTFUL_VARIANT_ID_LIGHT || process.env.PRINTFUL_VARIANT_ID || '0', 10);
+
+type TshirtColor = 'dark' | 'light';
+
+function getVariantId(color: TshirtColor): number {
+  return color === 'dark' ? VARIANT_DARK : VARIANT_LIGHT;
+}
 
 export async function POST(req: NextRequest) {
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -50,11 +70,13 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ received: true });
 }
 
+// ─── Handler principal ────────────────────────────────────────────────────────
+
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promise<void> {
-  const userId    = session.metadata?.userId;
-  const qrCodeUrl = session.metadata?.qrCodeUrl;
-  const sessionId = session.id;
-  const email     = session.customer_details?.email ?? (session as any).customer_email;
+  const userId      = session.metadata?.userId;
+  const tshirtColor = (session.metadata?.tshirtColor as TshirtColor) || 'dark';
+  const sessionId   = session.id;
+  const email       = session.customer_details?.email ?? (session as any).customer_email;
 
   // 1. Code d'activation + email
   if (email) {
@@ -66,6 +88,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
         status:            'paid',
         activation_code:   code,
         stripe_payment_id: session.payment_intent,
+        tshirt_color:      tshirtColor,
       })
       .eq('stripe_session_id', sessionId);
 
@@ -79,18 +102,70 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
     await sendEmail({ to: email, subject, html });
   }
 
-  // 2. Commande Printful
-  if (userId && qrCodeUrl) {
+  // 2. Génération QR code SVG + commande Printful
+  if (userId) {
     const shipping = getShippingDetails(session);
-    if (shipping) {
-      if (!PRINTFUL_VARIANT_ID) throw new Error('PRINTFUL_VARIANT_ID non défini.');
-      await createPrintfulOrder({ recipient: shipping, qrCodeUrl });
-      console.log('[webhook] Commande Printful créée.');
-    } else {
+    if (!shipping) {
       console.warn('[webhook] Adresse de livraison manquante — commande Printful ignorée.');
+      return;
     }
+
+    const variantId = getVariantId(tshirtColor);
+    if (!variantId) throw new Error('PRINTFUL_VARIANT_ID non défini pour cette couleur.');
+
+    // ─── Récupère le short_code du membre pour le QR code ───────────────────
+    const { data: member } = await supabaseAdmin
+      .from('members')
+      .select('id, short_code')
+      .eq('id', userId)
+      .single();
+
+    // URL courte si short_code disponible, sinon fallback sur l'URL profil
+    const appUrl    = process.env.NEXT_PUBLIC_APP_URL || 'https://inrealsociety.vercel.app';
+    const qrDataUrl = member?.short_code
+      ? buildShortUrl(member.short_code)
+      : `${appUrl}/profil/${userId}`;
+
+    // ─── Génère le QR code SVG premium ────────────────────────────────────
+    const qr = generatePremiumQRCode(qrDataUrl, tshirtColor);
+
+    // ─── Upload dans Supabase Storage ─────────────────────────────────────
+    const filePath = `${userId}/qr-${tshirtColor}.svg`;
+
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from('qrcodes')
+      .upload(filePath, qr.buffer, {
+        contentType: 'image/svg+xml',
+        upsert:      true,
+      });
+
+    if (uploadError) {
+      throw new Error(`Upload SVG échoué: ${uploadError.message}`);
+    }
+
+    const { data: { publicUrl } } = supabaseAdmin.storage
+      .from('qrcodes')
+      .getPublicUrl(filePath);
+
+    // ─── Met à jour le membre avec l'URL du QR ───────────────────────────
+    await supabaseAdmin
+      .from('members')
+      .update({ qr_code_url: publicUrl })
+      .eq('id', userId);
+
+    // ─── Envoie la commande Printful ──────────────────────────────────────
+    await createPrintfulOrder({
+      recipient: shipping,
+      qrCodeUrl: publicUrl,
+      variantId,
+      tshirtColor,
+    });
+
+    console.log('[webhook] Commande Printful créée.');
   }
 }
+
+// ─── Fonctions utilitaires ────────────────────────────────────────────────────
 
 async function generateUniqueActivationCode(): Promise<string> {
   const MAX_ATTEMPTS = 10;
@@ -117,20 +192,31 @@ function getShippingDetails(session: Stripe.Checkout.Session): PrintfulAddress |
   };
 }
 
-async function createPrintfulOrder({ recipient, qrCodeUrl }: {
-  recipient: PrintfulAddress;
-  qrCodeUrl: string;
+async function createPrintfulOrder({ recipient, qrCodeUrl, variantId, tshirtColor }: {
+  recipient:    PrintfulAddress;
+  qrCodeUrl:    string;
+  variantId:    number;
+  tshirtColor:  TshirtColor;
 }): Promise<PrintfulOrderResponse> {
+  const colorLabel = tshirtColor === 'dark' ? 'Black' : 'White';
+
   const payload: PrintfulOrderPayload = {
     recipient,
     items: [{
-      variant_id: PRINTFUL_VARIANT_ID,
+      variant_id: variantId,
       quantity:   1,
-      name:       'In Real Society — Comfort Colors 1717 (DTF)',
+      name:       `In Real Society — Comfort Colors 1717 ${colorLabel} (DTF)`,
       files: [{
         type: 'back',
         url:  qrCodeUrl,
-        position: { area_width: 1800, area_height: 2400, width: 800, height: 800, top: 200, left: 500 },
+        position: {
+          area_width:  1800,
+          area_height: 2400,
+          width:       800,
+          height:      800,
+          top:         200,
+          left:        500,
+        },
       }],
     }],
   };

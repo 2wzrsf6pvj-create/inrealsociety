@@ -1,5 +1,5 @@
 // app/api/checkout/route.ts
-// POST /api/checkout { userId, qrCodeUrl }
+// POST /api/checkout { userId, qrCodeUrl, tshirtColor }
 
 export const dynamic = 'force-dynamic';
 
@@ -11,8 +11,9 @@ import { requireAuth, isHttpError } from '@/lib/require-auth';
 import { checkAuthRateLimit, rateLimitHeaders } from '@/lib/ratelimit';
 
 const schema = z.object({
-  userId:    z.string().uuid(),
-  qrCodeUrl: z.string().url().max(2048),
+  userId:       z.string().uuid(),
+  qrCodeUrl:    z.string().url().max(2048),
+  tshirtColor:  z.enum(['dark', 'light']),
 });
 
 const TSHIRT_PRICE_ID = process.env.STRIPE_PRICE_ID!;
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: body.error.flatten().fieldErrors }, { status: 400 });
     }
 
-    const { userId, qrCodeUrl } = body.data;
+    const { userId, qrCodeUrl, tshirtColor } = body.data;
 
     // ─── Vérifie ownership ───────────────────────────────────────────────
     const { data: member } = await supabaseAdmin
@@ -90,7 +91,7 @@ export async function POST(req: NextRequest) {
         },
       ],
 
-      metadata:    { userId, qrCodeUrl },
+      metadata:    { userId, qrCodeUrl, tshirtColor },
       success_url: `${appUrl}/confirmation?status=success&memberId=${userId}`,
       cancel_url:  `${appUrl}/confirmation?status=cancelled&memberId=${userId}`,
     });

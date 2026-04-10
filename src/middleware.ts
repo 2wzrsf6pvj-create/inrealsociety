@@ -24,6 +24,7 @@ const PUBLIC_PAGE_PREFIXES = [
   '/profil/',
   '/join/',
   '/shop/',
+  '/r/',       // redirections URL courtes (QR codes t-shirts)
 ];
 
 const PUBLIC_API_PREFIXES = [
@@ -34,6 +35,7 @@ const PUBLIC_API_PREFIXES = [
   '/api/push/',
   '/api/order-code',
   '/api/activate',
+  '/api/shop/',          // checkout public du shop
   '/api/member/link',    // liaison legacy — protégée par session dans le handler
   '/api/member/migrate', // migration email — protégée par admin secret
 ];

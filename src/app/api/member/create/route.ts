@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { requireAuth, isHttpError } from '@/lib/require-auth';
 import { checkAuthRateLimit, rateLimitHeaders } from '@/lib/ratelimit';
+import { generateUniqueShortCode } from '@/lib/short-code';
 
 const schema = z.object({
   name:           z.string().min(1).max(50).trim(),
@@ -53,6 +54,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ memberId: existing.id, alreadyExists: true });
     }
 
+    // ─── Génère un code court unique pour l'URL du QR code ─────────────────
+    const shortCode = await generateUniqueShortCode();
+
     // ─── Création du membre lié au compte auth ────────────────────────────
     const { data: member, error: memberError } = await supabaseAdmin
       .from('members')
@@ -62,8 +66,9 @@ export async function POST(req: NextRequest) {
         instagram:    instagram?.trim() || null,
         email:        auth.user.email || null,
         auth_user_id: auth.user.id,
+        short_code:   shortCode,
       })
-      .select('id')
+      .select('id, short_code')
       .single();
 
     if (memberError || !member) {
