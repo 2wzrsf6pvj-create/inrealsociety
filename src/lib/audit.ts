@@ -17,7 +17,8 @@ export type AuditAction =
   | 'dashboard.accessed'
   | 'qrcode.generated'
   | 'order.completed'
-  | 'push.subscribed';
+  | 'push.subscribed'
+  | 'message.reported';
 
 interface AuditParams {
   action:    AuditAction;
