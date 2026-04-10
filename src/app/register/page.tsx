@@ -123,11 +123,27 @@ function StepAccount({ onNext, initialCode }: { onNext: (email: string) => void;
 
 // ─── Étape 2 : Profil ─────────────────────────────────────────────────────────
 
-function StepProfile({ form, onChange, onNext, onBack, isEditing }: {
+function StepProfile({ form, onChange, onNext, onBack, isEditing, activationCode, onCodeChange }: {
   form: FormData; onChange: (f: FormData) => void; onNext: () => void; onBack: () => void; isEditing: boolean;
+  activationCode: string; onCodeChange: (code: string) => void;
 }) {
   const [aiLoading, setAiLoading] = useState(false);
   const [error,     setError]     = useState('');
+  const [codeOk,    setCodeOk]    = useState(isEditing); // pas besoin de code en mode édition
+  const [codeErr,   setCodeErr]   = useState('');
+  const [checking,  setChecking]  = useState(false);
+
+  const validateCode = async (val: string) => {
+    if (val.length < 6) { setCodeOk(false); return; }
+    setChecking(true); setCodeErr('');
+    try {
+      const res  = await fetch('/api/activate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: val }) });
+      const data = await res.json();
+      if (data.valid) setCodeOk(true);
+      else { setCodeErr(data.error || 'Code invalide.'); setCodeOk(false); }
+    } catch { setCodeErr('Erreur de validation.'); setCodeOk(false); }
+    setChecking(false);
+  };
 
   const field = (key: keyof FormData, value: string) => onChange({ ...form, [key]: value });
 
@@ -139,6 +155,7 @@ function StepProfile({ form, onChange, onNext, onBack, isEditing }: {
   };
 
   const handleNext = () => {
+    if (!isEditing && !codeOk) { setError("Code d'activation requis."); return; }
     if (!form.name.trim()) { setError('Votre prénom est requis.'); return; }
     if (!composePitch(form).trim()) { setError('Rédigez votre pitch ou générez-en un.'); return; }
     setError(''); onNext();
@@ -151,6 +168,21 @@ function StepProfile({ form, onChange, onNext, onBack, isEditing }: {
         <p className="font-ui text-[0.55rem] font-light text-brand-gray/40">Ce que vous êtes, en quelques mots.</p>
       </div>
       <div className="flex flex-col gap-5 animate-stagger-2">
+        {/* Code d'activation — uniquement pour les nouveaux membres */}
+        {!isEditing && (
+          <div className="flex flex-col gap-1">
+            <label className="font-ui text-[0.48rem] text-brand-gray/30 tracking-[0.2em] uppercase">Code d'activation</label>
+            <div className="flex items-end gap-2">
+              <input type="text" placeholder="XXXXXXXX" value={activationCode} maxLength={12}
+                onChange={e => { const v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,''); onCodeChange(v); setCodeOk(false); setCodeErr(''); if (v.length >= 6) validateCode(v); }}
+                className={`flex-1 bg-transparent border-b font-mono text-[0.9rem] text-brand-white py-3 outline-none tracking-[0.3em] transition-colors ${codeErr ? 'border-red-900' : codeOk ? 'border-brand-white/60' : 'border-brand-gray/20 focus:border-brand-white/50'}`}
+                style={{ minHeight: '44px' }} />
+              <span className="font-ui text-[0.45rem] text-brand-gray/30 pb-3">{checking ? '...' : codeOk ? 'Valide' : ''}</span>
+            </div>
+            {codeErr && <p className="font-ui text-[0.5rem] text-red-400">{codeErr}</p>}
+          </div>
+        )}
+
         <div className="flex flex-col gap-1">
           <label className="font-ui text-[0.48rem] text-brand-gray/30 tracking-[0.2em] uppercase">Prénom ou pseudo</label>
           <input type="text" maxLength={30} value={form.name} onChange={e => field('name', e.target.value)}
@@ -282,10 +314,13 @@ function RegisterContent() {
       if (!user) return;
       const { data: member } = await supabase
         .from('members').select('*').eq('auth_user_id', user.id).single();
-      if (!member) return;
-      setIsEditing(true);
-      setExistingId(member.id);
-      setForm(f => ({ ...f, name: member.name, who: member.pitch, instagram: member.instagram || '' }));
+      if (member) {
+        // Membre existant → mode édition
+        setIsEditing(true);
+        setExistingId(member.id);
+        setForm(f => ({ ...f, name: member.name, who: member.pitch, instagram: member.instagram || '' }));
+      }
+      // Connecté (avec ou sans profil) → skip étape 1 (code + email + mdp)
       setStep(2);
     });
   }, [searchParams]);
@@ -340,7 +375,7 @@ function RegisterContent() {
         </div>
       )}
       {step === 1 && <StepAccount onNext={(em) => { setStep(2); }} initialCode={activationCode} />}
-      {step === 2 && <StepProfile form={form} onChange={setForm} onNext={() => setStep(3)} onBack={() => setStep(1)} isEditing={isEditing} />}
+      {step === 2 && <StepProfile form={form} onChange={setForm} onNext={() => setStep(3)} onBack={() => setStep(1)} isEditing={isEditing} activationCode={activationCode} onCodeChange={setActivationCode} />}
       {step === 3 && <StepOptional form={form} onChange={setForm} onSubmit={handleSubmit} onBack={() => setStep(2)} loading={loading} error={error} isEditing={isEditing} />}
     </div>
   );
