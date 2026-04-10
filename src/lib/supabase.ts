@@ -3,7 +3,7 @@
 // Pour les mutations protégées, utiliser supabase-admin.ts via les routes API.
 
 import { createClient } from '@supabase/supabase-js';
-import type { Member, Scan } from './types';
+import type { Member, Scan, Message } from './types';
 
 const supabaseUrl  = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -39,5 +39,40 @@ export async function getFirstScanAt(memberId: string): Promise<string | null> {
   const { data } = await supabase
     .from('first_scans').select('first_scan_at').eq('member_id', memberId).single();
   return data?.first_scan_at ?? null;
+}
+
+// ─── Messages (lectures) ─────────────────────────────────────────────────────
+
+export async function getMessages(memberId: string, limit = 20, offset = 0): Promise<Message[]> {
+  const { data, error } = await supabase
+    .from('messages')
+    .select('*')
+    .eq('member_id', memberId)
+    .eq('moderated', false)
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1);
+  if (error) return [];
+  return data as Message[];
+}
+
+export async function getMessagesCount(memberId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from('messages')
+    .select('*', { count: 'exact', head: true })
+    .eq('member_id', memberId)
+    .eq('moderated', false);
+  if (error) return 0;
+  return count ?? 0;
+}
+
+export async function getUnreadMessagesCount(memberId: string): Promise<number> {
+  const { count, error } = await supabase
+    .from('messages')
+    .select('*', { count: 'exact', head: true })
+    .eq('member_id', memberId)
+    .eq('moderated', false)
+    .is('read_at', null);
+  if (error) return 0;
+  return count ?? 0;
 }
 

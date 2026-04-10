@@ -4,7 +4,7 @@
 
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase-server';
-import { getMemberByAuthUserId, getRecentScans } from '@/lib/supabase';
+import { getMemberByAuthUserId, getRecentScans, getMessages, getUnreadMessagesCount } from '@/lib/supabase';
 import DashboardClient from './[memberId]/DashboardClient';
 
 export default async function DashboardPage() {
@@ -24,7 +24,11 @@ export default async function DashboardPage() {
     redirect('/register');
   }
 
-  const recentScans = await getRecentScans(member.id, 5);
+  const [recentScans, messages, unreadCount] = await Promise.all([
+    getRecentScans(member.id, 5),
+    getMessages(member.id, 10),
+    getUnreadMessagesCount(member.id),
+  ]);
 
-  return <DashboardClient member={member} recentScans={recentScans} />;
+  return <DashboardClient member={member} recentScans={recentScans} messages={messages} unreadCount={unreadCount} />;
 }

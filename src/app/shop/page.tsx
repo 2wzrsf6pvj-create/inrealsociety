@@ -3,10 +3,13 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 
+type TshirtColor = 'dark' | 'light';
+
 export default function ShopPage() {
-  const [email, setEmail]     = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError]     = useState('');
+  const [email, setEmail]             = useState('');
+  const [tshirtColor, setTshirtColor] = useState<TshirtColor>('dark');
+  const [loading, setLoading]         = useState(false);
+  const [error, setError]             = useState('');
 
   const handleBuy = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,30 +20,30 @@ export default function ShopPage() {
     setError('');
 
     try {
-      const res = await fetch('/api/checkout', {
+      const res = await fetch('/api/shop/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim() }),
+        body: JSON.stringify({ email: email.trim(), tshirtColor }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
-      window.location.href = data.url; // Redirect vers Stripe
+      window.location.href = data.url;
     } catch {
       setError('Une erreur est survenue. Réessayez.');
       setLoading(false);
     }
   };
 
+  const colorLabel = tshirtColor === 'dark' ? 'Noir' : 'Blanc';
+
   return (
     <main className="relative bg-brand-black text-brand-white min-h-screen overflow-hidden">
 
-      {/* Halos */}
       <div className="absolute top-[-10%] left-[-10%] w-[40rem] h-[40rem] rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%)' }} />
       <div className="absolute bottom-[-10%] right-[-10%] w-[30rem] h-[30rem] rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 70%)' }} />
 
-      {/* Nav */}
       <nav className="relative z-10 flex items-center justify-between px-6 py-6 border-b border-brand-gray/10">
         <Link href="/" className="font-display text-[1.2rem] font-light tracking-[0.1em]">X</Link>
         <span className="font-ui text-[0.5rem] text-brand-gray/30 tracking-[0.3em] uppercase">In Real Society</span>
@@ -76,18 +79,51 @@ export default function ShopPage() {
         <section className="py-12 border-t border-brand-gray/10 animate-stagger-2">
           <div className="flex flex-col gap-8">
 
-            {/* Visuel produit */}
-            <div className="w-full aspect-square bg-[#0a0a0a] border border-brand-gray/10 rounded-[2px] flex flex-col items-center justify-center gap-4">
-              {/* Placeholder visuel — à remplacer par vraie photo */}
+            {/* Visuel produit — adapté à la couleur */}
+            <div className={`w-full aspect-square border rounded-[2px] flex flex-col items-center justify-center gap-4 transition-colors ${
+              tshirtColor === 'dark'
+                ? 'bg-[#0a0a0a] border-brand-gray/10'
+                : 'bg-[#f0ede8] border-brand-gray/20'
+            }`}>
               <div className="relative flex items-center justify-center">
-                <div className="absolute w-32 h-32 rounded-full border border-brand-white/5 animate-ring-pulse" />
-                <div className="w-24 h-24 rounded-full border border-brand-white/20 flex items-center justify-center">
-                  <span className="font-display text-[3rem] font-light text-brand-white/30">X</span>
+                <div className={`absolute w-32 h-32 rounded-full border ${tshirtColor === 'dark' ? 'border-brand-white/5' : 'border-brand-black/5'}`} />
+                <div className={`w-24 h-24 rounded-full border flex items-center justify-center ${
+                  tshirtColor === 'dark' ? 'border-brand-white/20' : 'border-brand-black/20'
+                }`}>
+                  <span className={`font-display text-[3rem] font-light ${
+                    tshirtColor === 'dark' ? 'text-[#C5A059]/60' : 'text-[#0A192F]/60'
+                  }`}>X</span>
                 </div>
               </div>
-              <p className="font-ui text-[0.45rem] text-brand-gray/20 tracking-[0.2em] uppercase">
-                T-shirt · Coton bio · Noir
+              <p className={`font-ui text-[0.45rem] tracking-[0.2em] uppercase ${
+                tshirtColor === 'dark' ? 'text-brand-gray/20' : 'text-brand-black/30'
+              }`}>
+                T-shirt · Comfort Colors 1717 · {colorLabel}
               </p>
+            </div>
+
+            {/* Sélecteur couleur */}
+            <div className="flex flex-col gap-2">
+              <p className="font-ui text-[0.48rem] text-brand-gray/30 tracking-[0.2em] uppercase">Couleur</p>
+              <div className="flex gap-3">
+                {([
+                  { value: 'dark'  as const, label: 'Noir',  bg: '#0a0a0a' },
+                  { value: 'light' as const, label: 'Blanc', bg: '#f5f5f5' },
+                ]).map(opt => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setTshirtColor(opt.value)}
+                    className={`flex-1 py-3 rounded-[2px] border transition-all flex items-center justify-center gap-2 ${
+                      tshirtColor === opt.value
+                        ? 'border-brand-white/60 bg-brand-white/5'
+                        : 'border-brand-gray/15 hover:border-brand-gray/30'
+                    }`}
+                  >
+                    <div className="w-5 h-5 rounded-full border border-brand-gray/30" style={{ background: opt.bg }} />
+                    <span className="font-ui text-[0.55rem] tracking-[0.15em] uppercase">{opt.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Infos produit */}
@@ -98,34 +134,31 @@ export default function ShopPage() {
                     T-shirt IRS
                   </h2>
                   <p className="font-ui text-[0.52rem] text-brand-gray/40">
-                    Coton bio · Sérigraphie minimaliste · QR code activable
+                    Comfort Colors 1717 · {colorLabel} · QR code imprimé dans le dos
                   </p>
                 </div>
                 <span className="font-display text-[1.8rem] font-light">49€</span>
               </div>
 
-              {/* Ce qui est inclus */}
               <div className="flex flex-col gap-2 py-4 border-t border-b border-brand-gray/10">
                 {[
-                  'T-shirt coton bio 200g',
-                  'QR code imprimé dans l\'encolure',
+                  'T-shirt coton lourd Comfort Colors 1717',
+                  'Patch brodé doré à l\'avant',
+                  'QR code premium imprimé en DTFlex dans le dos',
                   'Code d\'activation unique par email',
                   'Accès à la plateforme InRealSociety',
                   'Profil configurable en 2 minutes',
                 ].map((item) => (
                   <div key={item} className="flex items-center gap-3">
-                    <span className="font-ui text-[0.55rem] text-brand-gray/25">✦</span>
+                    <span className="font-ui text-[0.55rem] text-[#C5A059]/60">✦</span>
                     <span className="font-ui text-[0.55rem] text-brand-gray/50">{item}</span>
                   </div>
                 ))}
               </div>
 
-              {/* Formulaire achat */}
               <form onSubmit={handleBuy} className="flex flex-col gap-3">
                 <div className="flex flex-col gap-1">
-                  <label className="font-ui text-[0.48rem] text-brand-gray/30 tracking-[0.2em] uppercase">
-                    Votre email
-                  </label>
+                  <label className="font-ui text-[0.48rem] text-brand-gray/30 tracking-[0.2em] uppercase">Votre email</label>
                   <p className="font-ui text-[0.42rem] text-brand-gray/20 leading-relaxed">
                     Votre code d'activation vous sera envoyé ici après paiement.
                   </p>
@@ -146,7 +179,7 @@ export default function ShopPage() {
                   className="animate-shimmer w-full py-4 mt-2 bg-brand-white text-brand-black font-ui font-bold text-[0.6rem] tracking-[0.3em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ minHeight: '44px' }}
                 >
-                  {loading ? 'Redirection...' : 'Commander — 49€'}
+                  {loading ? 'Redirection...' : `Commander en ${colorLabel} — 49€`}
                 </button>
 
                 <p className="font-ui text-[0.42rem] text-brand-gray/20 text-center leading-relaxed">
@@ -167,7 +200,7 @@ export default function ShopPage() {
               {[
                 { step: '01', title: 'Commandez', desc: 'Recevez votre t-shirt et votre code d\'activation unique par email.' },
                 { step: '02', title: 'Activez', desc: 'Créez votre profil en 2 minutes. Choisissez votre pitch, ajoutez une photo.' },
-                { step: '03', title: 'Portez', desc: 'Le QR code dans l\'encolure est prêt. Vous n\'avez plus rien à faire.' },
+                { step: '03', title: 'Portez', desc: 'Le QR code dans le dos est prêt. Vous n\'avez plus rien à faire.' },
                 { step: '04', title: 'Recevez', desc: 'Quelqu\'un ose scanner. Vous recevez un message. Vous décidez de la suite.' },
               ].map((item) => (
                 <div key={item.step} className="flex gap-5">
@@ -182,14 +215,12 @@ export default function ShopPage() {
           </div>
         </section>
 
-        {/* Footer */}
         <footer className="py-12 border-t border-brand-gray/10 flex items-center justify-between">
           <span className="font-ui text-[0.45rem] text-brand-gray/20 tracking-[0.2em] uppercase">InRealSociety</span>
           <Link href="/" className="font-ui text-[0.45rem] text-brand-gray/20 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray/40 transition-colors">
             L'application →
           </Link>
         </footer>
-
       </div>
     </main>
   );
