@@ -11,6 +11,9 @@ const AI_PITCHES = [
   "Je porte ce vêtement pour une raison simple : j'aime les rencontres qui ne ressemblent à aucune autre.",
 ];
 
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5 Mo
+
 interface FormData {
   name: string; who: string; intent: string; closing: string; instagram: string; photo: File | null;
 }
@@ -29,19 +32,25 @@ function friendlyAuthError(code?: string): string {
   }
 }
 
-// ─── Étape 1 : Activation + Compte ────────────────────────────────────────────
+// ─── Hook de validation du code d'activation ─────────────────────────────────
 
-function StepAccount({ onNext, initialCode }: { onNext: (email: string) => void; initialCode: string }) {
+function useCodeValidation(initialCode: string) {
   const [code,     setCode]     = useState(initialCode);
-  const [email,    setEmail]    = useState('');
-  const [password, setPassword] = useState('');
   const [codeOk,   setCodeOk]   = useState(false);
   const [codeErr,  setCodeErr]  = useState('');
   const [checking, setChecking] = useState(false);
-  const [loading,  setLoading]  = useState(false);
-  const [error,    setError]    = useState('');
 
-  const validateCode = async (val: string) => {
+  // Si le code initial change (ex: query param), reset
+  useEffect(() => {
+    if (initialCode) {
+      setCode(initialCode);
+      // Auto-validate si assez long
+      if (initialCode.length >= 6) validate(initialCode);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialCode]);
+
+  const validate = async (val: string) => {
     if (val.length < 6) { setCodeOk(false); return; }
     setChecking(true); setCodeErr('');
     try {
@@ -53,10 +62,53 @@ function StepAccount({ onNext, initialCode }: { onNext: (email: string) => void;
     setChecking(false);
   };
 
+  const handleChange = (val: string) => {
+    const v = val.toUpperCase().replace(/[^A-Z0-9]/g, '');
+    setCode(v);
+    setCodeOk(false);
+    setCodeErr('');
+    if (v.length >= 6) validate(v);
+  };
+
+  return { code, codeOk, codeErr, checking, handleChange };
+}
+
+// ─── Champ code d'activation (réutilisable) ──────────────────────────────────
+
+function CodeField({ code, codeOk, codeErr, checking, onChange }: {
+  code: string; codeOk: boolean; codeErr: string; checking: boolean;
+  onChange: (val: string) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <label className="font-ui text-[0.48rem] text-brand-gray/30 tracking-[0.2em] uppercase">Code d'activation</label>
+      <div className="flex items-end gap-2">
+        <input type="text" placeholder="XXXXXXXX" value={code} maxLength={12}
+          onChange={e => onChange(e.target.value)}
+          className={`flex-1 bg-transparent border-b font-mono text-[0.9rem] text-brand-white py-3 outline-none tracking-[0.3em] transition-colors ${codeErr ? 'border-red-900' : codeOk ? 'border-brand-white/60' : 'border-brand-gray/20 focus:border-brand-white/50'}`}
+          style={{ minHeight: '44px' }} />
+        <span className="font-ui text-[0.45rem] text-brand-gray/30 pb-3">{checking ? '...' : codeOk ? 'Valide' : ''}</span>
+      </div>
+      {codeErr && <p className="font-ui text-[0.5rem] text-red-400">{codeErr}</p>}
+    </div>
+  );
+}
+
+// ─── Étape 1 : Activation + Compte (visiteur non connecté) ───────────────────
+
+function StepAccount({ onNext, codeState }: {
+  onNext: () => void;
+  codeState: ReturnType<typeof useCodeValidation>;
+}) {
+  const [email,    setEmail]    = useState('');
+  const [password, setPassword] = useState('');
+  const [loading,  setLoading]  = useState(false);
+  const [error,    setError]    = useState('');
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!codeOk)        { setError("Code d'activation invalide."); return; }
-    if (!email.trim())  { setError('Email requis.'); return; }
+    if (!codeState.codeOk) { setError("Code d'activation invalide."); return; }
+    if (!email.trim())     { setError('Email requis.'); return; }
     if (password.length < 8) { setError('Mot de passe trop court (8 caractères min).'); return; }
     setLoading(true); setError('');
     const supabase = createClient();
@@ -67,7 +119,7 @@ function StepAccount({ onNext, initialCode }: { onNext: (email: string) => void;
     setLoading(false);
     if (authError) { setError(friendlyAuthError(authError.code)); return; }
     if (!data.session) { setError('Vérifiez votre email pour confirmer votre compte, puis revenez ici.'); return; }
-    onNext(email.trim());
+    onNext();
   };
 
   return (
@@ -79,20 +131,10 @@ function StepAccount({ onNext, initialCode }: { onNext: (email: string) => void;
         </p>
       </div>
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-        <div className="flex flex-col gap-1">
-          <label className="font-ui text-[0.48rem] text-brand-gray/30 tracking-[0.2em] uppercase">Code d'activation</label>
-          <div className="flex items-end gap-2">
-            <input type="text" placeholder="XXXXXXXX" value={code} maxLength={12}
-              onChange={e => { const v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,''); setCode(v); setCodeOk(false); setCodeErr(''); if (v.length >= 6) validateCode(v); }}
-              className={`flex-1 bg-transparent border-b font-mono text-[0.9rem] text-brand-white py-3 outline-none tracking-[0.3em] transition-colors ${codeErr ? 'border-red-900' : codeOk ? 'border-brand-white/60' : 'border-brand-gray/20 focus:border-brand-white/50'}`}
-              style={{ minHeight: '44px' }} />
-            <span className="font-ui text-[0.45rem] text-brand-gray/30 pb-3">{checking ? '...' : codeOk ? '✓ Valide' : ''}</span>
-          </div>
-          {codeErr && <p className="font-ui text-[0.5rem] text-red-400">{codeErr}</p>}
-          <p className="font-ui text-[0.42rem] text-brand-gray/20 mt-1">
-            Pas encore de t-shirt ? <a href="/shop" className="underline underline-offset-4 hover:text-brand-gray/50 transition-colors">Commander →</a>
-          </p>
-        </div>
+        <CodeField {...codeState} onChange={codeState.handleChange} />
+        <p className="font-ui text-[0.42rem] text-brand-gray/20 -mt-3">
+          Pas encore de t-shirt ? <a href="/shop" className="underline underline-offset-4 hover:text-brand-gray/50 transition-colors">Commander →</a>
+        </p>
         <div className="flex flex-col gap-1">
           <label className="font-ui text-[0.48rem] text-brand-gray/30 tracking-[0.2em] uppercase">Email</label>
           <input type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)}
@@ -108,7 +150,7 @@ function StepAccount({ onNext, initialCode }: { onNext: (email: string) => void;
             style={{ minHeight: '44px' }} />
         </div>
         {error && <p className="font-ui text-[0.58rem] text-red-400 text-center">{error}</p>}
-        <button type="submit" disabled={loading || !codeOk}
+        <button type="submit" disabled={loading || !codeState.codeOk}
           className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-[0.6rem] tracking-[0.3em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
           style={{ minHeight: '44px' }}>
           {loading ? 'Création du compte...' : 'Créer mon compte →'}
@@ -123,29 +165,17 @@ function StepAccount({ onNext, initialCode }: { onNext: (email: string) => void;
 
 // ─── Étape 2 : Profil ─────────────────────────────────────────────────────────
 
-function StepProfile({ form, onChange, onNext, onBack, isEditing, activationCode, onCodeChange }: {
-  form: FormData; onChange: (f: FormData) => void; onNext: () => void; onBack: () => void; isEditing: boolean;
-  activationCode: string; onCodeChange: (code: string) => void;
+function StepProfile({ form, onChange, onNext, onBack, isEditing, isLoggedIn, codeState }: {
+  form: FormData; onChange: (f: FormData) => void; onNext: () => void; onBack: () => void;
+  isEditing: boolean; isLoggedIn: boolean;
+  codeState: ReturnType<typeof useCodeValidation>;
 }) {
   const [aiLoading, setAiLoading] = useState(false);
   const [error,     setError]     = useState('');
-  const [codeOk,    setCodeOk]    = useState(isEditing); // pas besoin de code en mode édition
-  const [codeErr,   setCodeErr]   = useState('');
-  const [checking,  setChecking]  = useState(false);
-
-  const validateCode = async (val: string) => {
-    if (val.length < 6) { setCodeOk(false); return; }
-    setChecking(true); setCodeErr('');
-    try {
-      const res  = await fetch('/api/activate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code: val }) });
-      const data = await res.json();
-      if (data.valid) setCodeOk(true);
-      else { setCodeErr(data.error || 'Code invalide.'); setCodeOk(false); }
-    } catch { setCodeErr('Erreur de validation.'); setCodeOk(false); }
-    setChecking(false);
-  };
 
   const field = (key: keyof FormData, value: string) => onChange({ ...form, [key]: value });
+
+  const needsCode = !isEditing && isLoggedIn; // connecté sans profil → doit entrer le code ici
 
   const handleAi = async () => {
     setAiLoading(true);
@@ -155,7 +185,7 @@ function StepProfile({ form, onChange, onNext, onBack, isEditing, activationCode
   };
 
   const handleNext = () => {
-    if (!isEditing && !codeOk) { setError("Code d'activation requis."); return; }
+    if (needsCode && !codeState.codeOk) { setError("Code d'activation requis."); return; }
     if (!form.name.trim()) { setError('Votre prénom est requis.'); return; }
     if (!composePitch(form).trim()) { setError('Rédigez votre pitch ou générez-en un.'); return; }
     setError(''); onNext();
@@ -164,23 +194,17 @@ function StepProfile({ form, onChange, onNext, onBack, isEditing, activationCode
   return (
     <div className="w-full flex flex-col gap-6">
       <div className="text-center flex flex-col gap-2 animate-stagger-1">
-        <h2 className="font-display text-[1.8rem] font-light tracking-[0.04em]">Votre présence.</h2>
-        <p className="font-ui text-[0.55rem] font-light text-brand-gray/40">Ce que vous êtes, en quelques mots.</p>
+        <h2 className="font-display text-[1.8rem] font-light tracking-[0.04em]">
+          {isEditing ? 'Modifier votre profil.' : 'Votre présence.'}
+        </h2>
+        <p className="font-ui text-[0.55rem] font-light text-brand-gray/40">
+          {isEditing ? 'Mettez à jour vos informations.' : 'Ce que vous êtes, en quelques mots.'}
+        </p>
       </div>
       <div className="flex flex-col gap-5 animate-stagger-2">
-        {/* Code d'activation — uniquement pour les nouveaux membres */}
-        {!isEditing && (
-          <div className="flex flex-col gap-1">
-            <label className="font-ui text-[0.48rem] text-brand-gray/30 tracking-[0.2em] uppercase">Code d'activation</label>
-            <div className="flex items-end gap-2">
-              <input type="text" placeholder="XXXXXXXX" value={activationCode} maxLength={12}
-                onChange={e => { const v = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,''); onCodeChange(v); setCodeOk(false); setCodeErr(''); if (v.length >= 6) validateCode(v); }}
-                className={`flex-1 bg-transparent border-b font-mono text-[0.9rem] text-brand-white py-3 outline-none tracking-[0.3em] transition-colors ${codeErr ? 'border-red-900' : codeOk ? 'border-brand-white/60' : 'border-brand-gray/20 focus:border-brand-white/50'}`}
-                style={{ minHeight: '44px' }} />
-              <span className="font-ui text-[0.45rem] text-brand-gray/30 pb-3">{checking ? '...' : codeOk ? 'Valide' : ''}</span>
-            </div>
-            {codeErr && <p className="font-ui text-[0.5rem] text-red-400">{codeErr}</p>}
-          </div>
+        {/* Code d'activation — uniquement si connecté sans profil (skip étape 1) */}
+        {needsCode && (
+          <CodeField {...codeState} onChange={codeState.handleChange} />
         )}
 
         <div className="flex flex-col gap-1">
@@ -230,7 +254,8 @@ function StepProfile({ form, onChange, onNext, onBack, isEditing, activationCode
           style={{ minHeight: '44px' }}>
           Continuer →
         </button>
-        {!isEditing && (
+        {/* Retour uniquement si non connecté (vers étape 1) */}
+        {!isLoggedIn && (
           <button onClick={onBack} className="font-ui text-[0.48rem] text-brand-gray/25 tracking-[0.15em] uppercase underline underline-offset-4 py-2">
             ← retour
           </button>
@@ -247,11 +272,23 @@ function StepOptional({ form, onChange, onSubmit, onBack, loading, error, isEdit
   onBack: () => void; loading: boolean; error: string; isEditing: boolean;
 }) {
   const fileRef = useRef<HTMLInputElement>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [preview, setPreview]   = useState<string | null>(null);
+  const [fileErr, setFileErr]   = useState('');
 
   const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setFileErr('');
+
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      setFileErr('Format non supporté. Utilisez JPEG, PNG ou WebP.');
+      return;
+    }
+    if (file.size > MAX_IMAGE_SIZE) {
+      setFileErr('Photo trop volumineuse (5 Mo max).');
+      return;
+    }
+
     onChange({ ...form, photo: file });
     setPreview(URL.createObjectURL(file));
   };
@@ -268,13 +305,15 @@ function StepOptional({ form, onChange, onSubmit, onBack, loading, error, isEdit
             className="relative w-20 h-20 rounded-full border border-brand-gray/20 bg-[#0a0a0a] flex items-center justify-center overflow-hidden hover:border-brand-gray/40 transition-colors">
             {preview ? <img src={preview} alt="preview" className="w-full h-full object-cover" /> : <span className="font-ui text-[0.5rem] text-brand-gray/20 tracking-[0.1em] uppercase">Photo</span>}
           </button>
-          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={handlePhoto} />
+          <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handlePhoto} />
+          {fileErr && <p className="font-ui text-[0.45rem] text-red-400">{fileErr}</p>}
+          <p className="font-ui text-[0.38rem] text-brand-gray/20">JPEG, PNG ou WebP · 5 Mo max</p>
         </div>
         <div className="flex flex-col gap-1">
           <label className="font-ui text-[0.48rem] text-brand-gray/30 tracking-[0.2em] uppercase">
             Instagram <span className="text-brand-gray/15 normal-case tracking-normal">(optionnel)</span>
           </label>
-          <input type="text" placeholder="@votre_pseudo" value={form.instagram}
+          <input type="text" placeholder="votre_pseudo" value={form.instagram}
             onChange={e => onChange({ ...form, instagram: e.target.value })}
             className="w-full bg-transparent border-b border-brand-gray/15 focus:border-brand-white/50 font-ui font-light text-[0.82rem] text-brand-white py-3 outline-none transition-colors placeholder:text-brand-gray/15"
             style={{ minHeight: '44px' }} />
@@ -299,31 +338,37 @@ function RegisterContent() {
   const router       = useRouter();
   const searchParams = useSearchParams();
   const [step,           setStep]           = useState<1 | 2 | 3>(1);
-  const [activationCode, setActivationCode] = useState('');
   const [isEditing,      setIsEditing]      = useState(false);
+  const [isLoggedIn,     setIsLoggedIn]     = useState(false);
   const [existingId,     setExistingId]     = useState<string | null>(null);
   const [loading,        setLoading]        = useState(false);
   const [error,          setError]          = useState('');
   const [form, setForm] = useState<FormData>({ name: '', who: '', intent: '', closing: '', instagram: '', photo: null });
 
+  const initialCode = searchParams.get('code')?.toUpperCase() || '';
+  const codeState   = useCodeValidation(initialCode);
+
   useEffect(() => {
-    const code = searchParams.get('code');
-    if (code) setActivationCode(code.toUpperCase());
     const supabase = createClient();
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return;
+      setIsLoggedIn(true);
+
       const { data: member } = await supabase
         .from('members').select('*').eq('auth_user_id', user.id).single();
+
       if (member) {
-        // Membre existant → mode édition
         setIsEditing(true);
         setExistingId(member.id);
+        // En mode édition, on met le pitch entier dans "who" pour l'aperçu
+        // L'utilisateur peut redistribuer dans les 3 champs s'il veut
         setForm(f => ({ ...f, name: member.name, who: member.pitch, instagram: member.instagram || '' }));
       }
-      // Connecté (avec ou sans profil) → skip étape 1 (code + email + mdp)
+
+      // Connecté → skip étape 1 (email + mdp)
       setStep(2);
     });
-  }, [searchParams]);
+  }, []);
 
   const uploadPhoto = async (file: File): Promise<string | null> => {
     const formData = new FormData();
@@ -345,16 +390,13 @@ function RegisterContent() {
           body: JSON.stringify({ name: form.name.trim(), pitch: pitch.trim(), instagram: form.instagram.trim() || undefined }),
         });
         if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Erreur de mise à jour.'); }
-        if (form.photo) {
-          await uploadPhoto(form.photo);
-        }
       } else {
-        const res  = await fetch('/api/member/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: form.name.trim(), pitch: pitch.trim(), instagram: form.instagram.trim() || undefined, activationCode }) });
+        const res  = await fetch('/api/member/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: form.name.trim(), pitch: pitch.trim(), instagram: form.instagram.trim() || undefined, activationCode: codeState.code }) });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Erreur de création.');
-        if (form.photo && data.memberId) {
-          await uploadPhoto(form.photo);
-        }
+      }
+      if (form.photo) {
+        await uploadPhoto(form.photo);
       }
       router.push('/dashboard');
     } catch (err) {
@@ -364,8 +406,8 @@ function RegisterContent() {
 
   return (
     <div className="z-10 flex flex-col items-center w-full max-w-sm gap-8">
-      {step === 1 && <StepAccount onNext={() => { setStep(2); }} initialCode={activationCode} />}
-      {step === 2 && <StepProfile form={form} onChange={setForm} onNext={() => setStep(3)} onBack={() => setStep(1)} isEditing={isEditing} activationCode={activationCode} onCodeChange={setActivationCode} />}
+      {step === 1 && <StepAccount onNext={() => setStep(2)} codeState={codeState} />}
+      {step === 2 && <StepProfile form={form} onChange={setForm} onNext={() => setStep(3)} onBack={() => setStep(1)} isEditing={isEditing} isLoggedIn={isLoggedIn} codeState={codeState} />}
       {step === 3 && <StepOptional form={form} onChange={setForm} onSubmit={handleSubmit} onBack={() => setStep(2)} loading={loading} error={error} isEditing={isEditing} />}
     </div>
   );
