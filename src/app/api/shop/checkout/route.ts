@@ -15,6 +15,7 @@ import { checkPublicRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
 const schema = z.object({
   email:       z.string().email().max(320),
   tshirtColor: z.enum(['dark', 'light']),
+  tshirtSize:  z.enum(['S', 'M', 'L', 'XL', 'XXL']),
 });
 
 const TSHIRT_PRICE_ID = process.env.STRIPE_PRICE_ID!;
@@ -42,7 +43,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: body.error.flatten().fieldErrors }, { status: 400 });
     }
 
-    const { email, tshirtColor } = body.data;
+    const { email, tshirtColor, tshirtSize } = body.data;
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
 
     // ─── Crée une commande en BDD (statut pending) ────────────────────────
@@ -51,6 +52,7 @@ export async function POST(req: NextRequest) {
       .insert({
         email,
         tshirt_color:  tshirtColor,
+        tshirt_size:   tshirtSize,
         status:        'pending',
       })
       .select('id')
@@ -99,6 +101,7 @@ export async function POST(req: NextRequest) {
       metadata: {
         orderId:     order.id,
         tshirtColor,
+        tshirtSize,
       },
 
       success_url: `${appUrl}/shop/success?session={CHECKOUT_SESSION_ID}`,

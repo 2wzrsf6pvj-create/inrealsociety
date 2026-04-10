@@ -2,27 +2,25 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 export default function LandingPage() {
   const searchParams = useSearchParams();
+  const router       = useRouter();
   const [scannerName, setScannerName] = useState('');
   const [ready, setReady]             = useState(false);
-  const [hasQR, setHasQR]             = useState(false);
 
   useEffect(() => {
+    // Ancien flow QR via /?id=xxx → redirige directement vers le profil
     const id = searchParams.get('id');
     if (id) {
-      localStorage.setItem('memberId', id);
-      if (!localStorage.getItem(`scan_time_${id}`)) {
-        localStorage.setItem(`scan_time_${id}`, Date.now().toString());
-      }
-      setHasQR(true);
+      router.replace(`/profil/${id}`);
+      return;
     }
     const saved = localStorage.getItem('scannerName');
     if (saved) setScannerName(saved);
     setTimeout(() => setReady(true), 800);
-  }, [searchParams]);
+  }, [searchParams, router]);
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center bg-brand-black text-brand-white px-6 overflow-hidden">
@@ -61,29 +59,14 @@ export default function LandingPage() {
             </div>
           ) : (
             <div className="flex flex-col gap-4">
-              {hasQR ? (
-                <>
-                  <p className="font-display text-[1.4rem] font-light leading-snug tracking-[0.02em]">
-                    Quelque chose vous a arrêté.<br />
-                    <span className="text-brand-gray/50">C&apos;est rare.</span>
-                  </p>
-                  <p className="font-ui text-[0.55rem] font-light text-brand-gray/50 leading-relaxed">
-                    Ce vêtement signifie que son porteur est ouvert<br />
-                    à une conversation. Vous avez le contrôle.
-                  </p>
-                </>
-              ) : (
-                <>
-                  <p className="font-display text-[1.4rem] font-light leading-snug tracking-[0.02em]">
-                    Le vêtement qui<br />
-                    <span className="text-brand-gray/50">dit oui.</span>
-                  </p>
-                  <p className="font-ui text-[0.55rem] font-light text-brand-gray/50 leading-relaxed">
-                    Portez le consentement social.<br />
-                    Donnez le contrôle à ceux qui osent.
-                  </p>
-                </>
-              )}
+              <p className="font-display text-[1.4rem] font-light leading-snug tracking-[0.02em]">
+                Le vêtement qui<br />
+                <span className="text-brand-gray/50">dit oui.</span>
+              </p>
+              <p className="font-ui text-[0.55rem] font-light text-brand-gray/50 leading-relaxed">
+                Portez le consentement social.<br />
+                Donnez le contrôle à ceux qui osent.
+              </p>
               <div className="flex items-center justify-center gap-4">
                 <span className="font-ui text-[0.45rem] text-brand-gray/25 tracking-[0.15em] uppercase">Anonyme</span>
                 <span className="text-brand-gray/15">·</span>
@@ -99,16 +82,14 @@ export default function LandingPage() {
         <div
           className={`w-full flex flex-col gap-3 transition-all duration-500 ${ready ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}
         >
-          {hasQR || scannerName ? (
-            /* Parcours Scanner */
+          {scannerName ? (
             <Link href="/unlock"
               className="animate-shimmer w-full py-4 px-6 bg-brand-white text-brand-black font-ui font-bold text-[0.6rem] tracking-[0.3em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 block text-center"
               style={{ minHeight: '44px' }}
             >
-              {scannerName ? 'Voir ce profil' : 'Voir son profil'}
+              Voir ce profil
             </Link>
           ) : (
-            /* Pas de QR — invite à acheter */
             <Link href="/shop"
               className="animate-shimmer w-full py-4 px-6 bg-brand-white text-brand-black font-ui font-bold text-[0.6rem] tracking-[0.3em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 block text-center"
               style={{ minHeight: '44px' }}
@@ -119,7 +100,7 @@ export default function LandingPage() {
         </div>
 
         <p className="font-ui text-[0.45rem] text-brand-gray/20 tracking-[0.25em] uppercase animate-stagger-4">
-          {hasQR ? 'Ce lien est éphémère · 24h' : 'The IRL Social Club'}
+          The IRL Social Club
         </p>
       </div>
 
@@ -131,7 +112,7 @@ export default function LandingPage() {
         >
           Boutique
         </Link>
-        <Link href="/register"
+        <Link href="/auth/login"
           className="font-ui text-[0.45rem] text-brand-gray/15 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray/40 transition-colors py-3"
           style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}
         >

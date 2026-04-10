@@ -4,10 +4,14 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 
 type TshirtColor = 'dark' | 'light';
+type TshirtSize  = 'S' | 'M' | 'L' | 'XL' | 'XXL';
+
+const SIZES: TshirtSize[] = ['S', 'M', 'L', 'XL', 'XXL'];
 
 export default function ShopPage() {
   const [email, setEmail]             = useState('');
   const [tshirtColor, setTshirtColor] = useState<TshirtColor>('dark');
+  const [tshirtSize, setTshirtSize]   = useState<TshirtSize>('M');
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState('');
 
@@ -23,7 +27,7 @@ export default function ShopPage() {
       const res = await fetch('/api/shop/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), tshirtColor }),
+        body: JSON.stringify({ email: email.trim(), tshirtColor, tshirtSize }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -121,6 +125,26 @@ export default function ShopPage() {
                   >
                     <div className="w-5 h-5 rounded-full border border-brand-gray/30" style={{ background: opt.bg }} />
                     <span className="font-ui text-[0.55rem] tracking-[0.15em] uppercase">{opt.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Sélecteur taille */}
+            <div className="flex flex-col gap-2">
+              <p className="font-ui text-[0.48rem] text-brand-gray/30 tracking-[0.2em] uppercase">Taille</p>
+              <div className="flex gap-2">
+                {SIZES.map(size => (
+                  <button
+                    key={size}
+                    onClick={() => setTshirtSize(size)}
+                    className={`flex-1 py-2.5 rounded-[2px] border transition-all font-ui text-[0.55rem] tracking-[0.1em] ${
+                      tshirtSize === size
+                        ? 'border-brand-white/60 bg-brand-white/5 text-brand-white'
+                        : 'border-brand-gray/15 text-brand-gray/40 hover:border-brand-gray/30'
+                    }`}
+                  >
+                    {size}
                   </button>
                 ))}
               </div>

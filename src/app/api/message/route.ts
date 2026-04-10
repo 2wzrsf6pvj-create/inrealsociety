@@ -57,10 +57,25 @@ export async function POST(req: NextRequest) {
 
     // ─── Vérification membre ──────────────────────────────────────────────
     const { data: member } = await supabase
-      .from('members').select('id, name, email').eq('id', memberId).single();
+      .from('members').select('id, name, email, is_paused').eq('id', memberId).single();
 
     if (!member) {
       return NextResponse.json({ error: 'Membre introuvable' }, { status: 404 });
+    }
+
+    if (member.is_paused) {
+      return NextResponse.json({ error: 'Ce membre est indisponible.' }, { status: 403 });
+    }
+
+    // ─── Vérification timer 24h ──────────────────────────────────────────
+    const { data: firstScan } = await supabase
+      .from('first_scans').select('first_scan_at').eq('member_id', memberId).single();
+
+    if (firstScan?.first_scan_at) {
+      const elapsed = Date.now() - new Date(firstScan.first_scan_at).getTime();
+      if (elapsed > 24 * 60 * 60 * 1000) {
+        return NextResponse.json({ error: 'La fenêtre de 24h est expirée.' }, { status: 403 });
+      }
     }
 
     // ─── Modération ───────────────────────────────────────────────────────

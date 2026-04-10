@@ -398,6 +398,7 @@ function RegisterContent() {
       if (form.photo) {
         await uploadPhoto(form.photo);
       }
+      if (isEditing) sessionStorage.setItem('profile_updated', '1');
       router.push('/dashboard');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Une erreur est survenue.');

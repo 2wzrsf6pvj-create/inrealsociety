@@ -164,11 +164,11 @@ function MessageForm() {
         <div className="flex flex-col gap-1">
           <label className="font-ui text-[0.45rem] text-brand-gray/25 tracking-[0.2em] uppercase">Message libre</label>
           <textarea rows={4} placeholder="Quelque chose vous a traversé l'esprit..." value={message}
-            maxLength={300} onChange={(e) => setMessage(e.target.value)}
+            maxLength={1000} onChange={(e) => setMessage(e.target.value)}
             className="w-full bg-transparent border-b border-brand-gray/15 focus:border-brand-white/40 text-brand-white font-ui font-light text-[0.78rem] py-3 outline-none transition-colors resize-none placeholder:text-brand-gray/20 leading-relaxed"
           />
           <div className="flex justify-end">
-            <span className="font-ui text-[0.42rem] text-brand-gray/20 tabular-nums">{300 - message.length}</span>
+            <span className="font-ui text-[0.42rem] text-brand-gray/20 tabular-nums">{1000 - message.length}</span>
           </div>
         </div>
         {error && <p className="font-ui text-[0.55rem] text-red-900 text-center">{error}</p>}

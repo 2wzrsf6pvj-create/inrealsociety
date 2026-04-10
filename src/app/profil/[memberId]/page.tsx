@@ -7,12 +7,12 @@ interface Props { params: { memberId: string } }
 
 export async function generateMetadata({ params }: Props) {
   const member = await getMemberById(params.memberId);
-  if (!member) return { title: 'InRealSociety' };
+  if (!member) return { title: 'In Real Society' };
   return {
-    title: `${member.name} — InRealSociety`,
+    title: `${member.name} — In Real Society`,
     description: member.pitch,
     openGraph: {
-      title: `${member.name} — InRealSociety`,
+      title: `${member.name} — In Real Society`,
       description: member.pitch,
     },
   };

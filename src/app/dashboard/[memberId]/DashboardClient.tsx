@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { createClient } from '@/lib/supabase-browser';
 import type { Member, Scan, Message } from '@/lib/types';
 
 // ─── Utilitaires ──────────────────────────────────────────────────────────────
@@ -130,11 +131,13 @@ function StatsBlock({ member, recentScans }: { member: Member; recentScans: Scan
 // ─── Inbox (Messages) ─────────────────────────────────────────────────────────
 
 function InboxSection({ messages, memberId }: { messages: Message[]; memberId: string }) {
-  const [reportingId, setReportingId] = useState<string | null>(null);
-  const [reported,    setReported]    = useState<Set<string>>(new Set());
+  const [reportingId,  setReportingId]  = useState<string | null>(null);
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [reported,     setReported]     = useState<Set<string>>(new Set());
 
   const handleReport = async (messageId: string) => {
     setReportingId(messageId);
+    setConfirmingId(null);
     try {
       const res = await fetch('/api/report', {
         method: 'POST',
@@ -199,10 +202,20 @@ function InboxSection({ messages, memberId }: { messages: Message[]; memberId: s
                 <span className="text-brand-gray/10">|</span>
                 {isReported ? (
                   <span className="font-ui text-[0.42rem] text-red-400/60">Signalé</span>
+                ) : confirmingId === msg.id ? (
+                  <span className="flex items-center gap-1">
+                    <button onClick={() => handleReport(msg.id)} disabled={reportingId === msg.id}
+                      className="font-ui text-[0.42rem] text-red-400 hover:text-red-300 transition-colors">
+                      Confirmer
+                    </button>
+                    <button onClick={() => setConfirmingId(null)}
+                      className="font-ui text-[0.42rem] text-brand-gray/30 hover:text-brand-gray/60 transition-colors">
+                      Annuler
+                    </button>
+                  </span>
                 ) : (
                   <button
-                    onClick={() => handleReport(msg.id)}
-                    disabled={reportingId === msg.id}
+                    onClick={() => setConfirmingId(msg.id)}
                     className="font-ui text-[0.42rem] text-brand-gray/25 hover:text-red-400 transition-colors"
                   >
                     Signaler
@@ -339,6 +352,18 @@ function SettingsSection({ member }: { member: Member }) {
           Manifeste
         </Link>
       </div>
+
+      {/* Déconnexion */}
+      <button
+        onClick={async () => {
+          const supabase = createClient();
+          await supabase.auth.signOut();
+          window.location.href = '/auth/login';
+        }}
+        className="w-full py-3 border border-red-500/20 text-center font-ui text-[0.52rem] font-light tracking-[0.2em] uppercase text-red-400/60 hover:border-red-500/40 hover:text-red-400 transition-colors rounded-[2px]"
+      >
+        Se déconnecter
+      </button>
     </div>
   );
 }
@@ -429,12 +454,31 @@ export default function DashboardClient({
   messages:    Message[];
   unreadCount: number;
 }) {
-  const [tab, setTab] = useState<Tab>('home');
+  const [tab, setTab]     = useState<Tab>('home');
+  const [toast, setToast] = useState('');
+
+  // Détecte si on revient de /register (modification profil)
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const updated = sessionStorage.getItem('profile_updated');
+    if (updated) {
+      setToast('Profil mis à jour.');
+      sessionStorage.removeItem('profile_updated');
+      setTimeout(() => setToast(''), 3000);
+    }
+  }, []);
 
   return (
     <main className="relative flex min-h-screen flex-col items-center bg-brand-black text-brand-white px-6 py-8 overflow-hidden">
       <div className="absolute top-[-15%] right-[-15%] w-[28rem] h-[28rem] rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.07) 0%, transparent 70%)' }} />
+
+      {/* Toast notification */}
+      {toast && (
+        <div className="fixed top-4 z-50 px-4 py-2 bg-brand-white/10 border border-brand-white/20 rounded-[2px] backdrop-blur-sm animate-stagger-1">
+          <p className="font-ui text-[0.55rem] text-brand-white/80">{toast}</p>
+        </div>
+      )}
 
       <div className="z-10 flex flex-col items-center w-full max-w-xs gap-6">
 
@@ -455,18 +499,20 @@ export default function DashboardClient({
         {/* Tabs */}
         <TabBar active={tab} onChange={setTab} unreadCount={unreadCount} />
 
-        {/* Tab content */}
-        {tab === 'home' && (
-          <HomeSection member={member} recentScans={recentScans} />
-        )}
+        {/* Tab content with transition */}
+        <div className="w-full animate-stagger-1" key={tab}>
+          {tab === 'home' && (
+            <HomeSection member={member} recentScans={recentScans} />
+          )}
 
-        {tab === 'inbox' && (
-          <InboxSection messages={messages} memberId={member.id} />
-        )}
+          {tab === 'inbox' && (
+            <InboxSection messages={messages} memberId={member.id} />
+          )}
 
-        {tab === 'settings' && (
-          <SettingsSection member={member} />
-        )}
+          {tab === 'settings' && (
+            <SettingsSection member={member} />
+          )}
+        </div>
 
       </div>
     </main>
