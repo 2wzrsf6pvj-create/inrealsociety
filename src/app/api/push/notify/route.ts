@@ -1,24 +1,29 @@
 // src/app/api/push/notify/route.ts
 // POST { messageId, title, body, url }
 // Route interne protégée par un secret header.
-// N'est jamais appelée depuis le client — uniquement depuis d'autres fonctions serveur.
-//
-// Installation requise : npm install web-push && npm install -D @types/web-push
 
 import { NextRequest, NextResponse } from 'next/server';
 import webpush from 'web-push';
 import { supabase } from '@/lib/supabase';
 
-webpush.setVapidDetails(
-  process.env.VAPID_SUBJECT || 'mailto:hello@inrealsociety.com',
-  process.env.VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!,
-);
+// Initialisation lazy — évite le crash au build si les variables sont absentes
+let vapidInitialized = false;
+function initVapid() {
+  if (vapidInitialized) return;
+  if (!process.env.VAPID_PUBLIC_KEY || !process.env.VAPID_PRIVATE_KEY) {
+    throw new Error('VAPID_PUBLIC_KEY et VAPID_PRIVATE_KEY requis');
+  }
+  webpush.setVapidDetails(
+    process.env.VAPID_SUBJECT || 'mailto:hello@inrealsociety.com',
+    process.env.VAPID_PUBLIC_KEY,
+    process.env.VAPID_PRIVATE_KEY,
+  );
+  vapidInitialized = true;
+}
 
 export async function POST(req: NextRequest) {
   try {
     // ─── Protection par secret interne ───────────────────────────────────
-    // Ajouter INTERNAL_SECRET dans .env.local (ex: openssl rand -hex 32)
     const secret = req.headers.get('x-internal-secret');
     if (!secret || secret !== process.env.INTERNAL_SECRET) {
       return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
@@ -29,6 +34,9 @@ export async function POST(req: NextRequest) {
     if (!messageId || !title) {
       return NextResponse.json({ error: 'messageId et title requis' }, { status: 400 });
     }
+
+    // ─── Init VAPID ───────────────────────────────────────────────────────
+    initVapid();
 
     const { data: subs } = await supabase
       .from('push_subscriptions')
