@@ -15,7 +15,6 @@ function useCountdown(firstScanAt: string | null) {
   const [timeLeft, setTimeLeft] = useState({ hours: 24, minutes: 0, percent: 100, active: false });
   useEffect(() => {
     if (!firstScanAt) {
-      // Pas encore de scan → timer à 24h (affiché mais non dégressif)
       setTimeLeft({ hours: 24, minutes: 0, percent: 100, active: false });
       return;
     }
@@ -40,9 +39,11 @@ function useCountdown(firstScanAt: string | null) {
 export default function ProfilClient({
   member,
   firstScanAt,
+  isOwner = false,
 }: {
   member: Member;
   firstScanAt: string | null;
+  isOwner?: boolean;
 }) {
   const [scannerName, setScannerName] = useState('');
   const [convUrl, setConvUrl]         = useState<string | null>(null);
@@ -55,16 +56,27 @@ export default function ProfilClient({
     setScannerName(name);
 
     // Vérifie si une conversation existe déjà pour ce membre
+    // Stocke en chemin relatif pour être indépendant du domaine
     const existingConv = localStorage.getItem(`conversation_${member.id}`);
-    if (existingConv) setConvUrl(existingConv);
+    if (existingConv) {
+      // Normalise en chemin relatif si c'est une URL absolue
+      try {
+        const url = new URL(existingConv);
+        setConvUrl(url.pathname);
+      } catch {
+        setConvUrl(existingConv);
+      }
+    }
 
-    // Enregistre le scan
-    fetch('/api/scan', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ memberId: member.id, scannerName: name || null }),
-    }).catch(() => {});
-  }, [member.id]);
+    // Enregistre le scan — seulement si ce n'est PAS le propriétaire du profil
+    if (!isOwner) {
+      fetch('/api/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memberId: member.id, scannerName: name || null }),
+      }).catch(() => {});
+    }
+  }, [member.id, isOwner]);
 
   // Profil en pause
   if (member.is_paused) {
@@ -81,12 +93,14 @@ export default function ProfilClient({
             </p>
           </div>
           <Link href="/" className="font-ui text-[0.48rem] text-brand-gray/20 tracking-[0.15em] uppercase underline underline-offset-4 py-2" style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}>
-            ↩ retour
+            ← retour
           </Link>
         </div>
       </main>
     );
   }
+
+  const instagramHandle = member.instagram?.replace('@', '') || '';
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center bg-brand-black text-brand-white px-6 py-12 overflow-hidden">
@@ -110,7 +124,6 @@ export default function ProfilClient({
             <div className="absolute inset-[-8px] rounded-full border border-brand-white/5 animate-ring-pulse" />
             <div className="w-28 h-28 rounded-full border border-brand-gray/20 bg-[#0a0a0a] flex items-center justify-center overflow-hidden">
               {member.photo_url ? (
-                /* Optimisation URL Supabase Storage */
                 <img
                   src={`${member.photo_url}?width=400&quality=80`}
                   alt={member.name}
@@ -138,20 +151,26 @@ export default function ProfilClient({
             <h1 className="font-display text-[1.4rem] font-light tracking-[0.04em] text-center leading-snug">
               {scannerName
                 ? <>Nos chemins se sont croisés,<br /><span className="font-semibold italic">{scannerName}</span>.</>
-                : <>Nos chemins se sont croisés.</>
+                : <>Quelque chose vous a arrêté.<br /><span className="text-brand-gray/50">C&apos;est rare.</span></>
               }
             </h1>
             <p className="font-display text-[0.92rem] font-light italic text-brand-gray/60 text-center leading-relaxed">
               &ldquo;{member.pitch}&rdquo;
             </p>
-            <p className="font-ui text-[0.52rem] font-light text-brand-gray/35 text-center leading-relaxed tracking-wide">
-              Le monde va trop vite.<br />Prenons le temps.
-            </p>
+            {!scannerName && (
+              <p className="font-ui text-[0.52rem] font-light text-brand-gray/35 text-center leading-relaxed tracking-wide">
+                Ce vêtement signifie que son porteur est ouvert<br />à une conversation. Vous avez le contrôle.
+              </p>
+            )}
           </div>
         ) : (
-          <div className="flex flex-col items-center gap-3 opacity-40 animate-stagger-3">
-            <p className="font-display text-[1.1rem] font-light italic text-center">Ce moment est passé.</p>
-            <p className="font-ui text-[0.55rem] text-brand-gray/50 text-center">La prochaine occasion sera la bonne.</p>
+          <div className="flex flex-col items-center gap-3 animate-stagger-3">
+            <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
+            <p className="font-display text-[1.1rem] font-light italic text-center text-brand-gray/40">Ce moment est passé.</p>
+            <p className="font-ui text-[0.52rem] text-brand-gray/25 text-center leading-relaxed">
+              La fenêtre de 24 heures est terminée.<br />La prochaine occasion sera la bonne.
+            </p>
+            <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
           </div>
         )}
 
@@ -160,7 +179,6 @@ export default function ProfilClient({
         {/* CTAs */}
         {!isExpired && (
           <div className="w-full flex flex-col gap-3 animate-stagger-4">
-            {/* Retrouver conversation existante */}
             {convUrl && (
               <Link href={convUrl}
                 className="w-full py-3 border border-brand-white/20 text-center font-ui text-[0.55rem] font-light tracking-[0.15em] hover:border-brand-white/40 transition-colors"
@@ -178,28 +196,30 @@ export default function ProfilClient({
               {convUrl ? 'Envoyer un autre message' : 'Lui envoyer un message'}
             </Link>
 
-            {member.instagram && (
+            {instagramHandle && (
               <div className="flex flex-col items-center gap-1">
-                <p className="font-ui text-[0.42rem] text-brand-gray/25 tracking-[0.15em] uppercase">ou retrouvez-le sur</p>
+                <p className="font-ui text-[0.42rem] text-brand-gray/25 tracking-[0.15em] uppercase">ou retrouvez ce membre sur</p>
                 <a
-                  href={`https://instagram.com/${member.instagram.replace('@', '')}`}
+                  href={`https://instagram.com/${instagramHandle}`}
                   target="_blank" rel="noopener noreferrer"
                   className="w-full py-3 border border-brand-gray/15 text-center font-ui text-[0.55rem] font-light tracking-[0.15em] hover:border-brand-gray/40 transition-colors"
                   style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 >
-                  @{member.instagram.replace('@', '')}
+                  @{instagramHandle}
                 </a>
               </div>
             )}
           </div>
         )}
 
-        {/* Countdown en bas */}
+        {/* Countdown */}
         <div className="w-full flex flex-col gap-2 animate-stagger-5 mt-2">
           <div className="flex items-center justify-between">
-            <span className="font-ui text-[0.42rem] text-brand-gray/20 tracking-[0.2em] uppercase">Occasion éphémère</span>
+            <span className="font-ui text-[0.42rem] text-brand-gray/20 tracking-[0.2em] uppercase">
+              {countdown.active ? 'Occasion éphémère' : 'Profil actif'}
+            </span>
             <span className="font-ui text-[0.42rem] text-brand-gray/20 tabular-nums">
-              {isExpired ? 'Expiré' : `${countdown.hours}h ${countdown.minutes}m`}
+              {isExpired ? 'Expiré' : countdown.active ? `${countdown.hours}h ${countdown.minutes}m` : '24h'}
             </span>
           </div>
           <div className="w-full h-px bg-brand-gray/10 relative overflow-hidden">
@@ -212,7 +232,7 @@ export default function ProfilClient({
           className="font-ui text-[0.48rem] text-brand-gray/20 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray/50 transition-colors py-2"
           style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}
         >
-          ↩ retour
+          ← retour
         </Link>
       </div>
     </main>
