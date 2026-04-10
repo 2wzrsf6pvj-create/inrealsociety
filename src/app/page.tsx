@@ -8,17 +8,21 @@ export default function LandingPage() {
   const searchParams = useSearchParams();
   const router       = useRouter();
   const [scannerName, setScannerName] = useState('');
+  const [hasMemberId, setHasMemberId] = useState(false);
   const [ready, setReady]             = useState(false);
 
   useEffect(() => {
     // Ancien flow QR via /?id=xxx → redirige directement vers le profil
     const id = searchParams.get('id');
-    if (id) {
+    const uuidOk = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (id && uuidOk.test(id)) {
       router.replace(`/profil/${id}`);
       return;
     }
     const saved = localStorage.getItem('scannerName');
+    const mid   = localStorage.getItem('memberId');
     if (saved) setScannerName(saved);
+    if (mid) setHasMemberId(true);
     setTimeout(() => setReady(true), 800);
   }, [searchParams, router]);
 
@@ -43,14 +47,14 @@ export default function LandingPage() {
           <h1 className="font-ui text-[0.6rem] font-light tracking-[0.35em] uppercase text-brand-gray/60">
             In Real Society
           </h1>
-          {scannerName ? (
+          {scannerName && hasMemberId ? (
             <div className="flex flex-col gap-2">
               <p className="font-display text-[1.4rem] font-light leading-snug">
                 Vous êtes de retour,<br />
                 <span className="font-semibold italic">{scannerName}</span>.
               </p>
               <button
-                onClick={() => { localStorage.removeItem('scannerName'); setScannerName(''); }}
+                onClick={() => { localStorage.removeItem('scannerName'); localStorage.removeItem('memberId'); setScannerName(''); setHasMemberId(false); }}
                 className="font-ui text-[0.5rem] text-brand-gray/30 tracking-[0.1em] underline underline-offset-4 py-2"
                 style={{ minHeight: '44px' }}
               >
@@ -82,7 +86,7 @@ export default function LandingPage() {
         <div
           className={`w-full flex flex-col gap-3 transition-all duration-500 ${ready ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}
         >
-          {scannerName ? (
+          {scannerName && hasMemberId ? (
             <Link href="/unlock"
               className="animate-shimmer w-full py-4 px-6 bg-brand-white text-brand-black font-ui font-bold text-[0.6rem] tracking-[0.3em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 block text-center"
               style={{ minHeight: '44px' }}

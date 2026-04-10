@@ -131,7 +131,7 @@ export default function UnlockPage() {
           )}
         </form>
 
-        <button onClick={() => router.back()}
+        <button onClick={() => router.push('/')}
           className="font-ui text-[0.58rem] text-brand-gray/40 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray transition-colors py-2"
           style={{ minHeight: '44px' }}
         >

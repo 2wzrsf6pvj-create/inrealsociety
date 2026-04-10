@@ -12,16 +12,22 @@ function getInitials(name: string): string {
 }
 
 function useCountdown(firstScanAt: string | null) {
-  const [timeLeft, setTimeLeft] = useState({ hours: 24, minutes: 0, percent: 100 });
+  const [timeLeft, setTimeLeft] = useState({ hours: 24, minutes: 0, percent: 100, active: false });
   useEffect(() => {
+    if (!firstScanAt) {
+      // Pas encore de scan → timer à 24h (affiché mais non dégressif)
+      setTimeLeft({ hours: 24, minutes: 0, percent: 100, active: false });
+      return;
+    }
     const update = () => {
-      const start     = firstScanAt ? new Date(firstScanAt).getTime() : Date.now();
+      const start     = new Date(firstScanAt).getTime();
       const total     = 24 * 60 * 60 * 1000;
       const remaining = Math.max(0, total - (Date.now() - start));
       setTimeLeft({
         hours:   Math.floor(remaining / 3_600_000),
         minutes: Math.floor((remaining % 3_600_000) / 60_000),
         percent: Math.round((remaining / total) * 100),
+        active:  true,
       });
     };
     update();
@@ -41,7 +47,7 @@ export default function ProfilClient({
   const [scannerName, setScannerName] = useState('');
   const [convUrl, setConvUrl]         = useState<string | null>(null);
   const countdown = useCountdown(firstScanAt);
-  const isExpired = countdown.percent === 0;
+  const isExpired = countdown.active && countdown.percent === 0;
 
   useEffect(() => {
     if (typeof window === 'undefined') return;

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, Suspense } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 
 function MessageForm() {
@@ -99,7 +100,7 @@ function MessageForm() {
           </p>
         </div>
         <div className="w-full h-px bg-brand-gray/10" />
-        <button onClick={() => router.back()}
+        <button onClick={() => memberId ? router.push(`/profil/${memberId}`) : router.push('/')}
           className="font-ui text-[0.52rem] text-brand-gray/25 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray transition-colors py-2"
           style={{ minHeight: '44px' }}>
           ← retour au profil
@@ -184,18 +185,17 @@ function MessageForm() {
 }
 
 export default function MessagePage() {
-  const router = useRouter();
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center bg-brand-black text-brand-white px-6 py-12 overflow-hidden">
       <div className="absolute top-[-15%] left-[-15%] w-[28rem] h-[28rem] rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%)' }} />
       <div className="z-10 flex flex-col items-center w-full max-w-xs gap-6">
         <Suspense fallback={null}><MessageForm /></Suspense>
-        <button onClick={() => router.back()}
+        <Link href="/"
           className="font-ui text-[0.48rem] text-brand-gray/20 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray/50 transition-colors py-3"
-          style={{ minHeight: '44px' }}>
+          style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}>
           ← retour
-        </button>
+        </Link>
       </div>
     </main>
   );
