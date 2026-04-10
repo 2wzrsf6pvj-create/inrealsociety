@@ -27,7 +27,10 @@
       "Bash(grep -B 2 -A 5 \"fetch.*api.*referral\\\\|fetch.*api.*member.*update\" /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/dashboard/[memberId]/DashboardClient.tsx)",
       "Bash(ls -la /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/r/[code]/)",
       "Bash(git add:*)",
-      "Bash(git commit -m ':*)"
+      "Bash(git commit -m ':*)",
+      "Bash(git push:*)",
+      "Skill(update-config)",
+      "Skill(update-config:*)"
     ]
   }
 }
