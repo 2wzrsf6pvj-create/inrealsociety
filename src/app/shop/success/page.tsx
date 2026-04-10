@@ -7,7 +7,7 @@ import Link from 'next/link';
 function SuccessContent() {
   const searchParams = useSearchParams();
   const router       = useRouter();
-  const sessionId    = searchParams.get('session_id');
+  const sessionId    = searchParams.get('session') || searchParams.get('session_id');
   const [status, setStatus] = useState<'loading' | 'ok' | 'error'>('loading');
   const [code, setCode]     = useState<string | null>(null);
 

@@ -33,15 +33,18 @@ function MessageForm() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erreur');
+      if (!res.ok) {
+        const errorMsg = typeof data.error === 'string' ? data.error : 'Erreur lors de l\'envoi.';
+        throw new Error(errorMsg);
+      }
       if (data.moderated) { setModerated(true); setSending(false); return; }
 
       // Sauvegarde le lien conversation dans localStorage pour retrouver plus tard
       const url = `${window.location.origin}/conversation/${data.messageId}`;
       localStorage.setItem(`conversation_${memberId}`, url);
       setConversationUrl(url);
-    } catch {
-      setError('Une erreur est survenue. Réessayez.');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue. Réessayez.');
     } finally {
       setSending(false);
     }

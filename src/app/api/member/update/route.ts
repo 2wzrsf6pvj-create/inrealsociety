@@ -40,9 +40,14 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Profil introuvable.' }, { status: 404 });
     }
 
+    const updateData = { ...body.data };
+    if (updateData.instagram) {
+      updateData.instagram = updateData.instagram.trim().replace(/^@/, '');
+    }
+
     const { error: updateError } = await supabaseAdmin
       .from('members')
-      .update(body.data)
+      .update(updateData)
       .eq('id', member.id)
       .eq('auth_user_id', auth.user.id);
 

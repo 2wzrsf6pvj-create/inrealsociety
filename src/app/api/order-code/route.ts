@@ -1,42 +1,36 @@
 // app/api/order-code/route.ts
-// GET /api/order-code?session=xxx&email=xxx
+// GET /api/order-code?session=xxx
 // Retourne le code d'activation d'une commande payée.
-// Double vérification : session_id ET email du payeur.
+// Vérifie que la session Stripe est bien complétée avant de retourner le code.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import Stripe from 'stripe';
 
 const querySchema = z.object({
   session: z.string().min(1).max(200),
-  email:   z.string().email().max(320),
 });
 
 export async function GET(req: NextRequest) {
   const parsed = querySchema.safeParse({
     session: req.nextUrl.searchParams.get('session'),
-    email:   req.nextUrl.searchParams.get('email'),
   });
 
   if (!parsed.success) {
-    return NextResponse.json({ error: 'session et email requis' }, { status: 400 });
+    return NextResponse.json({ code: null });
   }
 
-  const { session: sessionId, email } = parsed.data;
+  const { session: sessionId } = parsed.data;
 
-  // ─── Récupère la session Stripe pour vérifier l'email du payeur ───────
-  // Cela empêche qu'une personne connaissant un session_id récupère un code qui ne lui appartient pas.
+  // ─── Vérifie que la session Stripe est bien payée ──────────────────────
   try {
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
       apiVersion: '2026-03-25.dahlia',
     });
 
-    const session      = await stripe.checkout.sessions.retrieve(sessionId);
-    const sessionEmail = session.customer_details?.email ?? session.customer_email;
-
-    if (!sessionEmail || sessionEmail.toLowerCase() !== email.toLowerCase()) {
-      // On renvoie intentionnellement la même réponse qu'un code introuvable
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    if (session.payment_status !== 'paid') {
       return NextResponse.json({ code: null });
     }
   } catch {
@@ -44,7 +38,7 @@ export async function GET(req: NextRequest) {
   }
 
   // ─── Récupère le code en BDD ──────────────────────────────────────────
-  const { data } = await supabase
+  const { data } = await supabaseAdmin
     .from('orders')
     .select('activation_code, status')
     .eq('stripe_session_id', sessionId)

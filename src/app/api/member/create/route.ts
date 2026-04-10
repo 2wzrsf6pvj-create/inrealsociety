@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
       .insert({
         name,
         pitch,
-        instagram:    instagram?.trim() || null,
+        instagram:    instagram?.trim().replace(/^@/, '') || null,
         email:        auth.user.email || null,
         auth_user_id: auth.user.id,
         short_code:   shortCode,
