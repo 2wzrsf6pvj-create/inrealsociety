@@ -213,7 +213,7 @@ export default function ProfilClient({
             <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
             <p className="font-display text-xl font-light italic text-center text-brand-gray/40">Ce moment est passé.</p>
             <p className="font-ui text-xs md:text-sm text-brand-gray/25 text-center leading-relaxed">
-              La fenêtre de 24 heures est terminée.<br />La prochaine occasion sera la bonne.
+              La fenêtre de {SCAN_WINDOW_MS[member.plan === 'premium' ? 'premium' : 'free'] / 3_600_000} heures est terminée.<br />Un nouveau scan relancera le compteur.
             </p>
             <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
           </div>
