@@ -166,7 +166,7 @@ export function emailPremium(params: {
           ✦ Stats avancées à venir
         </p>
       </div>
-      ${cta('Voir mon dashboard', params.dashboardUrl)}
+      ${cta('Voir mon tableau de bord', params.dashboardUrl)}
     `),
   };
 }

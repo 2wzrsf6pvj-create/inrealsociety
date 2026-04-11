@@ -293,7 +293,7 @@ function StepOptional({ form, onChange, onSubmit, onBack, loading, error, isEdit
   return (
     <div className="w-full flex flex-col gap-6">
       <div className="text-center flex flex-col gap-2 animate-stagger-1">
-        <h2 className="font-display text-3xl font-light tracking-[0.04em]">{isEditing ? 'Modifier les d\u00e9tails.' : 'Pour aller plus loin.'}</h2>
+        <h2 className="font-display text-3xl font-light tracking-[0.04em]">{isEditing ? 'Modifier les détails' : 'Pour aller plus loin'}</h2>
         <p className="font-ui text-sm font-light text-brand-gray/40">{isEditing ? 'Photo et Instagram.' : 'Tout est optionnel.'}</p>
       </div>
       <div className="flex flex-col gap-5 animate-stagger-2">

@@ -84,13 +84,13 @@ export default function UnlockPage() {
 
         <div className="text-center flex flex-col gap-3 animate-stagger-1">
           <h2 className="font-display text-3xl md:text-4xl font-light tracking-[0.08em]">
-            {savedName ? `C'est bien vous,` : 'Qui êtes-vous ?'}
+            {savedName ? `C'est bien vous ?` : 'Qui êtes-vous ?'}
           </h2>
           {savedName
             ? <p className="font-display text-2xl font-semibold">{savedName} ?</p>
             : (
               <div className="flex flex-col gap-1">
-                <p className="font-ui text-sm font-light text-brand-gray/50">À qui ai-je l&apos;honneur.</p>
+                <p className="font-ui text-sm font-light text-brand-gray/50">À qui ai-je l&apos;honneur ?</p>
                 <p className="font-ui text-xs text-brand-gray/25 tracking-[0.05em] leading-relaxed mt-1">
                   Votre prénom apparaîtra sur son profil.<br />Rien d&apos;autre n&apos;est demandé.
                 </p>
