@@ -15,8 +15,9 @@ function getInitials(name: string): string {
 import { SCAN_WINDOW_MS } from '@/lib/constants';
 import type { MemberPlan } from '@/lib/types';
 
-function useCountdown(firstScanAt: string | null, plan: MemberPlan = 'free') {
-  const windowMs = SCAN_WINDOW_MS[plan];
+function useCountdown(firstScanAt: string | null, plan?: MemberPlan) {
+  const safePlan = (plan === 'premium' ? 'premium' : 'free') as keyof typeof SCAN_WINDOW_MS;
+  const windowMs = SCAN_WINDOW_MS[safePlan];
   const windowH  = windowMs / 3_600_000;
   const [timeLeft, setTimeLeft] = useState({ hours: windowH, minutes: 0, seconds: 0, percent: 100, active: false });
   useEffect(() => {
@@ -159,7 +160,18 @@ export default function ProfilClient({
         </div>
 
         {/* Corps */}
-        {!isExpired ? (
+        {isOwner ? (
+          /* ─── Vue propriétaire ─────────────────────────────────────────── */
+          <div className="flex flex-col items-center gap-4 animate-stagger-3">
+            <p className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">Votre profil public</p>
+            <p className="font-display text-lg md:text-xl font-light italic text-brand-gray/60 text-center leading-relaxed">
+              &ldquo;{member.pitch}&rdquo;
+            </p>
+            {instagramHandle && (
+              <p className="font-ui text-xs text-brand-gray/30">@{instagramHandle}</p>
+            )}
+          </div>
+        ) : !isExpired ? (
           <div className="flex flex-col items-center gap-4 animate-stagger-3">
             <h1 className="font-display text-2xl md:text-3xl font-light tracking-[0.04em] text-center leading-snug">
               {scannerName
@@ -190,7 +202,26 @@ export default function ProfilClient({
         <div className="w-full h-px bg-brand-gray/10 animate-line-draw animate-stagger-4" />
 
         {/* CTAs */}
-        {!isExpired && (
+        {isOwner ? (
+          /* ─── Actions propriétaire ─────────────────────────────────────── */
+          <div className="w-full flex flex-col gap-3 animate-stagger-4">
+            <p className="font-ui text-xxs text-brand-gray/25 text-center leading-relaxed">
+              C&apos;est ce que les scanneurs voient quand ils scannent votre QR code.
+            </p>
+            <Link href="/dashboard"
+              className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 text-center block"
+              style={{ minHeight: '44px' }}
+            >
+              Mon dashboard
+            </Link>
+            <Link href="/register?edit=1"
+              className="w-full py-3 border border-brand-gray/20 text-center font-ui text-sm font-light tracking-[0.15em] uppercase hover:border-brand-gray/40 transition-colors"
+              style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              Modifier mon profil
+            </Link>
+          </div>
+        ) : !isExpired && (
           <div className="w-full flex flex-col gap-3 animate-stagger-4">
             {convUrl && (
               <Link href={convUrl}
@@ -225,27 +256,29 @@ export default function ProfilClient({
           </div>
         )}
 
-        {/* Countdown */}
-        <div className="w-full flex flex-col gap-2 animate-stagger-5 mt-2">
-          <div className="flex items-center justify-between">
-            <span className="font-ui text-xxs md:text-xs text-brand-gray/20 tracking-[0.2em] uppercase">
-              {countdown.active ? 'Occasion éphémère' : 'Profil actif'}
-            </span>
-            <span className="font-ui text-xxs md:text-xs text-brand-gray/20 tabular-nums">
-              {isExpired ? 'Expiré' : countdown.active ? `${countdown.hours}h ${String(countdown.minutes).padStart(2, '0')}m ${String(countdown.seconds).padStart(2, '0')}s` : `${SCAN_WINDOW_MS[member.plan] / 3_600_000}h`}
-            </span>
+        {/* Countdown — visible seulement pour les scanners */}
+        {!isOwner && (
+          <div className="w-full flex flex-col gap-2 animate-stagger-5 mt-2">
+            <div className="flex items-center justify-between">
+              <span className="font-ui text-xxs md:text-xs text-brand-gray/20 tracking-[0.2em] uppercase">
+                {countdown.active ? 'Occasion éphémère' : 'Profil actif'}
+              </span>
+              <span className="font-ui text-xxs md:text-xs text-brand-gray/20 tabular-nums">
+                {isExpired ? 'Expiré' : countdown.active ? `${countdown.hours}h ${String(countdown.minutes).padStart(2, '0')}m ${String(countdown.seconds).padStart(2, '0')}s` : `${SCAN_WINDOW_MS[member.plan === 'premium' ? 'premium' : 'free'] / 3_600_000}h`}
+              </span>
+            </div>
+            <div className="w-full h-px bg-brand-gray/10 relative overflow-hidden">
+              <div className="absolute left-0 top-0 h-full bg-brand-white/20 transition-all duration-1000"
+                style={{ width: `${countdown.percent}%` }} />
+            </div>
           </div>
-          <div className="w-full h-px bg-brand-gray/10 relative overflow-hidden">
-            <div className="absolute left-0 top-0 h-full bg-brand-white/20 transition-all duration-1000"
-              style={{ width: `${countdown.percent}%` }} />
-          </div>
-        </div>
+        )}
 
-        <Link href="/"
+        <Link href={isOwner ? '/dashboard' : '/'}
           className="font-ui text-xs text-brand-gray/20 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray/50 transition-colors py-2"
           style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}
         >
-          ← retour
+          {isOwner ? '← retour au dashboard' : '← retour'}
         </Link>
       </div>
     </main>
