@@ -131,10 +131,28 @@ function StatsBlock({ member, recentScans }: { member: Member; recentScans: Scan
 
 // ─── Inbox (Messages) ─────────────────────────────────────────────────────────
 
-function InboxSection({ messages, memberId }: { messages: Message[]; memberId: string }) {
+function InboxSection({ messages: initialMessages, memberId }: { messages: Message[]; memberId: string }) {
+  const [messages, setMessages]         = useState(initialMessages);
   const [reportingId,  setReportingId]  = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [reported,     setReported]     = useState<Set<string>>(new Set());
+  const [loadingMore, setLoadingMore]   = useState(false);
+  const [hasMore, setHasMore]           = useState(initialMessages.length >= 10);
+
+  const loadMore = async () => {
+    setLoadingMore(true);
+    try {
+      const res = await fetch(`/api/messages?memberId=${memberId}&offset=${messages.length}&limit=10`);
+      const data = await res.json();
+      if (data.messages?.length) {
+        setMessages(prev => [...prev, ...data.messages]);
+        if (data.messages.length < 10) setHasMore(false);
+      } else {
+        setHasMore(false);
+      }
+    } catch {}
+    setLoadingMore(false);
+  };
 
   const handleReport = async (messageId: string) => {
     setReportingId(messageId);
@@ -227,6 +245,13 @@ function InboxSection({ messages, memberId }: { messages: Message[]; memberId: s
           </div>
         );
       })}
+
+      {hasMore && (
+        <button onClick={loadMore} disabled={loadingMore}
+          className="w-full py-3 border border-brand-gray/10 text-center font-ui text-xs font-light tracking-[0.15em] uppercase text-brand-gray/30 hover:border-brand-gray/25 hover:text-brand-gray/50 transition-colors rounded-[2px] mt-2 disabled:opacity-40">
+          {loadingMore ? 'Chargement...' : 'Voir plus'}
+        </button>
+      )}
     </div>
   );
 }
@@ -460,16 +485,7 @@ function SettingsSection({ member }: { member: Member }) {
       </div>
 
       {/* Déconnexion */}
-      <button
-        onClick={async () => {
-          const supabase = createClient();
-          await supabase.auth.signOut();
-          window.location.href = '/auth/login';
-        }}
-        className="w-full py-3 border border-red-500/20 text-center font-ui text-xs font-light tracking-[0.2em] uppercase text-red-400/60 hover:border-red-500/40 hover:text-red-400 transition-colors rounded-[2px]"
-      >
-        Se déconnecter
-      </button>
+      <LogoutButton />
 
       {/* Suppression de compte */}
       <DeleteAccountButton />
@@ -537,6 +553,41 @@ function FeedbackBlock({ memberId }: { memberId: string }) {
           </button>
         </>
       )}
+    </div>
+  );
+}
+
+function LogoutButton() {
+  const [confirming, setConfirming] = useState(false);
+
+  const handleLogout = async () => {
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    sessionStorage.removeItem('just_logged_in');
+    window.location.href = '/auth/login';
+  };
+
+  if (!confirming) {
+    return (
+      <button
+        onClick={() => setConfirming(true)}
+        className="w-full py-3 border border-red-500/20 text-center font-ui text-xs font-light tracking-[0.2em] uppercase text-red-400/60 hover:border-red-500/40 hover:text-red-400 transition-colors rounded-[2px]"
+      >
+        Se déconnecter
+      </button>
+    );
+  }
+
+  return (
+    <div className="flex gap-2">
+      <button onClick={() => setConfirming(false)}
+        className="flex-1 py-3 border border-brand-gray/20 text-center font-ui text-xs tracking-[0.15em] uppercase text-brand-gray/50 hover:border-brand-gray/40 transition-colors rounded-[2px]">
+        Annuler
+      </button>
+      <button onClick={handleLogout}
+        className="flex-1 py-3 border border-red-500/40 text-center font-ui text-xs font-bold tracking-[0.15em] uppercase text-red-400 hover:bg-red-500/10 transition-colors rounded-[2px]">
+        Confirmer
+      </button>
     </div>
   );
 }

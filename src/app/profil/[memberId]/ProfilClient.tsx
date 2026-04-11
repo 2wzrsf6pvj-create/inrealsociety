@@ -60,6 +60,10 @@ export default function ProfilClient({
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+
+    // Le propriétaire n'a pas besoin du contexte scanner
+    if (isOwner) return;
+
     const name = localStorage.getItem('scannerName') ?? '';
     setScannerName(name);
 
@@ -77,13 +81,11 @@ export default function ProfilClient({
     localStorage.setItem('memberName', member.name);
     localStorage.setItem('memberId', member.id);
 
-    if (!isOwner) {
-      fetch('/api/scan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ memberId: member.id, scannerName: name || null }),
-      }).catch(() => {});
-    }
+    fetch('/api/scan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ memberId: member.id, scannerName: name || null }),
+    }).catch(() => {});
   }, [member.id, isOwner]);
 
   // Profil en pause
