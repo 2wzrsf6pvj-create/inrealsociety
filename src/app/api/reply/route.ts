@@ -3,6 +3,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { APP_URL } from '@/lib/constants';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { requireAuth, requireOwnership, isHttpError } from '@/lib/require-auth';
 import { sendEmail, emailReponse } from '@/lib/email-templates';
@@ -76,7 +77,7 @@ export async function POST(req: NextRequest) {
       const { data: memberData } = await supabaseAdmin
         .from('members').select('name').eq('id', memberId).single();
 
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://inrealsociety.vercel.app';
+      const appUrl = APP_URL;
       const { subject, html } = emailReponse({
         memberName: memberData?.name || 'Ce membre',
         reply:      reply.trim(),

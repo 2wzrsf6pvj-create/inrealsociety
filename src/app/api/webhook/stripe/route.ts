@@ -18,6 +18,7 @@ import { sendEmail, emailActivation } from '@/lib/email-templates';
 import { generatePremiumQRCode } from '@/lib/generate-qr-svg';
 import { buildShortUrl } from '@/lib/short-code';
 import type { PrintfulOrderPayload, PrintfulOrderResponse, PrintfulAddress } from '@/lib/printful.types';
+import { APP_URL } from '@/lib/constants';
 
 // ─── Variant IDs Printful — Comfort Colors 1717 ──────────────────────────────
 // À configurer dans .env.local :
@@ -94,7 +95,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
 
     if (orderError) console.error('[webhook] Erreur mise à jour order:', orderError);
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://inrealsociety.vercel.app';
+    const appUrl = APP_URL;
     const { subject, html } = emailActivation({
       code,
       registerUrl: `${appUrl}/register?code=${code}`,
@@ -121,7 +122,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
       .single();
 
     // URL courte si short_code disponible, sinon fallback sur l'URL profil
-    const appUrl    = process.env.NEXT_PUBLIC_APP_URL || 'https://inrealsociety.vercel.app';
+    const appUrl    = APP_URL;
     const qrDataUrl = member?.short_code
       ? buildShortUrl(member.short_code)
       : `${appUrl}/profil/${userId}`;

@@ -3,6 +3,7 @@
 // Utilisé par les QR codes imprimés sur les t-shirts.
 
 import { NextRequest, NextResponse } from 'next/server';
+import { APP_URL } from '@/lib/constants';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export async function GET(
@@ -28,6 +29,6 @@ export async function GET(
   }
 
   // Redirige vers la page profil du membre
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://inrealsociety.vercel.app';
+  const appUrl = APP_URL;
   return NextResponse.redirect(`${appUrl}/profil/${member.id}`);
 }

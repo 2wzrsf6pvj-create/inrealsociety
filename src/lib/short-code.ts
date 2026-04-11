@@ -6,6 +6,7 @@
 // Exclusions : 0/o, 1/l/i pour éviter la confusion à la lecture.
 
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { APP_URL } from '@/lib/constants';
 
 const ALPHABET = 'abcdefghjkmnpqrstuvwxyz2345678'; // 29 chars, sans ambiguïtés
 const MIN_LENGTH = 2;
@@ -60,6 +61,6 @@ export function buildShortUrl(shortCode: string): string {
   if (shortDomain) {
     return `${shortDomain}/${shortCode}`;
   }
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://inrealsociety.vercel.app';
+  const appUrl = APP_URL;
   return `${appUrl}/r/${shortCode}`;
 }
