@@ -187,6 +187,29 @@ export default function ConversationClient({
     setMessage(m => ({ ...m, reply, replied_at: new Date().toISOString() }));
   };
 
+  // ─── Feedback conversation ─────────────────────────────────────────────
+  const [feedbackSent, setFeedbackSent] = useState(false);
+  const [feedbackValue, setFeedbackValue] = useState<string | null>(null);
+
+  const handleFeedback = async (rating: 'positive' | 'neutral' | 'negative') => {
+    setFeedbackValue(rating);
+    setFeedbackSent(true);
+    try {
+      await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'conversation',
+          rating,
+          memberId: message.member_id,
+          messageId: message.id,
+        }),
+      });
+    } catch {
+      // Feedback non-bloquant
+    }
+  };
+
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center bg-brand-black text-brand-white px-6 py-12 overflow-hidden">
       <div className="absolute top-[-15%] right-[-15%] w-[28rem] h-[28rem] rounded-full pointer-events-none"
@@ -244,6 +267,34 @@ export default function ConversationClient({
                   &ldquo;{message.reply}&rdquo;
                 </p>
               </div>
+
+              {/* Feedback conversation */}
+              {!feedbackSent ? (
+                <div className="flex flex-col items-center gap-2 mt-4">
+                  <p className="font-ui text-xxs text-brand-gray/25 tracking-[0.15em] uppercase">
+                    Comment s&apos;est pass\u00e9 cet \u00e9change ?
+                  </p>
+                  <div className="flex items-center gap-4">
+                    {[
+                      { rating: 'positive' as const, emoji: '😊', label: 'Bien' },
+                      { rating: 'neutral'  as const, emoji: '😐', label: 'Neutre' },
+                      { rating: 'negative' as const, emoji: '😕', label: 'Bof' },
+                    ].map(opt => (
+                      <button key={opt.rating} onClick={() => handleFeedback(opt.rating)}
+                        className="flex flex-col items-center gap-1 px-3 py-2 border border-brand-gray/10 rounded-[2px] hover:border-brand-gray/30 hover:bg-brand-white/5 transition-all"
+                        aria-label={opt.label}
+                      >
+                        <span className="text-lg">{opt.emoji}</span>
+                        <span className="font-ui text-[9px] text-brand-gray/25 tracking-wide uppercase">{opt.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p className="font-ui text-xxs text-brand-gray/25 text-center mt-4 italic">
+                  Merci pour votre retour{feedbackValue === 'positive' ? ' 😊' : feedbackValue === 'negative' ? ' — on fera mieux.' : '.'}
+                </p>
+              )}
             </>
           ) : isOwner ? (
             <ReplyForm

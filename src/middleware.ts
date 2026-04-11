@@ -37,6 +37,7 @@ const PUBLIC_API_PREFIXES = [
   '/api/shop/',          // checkout public du shop
   '/api/member/link',    // liaison legacy — protégée par session dans le handler
   '/api/member/migrate', // migration email — protégée par admin secret
+  '/api/feedback',       // feedback conversation accessible aux scanners anonymes
 ];
 
 function isPublicRoute(pathname: string): boolean {

@@ -446,6 +446,9 @@ function SettingsSection({ member }: { member: Member }) {
         Changer mon mot de passe
       </Link>
 
+      {/* Feedback app */}
+      <FeedbackBlock memberId={member.id} />
+
       {/* Liens légaux */}
       <div className="flex flex-col gap-2 border-t border-brand-gray/10 pt-4">
         <Link href="/cgv" className="font-ui text-xs text-brand-gray/30 hover:text-brand-gray/60 transition-colors">
@@ -470,6 +473,70 @@ function SettingsSection({ member }: { member: Member }) {
 
       {/* Suppression de compte */}
       <DeleteAccountButton />
+    </div>
+  );
+}
+
+function FeedbackBlock({ memberId }: { memberId: string }) {
+  const [message, setMessage] = useState('');
+  const [sending, setSending] = useState(false);
+  const [sent, setSent]       = useState(false);
+  const [error, setError]     = useState('');
+
+  const handleSubmit = async () => {
+    if (!message.trim()) return;
+    setSending(true);
+    setError('');
+    try {
+      const res = await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: 'app', message: message.trim(), memberId }),
+      });
+      if (res.ok) {
+        setSent(true);
+        setMessage('');
+      } else {
+        setError('Erreur lors de l\u0027envoi.');
+      }
+    } catch {
+      setError('Erreur r\u00e9seau.');
+    }
+    setSending(false);
+  };
+
+  return (
+    <div className="w-full bg-[#080808] border border-brand-gray/10 rounded-[2px] p-4 flex flex-col gap-3">
+      <div className="flex items-center gap-3 w-full">
+        <div className="flex-1 h-px bg-brand-gray/10" />
+        <span className="font-ui text-xs text-brand-gray/30 tracking-[0.18em] uppercase">votre avis</span>
+        <div className="flex-1 h-px bg-brand-gray/10" />
+      </div>
+
+      {sent ? (
+        <p className="font-ui text-xs text-green-400/60 text-center py-2">
+          Merci pour votre retour. Il nous aide à améliorer l&apos;expérience.
+        </p>
+      ) : (
+        <>
+          <p className="font-ui text-xxs md:text-xs text-brand-gray/40 leading-relaxed">
+            Bug, suggestion, impression — tout retour est précieux.
+          </p>
+          <textarea
+            value={message}
+            onChange={e => { setMessage(e.target.value); setError(''); }}
+            maxLength={2000}
+            rows={3}
+            placeholder="Votre message..."
+            className="w-full bg-transparent border border-brand-gray/15 focus:border-brand-white/30 text-brand-white font-ui font-light text-sm p-3 outline-none transition-colors placeholder:text-brand-gray/15 rounded-[2px] resize-none"
+          />
+          {error && <p className="font-ui text-xs text-red-400">{error}</p>}
+          <button onClick={handleSubmit} disabled={sending || !message.trim()}
+            className="w-full py-2.5 bg-brand-white/10 text-center font-ui text-xs font-light tracking-[0.15em] uppercase text-brand-white/60 hover:bg-brand-white/15 transition-colors rounded-[2px] disabled:opacity-30 disabled:cursor-not-allowed">
+            {sending ? 'Envoi...' : 'Envoyer'}
+          </button>
+        </>
+      )}
     </div>
   );
 }
