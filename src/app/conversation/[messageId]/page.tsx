@@ -33,6 +33,13 @@ export default async function ConversationPage({ params }: Props) {
 
   if (!message || message.moderated) notFound();
 
+  // Charge les réponses du thread
+  const { data: threadReplies } = await supabase
+    .from('messages')
+    .select('id, content, author, created_at')
+    .eq('parent_id', params.messageId)
+    .order('created_at', { ascending: true });
+
   // Détecte si le visiteur est le propriétaire du profil (le membre)
   let isOwner = false;
   try {
@@ -51,5 +58,5 @@ export default async function ConversationPage({ params }: Props) {
       .eq('id', params.messageId);
   }
 
-  return <ConversationClient message={message} isOwner={isOwner} />;
+  return <ConversationClient message={message} isOwner={isOwner} thread={threadReplies || []} />;
 }

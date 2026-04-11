@@ -220,7 +220,9 @@ function InboxSection({ messages: initialMessages, memberId }: { messages: Messa
 
               <div className="flex items-center gap-2">
                 {msg.reply ? (
-                  <span className="font-ui text-xxs text-brand-gray/30">Répondu</span>
+                  <span className="font-ui text-xxs text-brand-gray/30">
+                    {msg.reply_read_at ? 'Lu ✓' : 'Répondu'}
+                  </span>
                 ) : (
                   <Link href={`/conversation/${msg.id}`}
                     className="font-ui text-xs text-brand-white/60 hover:text-brand-white transition-colors">

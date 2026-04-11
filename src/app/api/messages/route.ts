@@ -1,6 +1,8 @@
 // GET /api/messages?memberId=xxx&offset=10&limit=10
 // Pagination des messages pour l'inbox du dashboard.
 
+export const dynamic = 'force-dynamic';
+
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, requireOwnership, isHttpError } from '@/lib/require-auth';
 import { getMessages } from '@/lib/supabase';

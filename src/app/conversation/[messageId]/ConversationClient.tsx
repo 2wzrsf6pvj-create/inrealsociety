@@ -11,6 +11,10 @@ interface ConversationMessage {
   members: { name: string; photo_url: string | null; instagram: string | null; auth_user_id?: string | null; };
 }
 
+interface ThreadReply {
+  id: string; content: string; author: string; created_at: string;
+}
+
 function getInitials(name: string): string {
   const parts = name.trim().split(' ').filter(Boolean);
   if (!parts.length) return '?';
@@ -27,19 +31,15 @@ async function subscribePush(messageId: string): Promise<void> {
   try {
     const perm = await Notification.requestPermission();
     if (perm !== 'granted') return;
-
     const reg = await navigator.serviceWorker.register('/sw.js');
     const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
     if (!vapidKey) return;
-
     const padding = '='.repeat((4 - vapidKey.length % 4) % 4);
     const base64  = (vapidKey + padding).replace(/-/g, '+').replace(/_/g, '/');
     const raw     = window.atob(base64);
     const key     = Uint8Array.from(Array.from(raw), c => c.charCodeAt(0));
-
     const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
     const j   = sub.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } };
-
     await fetch('/api/push/subscribe', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -51,36 +51,34 @@ async function subscribePush(messageId: string): Promise<void> {
   } catch (err) { console.error('[push] Échec inscription push:', err); }
 }
 
-// ─── Formulaire de réponse (visible uniquement pour le membre propriétaire) ──
+const MAX_THREAD = 5;
 
-function ReplyForm({ messageId, memberId, onReplied }: {
+// ─── Formulaire de réponse (membre OU scanner) ──────────────────────────────
+
+function ThreadReplyForm({ messageId, author, onSent }: {
   messageId: string;
-  memberId: string;
-  onReplied: (reply: string) => void;
+  author: 'scanner' | 'member';
+  onSent: (reply: ThreadReply) => void;
 }) {
-  const [reply,   setReply]   = useState('');
+  const [text, setText]       = useState('');
   const [loading, setLoading] = useState(false);
-  const [error,   setError]   = useState('');
+  const [error, setError]     = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!reply.trim()) return;
+    if (!text.trim()) return;
     setLoading(true);
     setError('');
-
     try {
-      const res = await fetch('/api/reply', {
+      const res = await fetch('/api/conversation/reply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messageId, memberId, reply: reply.trim() }),
+        body: JSON.stringify({ messageId, content: text.trim(), author }),
       });
-
-      if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'Erreur lors de l\'envoi.');
-      }
-
-      onReplied(reply.trim());
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erreur.');
+      onSent({ id: data.replyId, content: text.trim(), author, created_at: new Date().toISOString() });
+      setText('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur serveur.');
     } finally {
@@ -90,21 +88,18 @@ function ReplyForm({ messageId, memberId, onReplied }: {
 
   return (
     <form onSubmit={handleSubmit} className="w-full flex flex-col gap-3">
-      <p className="font-ui text-xs text-brand-gray/25 tracking-[0.15em] uppercase">
-        Votre réponse
-      </p>
       <textarea
-        value={reply}
-        onChange={e => setReply(e.target.value)}
+        value={text}
+        onChange={e => setText(e.target.value)}
         maxLength={2000}
-        rows={4}
-        placeholder="Écrivez votre réponse..."
+        rows={3}
+        placeholder={author === 'member' ? 'Votre réponse...' : 'Répondre...'}
         className="w-full bg-transparent border border-brand-gray/20 focus:border-brand-white/50 text-brand-white font-ui font-light text-base p-3 outline-none transition-colors placeholder:text-brand-gray/20 rounded-[2px] resize-none"
       />
       {error && <p className="font-ui text-sm text-red-400">{error}</p>}
       <button
         type="submit"
-        disabled={loading || !reply.trim()}
+        disabled={loading || !text.trim()}
         className="w-full py-3 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading ? 'Envoi...' : 'Répondre'}
@@ -113,101 +108,129 @@ function ReplyForm({ messageId, memberId, onReplied }: {
   );
 }
 
+// ─── Bulle de message ────────────────────────────────────────────────────────
+
+function ChatBubble({ content, date, isRight, animate }: {
+  content: string; date: string; isRight: boolean; animate?: boolean;
+}) {
+  return (
+    <div className={`max-w-[85%] ${isRight ? 'self-end ml-auto' : 'self-start'} ${animate ? 'animate-slide-right' : ''}`}>
+      <div className={`p-4 border rounded-[2px] ${isRight ? 'border-brand-white/20 rounded-tr-none' : 'bg-brand-white/5 border-brand-gray/15 rounded-tl-none'}`}>
+        <p className="font-display text-base font-light italic leading-relaxed text-brand-white/85">
+          &ldquo;{content}&rdquo;
+        </p>
+      </div>
+      <p className={`font-ui text-xxs text-brand-gray/20 mt-1 ${isRight ? 'text-right' : ''}`}>{formatDate(date)}</p>
+    </div>
+  );
+}
+
 // ─── Composant principal ──────────────────────────────────────────────────────
 
 export default function ConversationClient({
   message: initialMessage,
   isOwner = false,
+  thread: initialThread = [],
 }: {
   message: ConversationMessage;
   isOwner?: boolean;
+  thread?: ThreadReply[];
 }) {
-  const [message, setMessage]                   = useState(initialMessage);
-  const [replyJustArrived, setReplyJustArrived] = useState(false);
-  const [pushAsked, setPushAsked]               = useState(false);
-  const [pushGranted, setPushGranted]           = useState(false);
-  const [vuStatus, setVuStatus]                 = useState<string | null>(initialMessage.read_at);
+  const [message, setMessage]         = useState(initialMessage);
+  const [thread, setThread]           = useState<ThreadReply[]>(initialThread);
+  const [pushAsked, setPushAsked]     = useState(false);
+  const [pushGranted, setPushGranted] = useState(false);
+  const [pushLoading, setPushLoading] = useState(false);
 
   const memberName = message.members?.name || 'Ce membre';
+  const totalMessages = 1 + (message.reply ? 1 : 0) + thread.length; // message initial + reply legacy + thread
+  const canReply = totalMessages < MAX_THREAD;
 
+  // Qui doit répondre en dernier ? Alterne scanner/member
+  const lastAuthor = thread.length > 0
+    ? thread[thread.length - 1].author
+    : message.reply ? 'member' : 'scanner';
+  const myRole = isOwner ? 'member' : 'scanner';
+  const isMyTurn = lastAuthor !== myRole && canReply;
+
+  // ─── Mark-read côté membre ─────────────────────────────────────────────
   useEffect(() => {
     if (!isOwner || message.read_at) return;
     fetch('/api/mark-read', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ messageId: message.id, memberId: message.member_id }),
-    }).catch((err) => console.error('[conversation] Échec mark-read:', err));
+    }).catch(() => {});
   }, [isOwner, message.id, message.member_id, message.read_at]);
 
+  // ─── Realtime : écoute les nouveaux messages du thread ─────────────────
   useEffect(() => {
-    if (isOwner || !message.reply) return;
-    fetch('/api/mark-read', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messageId: message.id, memberId: message.member_id }),
-    }).then(r => r.json()).then(d => { if (d.ok) setVuStatus(new Date().toISOString()); }).catch((err) => console.error('[conversation] Échec mark-read reply:', err));
-  }, [isOwner, message.id, message.member_id, message.reply]);
-
-  useEffect(() => {
-    if (message.reply) return;
-    const channel = supabase.channel(`conv-${message.id}`)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'messages', filter: `id=eq.${message.id}` },
-        (payload) => {
-          const updated = payload.new as ConversationMessage;
-          if (updated.reply) {
-            setMessage(m => ({ ...m, reply: updated.reply, replied_at: updated.replied_at }));
-            setReplyJustArrived(true);
-            if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-              new Notification(`${memberName} vous a répondu.`, {
-                body: updated.reply?.slice(0, 80) || '',
-                icon: '/icon.svg',
-              });
-            }
-          }
-        })
+    const channel = supabase.channel(`thread-${message.id}`)
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'messages',
+        filter: `parent_id=eq.${message.id}`,
+      }, (payload) => {
+        const newReply = payload.new as ThreadReply;
+        setThread(prev => {
+          if (prev.some(r => r.id === newReply.id)) return prev;
+          return [...prev, newReply];
+        });
+        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+          new Notification('Nouveau message', {
+            body: newReply.content.slice(0, 80),
+            icon: '/icon.svg',
+          });
+        }
+      })
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'messages',
+        filter: `id=eq.${message.id}`,
+      }, (payload) => {
+        const updated = payload.new as ConversationMessage;
+        if (updated.reply && !message.reply) {
+          setMessage(m => ({ ...m, reply: updated.reply, replied_at: updated.replied_at }));
+        }
+      })
       .subscribe();
+
     return () => { supabase.removeChannel(channel); };
-  }, [message.id, message.reply, memberName]);
+  }, [message.id, message.reply]);
 
-  const [pushLoading, setPushLoading] = useState(false);
-
+  // ─── Push ──────────────────────────────────────────────────────────────
   const handleSubscribePush = async () => {
     setPushLoading(true);
     try {
       await subscribePush(message.id);
       setPushGranted(typeof Notification !== 'undefined' && Notification.permission === 'granted');
-    } catch {
-      setPushGranted(false);
-    }
+    } catch { setPushGranted(false); }
     setPushAsked(true);
     setPushLoading(false);
   };
 
-  const handleReplied = (reply: string) => {
+  const handleThreadReply = (reply: ThreadReply) => {
+    setThread(prev => [...prev, reply]);
+  };
+
+  // ─── Legacy : premier reply du membre (ancien système) ─────────────────
+  const handleLegacyReply = (reply: string) => {
     setMessage(m => ({ ...m, reply, replied_at: new Date().toISOString() }));
   };
 
-  // ─── Feedback conversation ─────────────────────────────────────────────
+  // ─── Feedback ──────────────────────────────────────────────────────────
   const [feedbackSent, setFeedbackSent] = useState(false);
   const [feedbackValue, setFeedbackValue] = useState<string | null>(null);
-
   const handleFeedback = async (rating: 'positive' | 'neutral' | 'negative') => {
     setFeedbackValue(rating);
     setFeedbackSent(true);
-    try {
-      await fetch('/api/feedback', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'conversation',
-          rating,
-          memberId: message.member_id,
-          messageId: message.id,
-        }),
-      });
-    } catch {
-      // Feedback non-bloquant
-    }
+    fetch('/api/feedback', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type: 'conversation', rating, memberId: message.member_id, messageId: message.id }),
+    }).catch(() => {});
   };
 
   return (
@@ -215,9 +238,9 @@ export default function ConversationClient({
       <div className="absolute top-[-15%] right-[-15%] w-[28rem] h-[28rem] rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%)' }} />
 
-      <div className="z-10 flex flex-col w-full max-w-xs md:max-w-sm gap-6">
+      <div className="z-10 flex flex-col w-full max-w-xs md:max-w-sm gap-4">
 
-        {/* Header membre */}
+        {/* Header */}
         <div className="flex items-center gap-3 animate-stagger-1">
           <div className="w-10 h-10 rounded-full border border-brand-gray/20 bg-[#0a0a0a] flex items-center justify-center overflow-hidden flex-shrink-0">
             {message.members?.photo_url
@@ -235,74 +258,83 @@ export default function ConversationClient({
 
         <div className="w-full h-px bg-brand-gray/10 animate-line-draw" />
 
-        {/* Message du scanner */}
-        <div className="animate-stagger-2 flex flex-col gap-1">
-          <p className="font-ui text-xs text-brand-gray/25 tracking-[0.15em] uppercase mb-1">
-            {isOwner ? 'Message reçu' : 'Votre message'} · {formatDate(message.created_at)}
-          </p>
-          <div className={`max-w-[85%] p-4 bg-brand-white/5 border border-brand-gray/15 rounded-[2px] ${isOwner ? 'self-start rounded-tl-none' : 'self-end ml-auto rounded-tr-none'}`}>
-            <p className="font-display text-lg font-light italic leading-relaxed text-brand-white/80">
-              &ldquo;{message.content}&rdquo;
-            </p>
-            {message.sender_contact && (
-              <p className="font-ui text-xs text-brand-gray/30 mt-2">— {message.sender_contact}</p>
-            )}
-          </div>
+        {/* ─── Fil de conversation ────────────────────────────────────────── */}
+        <div className="flex flex-col gap-3 animate-stagger-2">
+
+          {/* Message initial du scanner */}
+          <ChatBubble
+            content={message.content}
+            date={message.created_at}
+            isRight={!isOwner}
+          />
+
+          {/* Réponse legacy du membre (ancien champ reply) */}
+          {message.reply && (
+            <ChatBubble
+              content={message.reply}
+              date={message.replied_at || message.created_at}
+              isRight={isOwner}
+            />
+          )}
+
+          {/* Messages du thread */}
+          {thread.map((reply, i) => (
+            <ChatBubble
+              key={reply.id}
+              content={reply.content}
+              date={reply.created_at}
+              isRight={(reply.author === 'member') === isOwner}
+              animate={i === thread.length - 1}
+            />
+          ))}
         </div>
 
-        {/* Réponse ou formulaire ou attente */}
-        <div className="animate-stagger-3 flex flex-col gap-1">
-          {message.reply ? (
-            <>
-              <div className="flex items-center justify-between mb-1">
-                <p className="font-ui text-xs text-brand-gray/25 tracking-[0.15em] uppercase">
-                  {isOwner ? 'Votre réponse' : `${memberName} a répondu`} · {message.replied_at ? formatDate(message.replied_at) : ''}
-                </p>
-                {!isOwner && vuStatus && (
-                  <p className="font-ui text-xxs text-brand-gray/20 italic">Lu ✓</p>
-                )}
-              </div>
-              <div className={`max-w-[85%] p-4 border border-brand-white/20 rounded-[2px] ${replyJustArrived ? 'animate-slide-right' : ''} ${isOwner ? 'self-end ml-auto rounded-tr-none' : 'self-start rounded-tl-none'}`}>
-                <p className="font-display text-lg font-light italic leading-relaxed text-brand-white/90">
-                  &ldquo;{message.reply}&rdquo;
-                </p>
-              </div>
-
-              {/* Feedback conversation */}
-              {!feedbackSent ? (
-                <div className="flex flex-col items-center gap-2 mt-4">
-                  <p className="font-ui text-xxs text-brand-gray/25 tracking-[0.15em] uppercase">
-                    Comment s&apos;est pass\u00e9 cet \u00e9change ?
-                  </p>
-                  <div className="flex items-center gap-4">
-                    {[
-                      { rating: 'positive' as const, emoji: '😊', label: 'Bien' },
-                      { rating: 'neutral'  as const, emoji: '😐', label: 'Neutre' },
-                      { rating: 'negative' as const, emoji: '😕', label: 'Bof' },
-                    ].map(opt => (
-                      <button key={opt.rating} onClick={() => handleFeedback(opt.rating)}
-                        className="flex flex-col items-center gap-1 px-3 py-2 border border-brand-gray/10 rounded-[2px] hover:border-brand-gray/30 hover:bg-brand-white/5 transition-all"
-                        aria-label={opt.label}
-                      >
-                        <span className="text-lg">{opt.emoji}</span>
-                        <span className="font-ui text-[9px] text-brand-gray/25 tracking-wide uppercase">{opt.label}</span>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <p className="font-ui text-xxs text-brand-gray/25 text-center mt-4 italic">
-                  Merci pour votre retour{feedbackValue === 'positive' ? ' 😊' : feedbackValue === 'negative' ? ' — on fera mieux.' : '.'}
-                </p>
-              )}
-            </>
-          ) : isOwner ? (
-            <ReplyForm
-              messageId={message.id}
-              memberId={message.member_id}
-              onReplied={handleReplied}
-            />
+        {/* ─── Zone de réponse ────────────────────────────────────────────── */}
+        <div className="animate-stagger-3">
+          {!canReply ? (
+            /* Conversation terminée */
+            <div className="flex flex-col items-center gap-3 py-4">
+              <div className="w-px h-6 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
+              <p className="font-ui text-xs text-brand-gray/25 text-center leading-relaxed">
+                Cette conversation a atteint sa limite.
+                {message.sender_contact && !isOwner && <><br />Continuez sur un autre canal.</>}
+              </p>
+            </div>
+          ) : isMyTurn ? (
+            /* C'est mon tour de répondre */
+            message.reply || thread.length > 0 ? (
+              /* Thread actif → formulaire thread */
+              <ThreadReplyForm
+                messageId={message.id}
+                author={myRole}
+                onSent={handleThreadReply}
+              />
+            ) : isOwner ? (
+              /* Premier reply du membre (utilise l'ancien système) */
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                const textarea = e.currentTarget.querySelector('textarea');
+                const text = textarea?.value.trim();
+                if (!text) return;
+                try {
+                  const res = await fetch('/api/reply', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ messageId: message.id, memberId: message.member_id, reply: text }),
+                  });
+                  if (res.ok) handleLegacyReply(text);
+                } catch {}
+              }} className="w-full flex flex-col gap-3">
+                <textarea maxLength={2000} rows={3} placeholder="Votre réponse..."
+                  className="w-full bg-transparent border border-brand-gray/20 focus:border-brand-white/50 text-brand-white font-ui font-light text-base p-3 outline-none transition-colors placeholder:text-brand-gray/20 rounded-[2px] resize-none" />
+                <button type="submit"
+                  className="w-full py-3 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200">
+                  Répondre
+                </button>
+              </form>
+            ) : null
           ) : (
+            /* En attente de l'autre */
             <div className="flex flex-col items-start gap-3 py-2">
               <p className="font-ui text-xs text-brand-gray/25 tracking-[0.15em] uppercase">
                 En attente de réponse
@@ -312,48 +344,65 @@ export default function ConversationClient({
                 <div className="w-1.5 h-1.5 rounded-full bg-brand-gray/30 animate-typing-2" />
                 <div className="w-1.5 h-1.5 rounded-full bg-brand-gray/30 animate-typing-3" />
               </div>
-
               {!pushAsked ? (
                 <button onClick={handleSubscribePush} disabled={pushLoading}
                   className="w-full py-3 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.1em] hover:border-brand-gray/35 transition-colors disabled:opacity-40"
-                  style={{ minHeight: '44px' }}
-                >
+                  style={{ minHeight: '44px' }}>
                   {pushLoading ? 'Activation...' : 'Me notifier quand il répond'}
                 </button>
               ) : pushGranted ? (
-                <p className="font-ui text-xs text-green-400/50 italic">
-                  ✓ Notifications activées — vous serez prévenu(e).
-                </p>
+                <p className="font-ui text-xs text-green-400/50 italic">✓ Notifications activées.</p>
               ) : (
-                <p className="font-ui text-xs text-brand-gray/20 italic">
-                  Notifications refusées — revenez sur cette page pour voir la réponse.
-                </p>
+                <p className="font-ui text-xs text-brand-gray/20 italic">Notifications refusées — revenez sur cette page.</p>
               )}
-
-              <p className="font-ui text-xxs text-brand-gray/20 leading-relaxed">
-                Cette page se met à jour automatiquement.
-              </p>
             </div>
           )}
         </div>
 
+        {/* ─── Feedback (quand il y a eu au moins 1 échange) ──────────────── */}
+        {!canReply && !feedbackSent && (
+          <div className="flex flex-col items-center gap-2">
+            <p className="font-ui text-xxs text-brand-gray/25 tracking-[0.15em] uppercase">
+              Comment s&apos;est passé cet échange ?
+            </p>
+            <div className="flex items-center gap-4">
+              {[
+                { rating: 'positive' as const, emoji: '😊', label: 'Bien' },
+                { rating: 'neutral'  as const, emoji: '😐', label: 'Neutre' },
+                { rating: 'negative' as const, emoji: '😕', label: 'Bof' },
+              ].map(opt => (
+                <button key={opt.rating} onClick={() => handleFeedback(opt.rating)}
+                  className="flex flex-col items-center gap-1 px-3 py-2 border border-brand-gray/10 rounded-[2px] hover:border-brand-gray/30 hover:bg-brand-white/5 transition-all"
+                  aria-label={opt.label}>
+                  <span className="text-lg">{opt.emoji}</span>
+                  <span className="font-ui text-[9px] text-brand-gray/25 tracking-wide uppercase">{opt.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {feedbackSent && (
+          <p className="font-ui text-xxs text-brand-gray/25 text-center italic">
+            Merci pour votre retour{feedbackValue === 'positive' ? ' 😊' : feedbackValue === 'negative' ? ' — on fera mieux.' : '.'}
+          </p>
+        )}
+
         <div className="w-full h-px bg-brand-gray/10" />
 
+        {/* ─── Footer ────────────────────────────────────────────────────── */}
         <div className="flex flex-col gap-3 animate-stagger-4">
           {!isOwner && message.members?.instagram && (
             <a href={`https://instagram.com/${message.members.instagram.replace('@', '')}`}
               target="_blank" rel="noopener noreferrer"
               className="w-full py-3 border border-brand-gray/15 text-center font-ui text-sm font-light tracking-[0.15em] hover:border-brand-gray/40 transition-colors"
-              style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            >
+              style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               @{message.members.instagram.replace('@', '')}
             </a>
           )}
           <Link href={isOwner ? '/dashboard' : '/'}
             className="font-ui text-xs text-brand-gray/20 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray/50 transition-colors text-center py-2"
-            style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          >
-            {isOwner ? '← retour au dashboard' : '← retour à l\'accueil'}
+            style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            {isOwner ? '← retour au dashboard' : '← retour'}
           </Link>
         </div>
       </div>

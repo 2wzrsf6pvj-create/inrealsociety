@@ -38,6 +38,7 @@ const PUBLIC_API_PREFIXES = [
   '/api/member/link',    // liaison legacy — protégée par session dans le handler
   '/api/member/migrate', // migration email — protégée par admin secret
   '/api/feedback',       // feedback conversation accessible aux scanners anonymes
+  '/api/conversation/',  // réponses dans le thread (scanner anonyme)
 ];
 
 function isPublicRoute(pathname: string): boolean {
