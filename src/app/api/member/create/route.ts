@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
 
     const body = schema.safeParse(await req.json());
     if (!body.success) {
-      return NextResponse.json({ error: body.error.flatten().fieldErrors }, { status: 400 });
+      return NextResponse.json({ error: 'Données invalides.' }, { status: 400 });
     }
 
     const { name, pitch, instagram, activationCode } = body.data;
@@ -96,7 +96,6 @@ export async function POST(req: NextRequest) {
 
   } catch (err) {
     console.error('[api/member/create]', err);
-    const message = err instanceof Error ? err.message : 'Erreur serveur.';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });
   }
 }

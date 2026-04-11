@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = schema.safeParse(await req.json());
     if (!body.success) {
-      return NextResponse.json({ error: body.error.flatten().fieldErrors }, { status: 400 });
+      return NextResponse.json({ error: 'Données invalides.' }, { status: 400 });
     }
 
     const { memberId, content, senderContact, isQuickReply } = body.data;
@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
         senderContact: senderContact?.trim(),
         dashboardUrl,
       });
-      sendEmail({ to: member.email, subject, html }).catch(() => {});
+      sendEmail({ to: member.email, subject, html }).catch((err) => console.error('[api/message] Échec envoi email:', err));
     }
 
     return NextResponse.json({ ok: true, moderated, messageId: message?.id });

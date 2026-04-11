@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element, jsx-a11y/alt-text */
 // app/profil/[memberId]/opengraph-image.tsx
 // Génère une image OG dynamique pour chaque profil
 
@@ -77,6 +78,7 @@ export default async function OGImage({
           {member?.photo_url ? (
             <img
               src={member.photo_url}
+              alt=""
               style={{ width: '120px', height: '120px', borderRadius: '50%', objectFit: 'cover' }}
             />
           ) : (
@@ -110,7 +112,7 @@ export default async function OGImage({
             textAlign: 'center',
             lineHeight: 1.5,
           }}>
-            "{pitch.length > 100 ? pitch.slice(0, 100) + '…' : pitch}"
+            &quot;{pitch.length > 100 ? pitch.slice(0, 100) + '…' : pitch}&quot;
           </span>
         </div>
 

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
+import AuthIndicator from './components/ui/AuthIndicator';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -22,8 +23,10 @@ export const metadata: Metadata = {
     description: 'Le premier vêtement conçu pour les rencontres dans la vraie vie.',
   },
   icons: {
-    icon: '/favicon.ico',
+    icon: '/favicon.svg',
+    apple: '/icon.svg',
   },
+  manifest: '/manifest.json',
 };
 
 export default function RootLayout({
@@ -44,6 +47,7 @@ export default function RootLayout({
       </head>
       <body className="antialiased bg-brand-black">
         <Suspense fallback={null}>
+          <AuthIndicator />
           {children}
         </Suspense>
       </body>

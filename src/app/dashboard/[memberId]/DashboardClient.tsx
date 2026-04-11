@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { createClient } from '@/lib/supabase-browser';
 import type { Member, Scan, Message } from '@/lib/types';
 
@@ -154,9 +155,9 @@ function InboxSection({ messages, memberId }: { messages: Message[]; memberId: s
   if (messages.length === 0) {
     return (
       <div className="flex flex-col items-center gap-3 py-8 text-center">
-        <p className="font-display text-lg md:text-xl font-light italic text-brand-gray/40">Aucun message pour l'instant.</p>
+        <p className="font-display text-lg md:text-xl font-light italic text-brand-gray/40">Aucun message pour l&apos;instant.</p>
         <p className="font-ui text-xs md:text-sm text-brand-gray/25 leading-relaxed">
-          Quand quelqu'un scannera votre QR code et vous enverra un message, il apparaîtra ici.
+          Quand quelqu&apos;un scannera votre QR code et vous enverra un message, il apparaîtra ici.
         </p>
       </div>
     );
@@ -374,9 +375,6 @@ function HomeSection({ member, recentScans }: {
   member: Member;
   recentScans: Scan[];
 }) {
-  const appUrl     = typeof window !== 'undefined' ? window.location.origin : '';
-  const profileUrl = `${appUrl}/profil/${member.id}`;
-
   return (
     <>
       <StatsBlock member={member} recentScans={recentScans} />
@@ -395,7 +393,7 @@ function HomeSection({ member, recentScans }: {
             <div className="absolute inset-[-4px] rounded-full border border-brand-white/5" />
             <div className="w-full h-full rounded-full border border-brand-gray/20 bg-[#0a0a0a] flex items-center justify-center overflow-hidden">
               {member.photo_url ? (
-                <img src={`${member.photo_url}?width=80&quality=80`} alt="" className="w-full h-full object-cover" />
+                <Image src={member.photo_url} alt={`Photo de ${member.name}`} width={40} height={40} className="w-full h-full object-cover" />
               ) : (
                 <span className="font-display text-base font-light text-brand-gray/50">{getInitials(member.name)}</span>
               )}

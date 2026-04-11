@@ -1,12 +1,28 @@
 // app/conversation/[messageId]/page.tsx
 // Page conversation — pour le scanner (voir la réponse) ET le membre (répondre).
 
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { createClient } from '@/lib/supabase-server';
 import ConversationClient from './ConversationClient';
 
 interface Props { params: { messageId: string } }
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { data: message } = await supabase
+    .from('messages')
+    .select('members(name)')
+    .eq('id', params.messageId)
+    .single();
+
+  const members = message?.members as unknown as { name: string } | null;
+  const name = members?.name ?? 'Un membre';
+  return {
+    title: `Conversation avec ${name}`,
+    description: `Échangez avec ${name} sur In Real Society.`,
+  };
+}
 
 export default async function ConversationPage({ params }: Props) {
   const { data: message } = await supabase

@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = schema.safeParse(await req.json());
     if (!body.success) {
-      return NextResponse.json({ error: body.error.flatten().fieldErrors }, { status: 400 });
+      return NextResponse.json({ error: 'Données invalides.' }, { status: 400 });
     }
 
     const { memberId, scannerName } = body.data;
@@ -73,7 +73,7 @@ export async function POST(req: NextRequest) {
         scannerName,
         dashboardUrl,
       });
-      sendEmail({ to: member.email, subject, html }).catch(() => {});
+      sendEmail({ to: member.email, subject, html }).catch((err) => console.error('[api/scan] Échec envoi email:', err));
     }
 
     return NextResponse.json({ ok: true });

@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import type { Member } from '@/lib/types';
 
 function getInitials(name: string): string {
@@ -120,11 +121,12 @@ export default function ProfilClient({
             <div className="absolute inset-[-8px] rounded-full border border-brand-white/5 animate-ring-pulse" />
             <div className="w-28 h-28 rounded-full border border-brand-gray/20 bg-[#0a0a0a] flex items-center justify-center overflow-hidden">
               {member.photo_url ? (
-                <img
-                  src={`${member.photo_url}?width=400&quality=80`}
-                  alt={member.name}
+                <Image
+                  src={member.photo_url}
+                  alt={`Photo de ${member.name}`}
+                  width={112}
+                  height={112}
                   className="w-full h-full object-cover"
-                  onError={(e) => { (e.target as HTMLImageElement).src = member.photo_url!; }}
                 />
               ) : (
                 <div className="flex flex-col items-center gap-1">

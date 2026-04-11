@@ -2,7 +2,13 @@
 // Dashboard sécurisé : accès uniquement par session Supabase Auth.
 // Plus d'UUID dans l'URL — le membre est résolu depuis auth.uid().
 
+import type { Metadata } from 'next';
 import { redirect } from 'next/navigation';
+
+export const metadata: Metadata = {
+  title: 'Mon espace',
+  description: 'Gérez votre profil, consultez vos scans et vos messages sur In Real Society.',
+};
 import { createClient } from '@/lib/supabase-server';
 import { getMemberByAuthUserId, getRecentScans, getMessages, getUnreadMessagesCount } from '@/lib/supabase';
 import DashboardClient from './[memberId]/DashboardClient';

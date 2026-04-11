@@ -75,9 +75,10 @@ export async function POST(req: NextRequest) {
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promise<void> {
   const userId      = session.metadata?.userId;
-  const tshirtColor = (session.metadata?.tshirtColor as TshirtColor) || 'dark';
+  const rawColor    = session.metadata?.tshirtColor;
+  const tshirtColor: TshirtColor = (rawColor === 'dark' || rawColor === 'light') ? rawColor : 'dark';
   const sessionId   = session.id;
-  const email       = session.customer_details?.email ?? (session as any).customer_email;
+  const email       = session.customer_details?.email ?? session.customer_email;
 
   // 1. Code d'activation + email
   if (email) {
@@ -180,7 +181,7 @@ async function generateUniqueActivationCode(): Promise<string> {
 }
 
 function getShippingDetails(session: Stripe.Checkout.Session): PrintfulAddress | null {
-  const shipping = (session as any).shipping_details ?? session.customer_details;
+  const shipping = (session as unknown as { shipping_details?: Stripe.Checkout.Session['customer_details'] }).shipping_details ?? session.customer_details;
   if (!shipping?.address || !shipping.name) return null;
   return {
     name:         shipping.name,

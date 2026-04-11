@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 
 interface ConversationMessage {
@@ -47,7 +48,7 @@ async function subscribePush(messageId: string): Promise<void> {
         messageId,
       }),
     });
-  } catch {}
+  } catch (err) { console.error('[push] Échec inscription push:', err); }
 }
 
 // ─── Formulaire de réponse (visible uniquement pour le membre propriétaire) ──
@@ -135,7 +136,7 @@ export default function ConversationClient({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ messageId: message.id, memberId: message.member_id }),
-    }).catch(() => {});
+    }).catch((err) => console.error('[conversation] Échec mark-read:', err));
   }, [isOwner, message.id, message.member_id, message.read_at]);
 
   useEffect(() => {
@@ -144,7 +145,7 @@ export default function ConversationClient({
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ messageId: message.id, memberId: message.member_id }),
-    }).then(r => r.json()).then(d => { if (d.ok) setVuStatus(new Date().toISOString()); }).catch(() => {});
+    }).then(r => r.json()).then(d => { if (d.ok) setVuStatus(new Date().toISOString()); }).catch((err) => console.error('[conversation] Échec mark-read reply:', err));
   }, [isOwner, message.id, message.member_id, message.reply]);
 
   useEffect(() => {
@@ -159,7 +160,7 @@ export default function ConversationClient({
             if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
               new Notification(`${memberName} vous a répondu.`, {
                 body: updated.reply?.slice(0, 80) || '',
-                icon: '/icon-192.png',
+                icon: '/icon.svg',
               });
             }
           }
@@ -189,7 +190,7 @@ export default function ConversationClient({
         <div className="flex items-center gap-3 animate-stagger-1">
           <div className="w-10 h-10 rounded-full border border-brand-gray/20 bg-[#0a0a0a] flex items-center justify-center overflow-hidden flex-shrink-0">
             {message.members?.photo_url
-              ? <img src={`${message.members.photo_url}?width=80&quality=80`} alt={memberName} className="w-full h-full object-cover" />
+              ? <Image src={message.members.photo_url} alt={`Photo de ${memberName}`} width={40} height={40} className="w-full h-full object-cover" />
               : <span className="font-display text-sm font-light text-brand-gray/40">{getInitials(memberName)}</span>
             }
           </div>

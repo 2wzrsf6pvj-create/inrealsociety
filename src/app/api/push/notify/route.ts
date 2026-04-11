@@ -40,7 +40,7 @@ export async function POST(req: NextRequest) {
     // ─── Validation ───────────────────────────────────────────────────────
     const parsed = schema.safeParse(await req.json());
     if (!parsed.success) {
-      return NextResponse.json({ error: parsed.error.flatten().fieldErrors }, { status: 400 });
+      return NextResponse.json({ error: 'Données invalides.' }, { status: 400 });
     }
     const { messageId, title, body, url } = parsed.data;
 
@@ -67,11 +67,12 @@ export async function POST(req: NextRequest) {
             { TTL: 86400 },
           );
           sent++;
-        } catch (err: any) {
-          if (err?.statusCode === 404 || err?.statusCode === 410) {
+        } catch (err: unknown) {
+          const statusCode = (err as { statusCode?: number })?.statusCode;
+          if (statusCode === 404 || statusCode === 410) {
             expired.push(sub.endpoint);
           } else {
-            console.warn('[push/notify] Erreur push:', err?.message);
+            console.warn('[push/notify] Erreur push:', err instanceof Error ? err.message : err);
           }
         }
       })

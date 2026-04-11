@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
 
     const body = postSchema.safeParse(await req.json());
     if (!body.success) {
-      return NextResponse.json({ error: body.error.flatten().fieldErrors }, { status: 400 });
+      return NextResponse.json({ error: 'Données invalides.' }, { status: 400 });
     }
     const { referrerId, orderId } = body.data;
 

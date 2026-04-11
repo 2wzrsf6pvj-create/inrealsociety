@@ -111,7 +111,7 @@ export default function ManifestePage() {
           <div className="flex flex-col items-center gap-6 pt-8 text-center">
             <div className="w-px h-12 bg-gradient-to-b from-transparent via-brand-white/20 to-transparent" />
             <p className="font-display text-lg md:text-xl font-light italic text-brand-gray/60">
-              "Derrière chaque scan, il y a quelqu'un<br />qui vous a vraiment regardé."
+              &quot;Derrière chaque scan, il y a quelqu&apos;un<br />qui vous a vraiment regardé.&quot;
             </p>
             <div className="flex flex-col gap-3 w-full max-w-xs mt-4">
               <Link

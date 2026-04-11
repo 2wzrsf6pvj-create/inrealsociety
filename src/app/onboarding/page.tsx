@@ -71,7 +71,7 @@ export default function OnboardingPage() {
           </button>
 
           <p className="font-ui text-xs text-brand-gray/30 tracking-[0.15em] uppercase text-center">
-            En continuant, vous acceptez d'exister vraiment.
+            En continuant, vous acceptez d&apos;exister vraiment.
           </p>
         </div>
 

@@ -71,7 +71,7 @@ function SuccessContent() {
 
       {code && (
         <div className="w-full border border-brand-white/15 p-5 flex flex-col items-center gap-2">
-          <p className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">Votre code d'activation</p>
+          <p className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">Votre code d&apos;activation</p>
           <p className="font-mono text-2xl font-bold tracking-[0.3em] text-brand-white">{code}</p>
         </div>
       )}

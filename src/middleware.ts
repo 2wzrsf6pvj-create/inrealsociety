@@ -49,7 +49,7 @@ function isPublicRoute(pathname: string): boolean {
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  let res = NextResponse.next({ request: { headers: req.headers } });
+  const res = NextResponse.next({ request: { headers: req.headers } });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

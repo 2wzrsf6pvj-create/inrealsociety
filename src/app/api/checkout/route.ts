@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = schema.safeParse(await req.json());
     if (!body.success) {
-      return NextResponse.json({ error: body.error.flatten().fieldErrors }, { status: 400 });
+      return NextResponse.json({ error: 'Données invalides.' }, { status: 400 });
     }
 
     const { userId, qrCodeUrl, tshirtColor } = body.data;
@@ -56,7 +56,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Action non autorisée.' }, { status: 403 });
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+    if (!appUrl) {
+      console.error('[api/checkout] NEXT_PUBLIC_APP_URL non défini');
+      return NextResponse.json({ error: 'Configuration serveur manquante.' }, { status: 500 });
+    }
 
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
@@ -101,7 +105,7 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error('[api/checkout]', err);
     if (err instanceof Stripe.errors.StripeError) {
-      return NextResponse.json({ error: err.message }, { status: err.statusCode ?? 500 });
+      return NextResponse.json({ error: 'Erreur de paiement.' }, { status: err.statusCode ?? 500 });
     }
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });
   }

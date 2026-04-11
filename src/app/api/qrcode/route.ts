@@ -25,14 +25,18 @@ export async function POST(req: NextRequest) {
 
     const body = schema.safeParse(await req.json());
     if (!body.success) {
-      return NextResponse.json({ error: body.error.flatten().fieldErrors }, { status: 400 });
+      return NextResponse.json({ error: 'Données invalides.' }, { status: 400 });
     }
     const { memberId } = body.data;
 
     const own = await requireOwnership(auth.user.id, memberId);
     if (isHttpError(own)) return own;
 
-    const appUrl     = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+    const appUrl     = process.env.NEXT_PUBLIC_APP_URL;
+    if (!appUrl) {
+      console.error('[api/qrcode] NEXT_PUBLIC_APP_URL non défini');
+      return NextResponse.json({ error: 'Configuration serveur manquante.' }, { status: 500 });
+    }
     const profileUrl = `${appUrl}/?id=${memberId}`;
 
     // ─── Génération du QR code en PNG (Buffer) ────────────────────────────

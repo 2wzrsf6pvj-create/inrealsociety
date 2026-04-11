@@ -11,7 +11,7 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title || 'InRealSociety', {
       body:    data.body || 'Nouvelle activité.',
-      icon:    '/icon-192.png',
+      icon:    '/icon.svg',
       tag:     data.tag  || 'irs',
       data:    { url: data.url || '/' },
       vibrate: [100, 50, 100],

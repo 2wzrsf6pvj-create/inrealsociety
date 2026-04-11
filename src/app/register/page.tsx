@@ -79,9 +79,9 @@ function CodeField({ code, codeOk, codeErr, checking, onChange }: {
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">Code d'activation</label>
+      <label htmlFor="activation-code" className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">Code d&apos;activation</label>
       <div className="flex items-end gap-2">
-        <input type="text" placeholder="XXXXXXXX" value={code} maxLength={12}
+        <input id="activation-code" type="text" placeholder="XXXXXXXX" value={code} maxLength={12}
           onChange={e => onChange(e.target.value)}
           className={`flex-1 bg-transparent border-b font-mono text-lg text-brand-white py-3 outline-none tracking-[0.3em] transition-colors ${codeErr ? 'border-red-900' : codeOk ? 'border-brand-white/60' : 'border-brand-gray/20 focus:border-brand-white/50'}`}
           style={{ minHeight: '44px' }} />
@@ -125,7 +125,7 @@ function StepAccount({ onNext, codeState }: {
       <div className="text-center flex flex-col gap-2">
         <h2 className="font-display text-3xl font-light tracking-[0.04em]">Votre compte.</h2>
         <p className="font-ui text-sm font-light text-brand-gray/40 leading-relaxed">
-          Le code d'activation vous a été envoyé par email après votre commande.
+          Le code d&apos;activation vous a été envoyé par email après votre commande.
         </p>
       </div>
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
@@ -134,16 +134,16 @@ function StepAccount({ onNext, codeState }: {
           Pas encore de t-shirt ? <a href="/shop" className="underline underline-offset-4 hover:text-brand-gray/50 transition-colors">Commander</a>
         </p>
         <div className="flex flex-col gap-1">
-          <label className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">Email</label>
-          <input type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)}
+          <label htmlFor="register-email" className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">Email</label>
+          <input id="register-email" type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)}
             className="w-full bg-transparent border-b border-brand-gray/20 focus:border-brand-white/60 font-ui font-light text-base text-brand-white py-3 outline-none transition-colors"
             style={{ minHeight: '44px' }} />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">
+          <label htmlFor="register-password" className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">
             Mot de passe <span className="text-brand-gray/15 normal-case tracking-normal">(8 caractères min)</span>
           </label>
-          <input type="password" autoComplete="new-password" value={password} onChange={e => setPassword(e.target.value)}
+          <input id="register-password" type="password" autoComplete="new-password" value={password} onChange={e => setPassword(e.target.value)}
             className="w-full bg-transparent border-b border-brand-gray/20 focus:border-brand-white/60 font-ui font-light text-base text-brand-white py-3 outline-none transition-colors"
             style={{ minHeight: '44px' }} />
         </div>
@@ -205,8 +205,8 @@ function StepProfile({ form, onChange, onNext, onBack, isEditing, isLoggedIn, co
         )}
 
         <div className="flex flex-col gap-1">
-          <label className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">Prénom ou pseudo</label>
-          <input type="text" maxLength={30} value={form.name} onChange={e => field('name', e.target.value)}
+          <label htmlFor="register-name" className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">Prénom ou pseudo</label>
+          <input id="register-name" type="text" maxLength={30} value={form.name} onChange={e => field('name', e.target.value)}
             className="w-full bg-transparent border-b border-brand-gray/15 focus:border-brand-white/60 font-ui font-light text-base text-brand-white py-3 outline-none transition-colors"
             style={{ minHeight: '44px' }} />
         </div>
@@ -299,17 +299,18 @@ function StepOptional({ form, onChange, onSubmit, onBack, loading, error, isEdit
         <div className="flex flex-col items-center gap-2">
           <button type="button" onClick={() => fileRef.current?.click()}
             className="relative w-20 h-20 rounded-full border border-brand-gray/20 bg-[#0a0a0a] flex items-center justify-center overflow-hidden hover:border-brand-gray/40 transition-colors">
-            {preview ? <img src={preview} alt="preview" className="w-full h-full object-cover" /> : <span className="font-ui text-xs text-brand-gray/20 tracking-[0.1em] uppercase">Photo</span>}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            {preview ? <img src={preview} alt="Aperçu de votre photo" className="w-full h-full object-cover" /> : <span className="font-ui text-xs text-brand-gray/20 tracking-[0.1em] uppercase">Photo</span>}
           </button>
           <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handlePhoto} />
           {fileErr && <p className="font-ui text-xs text-red-400">{fileErr}</p>}
           <p className="font-ui text-xxs text-brand-gray/20">JPEG, PNG ou WebP · 5 Mo max</p>
         </div>
         <div className="flex flex-col gap-1">
-          <label className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">
+          <label htmlFor="register-instagram" className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">
             Instagram <span className="text-brand-gray/15 normal-case tracking-normal">(optionnel)</span>
           </label>
-          <input type="text" placeholder="votre_pseudo" value={form.instagram}
+          <input id="register-instagram" type="text" placeholder="votre_pseudo" value={form.instagram}
             onChange={e => onChange({ ...form, instagram: e.target.value })}
             className="w-full bg-transparent border-b border-brand-gray/15 focus:border-brand-white/50 font-ui font-light text-base text-brand-white py-3 outline-none transition-colors placeholder:text-brand-gray/15"
             style={{ minHeight: '44px' }} />
@@ -408,17 +409,11 @@ function RegisterContent() {
 }
 
 export default function RegisterPage() {
-  const router = useRouter();
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center bg-brand-black text-brand-white px-6 py-12 overflow-hidden">
       <div className="absolute top-[-15%] left-[-15%] w-[28rem] h-[28rem] rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%)' }} />
       <React.Suspense fallback={null}><RegisterContent /></React.Suspense>
-      <button onClick={() => router.push('/')}
-        className="font-ui text-xs text-brand-gray/20 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray/50 transition-colors py-3 mt-4"
-        style={{ minHeight: '44px' }}>
-        ← retour
-      </button>
     </main>
   );
 }

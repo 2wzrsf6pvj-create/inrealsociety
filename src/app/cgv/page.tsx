@@ -33,15 +33,15 @@ export default function CGVPage() {
         {/* Article 1 */}
         <section className="flex flex-col gap-3">
           <h2 className="font-ui text-sm font-bold tracking-[0.2em] uppercase text-brand-white">
-            Article 1 — Objet et champ d'application
+            Article 1 — Objet et champ d&apos;application
           </h2>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
-            Les présentes Conditions Générales de Vente (ci-après "CGV") régissent l'ensemble des ventes
-            conclues entre In Real Society (ci-après "le Vendeur") et toute personne physique effectuant
-            un achat sur le site inrealsociety.com (ci-après "l'Acheteur").
+            Les présentes Conditions Générales de Vente (ci-après &quot;CGV&quot;) régissent l&apos;ensemble des ventes
+            conclues entre In Real Society (ci-après &quot;le Vendeur&quot;) et toute personne physique effectuant
+            un achat sur le site inrealsociety.com (ci-après &quot;l&apos;Acheteur&quot;).
           </p>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
-            Toute commande implique l'acceptation pleine et entière des présentes CGV. Le Vendeur se
+            Toute commande implique l&apos;acceptation pleine et entière des présentes CGV. Le Vendeur se
             réserve le droit de modifier les CGV à tout moment ; les CGV applicables sont celles en vigueur
             à la date de la commande.
           </p>
@@ -58,9 +58,9 @@ export default function CGVPage() {
             via la technique DTFlex (Direct to Film), sur le modèle Comfort Colors 1717.
           </p>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
-            Chaque vêtement comporte un QR code unique, crypté et lié au profil personnel de l'Acheteur,
+            Chaque vêtement comporte un QR code unique, crypté et lié au profil personnel de l&apos;Acheteur,
             généré spécifiquement pour sa commande. Ce QR code constitue un élément de personnalisation
-            au sens de l'article L221-28 du Code de la consommation.
+            au sens de l&apos;article L221-28 du Code de la consommation.
           </p>
         </section>
 
@@ -75,8 +75,8 @@ export default function CGVPage() {
             commande.
           </p>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
-            Le paiement s'effectue en ligne, de manière sécurisée, via Stripe. Les données bancaires
-            de l'Acheteur ne sont jamais stockées par le Vendeur.
+            Le paiement s&apos;effectue en ligne, de manière sécurisée, via Stripe. Les données bancaires
+            de l&apos;Acheteur ne sont jamais stockées par le Vendeur.
           </p>
         </section>
 
@@ -86,7 +86,7 @@ export default function CGVPage() {
             Article 4 — Processus de commande
           </h2>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
-            La commande est ferme et définitive dès validation du paiement. L'Acheteur reçoit une
+            La commande est ferme et définitive dès validation du paiement. L&apos;Acheteur reçoit une
             confirmation par email. La production est lancée immédiatement après validation, ce qui
             rend toute annulation impossible une fois le paiement effectué.
           </p>
@@ -101,21 +101,21 @@ export default function CGVPage() {
           <div className="flex items-start gap-3">
             <div className="w-px self-stretch bg-brand-white/20 flex-shrink-0 mt-1" />
             <p className="font-ui text-sm md:text-base font-light text-brand-white/90 leading-relaxed">
-              Conformément à l'article L221-28 du Code de la consommation, le droit de rétractation
+              Conformément à l&apos;article L221-28 du Code de la consommation, le droit de rétractation
               ne peut être exercé pour les contrats de fourniture de biens confectionnés selon les
               spécifications du consommateur ou nettement personnalisés.
             </p>
           </div>
 
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
-            Chaque vêtement "In Real Society" étant imprimé sur commande avec un QR code crypté et
-            unique lié au profil personnel de l'Acheteur, <span className="text-brand-white/90 font-normal">aucune commande ne pourra être annulée,
-            retournée ou remboursée pour cause de changement d'avis ou d'erreur de taille de la
-            part de l'Acheteur.</span>
+            Chaque vêtement &quot;In Real Society&quot; étant imprimé sur commande avec un QR code crypté et
+            unique lié au profil personnel de l&apos;Acheteur, <span className="text-brand-white/90 font-normal">aucune commande ne pourra être annulée,
+            retournée ou remboursée pour cause de changement d&apos;avis ou d&apos;erreur de taille de la
+            part de l&apos;Acheteur.</span>
           </p>
 
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
-            En acceptant les présentes CGV, l'Acheteur reconnaît expressément avoir été informé de
+            En acceptant les présentes CGV, l&apos;Acheteur reconnaît expressément avoir été informé de
             cette exception au droit de rétractation préalablement à la passation de sa commande,
             conformément aux articles L221-5 et L221-28 du Code de la consommation.
           </p>
@@ -143,9 +143,9 @@ export default function CGVPage() {
             ))}
           </ul>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
-            Dans ces cas, l'Acheteur dispose de 14 jours à compter de la réception pour contacter
-            le Vendeur à l'adresse <span className="text-brand-white/70">hello@inrealsociety.com</span> avec
-            photos à l'appui.
+            Dans ces cas, l&apos;Acheteur dispose de 14 jours à compter de la réception pour contacter
+            le Vendeur à l&apos;adresse <span className="text-brand-white/70">hello@inrealsociety.com</span> avec
+            photos à l&apos;appui.
           </p>
         </section>
 
@@ -173,7 +173,7 @@ export default function CGVPage() {
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
             Les données collectées (nom, adresse, email) sont utilisées exclusivement pour le traitement
             de la commande et la livraison. Elles sont transmises à Printful et Stripe dans ce seul
-            but. L'Acheteur dispose d'un droit d'accès, de rectification et de suppression de ses
+            but. L&apos;Acheteur dispose d&apos;un droit d&apos;accès, de rectification et de suppression de ses
             données conformément au RGPD, en contactant le Vendeur à hello@inrealsociety.com.
           </p>
         </section>
@@ -186,7 +186,7 @@ export default function CGVPage() {
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
             Les présentes CGV sont soumises au droit français. En cas de litige, une solution amiable
             sera recherchée en priorité. À défaut, les tribunaux français seront seuls compétents.
-            L'Acheteur peut également recourir à la plateforme européenne de règlement des litiges
+            L&apos;Acheteur peut également recourir à la plateforme européenne de règlement des litiges
             en ligne : <span className="text-brand-white/70">ec.europa.eu/consumers/odr</span>.
           </p>
         </section>
@@ -197,7 +197,7 @@ export default function CGVPage() {
             href="/"
             className="font-ui text-sm text-brand-gray/40 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white transition-colors"
           >
-            ← Retour à l'accueil
+            ← Retour à l&apos;accueil
           </Link>
           <span className="font-ui text-xs text-brand-gray/20 tracking-wide">
             In Real Society © {new Date().getFullYear()}
