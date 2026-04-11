@@ -1,3 +1,4 @@
+import '@/lib/env';
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import AuthIndicator from './components/ui/AuthIndicator';

@@ -5,25 +5,33 @@
 //
 // Usage : import '@/lib/env' (import side-effect suffit)
 
+// Variables requises au démarrage (sans elles, rien ne fonctionne)
 const required = [
   'NEXT_PUBLIC_SUPABASE_URL',
   'NEXT_PUBLIC_SUPABASE_ANON_KEY',
+  'SUPABASE_SERVICE_ROLE_KEY',
   'NEXT_PUBLIC_APP_URL',
+] as const;
+
+// Variables recommandées (features dégradées si absentes, warning au lieu de crash)
+const recommended = [
   'RESEND_API_KEY',
   'STRIPE_SECRET_KEY',
   'STRIPE_PRICE_ID',
   'STRIPE_WEBHOOK_SECRET',
+  'UPSTASH_REDIS_REST_URL',
+  'UPSTASH_REDIS_REST_TOKEN',
   'PRINTFUL_API_TOKEN',
-  'PRINTFUL_VARIANT_ID',
   'VAPID_PUBLIC_KEY',
   'VAPID_PRIVATE_KEY',
 ] as const;
 
-type EnvKey = typeof required[number];
+type EnvKey = typeof required[number] | typeof recommended[number];
 
-function validateEnv(): Record<EnvKey, string> {
+function validateEnv(): Record<string, string> {
   const missing: string[] = [];
-  const env = {} as Record<EnvKey, string>;
+  const warned: string[] = [];
+  const env: Record<string, string> = {};
 
   for (const key of required) {
     const value = process.env[key];
@@ -35,10 +43,23 @@ function validateEnv(): Record<EnvKey, string> {
   }
 
   if (missing.length > 0) {
-    // En développement : message clair dans la console
-    // En production : crash immédiat plutôt qu'une erreur cryptique plus tard
     throw new Error(
-      `[env] Variables d'environnement manquantes :\n${missing.map(k => `  - ${k}`).join('\n')}\n\nVérifiez votre fichier .env.local`
+      `[env] Variables d'environnement REQUISES manquantes :\n${missing.map(k => `  - ${k}`).join('\n')}\n\nVérifiez votre fichier .env.local`
+    );
+  }
+
+  for (const key of recommended) {
+    const value = process.env[key];
+    if (!value) {
+      warned.push(key);
+    } else {
+      env[key] = value;
+    }
+  }
+
+  if (warned.length > 0) {
+    console.warn(
+      `[env] Variables recommandées manquantes (features dégradées) :\n${warned.map(k => `  ⚠ ${k}`).join('\n')}`
     );
   }
 

@@ -3,7 +3,7 @@
 // Utilise le service role — toujours côté serveur uniquement.
 // Fire-and-forget : ne bloque jamais la réponse principale.
 
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export type AuditAction =
   | 'message.sent'
@@ -32,7 +32,7 @@ interface AuditParams {
  * Toujours appelé en fire-and-forget — ne throw jamais.
  */
 export function audit(params: AuditParams): void {
-  supabase.from('audit_logs').insert({
+  supabaseAdmin.from('audit_logs').insert({
     action:    params.action,
     member_id: params.memberId ?? null,
     ip:        params.ip ?? null,

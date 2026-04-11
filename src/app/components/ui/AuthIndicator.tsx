@@ -27,28 +27,49 @@ export default function AuthIndicator() {
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     const supabase = createClient();
 
     supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (cancelled) return;
+
       if (!user) {
         setAuth({ loggedIn: false, name: null, memberId: null });
         setLoaded(true);
         return;
       }
 
-      const { data: member } = await supabase
-        .from('members')
-        .select('id, name')
-        .eq('auth_user_id', user.id)
-        .single();
+      try {
+        const { data: member } = await supabase
+          .from('members')
+          .select('id, name')
+          .eq('auth_user_id', user.id)
+          .single();
 
-      setAuth({
-        loggedIn: true,
-        name: member?.name ?? user.email?.split('@')[0] ?? null,
-        memberId: member?.id ?? null,
-      });
+        if (cancelled) return;
+
+        setAuth({
+          loggedIn: true,
+          name: member?.name ?? user.email?.split('@')[0] ?? null,
+          memberId: member?.id ?? null,
+        });
+      } catch {
+        if (cancelled) return;
+        // Auth OK mais membre introuvable — on affiche quand même l'état connecté
+        setAuth({
+          loggedIn: true,
+          name: user.email?.split('@')[0] ?? null,
+          memberId: null,
+        });
+      }
+
       setLoaded(true);
+    }).catch(() => {
+      // Erreur réseau ou Supabase down — on n'affiche rien
+      if (!cancelled) setLoaded(true);
     });
+
+    return () => { cancelled = true; };
   }, []);
 
   // Masquer sur les pages qui ont déjà leur propre gestion

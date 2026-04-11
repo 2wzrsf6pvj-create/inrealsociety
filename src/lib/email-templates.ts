@@ -3,6 +3,7 @@
 // Modifier le design ici = modifier tous les emails d'un coup.
 
 import { escapeHtml } from '@/lib/escape-html';
+import { EMAIL_FROM } from '@/lib/constants';
 
 // ─── Wrapper HTML commun ──────────────────────────────────────────────────────
 
@@ -179,7 +180,7 @@ export async function sendEmail(params: {
         'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
       },
       body: JSON.stringify({
-        from: 'InRealSociety <noreply@inrealsociety.com>',
+        from: EMAIL_FROM,
         to:   [params.to],
         subject: params.subject,
         html: params.html,
