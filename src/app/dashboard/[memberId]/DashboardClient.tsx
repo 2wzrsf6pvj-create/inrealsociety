@@ -425,7 +425,7 @@ function SettingsSection({ member }: { member: Member }) {
       <ReferralBlock memberId={member.id} />
 
       {/* Modifier profil */}
-      <Link href="/register"
+      <Link href="/register?edit=1"
         className="w-full py-3 border border-brand-gray/20 text-center font-ui text-sm font-light tracking-[0.2em] uppercase hover:border-brand-gray/50 transition-colors rounded-[2px]">
         Modifier mon profil
       </Link>
@@ -651,13 +651,33 @@ export default function DashboardClient({
 
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
+
+    // Toast profil mis à jour
     const updated = sessionStorage.getItem('profile_updated');
     if (updated) {
       setToast('Profil mis à jour.');
       sessionStorage.removeItem('profile_updated');
       setTimeout(() => setToast(''), 3000);
+      return;
     }
-  }, []);
+
+    // Toast upgrade premium
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('upgraded') === '1') {
+      setToast('✦ Bienvenue dans le cercle premium.');
+      window.history.replaceState({}, '', '/dashboard');
+      setTimeout(() => setToast(''), 4000);
+      return;
+    }
+
+    // Toast connexion réussie
+    const justLoggedIn = sessionStorage.getItem('just_logged_in');
+    if (!justLoggedIn) {
+      sessionStorage.setItem('just_logged_in', '1');
+      setToast(`Bienvenue, ${member.name}.`);
+      setTimeout(() => setToast(''), 3000);
+    }
+  }, [member.name]);
 
   return (
     <main className="relative flex min-h-screen flex-col items-center bg-brand-black text-brand-white px-6 py-8 overflow-hidden">
