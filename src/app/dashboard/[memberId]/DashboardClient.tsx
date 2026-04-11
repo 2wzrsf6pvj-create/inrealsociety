@@ -283,17 +283,27 @@ function SettingsSection({ member }: { member: Member }) {
   const [saving,      setSaving]      = useState(false);
   const [saved,       setSaved]       = useState(false);
 
+  const [pauseError, setPauseError] = useState('');
+
   const togglePause = async () => {
     setSaving(true);
-    const res = await fetch('/api/member/update', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ is_paused: !isPaused }),
-    });
-    if (res.ok) {
-      setIsPaused(!isPaused);
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
+    setPauseError('');
+    try {
+      const res = await fetch('/api/member/update', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_paused: !isPaused }),
+      });
+      if (res.ok) {
+        setIsPaused(!isPaused);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setPauseError(data.error || `Erreur ${res.status}`);
+      }
+    } catch {
+      setPauseError('Erreur réseau.');
     }
     setSaving(false);
   };
@@ -324,6 +334,7 @@ function SettingsSection({ member }: { member: Member }) {
           </button>
         </div>
         {saved && <p className="font-ui text-xs text-green-400/60">Sauvegardé.</p>}
+        {pauseError && <p className="font-ui text-xs text-red-400">{pauseError}</p>}
       </div>
 
       {/* Parrainage */}
