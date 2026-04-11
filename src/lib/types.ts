@@ -26,6 +26,9 @@ export interface Scan {
   scanner_name:  string | null;
   scanned_at:    string;
   first_scan_at: string | null;
+  latitude:      number | null;
+  longitude:     number | null;
+  location:      string | null;
 }
 
 export interface Message {

@@ -740,8 +740,13 @@ function HomeSection({ member, recentScans, scansByDay = [] }: {
           <p className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">Derniers scans</p>
           {recentScans.map(scan => (
             <div key={scan.id} className="flex items-center justify-between py-2 border-b border-brand-gray/10">
-              <span className="font-ui text-sm font-light text-brand-white/70">{scan.scanner_name || 'Anonyme'}</span>
-              <span className="font-ui text-xs text-brand-gray/40">{formatDate(scan.scanned_at)}</span>
+              <div className="flex flex-col gap-0.5">
+                <span className="font-ui text-sm font-light text-brand-white/70">{scan.scanner_name || 'Anonyme'}</span>
+                {scan.location && (
+                  <span className="font-ui text-xxs text-brand-gray/25">📍 {scan.location}</span>
+                )}
+              </div>
+              <span className="font-ui text-xs text-brand-gray/40 flex-shrink-0">{formatDate(scan.scanned_at)}</span>
             </div>
           ))}
         </div>

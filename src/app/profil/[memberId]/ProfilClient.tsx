@@ -81,11 +81,29 @@ export default function ProfilClient({
     localStorage.setItem('memberName', member.name);
     localStorage.setItem('memberId', member.id);
 
-    fetch('/api/scan', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ memberId: member.id, scannerName: name || null }),
-    }).catch(() => {});
+    // Tente d'obtenir la géoloc du scanner (non-bloquant)
+    const sendScan = (lat?: number, lng?: number) => {
+      fetch('/api/scan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          memberId: member.id,
+          scannerName: name || null,
+          latitude: lat,
+          longitude: lng,
+        }),
+      }).catch(() => {});
+    };
+
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => sendScan(pos.coords.latitude, pos.coords.longitude),
+        () => sendScan(), // Refusé ou erreur → scan sans géoloc
+        { timeout: 5000, maximumAge: 60000 }
+      );
+    } else {
+      sendScan();
+    }
   }, [member.id, isOwner]);
 
   // Profil en pause

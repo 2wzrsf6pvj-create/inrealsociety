@@ -11,7 +11,33 @@ import { audit } from '@/lib/audit';
 const schema = z.object({
   memberId:    z.string().uuid(),
   scannerName: z.string().max(100).optional(),
+  latitude:    z.number().min(-90).max(90).optional(),
+  longitude:   z.number().min(-180).max(180).optional(),
 });
+
+/** Reverse geocoding via Nominatim (OpenStreetMap) — gratuit, pas de clé API */
+async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14&addressdetails=1`,
+      { headers: { 'User-Agent': 'InRealSociety/1.0' } }
+    );
+    if (!res.ok) return null;
+    const data = await res.json();
+    const addr = data.address;
+    if (!addr) return null;
+
+    // Construit un nom lisible : "quartier, ville" ou juste "ville"
+    const parts = [
+      addr.suburb || addr.neighbourhood || addr.quarter,
+      addr.city || addr.town || addr.village || addr.municipality,
+    ].filter(Boolean);
+
+    return parts.length ? parts.join(', ') : (addr.state || addr.country || null);
+  } catch {
+    return null;
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,7 +46,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Données invalides.' }, { status: 400 });
     }
 
-    const { memberId, scannerName } = body.data;
+    const { memberId, scannerName, latitude, longitude } = body.data;
     const ip = getIp(req);
 
     // ─── Rate limiting double : IP + membre cible ─────────────────────────
@@ -48,9 +74,21 @@ export async function POST(req: NextRequest) {
     if (!member) return NextResponse.json({ error: 'Membre introuvable' }, { status: 404 });
     if (member.is_paused) return NextResponse.json({ ok: true, paused: true });
 
+    // ─── Reverse geocoding (non-bloquant) ──────────────────────────────
+    let location: string | null = null;
+    if (latitude != null && longitude != null) {
+      location = await reverseGeocode(latitude, longitude);
+    }
+
     // ─── Insertion scan ───────────────────────────────────────────────────
     const { error: scanError } = await supabaseAdmin.from('scans')
-      .insert({ member_id: memberId, scanner_name: scannerName || null });
+      .insert({
+        member_id:    memberId,
+        scanner_name: scannerName || null,
+        latitude:     latitude ?? null,
+        longitude:    longitude ?? null,
+        location,
+      });
 
     if (scanError && scanError.code !== '23505') throw scanError;
 
