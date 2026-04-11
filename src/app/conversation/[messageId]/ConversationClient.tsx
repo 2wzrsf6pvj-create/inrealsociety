@@ -89,7 +89,7 @@ function ReplyForm({ messageId, memberId, onReplied }: {
 
   return (
     <form onSubmit={handleSubmit} className="w-full flex flex-col gap-3">
-      <p className="font-ui text-[0.45rem] text-brand-gray/25 tracking-[0.15em] uppercase">
+      <p className="font-ui text-xs text-brand-gray/25 tracking-[0.15em] uppercase">
         Votre réponse
       </p>
       <textarea
@@ -98,13 +98,13 @@ function ReplyForm({ messageId, memberId, onReplied }: {
         maxLength={2000}
         rows={4}
         placeholder="Écrivez votre réponse..."
-        className="w-full bg-transparent border border-brand-gray/20 focus:border-brand-white/50 text-brand-white font-ui font-light text-[0.78rem] p-3 outline-none transition-colors placeholder:text-brand-gray/20 rounded-[2px] resize-none"
+        className="w-full bg-transparent border border-brand-gray/20 focus:border-brand-white/50 text-brand-white font-ui font-light text-base p-3 outline-none transition-colors placeholder:text-brand-gray/20 rounded-[2px] resize-none"
       />
-      {error && <p className="font-ui text-[0.5rem] text-red-400">{error}</p>}
+      {error && <p className="font-ui text-sm text-red-400">{error}</p>}
       <button
         type="submit"
         disabled={loading || !reply.trim()}
-        className="w-full py-3 bg-brand-white text-brand-black font-ui font-bold text-[0.55rem] tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full py-3 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {loading ? 'Envoi...' : 'Répondre'}
       </button>
@@ -129,7 +129,6 @@ export default function ConversationClient({
 
   const memberName = message.members?.name || 'Ce membre';
 
-  // Marque le message comme lu par le membre (quand il ouvre la conversation)
   useEffect(() => {
     if (!isOwner || message.read_at) return;
     fetch('/api/mark-read', {
@@ -139,7 +138,6 @@ export default function ConversationClient({
     }).catch(() => {});
   }, [isOwner, message.id, message.member_id, message.read_at]);
 
-  // Marque le reply comme lu par le scanner
   useEffect(() => {
     if (isOwner || !message.reply) return;
     fetch('/api/mark-read', {
@@ -149,7 +147,6 @@ export default function ConversationClient({
     }).then(r => r.json()).then(d => { if (d.ok) setVuStatus(new Date().toISOString()); }).catch(() => {});
   }, [isOwner, message.id, message.member_id, message.reply]);
 
-  // Realtime — attend la réponse (pour le scanneur)
   useEffect(() => {
     if (message.reply) return;
     const channel = supabase.channel(`conv-${message.id}`)
@@ -186,7 +183,7 @@ export default function ConversationClient({
       <div className="absolute top-[-15%] right-[-15%] w-[28rem] h-[28rem] rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%)' }} />
 
-      <div className="z-10 flex flex-col w-full max-w-xs gap-6">
+      <div className="z-10 flex flex-col w-full max-w-xs md:max-w-sm gap-6">
 
         {/* Header membre */}
         <div className="flex items-center gap-3 animate-stagger-1">
@@ -197,8 +194,8 @@ export default function ConversationClient({
             }
           </div>
           <div>
-            <p className="font-ui text-[0.62rem] font-medium tracking-[0.2em]">{memberName.toUpperCase()}</p>
-            <p className="font-ui text-[0.48rem] text-brand-gray/30 tracking-[0.05em]">
+            <p className="font-ui text-sm font-medium tracking-[0.2em]">{memberName.toUpperCase()}</p>
+            <p className="font-ui text-xs text-brand-gray/30 tracking-[0.05em]">
               {isOwner ? 'Message reçu' : 'Votre conversation'}
             </p>
           </div>
@@ -208,15 +205,15 @@ export default function ConversationClient({
 
         {/* Message du scanner */}
         <div className="animate-stagger-2 flex flex-col gap-1">
-          <p className="font-ui text-[0.45rem] text-brand-gray/25 tracking-[0.15em] uppercase mb-1">
+          <p className="font-ui text-xs text-brand-gray/25 tracking-[0.15em] uppercase mb-1">
             {isOwner ? 'Message reçu' : 'Votre message'} · {formatDate(message.created_at)}
           </p>
           <div className={`max-w-[85%] p-4 bg-brand-white/5 border border-brand-gray/15 rounded-[2px] ${isOwner ? 'self-start rounded-tl-none' : 'self-end ml-auto rounded-tr-none'}`}>
-            <p className="font-display text-[0.9rem] font-light italic leading-relaxed text-brand-white/80">
+            <p className="font-display text-lg font-light italic leading-relaxed text-brand-white/80">
               &ldquo;{message.content}&rdquo;
             </p>
             {message.sender_contact && (
-              <p className="font-ui text-[0.45rem] text-brand-gray/30 mt-2">— {message.sender_contact}</p>
+              <p className="font-ui text-xs text-brand-gray/30 mt-2">— {message.sender_contact}</p>
             )}
           </div>
         </div>
@@ -226,30 +223,28 @@ export default function ConversationClient({
           {message.reply ? (
             <>
               <div className="flex items-center justify-between mb-1">
-                <p className="font-ui text-[0.45rem] text-brand-gray/25 tracking-[0.15em] uppercase">
+                <p className="font-ui text-xs text-brand-gray/25 tracking-[0.15em] uppercase">
                   {isOwner ? 'Votre réponse' : `${memberName} a répondu`} · {message.replied_at ? formatDate(message.replied_at) : ''}
                 </p>
                 {!isOwner && vuStatus && (
-                  <p className="font-ui text-[0.42rem] text-brand-gray/20 italic">Lu ✓</p>
+                  <p className="font-ui text-xxs text-brand-gray/20 italic">Lu ✓</p>
                 )}
               </div>
               <div className={`max-w-[85%] p-4 border border-brand-white/20 rounded-[2px] ${replyJustArrived ? 'animate-slide-right' : ''} ${isOwner ? 'self-end ml-auto rounded-tr-none' : 'self-start rounded-tl-none'}`}>
-                <p className="font-display text-[0.9rem] font-light italic leading-relaxed text-brand-white/90">
+                <p className="font-display text-lg font-light italic leading-relaxed text-brand-white/90">
                   &ldquo;{message.reply}&rdquo;
                 </p>
               </div>
             </>
           ) : isOwner ? (
-            /* Le membre peut répondre */
             <ReplyForm
               messageId={message.id}
               memberId={message.member_id}
               onReplied={handleReplied}
             />
           ) : (
-            /* Le scanneur attend */
             <div className="flex flex-col items-start gap-3 py-2">
-              <p className="font-ui text-[0.45rem] text-brand-gray/25 tracking-[0.15em] uppercase">
+              <p className="font-ui text-xs text-brand-gray/25 tracking-[0.15em] uppercase">
                 En attente de réponse
               </p>
               <div className="flex items-center gap-1.5 px-4 py-3 border border-brand-gray/10 rounded-[2px] rounded-tl-none">
@@ -260,22 +255,22 @@ export default function ConversationClient({
 
               {!pushAsked ? (
                 <button onClick={handleSubscribePush}
-                  className="w-full py-3 border border-brand-gray/15 text-center font-ui text-[0.52rem] font-light tracking-[0.1em] hover:border-brand-gray/35 transition-colors"
+                  className="w-full py-3 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.1em] hover:border-brand-gray/35 transition-colors"
                   style={{ minHeight: '44px' }}
                 >
                   Me notifier quand il répond
                 </button>
               ) : pushGranted ? (
-                <p className="font-ui text-[0.48rem] text-brand-gray/30 italic">
+                <p className="font-ui text-xs text-brand-gray/30 italic">
                   Vous serez notifié(e) dès qu&apos;il répond.
                 </p>
               ) : (
-                <p className="font-ui text-[0.48rem] text-brand-gray/20 italic">
+                <p className="font-ui text-xs text-brand-gray/20 italic">
                   Notifications refusées — revenez sur cette page pour voir la réponse.
                 </p>
               )}
 
-              <p className="font-ui text-[0.42rem] text-brand-gray/20 leading-relaxed">
+              <p className="font-ui text-xxs text-brand-gray/20 leading-relaxed">
                 Cette page se met à jour automatiquement.
               </p>
             </div>
@@ -288,14 +283,14 @@ export default function ConversationClient({
           {!isOwner && message.members?.instagram && (
             <a href={`https://instagram.com/${message.members.instagram.replace('@', '')}`}
               target="_blank" rel="noopener noreferrer"
-              className="w-full py-3 border border-brand-gray/15 text-center font-ui text-[0.55rem] font-light tracking-[0.15em] hover:border-brand-gray/40 transition-colors"
+              className="w-full py-3 border border-brand-gray/15 text-center font-ui text-sm font-light tracking-[0.15em] hover:border-brand-gray/40 transition-colors"
               style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
               @{message.members.instagram.replace('@', '')}
             </a>
           )}
           <Link href={isOwner ? '/dashboard' : '/'}
-            className="font-ui text-[0.48rem] text-brand-gray/20 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray/50 transition-colors text-center py-2"
+            className="font-ui text-xs text-brand-gray/20 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray/50 transition-colors text-center py-2"
             style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
             {isOwner ? '← retour au dashboard' : '← retour à l\'accueil'}

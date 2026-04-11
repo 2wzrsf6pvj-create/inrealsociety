@@ -72,13 +72,13 @@ function TabBar({ active, onChange, unreadCount }: {
         <button
           key={tab.key}
           onClick={() => onChange(tab.key)}
-          className={`flex-1 py-3 font-ui text-[0.52rem] tracking-[0.2em] uppercase transition-colors relative ${
+          className={`flex-1 py-3 font-ui text-xs tracking-[0.2em] uppercase transition-colors relative ${
             active === tab.key ? 'text-brand-white border-b border-brand-white' : 'text-brand-gray/30 hover:text-brand-gray/60'
           }`}
         >
           {tab.label}
           {tab.badge && tab.badge > 0 ? (
-            <span className="absolute top-2 right-[calc(50%-16px)] w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-[0.4rem] text-white font-bold">
+            <span className="absolute top-2 right-[calc(50%-16px)] w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-xxs text-white font-bold">
               {tab.badge > 9 ? '9+' : tab.badge}
             </span>
           ) : null}
@@ -98,10 +98,10 @@ function StatsBlock({ member, recentScans }: { member: Member; recentScans: Scan
     return (
       <div className="flex flex-col items-center gap-3 py-2 text-center">
         <div className="w-px h-6 bg-gradient-to-b from-transparent via-brand-white/20 to-transparent" />
-        <p className="font-display text-[1rem] font-light italic text-brand-gray/50 leading-relaxed">
+        <p className="font-display text-lg md:text-xl font-light italic text-brand-gray/50 leading-relaxed">
           &ldquo;{getWaitingPhrase(member.id)}&rdquo;
         </p>
-        <p className="font-ui text-[0.52rem] text-brand-gray/25 tracking-[0.15em] uppercase">
+        <p className="font-ui text-xs text-brand-gray/25 tracking-[0.15em] uppercase">
           Membre depuis {days} jour{days > 1 ? 's' : ''}
         </p>
         <div className="w-px h-6 bg-gradient-to-b from-transparent via-brand-white/20 to-transparent" />
@@ -119,8 +119,8 @@ function StatsBlock({ member, recentScans }: { member: Member; recentScans: Scan
         <React.Fragment key={s.label}>
           {i > 0 && <div className="w-px h-8 bg-brand-gray/10" />}
           <div className="flex flex-col items-center gap-1">
-            <span className="font-display text-[2rem] font-light">{s.value}</span>
-            <span className="font-ui text-[0.48rem] text-brand-gray/30 tracking-[0.2em] uppercase">{s.label}</span>
+            <span className="font-display text-3xl md:text-4xl font-light">{s.value}</span>
+            <span className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">{s.label}</span>
           </div>
         </React.Fragment>
       ))}
@@ -154,8 +154,8 @@ function InboxSection({ messages, memberId }: { messages: Message[]; memberId: s
   if (messages.length === 0) {
     return (
       <div className="flex flex-col items-center gap-3 py-8 text-center">
-        <p className="font-display text-[1rem] font-light italic text-brand-gray/40">Aucun message pour l'instant.</p>
-        <p className="font-ui text-[0.52rem] text-brand-gray/25 leading-relaxed">
+        <p className="font-display text-lg md:text-xl font-light italic text-brand-gray/40">Aucun message pour l'instant.</p>
+        <p className="font-ui text-xs md:text-sm text-brand-gray/25 leading-relaxed">
           Quand quelqu'un scannera votre QR code et vous enverra un message, il apparaîtra ici.
         </p>
       </div>
@@ -170,7 +170,7 @@ function InboxSection({ messages, memberId }: { messages: Message[]; memberId: s
           <div key={msg.id} className={`w-full bg-[#080808] border rounded-[2px] p-3 flex flex-col gap-2 ${!msg.read_at ? 'border-brand-white/20' : 'border-brand-gray/10'}`}>
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
-                <p className={`font-ui text-[0.62rem] leading-relaxed ${!msg.read_at ? 'text-brand-white/90' : 'text-brand-gray/60'}`}>
+                <p className={`font-ui text-sm leading-relaxed ${!msg.read_at ? 'text-brand-white/90' : 'text-brand-gray/60'}`}>
                   {msg.content}
                 </p>
               </div>
@@ -181,42 +181,42 @@ function InboxSection({ messages, memberId }: { messages: Message[]; memberId: s
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="font-ui text-[0.45rem] text-brand-gray/30">
+                <span className="font-ui text-xs text-brand-gray/30">
                   {msg.sender_contact || 'Anonyme'}
                 </span>
                 <span className="text-brand-gray/15">·</span>
-                <span className="font-ui text-[0.45rem] text-brand-gray/25">
+                <span className="font-ui text-xs text-brand-gray/25">
                   {timeAgo(msg.created_at)}
                 </span>
               </div>
 
               <div className="flex items-center gap-2">
                 {msg.reply ? (
-                  <span className="font-ui text-[0.42rem] text-brand-gray/30">Répondu</span>
+                  <span className="font-ui text-xxs text-brand-gray/30">Répondu</span>
                 ) : (
                   <Link href={`/conversation/${msg.id}`}
-                    className="font-ui text-[0.45rem] text-brand-white/60 hover:text-brand-white transition-colors">
+                    className="font-ui text-xs text-brand-white/60 hover:text-brand-white transition-colors">
                     Répondre
                   </Link>
                 )}
                 <span className="text-brand-gray/10">|</span>
                 {isReported ? (
-                  <span className="font-ui text-[0.42rem] text-red-400/60">Signalé</span>
+                  <span className="font-ui text-xxs text-red-400/60">Signalé</span>
                 ) : confirmingId === msg.id ? (
                   <span className="flex items-center gap-1">
                     <button onClick={() => handleReport(msg.id)} disabled={reportingId === msg.id}
-                      className="font-ui text-[0.42rem] text-red-400 hover:text-red-300 transition-colors">
+                      className="font-ui text-xxs text-red-400 hover:text-red-300 transition-colors">
                       Confirmer
                     </button>
                     <button onClick={() => setConfirmingId(null)}
-                      className="font-ui text-[0.42rem] text-brand-gray/30 hover:text-brand-gray/60 transition-colors">
+                      className="font-ui text-xxs text-brand-gray/30 hover:text-brand-gray/60 transition-colors">
                       Annuler
                     </button>
                   </span>
                 ) : (
                   <button
                     onClick={() => setConfirmingId(msg.id)}
-                    className="font-ui text-[0.42rem] text-brand-gray/25 hover:text-red-400 transition-colors"
+                    className="font-ui text-xxs text-brand-gray/25 hover:text-red-400 transition-colors"
                   >
                     Signaler
                   </button>
@@ -256,20 +256,20 @@ function ReferralBlock({ memberId }: { memberId: string }) {
     <div className="w-full bg-[#080808] border border-brand-gray/10 rounded-[2px] p-4 flex flex-col gap-3">
       <div className="flex items-center gap-3 w-full">
         <div className="flex-1 h-px bg-brand-gray/10" />
-        <span className="font-ui text-[0.48rem] text-brand-gray/30 tracking-[0.18em] uppercase">parrainage</span>
+        <span className="font-ui text-xs text-brand-gray/30 tracking-[0.18em] uppercase">parrainage</span>
         <div className="flex-1 h-px bg-brand-gray/10" />
       </div>
-      <p className="font-ui text-[0.52rem] text-brand-gray/50 leading-relaxed">
+      <p className="font-ui text-xs md:text-sm text-brand-gray/50 leading-relaxed">
         Partagez votre lien. Chaque parrainage est comptabilisé.
       </p>
       <div className="flex items-center gap-2">
-        <p className="font-mono text-[0.52rem] text-brand-gray/40 break-all flex-1 leading-relaxed">{referralUrl}</p>
-        <button onClick={handleCopy} className="font-ui text-[0.48rem] text-brand-white/60 hover:text-brand-white transition-colors flex-shrink-0 px-2 py-1 border border-brand-gray/20 rounded-[2px]">
+        <p className="font-mono text-xs text-brand-gray/40 break-all flex-1 leading-relaxed">{referralUrl}</p>
+        <button onClick={handleCopy} className="font-ui text-xs text-brand-white/60 hover:text-brand-white transition-colors flex-shrink-0 px-2 py-1 border border-brand-gray/20 rounded-[2px]">
           {copied ? 'Copié' : 'Copier'}
         </button>
       </div>
       {count !== null && (
-        <p className="font-ui text-[0.48rem] text-brand-gray/30">
+        <p className="font-ui text-xs text-brand-gray/30">
           {count} parrainage{count !== 1 ? 's' : ''}
         </p>
       )}
@@ -303,14 +303,14 @@ function SettingsSection({ member }: { member: Member }) {
       <div className="w-full bg-[#080808] border border-brand-gray/10 rounded-[2px] p-4 flex flex-col gap-3">
         <div className="flex items-center gap-3 w-full">
           <div className="flex-1 h-px bg-brand-gray/10" />
-          <span className="font-ui text-[0.48rem] text-brand-gray/30 tracking-[0.18em] uppercase">visibilité</span>
+          <span className="font-ui text-xs text-brand-gray/30 tracking-[0.18em] uppercase">visibilité</span>
           <div className="flex-1 h-px bg-brand-gray/10" />
         </div>
 
         <div className="flex items-center justify-between">
           <div className="flex flex-col gap-0.5">
-            <p className="font-ui text-[0.58rem] text-brand-white/80">Mettre en pause</p>
-            <p className="font-ui text-[0.48rem] text-brand-gray/40 leading-relaxed">
+            <p className="font-ui text-sm text-brand-white/80">Mettre en pause</p>
+            <p className="font-ui text-xs text-brand-gray/40 leading-relaxed">
               Votre profil sera masqué. Les scanneurs verront &ldquo;Ce membre est indisponible&rdquo;.
             </p>
           </div>
@@ -322,7 +322,7 @@ function SettingsSection({ member }: { member: Member }) {
             <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${isPaused ? 'left-5' : 'left-0.5'}`} />
           </button>
         </div>
-        {saved && <p className="font-ui text-[0.45rem] text-green-400/60">Sauvegardé.</p>}
+        {saved && <p className="font-ui text-xs text-green-400/60">Sauvegardé.</p>}
       </div>
 
       {/* Parrainage */}
@@ -330,25 +330,25 @@ function SettingsSection({ member }: { member: Member }) {
 
       {/* Modifier profil */}
       <Link href="/register"
-        className="w-full py-3 border border-brand-gray/20 text-center font-ui text-[0.55rem] font-light tracking-[0.2em] uppercase hover:border-brand-gray/50 transition-colors rounded-[2px]">
+        className="w-full py-3 border border-brand-gray/20 text-center font-ui text-sm font-light tracking-[0.2em] uppercase hover:border-brand-gray/50 transition-colors rounded-[2px]">
         Modifier mon profil
       </Link>
 
       {/* Infos */}
       <div className="flex flex-col gap-2">
-        <p className="font-ui text-[0.48rem] text-brand-gray/30 tracking-[0.18em] uppercase">Compte</p>
-        <p className="font-ui text-[0.52rem] text-brand-gray/50">{member.email || 'Pas d\'email associé'}</p>
-        <p className="font-ui text-[0.48rem] text-brand-gray/25">
+        <p className="font-ui text-xs text-brand-gray/30 tracking-[0.18em] uppercase">Compte</p>
+        <p className="font-ui text-xs md:text-sm text-brand-gray/50">{member.email || 'Pas d\'email associé'}</p>
+        <p className="font-ui text-xs text-brand-gray/25">
           Membre depuis le {new Date(member.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
         </p>
       </div>
 
       {/* Liens légaux */}
       <div className="flex flex-col gap-2 border-t border-brand-gray/10 pt-4">
-        <Link href="/cgv" className="font-ui text-[0.48rem] text-brand-gray/30 hover:text-brand-gray/60 transition-colors">
+        <Link href="/cgv" className="font-ui text-xs text-brand-gray/30 hover:text-brand-gray/60 transition-colors">
           Conditions Générales de Vente
         </Link>
-        <Link href="/manifeste" className="font-ui text-[0.48rem] text-brand-gray/30 hover:text-brand-gray/60 transition-colors">
+        <Link href="/manifeste" className="font-ui text-xs text-brand-gray/30 hover:text-brand-gray/60 transition-colors">
           Manifeste
         </Link>
       </div>
@@ -360,7 +360,7 @@ function SettingsSection({ member }: { member: Member }) {
           await supabase.auth.signOut();
           window.location.href = '/auth/login';
         }}
-        className="w-full py-3 border border-red-500/20 text-center font-ui text-[0.52rem] font-light tracking-[0.2em] uppercase text-red-400/60 hover:border-red-500/40 hover:text-red-400 transition-colors rounded-[2px]"
+        className="w-full py-3 border border-red-500/20 text-center font-ui text-xs font-light tracking-[0.2em] uppercase text-red-400/60 hover:border-red-500/40 hover:text-red-400 transition-colors rounded-[2px]"
       >
         Se déconnecter
       </button>
@@ -387,7 +387,7 @@ function HomeSection({ member, recentScans }: {
       <div className="w-full bg-[#080808] border border-brand-gray/10 rounded-[2px] p-4 flex flex-col gap-4">
         <div className="flex items-center gap-3 w-full">
           <div className="flex-1 h-px bg-brand-gray/10" />
-          <span className="font-ui text-[0.48rem] text-brand-gray/30 tracking-[0.18em] uppercase">votre profil</span>
+          <span className="font-ui text-xs text-brand-gray/30 tracking-[0.18em] uppercase">votre profil</span>
           <div className="flex-1 h-px bg-brand-gray/10" />
         </div>
         <div className="flex items-center gap-3">
@@ -397,13 +397,13 @@ function HomeSection({ member, recentScans }: {
               {member.photo_url ? (
                 <img src={`${member.photo_url}?width=80&quality=80`} alt="" className="w-full h-full object-cover" />
               ) : (
-                <span className="font-display text-[0.9rem] font-light text-brand-gray/50">{getInitials(member.name)}</span>
+                <span className="font-display text-base font-light text-brand-gray/50">{getInitials(member.name)}</span>
               )}
             </div>
           </div>
           <div className="flex flex-col gap-0.5">
-            <p className="font-ui text-[0.62rem] font-medium tracking-[0.2em]">{member.name.toUpperCase()}</p>
-            <p className="font-ui text-[0.52rem] text-brand-gray/40">
+            <p className="font-ui text-sm font-medium tracking-[0.2em]">{member.name.toUpperCase()}</p>
+            <p className="font-ui text-xs text-brand-gray/40">
               {member.is_paused
                 ? 'En pause'
                 : member.scan_count > 0
@@ -412,7 +412,7 @@ function HomeSection({ member, recentScans }: {
             </p>
           </div>
         </div>
-        <p className="font-display text-[0.88rem] font-light italic text-brand-gray/50 leading-relaxed">
+        <p className="font-display text-lg font-light italic text-brand-gray/50 leading-relaxed">
           &ldquo;{member.pitch}&rdquo;
         </p>
       </div>
@@ -420,11 +420,11 @@ function HomeSection({ member, recentScans }: {
       {/* Recent scans */}
       {recentScans.length > 0 && (
         <div className="w-full flex flex-col gap-2">
-          <p className="font-ui text-[0.5rem] text-brand-gray/30 tracking-[0.2em] uppercase">Derniers scans</p>
+          <p className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">Derniers scans</p>
           {recentScans.map(scan => (
             <div key={scan.id} className="flex items-center justify-between py-2 border-b border-brand-gray/10">
-              <span className="font-ui text-[0.62rem] font-light text-brand-white/70">{scan.scanner_name || 'Anonyme'}</span>
-              <span className="font-ui text-[0.52rem] text-brand-gray/40">{formatDate(scan.scanned_at)}</span>
+              <span className="font-ui text-sm font-light text-brand-white/70">{scan.scanner_name || 'Anonyme'}</span>
+              <span className="font-ui text-xs text-brand-gray/40">{formatDate(scan.scanned_at)}</span>
             </div>
           ))}
         </div>
@@ -433,7 +433,7 @@ function HomeSection({ member, recentScans }: {
       {/* Lien profil */}
       <div className="w-full flex flex-col gap-3">
         <Link href={`/profil/${member.id}`}
-          className="w-full py-3 border border-brand-gray/20 text-center font-ui text-[0.58rem] font-light tracking-[0.2em] uppercase hover:border-brand-gray/50 transition-colors">
+          className="w-full py-3 border border-brand-gray/20 text-center font-ui text-sm font-light tracking-[0.2em] uppercase hover:border-brand-gray/50 transition-colors">
           Voir mon profil
         </Link>
       </div>
@@ -457,7 +457,6 @@ export default function DashboardClient({
   const [tab, setTab]     = useState<Tab>('home');
   const [toast, setToast] = useState('');
 
-  // Détecte si on revient de /register (modification profil)
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
     const updated = sessionStorage.getItem('profile_updated');
@@ -476,18 +475,18 @@ export default function DashboardClient({
       {/* Toast notification */}
       {toast && (
         <div className="fixed top-4 z-50 px-4 py-2 bg-brand-white/10 border border-brand-white/20 rounded-[2px] backdrop-blur-sm animate-stagger-1">
-          <p className="font-ui text-[0.55rem] text-brand-white/80">{toast}</p>
+          <p className="font-ui text-sm text-brand-white/80">{toast}</p>
         </div>
       )}
 
-      <div className="z-10 flex flex-col items-center w-full max-w-xs gap-6">
+      <div className="z-10 flex flex-col items-center w-full max-w-xs md:max-w-sm gap-6">
 
         {/* Header */}
         <div className="text-center flex flex-col gap-2">
-          <h2 className="font-display text-[1.8rem] font-light tracking-[0.06em]">
+          <h2 className="font-display text-3xl font-light tracking-[0.06em]">
             Bienvenue<br /><span className="font-semibold">{member.name}.</span>
           </h2>
-          <p className="font-ui text-[0.6rem] font-light text-brand-gray/50 tracking-[0.1em]">
+          <p className="font-ui text-sm font-light text-brand-gray/50 tracking-[0.1em]">
             {member.is_paused
               ? 'Profil en pause.'
               : member.scan_count > 0

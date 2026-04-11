@@ -55,11 +55,8 @@ export default function ProfilClient({
     const name = localStorage.getItem('scannerName') ?? '';
     setScannerName(name);
 
-    // Vérifie si une conversation existe déjà pour ce membre
-    // Stocke en chemin relatif pour être indépendant du domaine
     const existingConv = localStorage.getItem(`conversation_${member.id}`);
     if (existingConv) {
-      // Normalise en chemin relatif si c'est une URL absolue
       try {
         const url = new URL(existingConv);
         setConvUrl(url.pathname);
@@ -68,7 +65,6 @@ export default function ProfilClient({
       }
     }
 
-    // Enregistre le scan — seulement si ce n'est PAS le propriétaire du profil
     if (!isOwner) {
       fetch('/api/scan', {
         method: 'POST',
@@ -82,17 +78,17 @@ export default function ProfilClient({
   if (member.is_paused) {
     return (
       <main className="relative flex min-h-screen flex-col items-center justify-center bg-brand-black text-brand-white px-6 py-12 overflow-hidden">
-        <div className="z-10 flex flex-col items-center text-center gap-6 w-full max-w-xs">
+        <div className="z-10 flex flex-col items-center text-center gap-6 w-full max-w-xs md:max-w-sm">
           <div className="w-20 h-20 rounded-full border border-brand-gray/15 flex items-center justify-center">
             <span className="font-display text-2xl font-light text-brand-gray/30">{getInitials(member.name)}</span>
           </div>
           <div className="flex flex-col gap-3">
-            <p className="font-display text-[1.4rem] font-light tracking-[0.04em]">Ce membre est indisponible.</p>
-            <p className="font-ui text-[0.55rem] text-brand-gray/30 leading-relaxed">
+            <p className="font-display text-2xl md:text-3xl font-light tracking-[0.04em]">Ce membre est indisponible.</p>
+            <p className="font-ui text-sm text-brand-gray/30 leading-relaxed">
               Peut-être une prochaine fois.
             </p>
           </div>
-          <Link href="/" className="font-ui text-[0.48rem] text-brand-gray/20 tracking-[0.15em] uppercase underline underline-offset-4 py-2" style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}>
+          <Link href="/" className="font-ui text-xs text-brand-gray/20 tracking-[0.15em] uppercase underline underline-offset-4 py-2" style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}>
             ← retour
           </Link>
         </div>
@@ -109,12 +105,12 @@ export default function ProfilClient({
       <div className="absolute bottom-[-10%] left-[-10%] w-52 h-52 rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%)' }} />
 
-      <div className="z-10 flex flex-col items-center w-full max-w-xs gap-6">
+      <div className="z-10 flex flex-col items-center w-full max-w-xs md:max-w-sm gap-6">
 
         {/* Tag */}
         <div className="flex items-center gap-3 w-full animate-stagger-1">
           <div className="flex-1 h-px bg-brand-gray/10 animate-line-draw" />
-          <span className="font-ui text-[0.45rem] text-brand-gray/30 tracking-[0.2em] uppercase">profil</span>
+          <span className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">profil</span>
           <div className="flex-1 h-px bg-brand-gray/10 animate-line-draw" style={{ animationDelay: '0.5s' }} />
         </div>
 
@@ -140,7 +136,7 @@ export default function ProfilClient({
               )}
             </div>
           </div>
-          <p className="font-ui text-[0.62rem] font-medium tracking-[0.25em] text-brand-white/80">
+          <p className="font-ui text-sm font-medium tracking-[0.25em] text-brand-white/80">
             {member.name.toUpperCase()}
           </p>
         </div>
@@ -148,17 +144,17 @@ export default function ProfilClient({
         {/* Corps */}
         {!isExpired ? (
           <div className="flex flex-col items-center gap-4 animate-stagger-3">
-            <h1 className="font-display text-[1.4rem] font-light tracking-[0.04em] text-center leading-snug">
+            <h1 className="font-display text-2xl md:text-3xl font-light tracking-[0.04em] text-center leading-snug">
               {scannerName
                 ? <>Nos chemins se sont croisés,<br /><span className="font-semibold italic">{scannerName}</span>.</>
                 : <>Quelque chose vous a arrêté.<br /><span className="text-brand-gray/50">C&apos;est rare.</span></>
               }
             </h1>
-            <p className="font-display text-[0.92rem] font-light italic text-brand-gray/60 text-center leading-relaxed">
+            <p className="font-display text-lg md:text-xl font-light italic text-brand-gray/60 text-center leading-relaxed">
               &ldquo;{member.pitch}&rdquo;
             </p>
             {!scannerName && (
-              <p className="font-ui text-[0.52rem] font-light text-brand-gray/35 text-center leading-relaxed tracking-wide">
+              <p className="font-ui text-xs md:text-sm font-light text-brand-gray/35 text-center leading-relaxed tracking-wide">
                 Ce vêtement signifie que son porteur est ouvert<br />à une conversation. Vous avez le contrôle.
               </p>
             )}
@@ -166,8 +162,8 @@ export default function ProfilClient({
         ) : (
           <div className="flex flex-col items-center gap-3 animate-stagger-3">
             <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
-            <p className="font-display text-[1.1rem] font-light italic text-center text-brand-gray/40">Ce moment est passé.</p>
-            <p className="font-ui text-[0.52rem] text-brand-gray/25 text-center leading-relaxed">
+            <p className="font-display text-xl font-light italic text-center text-brand-gray/40">Ce moment est passé.</p>
+            <p className="font-ui text-xs md:text-sm text-brand-gray/25 text-center leading-relaxed">
               La fenêtre de 24 heures est terminée.<br />La prochaine occasion sera la bonne.
             </p>
             <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
@@ -181,16 +177,16 @@ export default function ProfilClient({
           <div className="w-full flex flex-col gap-3 animate-stagger-4">
             {convUrl && (
               <Link href={convUrl}
-                className="w-full py-3 border border-brand-white/20 text-center font-ui text-[0.55rem] font-light tracking-[0.15em] hover:border-brand-white/40 transition-colors"
+                className="w-full py-3 border border-brand-white/20 text-center font-ui text-sm font-light tracking-[0.15em] hover:border-brand-white/40 transition-colors"
                 style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               >
-                Retrouver votre conversation →
+                Retrouver votre conversation
               </Link>
             )}
 
             <Link
               href={`/message?to=${member.id}&name=${encodeURIComponent(member.name)}`}
-              className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-[0.6rem] tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 text-center block"
+              className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 text-center block"
               style={{ minHeight: '44px' }}
             >
               {convUrl ? 'Envoyer un autre message' : 'Lui envoyer un message'}
@@ -198,11 +194,11 @@ export default function ProfilClient({
 
             {instagramHandle && (
               <div className="flex flex-col items-center gap-1">
-                <p className="font-ui text-[0.42rem] text-brand-gray/25 tracking-[0.15em] uppercase">ou retrouvez ce membre sur</p>
+                <p className="font-ui text-xxs md:text-xs text-brand-gray/25 tracking-[0.15em] uppercase">ou retrouvez ce membre sur</p>
                 <a
                   href={`https://instagram.com/${instagramHandle}`}
                   target="_blank" rel="noopener noreferrer"
-                  className="w-full py-3 border border-brand-gray/15 text-center font-ui text-[0.55rem] font-light tracking-[0.15em] hover:border-brand-gray/40 transition-colors"
+                  className="w-full py-3 border border-brand-gray/15 text-center font-ui text-sm font-light tracking-[0.15em] hover:border-brand-gray/40 transition-colors"
                   style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 >
                   @{instagramHandle}
@@ -215,10 +211,10 @@ export default function ProfilClient({
         {/* Countdown */}
         <div className="w-full flex flex-col gap-2 animate-stagger-5 mt-2">
           <div className="flex items-center justify-between">
-            <span className="font-ui text-[0.42rem] text-brand-gray/20 tracking-[0.2em] uppercase">
+            <span className="font-ui text-xxs md:text-xs text-brand-gray/20 tracking-[0.2em] uppercase">
               {countdown.active ? 'Occasion éphémère' : 'Profil actif'}
             </span>
-            <span className="font-ui text-[0.42rem] text-brand-gray/20 tabular-nums">
+            <span className="font-ui text-xxs md:text-xs text-brand-gray/20 tabular-nums">
               {isExpired ? 'Expiré' : countdown.active ? `${countdown.hours}h ${countdown.minutes}m` : '24h'}
             </span>
           </div>
@@ -229,7 +225,7 @@ export default function ProfilClient({
         </div>
 
         <Link href="/"
-          className="font-ui text-[0.48rem] text-brand-gray/20 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray/50 transition-colors py-2"
+          className="font-ui text-xs text-brand-gray/20 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray/50 transition-colors py-2"
           style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}
         >
           ← retour

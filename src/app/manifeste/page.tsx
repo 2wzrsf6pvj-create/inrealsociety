@@ -20,7 +20,7 @@ export const metadata = {
     siteName: 'In Real Society',
     images: [
       {
-        url: '/images/og-image.jpg', // Pense à mettre une belle image dans ton dossier /public/images/
+        url: '/images/og-image.jpg',
         width: 1200,
         height: 630,
       },
@@ -44,17 +44,17 @@ export default function ManifestePage() {
           <div className="relative">
             <div className="absolute w-20 h-20 rounded-full border border-brand-white/10 animate-ring-pulse" />
             <div className="w-16 h-16 rounded-full border border-brand-white/50 flex items-center justify-center">
-              <span className="font-display text-2xl md:text-[1.6rem] font-light">X</span>
+              <span className="font-display text-2xl md:text-3xl font-light">X</span>
             </div>
           </div>
-          <h1 className="font-display text-4xl md:text-[2.4rem] font-light leading-[1.15] tracking-[0.02em]">
+          <h1 className="font-display text-4xl md:text-5xl font-light leading-[1.15] tracking-[0.02em]">
             In Real<br />Society.
           </h1>
-          <p className="font-ui text-xs md:text-[0.68rem] font-light text-brand-gray/60 leading-relaxed tracking-wide">
+          <p className="font-ui text-sm md:text-base font-light text-brand-gray/60 leading-relaxed tracking-wide">
             Le premier vêtement conçu pour<br />les rencontres dans la vraie vie.
           </p>
           <div className="w-px h-10 bg-gradient-to-b from-transparent via-brand-white/20 to-transparent" />
-          <a href="#manifeste" className="font-ui text-[0.58rem] text-brand-gray/40 tracking-[0.2em] uppercase hover:text-brand-white transition-colors">
+          <a href="#manifeste" className="font-ui text-sm text-brand-gray/40 tracking-[0.2em] uppercase hover:text-brand-white transition-colors">
             Lire le manifeste ↓
           </a>
         </div>
@@ -70,30 +70,30 @@ export default function ManifestePage() {
           >
             <div className="flex flex-col gap-4">
               {block.label && (
-                <span className="font-ui text-[0.52rem] text-brand-gray/30 tracking-[0.25em] uppercase">
+                <span className="font-ui text-xs text-brand-gray/30 tracking-[0.25em] uppercase">
                   {block.label}
                 </span>
               )}
 
               {block.highlight ? (
                 <div className="border border-brand-white/10 rounded-[2px] p-5 md:p-6 flex flex-col gap-4 bg-[#080808]">
-                  <h2 className="font-display text-xl md:text-[1.4rem] font-light leading-[1.2] tracking-[0.02em]">
+                  <h2 className="font-display text-xl md:text-2xl font-light leading-[1.2] tracking-[0.02em]">
                     {block.title}
                   </h2>
                   <div className="w-full h-px bg-brand-gray/10" />
                   {block.body.split('\n\n').map((p: string, j: number) => (
-                    <p key={j} className="font-ui text-sm md:text-[0.7rem] font-light text-brand-gray/70 leading-relaxed">
+                    <p key={j} className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
                       {p}
                     </p>
                   ))}
                 </div>
               ) : (
                 <>
-                  <h2 className="font-display text-2xl md:text-[1.5rem] font-light leading-[1.2] tracking-[0.02em]">
+                  <h2 className="font-display text-2xl md:text-3xl font-light leading-[1.2] tracking-[0.02em]">
                     {block.title}
                   </h2>
                   {block.body.split('\n\n').map((p: string, j: number) => (
-                    <p key={j} className="font-ui text-sm md:text-[0.7rem] font-light text-brand-gray/60 leading-relaxed">
+                    <p key={j} className="font-ui text-sm md:text-base font-light text-brand-gray/60 leading-relaxed">
                       {p}
                     </p>
                   ))}
@@ -110,19 +110,19 @@ export default function ManifestePage() {
         >
           <div className="flex flex-col items-center gap-6 pt-8 text-center">
             <div className="w-px h-12 bg-gradient-to-b from-transparent via-brand-white/20 to-transparent" />
-            <p className="font-display text-lg md:text-[1.1rem] font-light italic text-brand-gray/60">
+            <p className="font-display text-lg md:text-xl font-light italic text-brand-gray/60">
               "Derrière chaque scan, il y a quelqu'un<br />qui vous a vraiment regardé."
             </p>
             <div className="flex flex-col gap-3 w-full max-w-xs mt-4">
               <Link
                 href="/register"
-                className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-[0.65rem] tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-200 active:scale-[0.98] transition-all duration-200 block text-center"
+                className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-200 active:scale-[0.98] transition-all duration-200 block text-center"
               >
                 Rejoindre le club
               </Link>
               <Link
                 href="/cgv"
-                className="font-ui text-[0.52rem] text-brand-gray/25 tracking-[0.1em] text-center hover:text-brand-gray/50 transition-colors"
+                className="font-ui text-xs text-brand-gray/25 tracking-[0.1em] text-center hover:text-brand-gray/50 transition-colors"
               >
                 Conditions Générales de Vente
               </Link>

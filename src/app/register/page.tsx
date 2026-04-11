@@ -40,11 +40,9 @@ function useCodeValidation(initialCode: string) {
   const [codeErr,  setCodeErr]  = useState('');
   const [checking, setChecking] = useState(false);
 
-  // Si le code initial change (ex: query param), reset
   useEffect(() => {
     if (initialCode) {
       setCode(initialCode);
-      // Auto-validate si assez long
       if (initialCode.length >= 6) validate(initialCode);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -81,15 +79,15 @@ function CodeField({ code, codeOk, codeErr, checking, onChange }: {
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <label className="font-ui text-[0.48rem] text-brand-gray/30 tracking-[0.2em] uppercase">Code d'activation</label>
+      <label className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">Code d'activation</label>
       <div className="flex items-end gap-2">
         <input type="text" placeholder="XXXXXXXX" value={code} maxLength={12}
           onChange={e => onChange(e.target.value)}
-          className={`flex-1 bg-transparent border-b font-mono text-[0.9rem] text-brand-white py-3 outline-none tracking-[0.3em] transition-colors ${codeErr ? 'border-red-900' : codeOk ? 'border-brand-white/60' : 'border-brand-gray/20 focus:border-brand-white/50'}`}
+          className={`flex-1 bg-transparent border-b font-mono text-lg text-brand-white py-3 outline-none tracking-[0.3em] transition-colors ${codeErr ? 'border-red-900' : codeOk ? 'border-brand-white/60' : 'border-brand-gray/20 focus:border-brand-white/50'}`}
           style={{ minHeight: '44px' }} />
-        <span className="font-ui text-[0.45rem] text-brand-gray/30 pb-3">{checking ? '...' : codeOk ? 'Valide' : ''}</span>
+        <span className="font-ui text-xs text-brand-gray/30 pb-3">{checking ? '...' : codeOk ? 'Valide' : ''}</span>
       </div>
-      {codeErr && <p className="font-ui text-[0.5rem] text-red-400">{codeErr}</p>}
+      {codeErr && <p className="font-ui text-sm text-red-400">{codeErr}</p>}
     </div>
   );
 }
@@ -125,37 +123,37 @@ function StepAccount({ onNext, codeState }: {
   return (
     <div className="w-full flex flex-col gap-6 animate-stagger-2">
       <div className="text-center flex flex-col gap-2">
-        <h2 className="font-display text-[1.8rem] font-light tracking-[0.04em]">Votre compte.</h2>
-        <p className="font-ui text-[0.55rem] font-light text-brand-gray/40 leading-relaxed">
+        <h2 className="font-display text-3xl font-light tracking-[0.04em]">Votre compte.</h2>
+        <p className="font-ui text-sm font-light text-brand-gray/40 leading-relaxed">
           Le code d'activation vous a été envoyé par email après votre commande.
         </p>
       </div>
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         <CodeField {...codeState} onChange={codeState.handleChange} />
-        <p className="font-ui text-[0.42rem] text-brand-gray/20 -mt-3">
-          Pas encore de t-shirt ? <a href="/shop" className="underline underline-offset-4 hover:text-brand-gray/50 transition-colors">Commander →</a>
+        <p className="font-ui text-xxs md:text-xs text-brand-gray/20 -mt-3">
+          Pas encore de t-shirt ? <a href="/shop" className="underline underline-offset-4 hover:text-brand-gray/50 transition-colors">Commander</a>
         </p>
         <div className="flex flex-col gap-1">
-          <label className="font-ui text-[0.48rem] text-brand-gray/30 tracking-[0.2em] uppercase">Email</label>
+          <label className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">Email</label>
           <input type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)}
-            className="w-full bg-transparent border-b border-brand-gray/20 focus:border-brand-white/60 font-ui font-light text-[0.82rem] text-brand-white py-3 outline-none transition-colors"
+            className="w-full bg-transparent border-b border-brand-gray/20 focus:border-brand-white/60 font-ui font-light text-base text-brand-white py-3 outline-none transition-colors"
             style={{ minHeight: '44px' }} />
         </div>
         <div className="flex flex-col gap-1">
-          <label className="font-ui text-[0.48rem] text-brand-gray/30 tracking-[0.2em] uppercase">
+          <label className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">
             Mot de passe <span className="text-brand-gray/15 normal-case tracking-normal">(8 caractères min)</span>
           </label>
           <input type="password" autoComplete="new-password" value={password} onChange={e => setPassword(e.target.value)}
-            className="w-full bg-transparent border-b border-brand-gray/20 focus:border-brand-white/60 font-ui font-light text-[0.82rem] text-brand-white py-3 outline-none transition-colors"
+            className="w-full bg-transparent border-b border-brand-gray/20 focus:border-brand-white/60 font-ui font-light text-base text-brand-white py-3 outline-none transition-colors"
             style={{ minHeight: '44px' }} />
         </div>
-        {error && <p className="font-ui text-[0.58rem] text-red-400 text-center">{error}</p>}
+        {error && <p className="font-ui text-sm text-red-400 text-center">{error}</p>}
         <button type="submit" disabled={loading || !codeState.codeOk}
-          className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-[0.6rem] tracking-[0.3em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.3em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
           style={{ minHeight: '44px' }}>
-          {loading ? 'Création du compte...' : 'Créer mon compte →'}
+          {loading ? 'Création du compte...' : 'Créer mon compte'}
         </button>
-        <a href="/auth/login" className="font-ui text-[0.48rem] text-brand-gray/25 tracking-[0.15em] uppercase text-center hover:text-brand-gray/50 transition-colors">
+        <a href="/auth/login" className="font-ui text-xs text-brand-gray/25 tracking-[0.15em] uppercase text-center hover:text-brand-gray/50 transition-colors">
           Déjà un compte ? Se connecter
         </a>
       </form>
@@ -175,7 +173,7 @@ function StepProfile({ form, onChange, onNext, onBack, isEditing, isLoggedIn, co
 
   const field = (key: keyof FormData, value: string) => onChange({ ...form, [key]: value });
 
-  const needsCode = !isEditing && isLoggedIn; // connecté sans profil → doit entrer le code ici
+  const needsCode = !isEditing && isLoggedIn;
 
   const handleAi = async () => {
     setAiLoading(true);
@@ -194,38 +192,37 @@ function StepProfile({ form, onChange, onNext, onBack, isEditing, isLoggedIn, co
   return (
     <div className="w-full flex flex-col gap-6">
       <div className="text-center flex flex-col gap-2 animate-stagger-1">
-        <h2 className="font-display text-[1.8rem] font-light tracking-[0.04em]">
+        <h2 className="font-display text-3xl font-light tracking-[0.04em]">
           {isEditing ? 'Modifier votre profil.' : 'Votre présence.'}
         </h2>
-        <p className="font-ui text-[0.55rem] font-light text-brand-gray/40">
+        <p className="font-ui text-sm font-light text-brand-gray/40">
           {isEditing ? 'Mettez à jour vos informations.' : 'Ce que vous êtes, en quelques mots.'}
         </p>
       </div>
       <div className="flex flex-col gap-5 animate-stagger-2">
-        {/* Code d'activation — uniquement si connecté sans profil (skip étape 1) */}
         {needsCode && (
           <CodeField {...codeState} onChange={codeState.handleChange} />
         )}
 
         <div className="flex flex-col gap-1">
-          <label className="font-ui text-[0.48rem] text-brand-gray/30 tracking-[0.2em] uppercase">Prénom ou pseudo</label>
+          <label className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">Prénom ou pseudo</label>
           <input type="text" maxLength={30} value={form.name} onChange={e => field('name', e.target.value)}
-            className="w-full bg-transparent border-b border-brand-gray/15 focus:border-brand-white/60 font-ui font-light text-[0.82rem] text-brand-white py-3 outline-none transition-colors"
+            className="w-full bg-transparent border-b border-brand-gray/15 focus:border-brand-white/60 font-ui font-light text-base text-brand-white py-3 outline-none transition-colors"
             style={{ minHeight: '44px' }} />
         </div>
         <div className="flex flex-col gap-3">
-          <p className="font-ui text-[0.48rem] text-brand-gray/30 tracking-[0.2em] uppercase">Votre pitch</p>
+          <p className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">Votre pitch</p>
           <button type="button" onClick={handleAi} disabled={aiLoading}
             className="w-full py-3 border border-brand-white/20 rounded-[1px] flex items-center justify-center gap-2 hover:border-brand-white/40 transition-colors disabled:opacity-40"
             style={{ minHeight: '44px' }}>
             <span style={{ fontSize: '14px' }}>{aiLoading ? '...' : '✦'}</span>
-            <span className="font-ui text-[0.55rem] text-brand-white/60 tracking-[0.15em] uppercase">
+            <span className="font-ui text-sm text-brand-white/60 tracking-[0.15em] uppercase">
               {aiLoading ? 'Génération...' : "Générer avec l'IA"}
             </span>
           </button>
           <div className="flex items-center gap-3">
             <div className="flex-1 h-px bg-brand-gray/10" />
-            <span className="font-ui text-[0.42rem] text-brand-gray/20 uppercase">ou rédigez</span>
+            <span className="font-ui text-xxs text-brand-gray/20 uppercase">ou rédigez</span>
             <div className="flex-1 h-px bg-brand-gray/10" />
           </div>
           {[
@@ -234,29 +231,28 @@ function StepProfile({ form, onChange, onNext, onBack, isEditing, isLoggedIn, co
             { key: 'closing', label: 'Votre phrase de fin',             ph: 'Celle qui reste.' },
           ].map(f => (
             <div key={f.key} className="flex flex-col gap-1">
-              <label className="font-ui text-[0.42rem] text-brand-gray/20 tracking-[0.15em] uppercase">{f.label}</label>
+              <label className="font-ui text-xxs md:text-xs text-brand-gray/20 tracking-[0.15em] uppercase">{f.label}</label>
               <input type="text" maxLength={200} placeholder={f.ph} value={form[f.key as keyof FormData] as string}
                 onChange={e => field(f.key as keyof FormData, e.target.value)}
-                className="w-full bg-transparent border-b border-brand-gray/10 focus:border-brand-white/50 font-ui font-light text-[0.78rem] text-brand-white py-2.5 outline-none transition-colors placeholder:text-brand-gray/15"
+                className="w-full bg-transparent border-b border-brand-gray/10 focus:border-brand-white/50 font-ui font-light text-base text-brand-white py-2.5 outline-none transition-colors placeholder:text-brand-gray/15"
                 style={{ minHeight: '44px' }} />
             </div>
           ))}
           {composePitch(form) && (
             <div className="p-3 border border-brand-gray/10 rounded-[1px]">
-              <p className="font-ui text-[0.42rem] text-brand-gray/25 tracking-[0.15em] uppercase mb-1">Aperçu</p>
-              <p className="font-display text-[0.78rem] font-light italic text-brand-gray/50 leading-relaxed">&ldquo;{composePitch(form)}&rdquo;</p>
+              <p className="font-ui text-xxs text-brand-gray/25 tracking-[0.15em] uppercase mb-1">Aperçu</p>
+              <p className="font-display text-base font-light italic text-brand-gray/50 leading-relaxed">&ldquo;{composePitch(form)}&rdquo;</p>
             </div>
           )}
         </div>
-        {error && <p className="font-ui text-[0.58rem] text-red-400 text-center">{error}</p>}
+        {error && <p className="font-ui text-sm text-red-400 text-center">{error}</p>}
         <button onClick={handleNext}
-          className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-[0.6rem] tracking-[0.3em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200"
+          className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.3em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200"
           style={{ minHeight: '44px' }}>
-          Continuer →
+          Continuer
         </button>
-        {/* Retour uniquement si non connecté (vers étape 1) */}
         {!isLoggedIn && (
-          <button onClick={onBack} className="font-ui text-[0.48rem] text-brand-gray/25 tracking-[0.15em] uppercase underline underline-offset-4 py-2">
+          <button onClick={onBack} className="font-ui text-xs text-brand-gray/25 tracking-[0.15em] uppercase underline underline-offset-4 py-2">
             ← retour
           </button>
         )}
@@ -296,35 +292,35 @@ function StepOptional({ form, onChange, onSubmit, onBack, loading, error, isEdit
   return (
     <div className="w-full flex flex-col gap-6">
       <div className="text-center flex flex-col gap-2 animate-stagger-1">
-        <h2 className="font-display text-[1.8rem] font-light tracking-[0.04em]">Pour aller plus loin.</h2>
-        <p className="font-ui text-[0.55rem] font-light text-brand-gray/40">Tout est optionnel.</p>
+        <h2 className="font-display text-3xl font-light tracking-[0.04em]">Pour aller plus loin.</h2>
+        <p className="font-ui text-sm font-light text-brand-gray/40">Tout est optionnel.</p>
       </div>
       <div className="flex flex-col gap-5 animate-stagger-2">
         <div className="flex flex-col items-center gap-2">
           <button type="button" onClick={() => fileRef.current?.click()}
             className="relative w-20 h-20 rounded-full border border-brand-gray/20 bg-[#0a0a0a] flex items-center justify-center overflow-hidden hover:border-brand-gray/40 transition-colors">
-            {preview ? <img src={preview} alt="preview" className="w-full h-full object-cover" /> : <span className="font-ui text-[0.5rem] text-brand-gray/20 tracking-[0.1em] uppercase">Photo</span>}
+            {preview ? <img src={preview} alt="preview" className="w-full h-full object-cover" /> : <span className="font-ui text-xs text-brand-gray/20 tracking-[0.1em] uppercase">Photo</span>}
           </button>
           <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handlePhoto} />
-          {fileErr && <p className="font-ui text-[0.45rem] text-red-400">{fileErr}</p>}
-          <p className="font-ui text-[0.38rem] text-brand-gray/20">JPEG, PNG ou WebP · 5 Mo max</p>
+          {fileErr && <p className="font-ui text-xs text-red-400">{fileErr}</p>}
+          <p className="font-ui text-xxs text-brand-gray/20">JPEG, PNG ou WebP · 5 Mo max</p>
         </div>
         <div className="flex flex-col gap-1">
-          <label className="font-ui text-[0.48rem] text-brand-gray/30 tracking-[0.2em] uppercase">
+          <label className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">
             Instagram <span className="text-brand-gray/15 normal-case tracking-normal">(optionnel)</span>
           </label>
           <input type="text" placeholder="votre_pseudo" value={form.instagram}
             onChange={e => onChange({ ...form, instagram: e.target.value })}
-            className="w-full bg-transparent border-b border-brand-gray/15 focus:border-brand-white/50 font-ui font-light text-[0.82rem] text-brand-white py-3 outline-none transition-colors placeholder:text-brand-gray/15"
+            className="w-full bg-transparent border-b border-brand-gray/15 focus:border-brand-white/50 font-ui font-light text-base text-brand-white py-3 outline-none transition-colors placeholder:text-brand-gray/15"
             style={{ minHeight: '44px' }} />
         </div>
-        {error && <p className="font-ui text-[0.58rem] text-red-400 text-center">{error}</p>}
+        {error && <p className="font-ui text-sm text-red-400 text-center">{error}</p>}
         <button onClick={onSubmit} disabled={loading}
-          className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-[0.6rem] tracking-[0.3em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 disabled:opacity-50"
+          className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.3em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 disabled:opacity-50"
           style={{ minHeight: '44px' }}>
           {loading ? 'Activation...' : isEditing ? 'Sauvegarder' : 'Activer mon vêtement'}
         </button>
-        <button onClick={onBack} className="font-ui text-[0.48rem] text-brand-gray/25 tracking-[0.15em] uppercase underline underline-offset-4 py-2">
+        <button onClick={onBack} className="font-ui text-xs text-brand-gray/25 tracking-[0.15em] uppercase underline underline-offset-4 py-2">
           ← retour
         </button>
       </div>
@@ -360,12 +356,9 @@ function RegisterContent() {
       if (member) {
         setIsEditing(true);
         setExistingId(member.id);
-        // En mode édition, on met le pitch entier dans "who" pour l'aperçu
-        // L'utilisateur peut redistribuer dans les 3 champs s'il veut
         setForm(f => ({ ...f, name: member.name, who: member.pitch, instagram: member.instagram || '' }));
       }
 
-      // Connecté → skip étape 1 (email + mdp)
       setStep(2);
     });
   }, []);
@@ -422,7 +415,7 @@ export default function RegisterPage() {
         style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%)' }} />
       <React.Suspense fallback={null}><RegisterContent /></React.Suspense>
       <button onClick={() => router.push('/')}
-        className="font-ui text-[0.48rem] text-brand-gray/20 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray/50 transition-colors py-3 mt-4"
+        className="font-ui text-xs text-brand-gray/20 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray/50 transition-colors py-3 mt-4"
         style={{ minHeight: '44px' }}>
         ← retour
       </button>

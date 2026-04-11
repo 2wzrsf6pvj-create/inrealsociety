@@ -1,21 +1,12 @@
 /* globals.css — InRealSociety */
 
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Montserrat:wght@300;400;500;700&display=swap');
+/* Les fonts sont chargées via <link> dans layout.tsx (preconnect + display=swap) */
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --font-display: 'Cormorant Garamond', Georgia, serif;
-  --font-ui: 'Montserrat', system-ui, sans-serif;
-}
-
-.font-display { font-family: var(--font-display); }
-.font-ui      { font-family: var(--font-ui); }
-
 html {
-  /* font-size: 24px; <- DÉSACTIVÉ POUR NE PAS CASSER L'ÉCHELLE TAILWIND */
   scroll-behavior: smooth;
 }
 
