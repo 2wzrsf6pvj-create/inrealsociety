@@ -37,28 +37,6 @@ export async function POST(req: NextRequest) {
 
     const { name, pitch, instagram, activationCode } = body.data;
 
-    // ─── Vérification code d'activation ──────────────────────────────────
-    const { data: codeData } = await supabaseAdmin
-      .from('activation_codes')
-      .select('code, used')
-      .eq('code', activationCode)
-      .single();
-
-    if (!codeData || codeData.used) {
-      return NextResponse.json({ error: 'Code invalide ou déjà utilisé.' }, { status: 400 });
-    }
-
-    // ─── Vérifie si ce user a déjà un profil ─────────────────────────────
-    const { data: existing } = await supabaseAdmin
-      .from('members')
-      .select('id')
-      .eq('auth_user_id', auth.user.id)
-      .single();
-
-    if (existing) {
-      return NextResponse.json({ memberId: existing.id, alreadyExists: true });
-    }
-
     // ─── Génère un code court unique pour l'URL du QR code ─────────────────
     let shortCode: string | null = null;
     try {
@@ -67,32 +45,41 @@ export async function POST(req: NextRequest) {
       console.warn('[api/member/create] Short code generation failed:', scErr);
     }
 
-    // ─── Création du membre lié au compte auth ────────────────────────────
-    const { data: member, error: memberError } = await supabaseAdmin
-      .from('members')
-      .insert({
-        name,
-        pitch,
-        instagram:    instagram?.trim().replace(/^@/, '') || null,
-        email:        auth.user.email || null,
-        auth_user_id: auth.user.id,
-        short_code:   shortCode,
+    // ─── Création atomique : consomme le code + crée le membre en une transaction
+    interface CreateMemberResult {
+      member_id: string | null;
+      already_exists: boolean;
+      error_message: string | null;
+    }
+
+    const { data, error: rpcError } = await supabaseAdmin
+      .rpc('create_member_with_code', {
+        p_auth_user_id: auth.user.id,
+        p_code:         activationCode,
+        p_name:         name,
+        p_pitch:        pitch,
+        p_email:        auth.user.email || null,
+        p_instagram:    instagram?.trim().replace(/^@/, '') || null,
+        p_short_code:   shortCode,
       })
-      .select('id, short_code')
       .single();
 
-    if (memberError || !member) {
-      console.error('[api/member/create]', memberError);
+    const result = data as unknown as CreateMemberResult;
+
+    if (rpcError) {
+      console.error('[api/member/create] RPC error:', rpcError);
       return NextResponse.json({ error: 'Erreur création profil.' }, { status: 500 });
     }
 
-    // ─── Marque le code comme utilisé ────────────────────────────────────
-    await supabaseAdmin
-      .from('activation_codes')
-      .update({ used: true, member_id: member.id })
-      .eq('code', activationCode);
+    if (result.error_message) {
+      return NextResponse.json({ error: result.error_message }, { status: 400 });
+    }
 
-    return NextResponse.json({ memberId: member.id });
+    if (result.already_exists) {
+      return NextResponse.json({ memberId: result.member_id, alreadyExists: true });
+    }
+
+    return NextResponse.json({ memberId: result.member_id });
 
   } catch (err) {
     console.error('[api/member/create]', err);

@@ -80,6 +80,18 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
   const sessionId   = session.id;
   const email       = session.customer_details?.email ?? session.customer_email;
 
+  // ─── Idempotence : vérifie si cet événement a déjà été traité ──────────
+  const { data: existingOrder } = await supabaseAdmin
+    .from('orders')
+    .select('id, status')
+    .eq('stripe_session_id', sessionId)
+    .single();
+
+  if (existingOrder?.status === 'paid') {
+    console.log('[webhook] Événement déjà traité pour session:', sessionId);
+    return;
+  }
+
   // 1. Code d'activation + email
   if (email) {
     const code = await generateUniqueActivationCode();
@@ -92,7 +104,8 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
         stripe_payment_id: session.payment_intent,
         tshirt_color:      tshirtColor,
       })
-      .eq('stripe_session_id', sessionId);
+      .eq('stripe_session_id', sessionId)
+      .neq('status', 'paid');
 
     if (orderError) console.error('[webhook] Erreur mise à jour order:', orderError);
 
