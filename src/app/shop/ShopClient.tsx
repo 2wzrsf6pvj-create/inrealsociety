@@ -308,6 +308,29 @@ export default function ShopClient() {
           </div>
         </section>
 
+        {/* Témoignages */}
+        <section className="py-12 border-t border-brand-gray/10">
+          <div className="flex flex-col gap-8">
+            <h2 className="font-display text-2xl md:text-3xl font-light tracking-[0.04em] text-center">
+              Ils le portent.
+            </h2>
+            <div className="flex flex-col gap-6">
+              {[
+                { quote: "J\u0027ai re\u00e7u mon premier message en terrasse. On a parl\u00e9 deux heures.", name: 'Marc, Paris' },
+                { quote: "Le concept est g\u00e9nial. Pas de swipe, pas d\u0027app. Juste un t-shirt et du courage.", name: 'Camille, Lyon' },
+                { quote: "Trois scans en une semaine. Deux conversations. Une rencontre.", name: 'Thomas, Bordeaux' },
+              ].map((t, i) => (
+                <div key={i} className="flex flex-col gap-2 px-2">
+                  <p className="font-display text-base md:text-lg font-light italic text-brand-gray/60 leading-relaxed">
+                    &ldquo;{t.quote}&rdquo;
+                  </p>
+                  <p className="font-ui text-xs text-brand-gray/25 tracking-[0.1em]">— {t.name}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         <footer className="py-12 border-t border-brand-gray/10 flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <span className="font-ui text-xs text-brand-gray/20 tracking-[0.2em] uppercase">In Real Society</span>

@@ -400,8 +400,28 @@ function RegisterContent() {
     } finally { setLoading(false); }
   };
 
+  const totalSteps = isLoggedIn ? 2 : 3;
+  const currentStep = isLoggedIn ? step - 1 : step;
+
   return (
     <div className="z-10 flex flex-col items-center w-full max-w-sm gap-8">
+      {/* Indicateur de progression */}
+      <div className="w-full flex flex-col items-center gap-2">
+        <div className="flex items-center gap-2">
+          {Array.from({ length: totalSteps }, (_, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <div className={`w-2 h-2 rounded-full transition-colors ${i + 1 <= currentStep ? 'bg-brand-white/60' : 'bg-brand-gray/15'}`} />
+              {i < totalSteps - 1 && (
+                <div className={`w-8 h-px transition-colors ${i + 1 < currentStep ? 'bg-brand-white/30' : 'bg-brand-gray/10'}`} />
+              )}
+            </div>
+          ))}
+        </div>
+        <p className="font-ui text-xxs text-brand-gray/20 tracking-[0.15em] uppercase">
+          Étape {currentStep}/{totalSteps}
+        </p>
+      </div>
+
       {step === 1 && <StepAccount onNext={() => setStep(2)} codeState={codeState} />}
       {step === 2 && <StepProfile form={form} onChange={setForm} onNext={() => setStep(3)} onBack={() => setStep(1)} isEditing={isEditing} isLoggedIn={isLoggedIn} codeState={codeState} />}
       {step === 3 && <StepOptional form={form} onChange={setForm} onSubmit={handleSubmit} onBack={() => setStep(2)} loading={loading} error={error} isEditing={isEditing} />}
