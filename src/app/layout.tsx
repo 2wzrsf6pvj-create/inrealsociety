@@ -1,8 +1,24 @@
 import '@/lib/env';
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
+import { Cormorant_Garamond, Montserrat } from 'next/font/google';
 import AuthIndicator from './components/ui/AuthIndicator';
 import './globals.css';
+
+const cormorant = Cormorant_Garamond({
+  subsets: ['latin'],
+  weight: ['300', '400', '600'],
+  style: ['normal', 'italic'],
+  variable: '--font-display',
+  display: 'swap',
+});
+
+const montserrat = Montserrat({
+  subsets: ['latin'],
+  weight: ['300', '400', '500', '700'],
+  variable: '--font-ui',
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: {
@@ -36,16 +52,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr">
-      <head>
-        {/* Google Fonts — chargées ici pour garantir la dispo globale */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Montserrat:wght@300;400;500;700&display=swap"
-          rel="stylesheet"
-        />
-      </head>
+    <html lang="fr" className={`${cormorant.variable} ${montserrat.variable}`}>
+      <head />
       <body className="antialiased bg-brand-black">
         <Suspense fallback={null}>
           <AuthIndicator />

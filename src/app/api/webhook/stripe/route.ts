@@ -14,7 +14,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { generateSecureCode } from '@/lib/generate-code';
-import { sendEmail, emailActivation } from '@/lib/email-templates';
+import { sendEmail, emailActivation, emailPremium } from '@/lib/email-templates';
 import { generatePremiumQRCode } from '@/lib/generate-qr-svg';
 import { buildShortUrl } from '@/lib/short-code';
 import type { PrintfulOrderPayload, PrintfulOrderResponse, PrintfulAddress } from '@/lib/printful.types';
@@ -284,6 +284,22 @@ async function handleSubscriptionCheckout(session: Stripe.Checkout.Session): Pro
       plan_expires_at:         null,
     })
     .eq('id', memberId);
+
+  // Email de bienvenue premium
+  const { data: upgradedMember } = await supabaseAdmin
+    .from('members')
+    .select('name, email')
+    .eq('id', memberId)
+    .single();
+
+  if (upgradedMember?.email) {
+    const appUrl = APP_URL;
+    const { subject, html } = emailPremium({
+      name: upgradedMember.name,
+      dashboardUrl: `${appUrl}/dashboard`,
+    });
+    sendEmail({ to: upgradedMember.email, subject, html }).catch((err) => console.error('[webhook] Échec email premium:', err));
+  }
 
   console.log('[webhook] Membre', memberId, 'upgradé en premium.');
 }

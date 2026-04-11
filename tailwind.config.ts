@@ -13,8 +13,8 @@ const config: Config = {
         'brand-dark':  '#0a0a0a',
       },
       fontFamily: {
-        display: ['Cormorant Garamond', 'Georgia', 'serif'],
-        ui:      ['Montserrat', 'system-ui', 'sans-serif'],
+        display: ['var(--font-display)', 'Georgia', 'serif'],
+        ui:      ['var(--font-ui)', 'system-ui', 'sans-serif'],
       },
       fontSize: {
         'xxs':  ['0.65rem',  { lineHeight: '1rem' }],     // 10.4px — fine print, legal

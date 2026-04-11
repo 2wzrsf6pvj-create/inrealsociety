@@ -65,6 +65,28 @@ export async function getMessagesCount(memberId: string): Promise<number> {
   return count ?? 0;
 }
 
+export async function getScansByDay(memberId: string, days = 7): Promise<{ date: string; count: number }[]> {
+  const since = new Date(Date.now() - days * 86400000).toISOString();
+  const { data, error } = await supabase
+    .from('scans')
+    .select('scanned_at')
+    .eq('member_id', memberId)
+    .gte('scanned_at', since)
+    .order('scanned_at', { ascending: true });
+  if (error || !data) return [];
+
+  const byDay: Record<string, number> = {};
+  for (let i = 0; i < days; i++) {
+    const d = new Date(Date.now() - (days - 1 - i) * 86400000);
+    byDay[d.toISOString().slice(0, 10)] = 0;
+  }
+  for (const row of data) {
+    const key = new Date(row.scanned_at).toISOString().slice(0, 10);
+    if (key in byDay) byDay[key]++;
+  }
+  return Object.entries(byDay).map(([date, count]) => ({ date, count }));
+}
+
 export async function getUnreadMessagesCount(memberId: string): Promise<number> {
   const { count, error } = await supabase
     .from('messages')

@@ -381,7 +381,7 @@ function SettingsSection({ member }: { member: Member }) {
         setTimeout(() => setSaved(false), 2000);
       } else {
         const data = await res.json().catch(() => ({}));
-        setPauseError(data.debug || data.error || `Erreur ${res.status}`);
+        setPauseError(data.error || `Erreur ${res.status}`);
       }
     } catch {
       setPauseError('Erreur réseau.');
@@ -467,19 +467,106 @@ function SettingsSection({ member }: { member: Member }) {
       >
         Se déconnecter
       </button>
+
+      {/* Suppression de compte */}
+      <DeleteAccountButton />
+    </div>
+  );
+}
+
+function DeleteAccountButton() {
+  const [confirming, setConfirming] = useState(false);
+  const [deleting, setDeleting]     = useState(false);
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      const res = await fetch('/api/member/delete', { method: 'DELETE' });
+      if (res.ok) {
+        window.location.href = '/';
+      }
+    } catch {
+      setDeleting(false);
+      setConfirming(false);
+    }
+  };
+
+  if (!confirming) {
+    return (
+      <button
+        onClick={() => setConfirming(true)}
+        className="font-ui text-xxs text-brand-gray/20 tracking-[0.1em] underline underline-offset-4 hover:text-red-400/50 transition-colors py-2"
+      >
+        Supprimer mon compte
+      </button>
+    );
+  }
+
+  return (
+    <div className="w-full bg-red-500/5 border border-red-500/20 rounded-[2px] p-4 flex flex-col gap-3">
+      <p className="font-ui text-xs text-red-400/80 text-center leading-relaxed">
+        Cette action est irréversible. Toutes vos données seront supprimées.
+      </p>
+      <div className="flex gap-2">
+        <button onClick={() => setConfirming(false)}
+          className="flex-1 py-2.5 border border-brand-gray/20 text-center font-ui text-xs tracking-[0.15em] uppercase text-brand-gray/50 hover:border-brand-gray/40 transition-colors rounded-[2px]">
+          Annuler
+        </button>
+        <button onClick={handleDelete} disabled={deleting}
+          className="flex-1 py-2.5 bg-red-500/80 text-center font-ui text-xs font-bold tracking-[0.15em] uppercase text-white rounded-[2px] hover:bg-red-500 transition-colors disabled:opacity-50">
+          {deleting ? 'Suppression...' : 'Confirmer'}
+        </button>
+      </div>
     </div>
   );
 }
 
 // ─── Home Tab ─────────────────────────────────────────────────────────────────
 
-function HomeSection({ member, recentScans }: {
+function ScanChart({ data }: { data: { date: string; count: number }[] }) {
+  const max = Math.max(1, ...data.map(d => d.count));
+  return (
+    <div className="w-full bg-[#080808] border border-[#C5A059]/15 rounded-[2px] p-4 flex flex-col gap-3">
+      <div className="flex items-center gap-3 w-full">
+        <div className="flex-1 h-px bg-brand-gray/10" />
+        <span className="font-ui text-xs text-[#C5A059]/50 tracking-[0.18em] uppercase">✦ scans · 7 jours</span>
+        <div className="flex-1 h-px bg-brand-gray/10" />
+      </div>
+      <div className="flex items-end gap-1.5 h-16 w-full">
+        {data.map(d => (
+          <div key={d.date} className="flex-1 flex flex-col items-center gap-1">
+            <div className="w-full relative" style={{ height: '48px' }}>
+              <div
+                className="absolute bottom-0 w-full bg-[#C5A059]/30 rounded-t-[1px] transition-all duration-500"
+                style={{ height: `${Math.max(2, (d.count / max) * 48)}px` }}
+              />
+            </div>
+            <span className="font-ui text-[8px] text-brand-gray/25 tabular-nums">
+              {new Date(d.date).toLocaleDateString('fr-FR', { weekday: 'narrow' })}
+            </span>
+          </div>
+        ))}
+      </div>
+      <p className="font-ui text-xxs text-brand-gray/25 text-center">
+        {data.reduce((s, d) => s + d.count, 0)} scans cette semaine
+      </p>
+    </div>
+  );
+}
+
+function HomeSection({ member, recentScans, scansByDay = [] }: {
   member: Member;
   recentScans: Scan[];
+  scansByDay?: { date: string; count: number }[];
 }) {
   return (
     <>
       <StatsBlock member={member} recentScans={recentScans} />
+
+      {/* Stats premium */}
+      {member.plan === 'premium' && scansByDay.length > 0 && (
+        <ScanChart data={scansByDay} />
+      )}
 
       <div className="w-full h-px bg-brand-gray/10" />
 
@@ -551,11 +638,13 @@ export default function DashboardClient({
   recentScans,
   messages,
   unreadCount,
+  scansByDay = [],
 }: {
   member:      Member;
   recentScans: Scan[];
   messages:    Message[];
   unreadCount: number;
+  scansByDay?: { date: string; count: number }[];
 }) {
   const [tab, setTab]     = useState<Tab>('home');
   const [toast, setToast] = useState('');
@@ -604,7 +693,7 @@ export default function DashboardClient({
         {/* Tab content with transition */}
         <div className="w-full animate-stagger-1" key={tab}>
           {tab === 'home' && (
-            <HomeSection member={member} recentScans={recentScans} />
+            <HomeSection member={member} recentScans={recentScans} scansByDay={scansByDay} />
           )}
 
           {tab === 'inbox' && (

@@ -143,6 +143,34 @@ export function emailBienvenue(params: {
   };
 }
 
+/** Email de bienvenue premium */
+export function emailPremium(params: {
+  name:         string;
+  dashboardUrl: string;
+}): { subject: string; html: string } {
+  const safeName = escapeHtml(params.name);
+  return {
+    subject: `${safeName}, bienvenue dans le cercle premium.`,
+    html: layout(`
+      <h1 style="font-size:28px;font-weight:300;letter-spacing:0.04em;margin:0 0 16px;text-align:center;">
+        Bienvenue dans le cercle, ${safeName}.
+      </h1>
+      <p style="font-family:system-ui,sans-serif;font-size:13px;color:rgba(255,255,255,0.5);text-align:center;line-height:1.8;margin:0 0 32px;">
+        Votre abonnement premium est actif. Voici ce qui change :
+      </p>
+      <div style="border:1px solid rgba(197,160,89,0.3);padding:24px;margin-bottom:8px;">
+        <p style="font-family:system-ui,sans-serif;font-size:11px;color:rgba(197,160,89,0.8);line-height:2;margin:0;">
+          ✦ Fenêtre scanner étendue à 48h<br/>
+          ✦ Conversations illimitées<br/>
+          ✦ Badge ✦ visible sur votre profil<br/>
+          ✦ Stats avancées à venir
+        </p>
+      </div>
+      ${cta('Voir mon dashboard', params.dashboardUrl)}
+    `),
+  };
+}
+
 /** Email d'activation après achat Stripe */
 export function emailActivation(params: {
   code:        string;

@@ -10,6 +10,54 @@ type TshirtSize  = 'S' | 'M' | 'L' | 'XL' | 'XXL';
 const SIZES: TshirtSize[] = ['S', 'M', 'L', 'XL', 'XXL'];
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+function SizeGuide() {
+  const [open, setOpen] = useState(false);
+  const sizes = [
+    { size: 'S',   chest: '46', length: '71' },
+    { size: 'M',   chest: '51', length: '74' },
+    { size: 'L',   chest: '56', length: '76' },
+    { size: 'XL',  chest: '61', length: '79' },
+    { size: 'XXL', chest: '66', length: '81' },
+  ];
+
+  return (
+    <>
+      <button onClick={() => setOpen(true)} className="font-ui text-xxs text-brand-gray/25 underline underline-offset-2 hover:text-brand-gray/50 transition-colors">
+        Guide des tailles
+      </button>
+      {open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-6" onClick={() => setOpen(false)}>
+          <div className="bg-[#0a0a0a] border border-brand-gray/15 rounded-[2px] p-6 w-full max-w-xs flex flex-col gap-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <p className="font-ui text-xs text-brand-gray/40 tracking-[0.2em] uppercase">Guide des tailles</p>
+              <button onClick={() => setOpen(false)} className="font-ui text-xs text-brand-gray/30 hover:text-brand-white transition-colors">✕</button>
+            </div>
+            <p className="font-ui text-xxs text-brand-gray/25">Comfort Colors 1717 — coupe oversize. En cas de doute, prenez votre taille habituelle.</p>
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-brand-gray/10">
+                  <th className="font-ui text-xxs text-brand-gray/30 tracking-[0.15em] uppercase text-left py-2">Taille</th>
+                  <th className="font-ui text-xxs text-brand-gray/30 tracking-[0.15em] uppercase text-center py-2">Poitrine</th>
+                  <th className="font-ui text-xxs text-brand-gray/30 tracking-[0.15em] uppercase text-center py-2">Longueur</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sizes.map(s => (
+                  <tr key={s.size} className="border-b border-brand-gray/5">
+                    <td className="font-ui text-sm text-brand-white/70 py-2">{s.size}</td>
+                    <td className="font-ui text-sm text-brand-gray/50 text-center py-2">{s.chest} cm</td>
+                    <td className="font-ui text-sm text-brand-gray/50 text-center py-2">{s.length} cm</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
 export default function ShopClient() {
   const searchParams = useSearchParams();
   const [email, setEmail]             = useState('');
@@ -142,9 +190,12 @@ export default function ShopClient() {
               </div>
             </div>
 
-            {/* Sélecteur taille */}
+            {/* Sélecteur taille + guide */}
             <div className="flex flex-col gap-2">
-              <p className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">Taille</p>
+              <div className="flex items-center justify-between">
+                <p className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">Taille</p>
+                <SizeGuide />
+              </div>
               <div className="flex gap-2">
                 {SIZES.map(size => (
                   <button
