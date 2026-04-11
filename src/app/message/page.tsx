@@ -37,7 +37,7 @@ function MessageForm() {
       const data = await res.json();
       if (!res.ok) {
         const errorMsg = typeof data.error === 'string' ? data.error : 'Erreur lors de l\'envoi.';
-        if (res.status === 403 && errorMsg.includes('24h')) { setExpired(true); setSending(false); return; }
+        if (res.status === 403 && (errorMsg.includes('expirée') || errorMsg.includes('fenêtre'))) { setExpired(true); setSending(false); return; }
         throw new Error(errorMsg);
       }
       if (data.moderated) { setModerated(true); setSending(false); return; }

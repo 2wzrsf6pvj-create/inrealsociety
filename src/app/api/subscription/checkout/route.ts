@@ -58,10 +58,15 @@ export async function POST(req: NextRequest) {
       });
       customerId = customer.id;
 
-      await supabaseAdmin
+      const { error: updateErr } = await supabaseAdmin
         .from('members')
         .update({ stripe_customer_id: customerId })
         .eq('id', member.id);
+
+      if (updateErr) {
+        console.error('[subscription/checkout] Échec update customer_id:', updateErr);
+        return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });
+      }
     }
 
     // Crée la session checkout pour l'abonnement

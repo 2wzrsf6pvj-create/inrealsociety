@@ -14,11 +14,9 @@ const MAX_LENGTH = 6;
 const MAX_ATTEMPTS = 20;
 
 function randomCode(length: number): string {
-  let code = '';
-  for (let i = 0; i < length; i++) {
-    code += ALPHABET[Math.floor(Math.random() * ALPHABET.length)];
-  }
-  return code;
+  const bytes = new Uint8Array(length);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes, b => ALPHABET[b % ALPHABET.length]).join('');
 }
 
 /**

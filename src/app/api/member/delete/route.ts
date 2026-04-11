@@ -34,17 +34,26 @@ export async function DELETE(req: NextRequest) {
       }
     }
 
-    // Supprime les données liées (cascade via FK, mais explicite pour être sûr)
-    await supabaseAdmin.from('messages').delete().eq('member_id', member.id);
-    await supabaseAdmin.from('scans').delete().eq('member_id', member.id);
-    await supabaseAdmin.from('silent_views').delete().eq('member_id', member.id);
-    await supabaseAdmin.from('push_subscriptions').delete().eq('member_id', member.id);
-    await supabaseAdmin.from('audit_logs').delete().eq('member_id', member.id);
-    await supabaseAdmin.from('referrals').delete().eq('referrer_id', member.id);
-    await supabaseAdmin.from('activation_codes').update({ member_id: null }).eq('member_id', member.id);
+    // Supprime les données liées (vérifie chaque étape)
+    const deletes = [
+      supabaseAdmin.from('messages').delete().eq('member_id', member.id),
+      supabaseAdmin.from('scans').delete().eq('member_id', member.id),
+      supabaseAdmin.from('silent_views').delete().eq('member_id', member.id),
+      supabaseAdmin.from('push_subscriptions').delete().eq('member_id', member.id),
+      supabaseAdmin.from('audit_logs').delete().eq('member_id', member.id),
+      supabaseAdmin.from('referrals').delete().eq('referrer_id', member.id),
+      supabaseAdmin.from('activation_codes').update({ member_id: null }).eq('member_id', member.id),
+    ];
+
+    const results = await Promise.all(deletes);
+    const failed = results.filter(r => r.error);
+    if (failed.length) {
+      console.error('[member/delete] Échec suppression partielle:', failed.map(r => r.error?.message));
+    }
 
     // Supprime le membre
-    await supabaseAdmin.from('members').delete().eq('id', member.id);
+    const { error: memberDeleteErr } = await supabaseAdmin.from('members').delete().eq('id', member.id);
+    if (memberDeleteErr) throw memberDeleteErr;
 
     // Supprime le compte auth Supabase
     await supabaseAdmin.auth.admin.deleteUser(auth.user.id);

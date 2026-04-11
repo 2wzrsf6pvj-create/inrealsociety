@@ -13,22 +13,25 @@ function SuccessContent() {
 
   useEffect(() => {
     if (!sessionId) { setStatus('error'); return; }
+    let cancelled = false;
 
-    const fetchCode = async () => {
+    const timer = setTimeout(async () => {
       try {
         const res  = await fetch(`/api/order-code?session=${sessionId}`);
+        if (cancelled) return;
         const data = await res.json();
-        if (data.code) {
+        if (data.code && typeof data.code === 'string' && data.code.length >= 6) {
           setCode(data.code);
           localStorage.setItem('pending_activation_code', data.code);
         }
       } catch {
+        // Email de secours — le code arrivera par email
       } finally {
-        setStatus('ok');
+        if (!cancelled) setStatus('ok');
       }
-    };
+    }, 2000);
 
-    setTimeout(fetchCode, 2000);
+    return () => { cancelled = true; clearTimeout(timer); };
   }, [sessionId]);
 
   if (status === 'loading') {

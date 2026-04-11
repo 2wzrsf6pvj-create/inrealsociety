@@ -17,7 +17,6 @@ export default function UnlockPage() {
   const [noProfile, setNoProfile] = useState(false);
 
   useEffect(() => {
-    setTimeout(() => inputRef.current?.focus(), 300);
     const saved    = localStorage.getItem('scannerName');
     const memberId = localStorage.getItem('memberId');
 
@@ -103,7 +102,7 @@ export default function UnlockPage() {
         <form onSubmit={handleUnlock} className="w-full flex flex-col gap-6 animate-stagger-2" noValidate>
           <div className="flex flex-col gap-2">
             <input ref={inputRef} type="text" placeholder="votre prénom..." value={firstName}
-              maxLength={30} autoComplete="given-name"
+              maxLength={30} autoComplete="given-name" autoFocus
               onChange={(e) => { setFirstName(e.target.value); if (error) setError(''); }}
               className={`w-full bg-transparent border-b text-brand-white font-ui font-light text-base py-3 outline-none transition-colors placeholder:text-brand-gray/20 ${error ? 'border-red-900' : 'border-brand-gray/20 focus:border-brand-white'}`}
               style={{ minHeight: '44px' }}

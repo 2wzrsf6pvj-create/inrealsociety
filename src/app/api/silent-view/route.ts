@@ -37,12 +37,14 @@ export async function POST(req: NextRequest) {
     if (!member) return NextResponse.json({ error: 'Membre introuvable' }, { status: 404 });
     if (member.is_paused) return NextResponse.json({ ok: true, paused: true });
 
-    await supabaseAdmin.from('silent_views').insert({
+    const { error: insertError } = await supabaseAdmin.from('silent_views').insert({
       member_id:    memberId,
       scanner_name: scannerName || null,
     });
+    if (insertError) throw insertError;
 
-    await supabaseAdmin.rpc('increment_scan_count', { member_id: memberId });
+    const { error: rpcError } = await supabaseAdmin.rpc('increment_scan_count', { member_id: memberId });
+    if (rpcError) console.warn('[silent-view] RPC increment failed:', rpcError.message);
 
     return NextResponse.json({ ok: true });
   } catch (err) {

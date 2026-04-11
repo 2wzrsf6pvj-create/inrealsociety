@@ -12,6 +12,8 @@ export default function ResetPasswordPage() {
   const [error,     setError]     = useState('');
   const [ready,     setReady]     = useState(false);
 
+  const [expired, setExpired] = useState(false);
+
   useEffect(() => {
     const supabase = createClient();
 
@@ -19,7 +21,13 @@ export default function ResetPasswordPage() {
       if (event === 'PASSWORD_RECOVERY') setReady(true);
     });
 
-    return () => subscription.unsubscribe();
+    // Timeout : si pas de PASSWORD_RECOVERY après 10s, le lien est invalide
+    const timeout = setTimeout(() => {
+      if (!ready) setExpired(true);
+    }, 10_000);
+
+    return () => { subscription.unsubscribe(); clearTimeout(timeout); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -54,9 +62,21 @@ export default function ResetPasswordPage() {
       <main className="relative flex min-h-screen flex-col items-center justify-center bg-brand-black text-brand-white px-6">
         <div className="z-10 flex flex-col items-center gap-4 text-center">
           <div className="w-px h-12 bg-gradient-to-b from-transparent via-brand-white/20 to-transparent" />
-          <p className="font-ui text-sm font-light text-brand-gray/40 tracking-wide">
-            Vérification du lien en cours...
-          </p>
+          {expired ? (
+            <>
+              <p className="font-display text-2xl font-light">Ce lien a expiré.</p>
+              <p className="font-ui text-sm text-brand-gray/40 leading-relaxed">
+                Demandez un nouveau lien de réinitialisation.
+              </p>
+              <a href="/auth/forgot-password" className="font-ui text-sm text-brand-gray/30 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white transition-colors mt-4">
+                Renvoyer un lien
+              </a>
+            </>
+          ) : (
+            <p className="font-ui text-sm font-light text-brand-gray/40 tracking-wide">
+              Vérification du lien en cours...
+            </p>
+          )}
         </div>
       </main>
     );

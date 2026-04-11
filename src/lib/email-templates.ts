@@ -3,7 +3,7 @@
 // Modifier le design ici = modifier tous les emails d'un coup.
 
 import { escapeHtml } from '@/lib/escape-html';
-import { EMAIL_FROM } from '@/lib/constants';
+import { EMAIL_FROM, RESEND_API_URL } from '@/lib/constants';
 
 // ─── Wrapper HTML commun ──────────────────────────────────────────────────────
 
@@ -201,7 +201,7 @@ export async function sendEmail(params: {
   html:    string;
 }): Promise<boolean> {
   try {
-    const res = await fetch('https://api.resend.com/emails', {
+    const res = await fetch(RESEND_API_URL, {
       method: 'POST',
       headers: {
         'Content-Type':  'application/json',

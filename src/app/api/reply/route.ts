@@ -84,8 +84,7 @@ export async function POST(req: NextRequest) {
         convUrl:    `${appUrl}/conversation/${messageId}`,
       });
 
-      await sendEmail({ to: contact, subject, html });
-      emailSent = true;
+      emailSent = await sendEmail({ to: contact, subject, html });
     }
 
     return NextResponse.json({
