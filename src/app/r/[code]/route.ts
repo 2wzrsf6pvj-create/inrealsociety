@@ -14,7 +14,7 @@ export async function GET(
 
   // Validation basique : alphanumériques minuscules, 2-6 chars
   if (!/^[a-z0-9]{2,6}$/.test(code)) {
-    return NextResponse.redirect(new URL('/', _req.url));
+    return NextResponse.redirect(new URL('/?error=qr_invalid', _req.url));
   }
 
   // Lookup du membre par short_code
@@ -25,7 +25,7 @@ export async function GET(
     .single();
 
   if (!member) {
-    return NextResponse.redirect(new URL('/', _req.url));
+    return NextResponse.redirect(new URL('/?error=qr_not_found', _req.url));
   }
 
   // Redirige vers la page profil du membre

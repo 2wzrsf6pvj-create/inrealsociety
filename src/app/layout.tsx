@@ -49,6 +49,8 @@ export default function RootLayout({
       <body className="antialiased bg-brand-black">
         <Suspense fallback={null}>
           <AuthIndicator />
+        </Suspense>
+        <Suspense fallback={null}>
           {children}
         </Suspense>
       </body>

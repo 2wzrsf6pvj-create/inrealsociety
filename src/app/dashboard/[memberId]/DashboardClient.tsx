@@ -42,9 +42,9 @@ function recentScansCount(scans: Scan[]): number {
 }
 
 const WAITING_PHRASES = [
-  "Votre t-shirt est en route.",
-  "Bientôt dans votre boîte aux lettres.",
-  "La production est en cours.",
+  "Portez votre t-shirt et laissez le hasard faire.",
+  "Votre profil est prêt. La prochaine rencontre commence dehors.",
+  "Aucun scan encore. Sortez, portez, osez.",
 ];
 
 function getWaitingPhrase(memberId: string): string {
@@ -269,6 +269,14 @@ function ReferralBlock({ memberId }: { memberId: string }) {
           {copied ? 'Copié' : 'Copier'}
         </button>
       </div>
+      {typeof navigator !== 'undefined' && 'share' in navigator && (
+        <button
+          onClick={() => navigator.share({ title: 'In Real Society', text: 'Rejoins le club.', url: referralUrl }).catch(() => {})}
+          className="w-full py-2.5 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.15em] uppercase text-brand-gray/40 hover:border-brand-gray/30 hover:text-brand-gray/60 transition-colors rounded-[2px]"
+        >
+          Partager le lien
+        </button>
+      )}
       {count !== null && (
         <p className="font-ui text-xs text-brand-gray/30">
           {count} parrainage{count !== 1 ? 's' : ''}
@@ -300,7 +308,7 @@ function SettingsSection({ member }: { member: Member }) {
         setTimeout(() => setSaved(false), 2000);
       } else {
         const data = await res.json().catch(() => ({}));
-        setPauseError(data.error || `Erreur ${res.status}`);
+        setPauseError(data.debug || data.error || `Erreur ${res.status}`);
       }
     } catch {
       setPauseError('Erreur réseau.');
@@ -354,6 +362,13 @@ function SettingsSection({ member }: { member: Member }) {
           Membre depuis le {new Date(member.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
         </p>
       </div>
+
+      {/* Changer mot de passe */}
+      <Link href="/auth/forgot-password"
+        className="w-full py-3 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.15em] uppercase text-brand-gray/40 hover:border-brand-gray/30 hover:text-brand-gray/60 transition-colors rounded-[2px]"
+      >
+        Changer mon mot de passe
+      </Link>
 
       {/* Liens légaux */}
       <div className="flex flex-col gap-2 border-t border-brand-gray/10 pt-4">

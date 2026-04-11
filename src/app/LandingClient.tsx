@@ -9,6 +9,8 @@ function LandingContent() {
   const router       = useRouter();
   const [scannerName, setScannerName] = useState('');
   const [hasMemberId, setHasMemberId] = useState(false);
+  const [memberName, setMemberName]   = useState('');
+  const [qrError, setQrError]         = useState('');
   const [ready, setReady]             = useState(false);
 
   useEffect(() => {
@@ -18,10 +20,17 @@ function LandingContent() {
       router.replace(`/profil/${id}`);
       return;
     }
+    // QR code invalide
+    const err = searchParams.get('error');
+    if (err === 'qr_invalid') setQrError('Ce QR code est invalide.');
+    else if (err === 'qr_not_found') setQrError('Ce QR code ne correspond à aucun membre.');
+
     const saved = localStorage.getItem('scannerName');
     const mid   = localStorage.getItem('memberId');
+    const mName = localStorage.getItem('memberName');
     if (saved) setScannerName(saved);
     if (mid) setHasMemberId(true);
+    if (mName) setMemberName(mName);
     setTimeout(() => setReady(true), 800);
   }, [searchParams, router]);
 
@@ -46,12 +55,22 @@ function LandingContent() {
           <h1 className="font-ui text-xs md:text-sm font-light tracking-[0.35em] uppercase text-brand-gray/60">
             In Real Society
           </h1>
+          {qrError && (
+            <div className="px-4 py-3 border border-red-500/20 rounded-[2px] mb-2">
+              <p className="font-ui text-sm text-red-400/80 text-center">{qrError}</p>
+            </div>
+          )}
           {scannerName && hasMemberId ? (
             <div className="flex flex-col gap-2">
               <p className="font-display text-2xl md:text-3xl font-light leading-snug">
                 Vous êtes de retour,<br />
                 <span className="font-semibold italic">{scannerName}</span>.
               </p>
+              {memberName && (
+                <p className="font-ui text-xs text-brand-gray/30 tracking-[0.1em]">
+                  Profil de <span className="text-brand-white/50">{memberName}</span>
+                </p>
+              )}
               <button
                 onClick={() => { localStorage.removeItem('scannerName'); localStorage.removeItem('memberId'); setScannerName(''); setHasMemberId(false); }}
                 aria-label="Changer d'identité — ce n'est pas vous"

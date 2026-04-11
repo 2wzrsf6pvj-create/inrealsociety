@@ -59,7 +59,8 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ ok: true });
 
   } catch (err) {
-    console.error('[api/member/update]', err);
-    return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });
+    const message = err instanceof Error ? err.message : String(err);
+    console.error('[api/member/update]', message, err);
+    return NextResponse.json({ error: 'Erreur serveur.', debug: process.env.NODE_ENV === 'development' ? message : undefined }, { status: 500 });
   }
 }

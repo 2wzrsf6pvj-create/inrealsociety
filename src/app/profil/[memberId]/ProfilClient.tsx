@@ -13,10 +13,10 @@ function getInitials(name: string): string {
 }
 
 function useCountdown(firstScanAt: string | null) {
-  const [timeLeft, setTimeLeft] = useState({ hours: 24, minutes: 0, percent: 100, active: false });
+  const [timeLeft, setTimeLeft] = useState({ hours: 24, minutes: 0, seconds: 0, percent: 100, active: false });
   useEffect(() => {
     if (!firstScanAt) {
-      setTimeLeft({ hours: 24, minutes: 0, percent: 100, active: false });
+      setTimeLeft({ hours: 24, minutes: 0, seconds: 0, percent: 100, active: false });
       return;
     }
     const update = () => {
@@ -26,12 +26,13 @@ function useCountdown(firstScanAt: string | null) {
       setTimeLeft({
         hours:   Math.floor(remaining / 3_600_000),
         minutes: Math.floor((remaining % 3_600_000) / 60_000),
+        seconds: Math.floor((remaining % 60_000) / 1_000),
         percent: Math.round((remaining / total) * 100),
         active:  true,
       });
     };
     update();
-    const iv = setInterval(update, 60_000);
+    const iv = setInterval(update, 1_000);
     return () => clearInterval(iv);
   }, [firstScanAt]);
   return timeLeft;
@@ -65,6 +66,10 @@ export default function ProfilClient({
         setConvUrl(existingConv);
       }
     }
+
+    // Sauvegarde le nom du membre pour le retour sur la landing
+    localStorage.setItem('memberName', member.name);
+    localStorage.setItem('memberId', member.id);
 
     if (!isOwner) {
       fetch('/api/scan', {
@@ -217,7 +222,7 @@ export default function ProfilClient({
               {countdown.active ? 'Occasion éphémère' : 'Profil actif'}
             </span>
             <span className="font-ui text-xxs md:text-xs text-brand-gray/20 tabular-nums">
-              {isExpired ? 'Expiré' : countdown.active ? `${countdown.hours}h ${countdown.minutes}m` : '24h'}
+              {isExpired ? 'Expiré' : countdown.active ? `${countdown.hours}h ${String(countdown.minutes).padStart(2, '0')}m ${String(countdown.seconds).padStart(2, '0')}s` : '24h'}
             </span>
           </div>
           <div className="w-full h-px bg-brand-gray/10 relative overflow-hidden">

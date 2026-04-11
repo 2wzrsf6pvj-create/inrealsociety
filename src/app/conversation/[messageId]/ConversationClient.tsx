@@ -169,10 +169,18 @@ export default function ConversationClient({
     return () => { supabase.removeChannel(channel); };
   }, [message.id, message.reply, memberName]);
 
+  const [pushLoading, setPushLoading] = useState(false);
+
   const handleSubscribePush = async () => {
-    await subscribePush(message.id);
-    setPushGranted(typeof Notification !== 'undefined' && Notification.permission === 'granted');
+    setPushLoading(true);
+    try {
+      await subscribePush(message.id);
+      setPushGranted(typeof Notification !== 'undefined' && Notification.permission === 'granted');
+    } catch {
+      setPushGranted(false);
+    }
     setPushAsked(true);
+    setPushLoading(false);
   };
 
   const handleReplied = (reply: string) => {
@@ -255,15 +263,15 @@ export default function ConversationClient({
               </div>
 
               {!pushAsked ? (
-                <button onClick={handleSubscribePush}
-                  className="w-full py-3 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.1em] hover:border-brand-gray/35 transition-colors"
+                <button onClick={handleSubscribePush} disabled={pushLoading}
+                  className="w-full py-3 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.1em] hover:border-brand-gray/35 transition-colors disabled:opacity-40"
                   style={{ minHeight: '44px' }}
                 >
-                  Me notifier quand il répond
+                  {pushLoading ? 'Activation...' : 'Me notifier quand il répond'}
                 </button>
               ) : pushGranted ? (
-                <p className="font-ui text-xs text-brand-gray/30 italic">
-                  Vous serez notifié(e) dès qu&apos;il répond.
+                <p className="font-ui text-xs text-green-400/50 italic">
+                  ✓ Notifications activées — vous serez prévenu(e).
                 </p>
               ) : (
                 <p className="font-ui text-xs text-brand-gray/20 italic">

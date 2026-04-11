@@ -70,9 +70,15 @@ function SuccessContent() {
       </div>
 
       {code && (
-        <div className="w-full border border-brand-white/15 p-5 flex flex-col items-center gap-2">
+        <div className="w-full border border-brand-white/15 p-5 flex flex-col items-center gap-3">
           <p className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">Votre code d&apos;activation</p>
-          <p className="font-mono text-2xl font-bold tracking-[0.3em] text-brand-white">{code}</p>
+          <p className="font-mono text-2xl font-bold tracking-[0.3em] text-brand-white select-all">{code}</p>
+          <button
+            onClick={() => { navigator.clipboard.writeText(code); }}
+            className="font-ui text-xs text-brand-gray/40 tracking-[0.15em] uppercase border border-brand-gray/20 px-4 py-1.5 rounded-[2px] hover:border-brand-gray/40 hover:text-brand-gray/70 transition-colors"
+          >
+            Copier le code
+          </button>
         </div>
       )}
 

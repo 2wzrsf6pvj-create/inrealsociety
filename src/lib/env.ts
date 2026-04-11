@@ -66,5 +66,13 @@ function validateEnv(): Record<string, string> {
   return env;
 }
 
-// Valide uniquement côté serveur (pas dans le browser)
-export const env = typeof window === 'undefined' ? validateEnv() : ({} as Record<EnvKey, string>);
+// Valide uniquement côté serveur en production (pas dans le browser, pas au build)
+export const env = (typeof window === 'undefined' && process.env.NODE_ENV === 'production')
+  ? validateEnv()
+  : (() => {
+      if (typeof window === 'undefined') {
+        try { return validateEnv(); }
+        catch { return {} as Record<string, string>; }
+      }
+      return {} as Record<EnvKey, string>;
+    })();

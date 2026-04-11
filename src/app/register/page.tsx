@@ -5,10 +5,10 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
 
 const AI_PITCHES = [
-  "Je traverse les villes les yeux ouverts. Si vous êtes là, c'est que votre instinct vous a bien guidé.",
-  "Je crois aux conversations qui commencent par hasard et ne finissent jamais vraiment.",
-  "Curieux du monde, attentif aux gens. La vie est trop courte pour attendre que les occasions arrivent seules.",
-  "Je porte ce vêtement pour une raison simple : j'aime les rencontres qui ne ressemblent à aucune autre.",
+  { who: "Je traverse les villes les yeux ouverts.", intent: "Provoquer la conversation qu'on n'aurait jamais eue.", closing: "Si vous êtes là, c'est que votre instinct vous a bien guidé." },
+  { who: "Curieux du monde, attentif aux gens.", intent: "Créer un moment qui n'existait pas il y a cinq secondes.", closing: "La vie est trop courte pour attendre que les occasions arrivent seules." },
+  { who: "Je crois aux rencontres sans algorithme.", intent: "Voir ce qui se passe quand deux inconnus osent se parler.", closing: "Le hasard fait mieux que les applications." },
+  { who: "Je porte ce vêtement pour une raison simple.", intent: "Dire oui avant même qu'on me pose la question.", closing: "Le reste, c'est entre vous et moi." },
 ];
 
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -178,7 +178,8 @@ function StepProfile({ form, onChange, onNext, onBack, isEditing, isLoggedIn, co
   const handleAi = async () => {
     setAiLoading(true);
     await new Promise(r => setTimeout(r, 1200));
-    onChange({ ...form, who: AI_PITCHES[Math.floor(Math.random() * AI_PITCHES.length)], intent: '', closing: '' });
+    const pitch = AI_PITCHES[Math.floor(Math.random() * AI_PITCHES.length)];
+    onChange({ ...form, who: pitch.who, intent: pitch.intent, closing: pitch.closing });
     setAiLoading(false);
   };
 
@@ -292,8 +293,8 @@ function StepOptional({ form, onChange, onSubmit, onBack, loading, error, isEdit
   return (
     <div className="w-full flex flex-col gap-6">
       <div className="text-center flex flex-col gap-2 animate-stagger-1">
-        <h2 className="font-display text-3xl font-light tracking-[0.04em]">Pour aller plus loin.</h2>
-        <p className="font-ui text-sm font-light text-brand-gray/40">Tout est optionnel.</p>
+        <h2 className="font-display text-3xl font-light tracking-[0.04em]">{isEditing ? 'Modifier les d\u00e9tails.' : 'Pour aller plus loin.'}</h2>
+        <p className="font-ui text-sm font-light text-brand-gray/40">{isEditing ? 'Photo et Instagram.' : 'Tout est optionnel.'}</p>
       </div>
       <div className="flex flex-col gap-5 animate-stagger-2">
         <div className="flex flex-col items-center gap-2">

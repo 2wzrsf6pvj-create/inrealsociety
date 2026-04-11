@@ -15,6 +15,7 @@ function MessageForm() {
   const [sending, setSending]     = useState(false);
   const [error, setError]         = useState('');
   const [moderated, setModerated] = useState(false);
+  const [expired, setExpired]     = useState(false);
   const [conversationUrl, setConversationUrl] = useState<string | null>(null);
   const [copied, setCopied]       = useState(false);
 
@@ -36,6 +37,7 @@ function MessageForm() {
       const data = await res.json();
       if (!res.ok) {
         const errorMsg = typeof data.error === 'string' ? data.error : 'Erreur lors de l\'envoi.';
+        if (res.status === 403 && errorMsg.includes('24h')) { setExpired(true); setSending(false); return; }
         throw new Error(errorMsg);
       }
       if (data.moderated) { setModerated(true); setSending(false); return; }
@@ -58,12 +60,42 @@ function MessageForm() {
     });
   };
 
+  if (expired) {
+    return (
+      <div className="flex flex-col items-center gap-6 text-center animate-stagger-1">
+        <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
+        <p className="font-display text-2xl font-light">Ce moment est passé.</p>
+        <p className="font-ui text-sm text-brand-gray/40 leading-relaxed">
+          La fenêtre de 24 heures est terminée.<br />
+          La prochaine occasion sera la bonne.
+        </p>
+        <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
+        <button onClick={() => memberId ? router.push(`/profil/${memberId}`) : router.push('/')}
+          className="font-ui text-sm text-brand-gray/30 tracking-[0.15em] uppercase underline underline-offset-4 py-3"
+          style={{ minHeight: '44px' }}>
+          ← retour au profil
+        </button>
+      </div>
+    );
+  }
+
   if (moderated) {
     return (
       <div className="flex flex-col items-center gap-6 text-center animate-stagger-1">
+        <div className="w-14 h-14 rounded-full border border-red-500/20 flex items-center justify-center">
+          <span className="font-display text-xl text-red-400/60">!</span>
+        </div>
         <p className="font-display text-2xl font-light">Ce message ne peut pas être envoyé.</p>
-        <p className="font-ui text-sm text-brand-gray/40 leading-relaxed">Notre espace se veut respectueux.<br />Reformulez votre message.</p>
-        <button onClick={() => setModerated(false)} className="font-ui text-sm text-brand-gray/30 tracking-[0.15em] uppercase underline underline-offset-4 py-3" style={{ minHeight: '44px' }}>← Réessayer</button>
+        <p className="font-ui text-sm text-brand-gray/40 leading-relaxed">
+          Votre message contient des termes qui ne respectent pas<br />
+          les règles de notre espace. Évitez le langage offensant,<br />
+          les menaces ou les contenus inappropriés.
+        </p>
+        <button onClick={() => setModerated(false)}
+          className="animate-shimmer w-full py-3 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200"
+          style={{ minHeight: '44px' }}>
+          Reformuler mon message
+        </button>
       </div>
     );
   }
@@ -118,10 +150,10 @@ function MessageForm() {
       {/* Contact remonté */}
       <div className="flex flex-col gap-1 animate-stagger-2">
         <label className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">
-          Votre @instagram ou email <span className="text-brand-gray/15 normal-case tracking-normal ml-1">(optionnel)</span>
+          Votre @instagram ou email <span className="text-brand-white/30 normal-case tracking-normal ml-1">(recommandé)</span>
         </label>
         <p className="font-ui text-xxs md:text-xs text-brand-gray/20 leading-relaxed mb-1">
-          Laissez un contact pour qu&apos;il puisse vous répondre.
+          Sans contact, il ne pourra pas vous répondre.
         </p>
         <input type="text" placeholder="Anonyme par défaut" value={contact} maxLength={50}
           onChange={(e) => setContact(e.target.value)}
