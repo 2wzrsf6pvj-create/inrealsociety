@@ -7,16 +7,15 @@ import { createClient } from '@/lib/supabase-browser';
 
 /** Accepte uniquement les chemins internes pour éviter les open redirects */
 function safeRedirect(raw: string | null): string {
-  if (!raw) return '/';
+  if (!raw) return '/dashboard';
   try {
     const url = new URL(raw, 'http://localhost');
-    if (url.origin !== 'http://localhost') return '/';
+    if (url.origin !== 'http://localhost') return '/dashboard';
   } catch {
-    return '/';
+    return '/dashboard';
   }
-  if (!raw.startsWith('/') || raw.startsWith('//')) return '/';
-  // Bloque les protocoles dangereux encodés
-  if (/^\/[^/]*:/i.test(raw)) return '/';
+  if (!raw.startsWith('/') || raw.startsWith('//')) return '/dashboard';
+  if (/^\/[^/]*:/i.test(raw)) return '/dashboard';
   return raw;
 }
 

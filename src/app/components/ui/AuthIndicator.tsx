@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
@@ -11,7 +11,6 @@ interface AuthState {
   memberId: string | null;
 }
 
-// Pages où l'indicateur n'est pas nécessaire (dashboard a déjà son propre UI)
 const HIDDEN_PATHS = ['/dashboard', '/auth/login', '/auth/signup', '/auth/forgot-password', '/auth/reset-password'];
 
 function getInitials(name: string): string {
@@ -26,12 +25,10 @@ export default function AuthIndicator() {
   const [auth, setAuth] = useState<AuthState>({ loggedIn: false, name: null, memberId: null });
   const [loaded, setLoaded] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
+  const checkAuth = useCallback(async () => {
     const supabase = createClient();
-
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (cancelled) return;
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
         setAuth({ loggedIn: false, name: null, memberId: null });
@@ -39,46 +36,40 @@ export default function AuthIndicator() {
         return;
       }
 
-      try {
-        const { data: member } = await supabase
-          .from('members')
-          .select('id, name')
-          .eq('auth_user_id', user.id)
-          .single();
+      const { data: member } = await supabase
+        .from('members')
+        .select('id, name')
+        .eq('auth_user_id', user.id)
+        .single();
 
-        if (cancelled) return;
-
-        setAuth({
-          loggedIn: true,
-          name: member?.name ?? user.email?.split('@')[0] ?? null,
-          memberId: member?.id ?? null,
-        });
-      } catch {
-        if (cancelled) return;
-        // Auth OK mais membre introuvable — on affiche quand même l'état connecté
-        setAuth({
-          loggedIn: true,
-          name: user.email?.split('@')[0] ?? null,
-          memberId: null,
-        });
-      }
-
-      setLoaded(true);
-    }).catch(() => {
-      // Erreur réseau ou Supabase down — on n'affiche rien
-      if (!cancelled) setLoaded(true);
-    });
-
-    return () => { cancelled = true; };
+      setAuth({
+        loggedIn: true,
+        name: member?.name ?? user.email?.split('@')[0] ?? null,
+        memberId: member?.id ?? null,
+      });
+    } catch {
+      setAuth({ loggedIn: false, name: null, memberId: null });
+    }
+    setLoaded(true);
   }, []);
 
-  // Masquer sur les pages qui ont déjà leur propre gestion
-  if (HIDDEN_PATHS.some(p => pathname.startsWith(p))) return null;
+  useEffect(() => {
+    checkAuth();
 
-  // Ne rien afficher tant que le state n'est pas chargé (évite le flash)
+    // Écoute les changements d'auth (login, logout, token refresh)
+    const supabase = createClient();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+        checkAuth();
+      }
+    });
+
+    return () => { subscription.unsubscribe(); };
+  }, [checkAuth]);
+
+  if (HIDDEN_PATHS.some(p => pathname.startsWith(p))) return null;
   if (!loaded) return null;
 
-  // ─── Connecté ──────────────────────────────────────────────────────────────
   if (auth.loggedIn) {
     return (
       <Link
@@ -98,7 +89,6 @@ export default function AuthIndicator() {
     );
   }
 
-  // ─── Déconnecté ────────────────────────────────────────────────────────────
   return (
     <Link
       href="/auth/login"
