@@ -15,7 +15,7 @@
 .font-ui      { font-family: var(--font-ui); }
 
 html {
-  font-size: 24px;
+  /* font-size: 24px; <- DÉSACTIVÉ POUR NE PAS CASSER L'ÉCHELLE TAILWIND */
   scroll-behavior: smooth;
 }
 
@@ -135,7 +135,6 @@ button, a {
 
 /* ─────────────────────────────────────────
    10. FLOAT — logo X flotte doucement
-   Usage : animate-float sur l'icône logo
    ───────────────────────────────────────── */
 @keyframes float {
   0%, 100% { transform: translateY(0);   }
@@ -147,7 +146,6 @@ button, a {
 
 /* ─────────────────────────────────────────
    11. BREATH — respiration subtile sur éléments statiques
-   Usage : animate-breath sur avatar ou bloc pitch
    ───────────────────────────────────────── */
 @keyframes breath {
   0%, 100% { opacity: 0.7;  transform: scale(1);      }
@@ -159,7 +157,6 @@ button, a {
 
 /* ─────────────────────────────────────────
    12. MESSAGE IN — nouveau message temps réel
-   Usage : animate-message-in sur une carte message
    ───────────────────────────────────────── */
 @keyframes messageIn {
   from { opacity: 0; transform: translateY(-10px) scale(0.97); }
@@ -171,7 +168,6 @@ button, a {
 
 /* ─────────────────────────────────────────
    13. PING BADGE — point rouge non lu
-   Usage : animate-ping-badge sur le dot de notification
    ───────────────────────────────────────── */
 @keyframes pingBadge {
   0%   { transform: scale(1);   opacity: 1;   }
@@ -192,7 +188,6 @@ button, a {
 
 /* ─────────────────────────────────────────
    14. REVEAL WORD — titre qui se révèle mot à mot
-   Usage : wrapper avec animate-reveal-word
    ───────────────────────────────────────── */
 @keyframes revealWord {
   from { opacity: 0; transform: translateY(8px) skewY(1deg); filter: blur(2px); }
@@ -206,7 +201,6 @@ button, a {
 
 /* ─────────────────────────────────────────
    15. SCAN SWEEP — effet de lecture sur profil
-   Usage : animate-scan sur le div avatar container
    ───────────────────────────────────────── */
 @keyframes scanSweep {
   0%   { background-position: 0% 0%;    opacity: 0.6; }
@@ -234,8 +228,6 @@ button, a {
 
 /* ─────────────────────────────────────────
    16. COUNTDOWN TICK — dernières heures
-   Usage : animate-tick sur le texte de countdown
-   quand il reste moins de 1h
    ───────────────────────────────────────── */
 @keyframes tick {
   0%, 100% { opacity: 1;   }
@@ -247,7 +239,6 @@ button, a {
 
 /* ─────────────────────────────────────────
    17. SLIDE IN RIGHT — réponse in-app
-   Usage : animate-slide-right sur la bulle de réponse
    ───────────────────────────────────────── */
 @keyframes slideInRight {
   from { opacity: 0; transform: translateX(-12px); }
@@ -283,7 +274,6 @@ button, a {
 
 /* ─────────────────────────────────────────
    20. SUCCESS CHECKMARK — confirmation envoi
-   Usage : animate-success sur l'icône ✦ après envoi
    ───────────────────────────────────────── */
 @keyframes successPop {
   0%   { opacity: 0; transform: scale(0.5) rotate(-10deg); }

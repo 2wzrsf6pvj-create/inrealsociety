@@ -30,7 +30,10 @@
       "Bash(git commit -m ':*)",
       "Bash(git push:*)",
       "Skill(update-config)",
-      "Skill(update-config:*)"
+      "Skill(update-config:*)",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('.claude/settings.local.json','utf8'\\)\\); console.log\\('JSON valid'\\)\")",
+      "Bash(node -e \"const c = JSON.parse\\(require\\('fs'\\).readFileSync\\('.claude/settings.local.json','utf8'\\)\\); console.log\\('hooks:', JSON.stringify\\(c.hooks?.PostToolUse?.[0]?.matcher\\)\\)\")",
+      "Bash(git commit:*)"
     ]
   }
 }
