@@ -26,7 +26,7 @@ export default function JoinPage() {
         <div className="relative flex items-center justify-center animate-float">
           <div className="absolute w-20 h-20 rounded-full border border-brand-white/10 animate-ring-pulse" />
           <div className="w-14 h-14 rounded-full border border-brand-white/30 flex items-center justify-center">
-            <span className="font-display text-2xl font-light">X</span>
+            <span className="font-display text-2xl font-light">)(</span>
           </div>
         </div>
 

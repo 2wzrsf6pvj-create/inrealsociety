@@ -44,7 +44,7 @@ export default function ManifestePage() {
           <div className="relative">
             <div className="absolute w-20 h-20 rounded-full border border-brand-white/10 animate-ring-pulse" />
             <div className="w-16 h-16 rounded-full border border-brand-white/50 flex items-center justify-center">
-              <span className="font-display text-2xl md:text-3xl font-light">X</span>
+              <span className="font-display text-2xl md:text-3xl font-light">)(</span>
             </div>
           </div>
           <h1 className="font-display text-4xl md:text-5xl font-light leading-[1.15] tracking-[0.02em]">

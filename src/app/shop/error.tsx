@@ -6,7 +6,7 @@ export default function ShopError() {
     <main className="relative flex min-h-screen flex-col items-center justify-center bg-brand-black text-brand-white px-6">
       <div className="z-10 flex flex-col items-center text-center gap-6 w-full max-w-xs md:max-w-sm">
         <div className="w-14 h-14 rounded-full border border-brand-gray/20 flex items-center justify-center">
-          <span className="font-display text-xl font-light text-brand-gray/40">X</span>
+          <span className="font-display text-xl font-light text-brand-gray/40">)(</span>
         </div>
         <div className="flex flex-col gap-2">
           <p className="font-display text-2xl font-light">Boutique temporairement indisponible.</p>

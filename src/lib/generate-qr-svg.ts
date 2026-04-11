@@ -1,9 +1,9 @@
 // src/lib/generate-qr-svg.ts
 // Génère un QR code SVG premium avec modules arrondis, yeux stylisés
-// et logo central 'X'. Adapte les couleurs au thème du t-shirt.
+// et logo central (deux cercles entrecroisés). Adapte les couleurs au thème du t-shirt.
 //
 // Dark (t-shirt noir)  → QR Gold #C5A059, fond transparent
-// Light (t-shirt blanc) → QR Navy #0A192F, logo 'X' Gold #C5A059
+// Light (t-shirt blanc) → QR Navy #0A192F, logo Gold #C5A059
 
 import qrGenerator from 'qrcode-generator';
 
@@ -102,9 +102,9 @@ function renderFinderEye(
   return outer + inner;
 }
 
-// ─── Logo 'X' central ────────────────────────────────────────────────────────
+// ─── Logo central — deux cercles entrecroisés (connexion) ────────────────────
 
-/** Génère le logo 'X' en SVG — deux barres croisées avec extrémités arrondies */
+/** Génère le logo en SVG — deux cercles qui se chevauchent (Venn diagram) */
 function renderLogo(
   cx: number,
   cy: number,
@@ -112,23 +112,19 @@ function renderLogo(
   color: string,
 ): string {
   const half    = logoSize / 2;
-  const stroke  = logoSize * 0.18;
-  const gap     = logoSize * 0.12; // espace pour ne pas toucher les bords
+  const gap     = logoSize * 0.12;
+  const r       = half * 0.55;          // rayon de chaque cercle
+  const offset  = half * 0.32;          // décalage horizontal
+  const stroke  = logoSize * 0.12;
 
-  // Fond blanc (ou transparent) circulaire derrière le logo pour la lisibilité
+  // Fond blanc circulaire derrière le logo pour la lisibilité
   const bgRadius = half + gap;
   const bg = `<circle cx="${cx}" cy="${cy}" r="${bgRadius}" fill="white"/>`;
 
-  // Les deux barres du 'X'
-  const x1 = cx - half + gap;
-  const y1 = cy - half + gap;
-  const x2 = cx + half - gap;
-  const y2 = cy + half - gap;
+  const c1 = `<circle cx="${cx - offset}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}"/>`;
+  const c2 = `<circle cx="${cx + offset}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}"/>`;
 
-  const line1 = `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round"/>`;
-  const line2 = `<line x1="${x2}" y1="${y1}" x2="${x1}" y2="${y2}" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round"/>`;
-
-  return bg + line1 + line2;
+  return bg + c1 + c2;
 }
 
 // ─── Fonction principale ──────────────────────────────────────────────────────

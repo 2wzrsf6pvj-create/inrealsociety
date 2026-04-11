@@ -1,5 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192">
   <rect width="192" height="192" rx="32" fill="#000"/>
-  <circle cx="96" cy="96" r="60" fill="none" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>
-  <text x="96" y="115" text-anchor="middle" fill="#fff" font-family="Georgia,serif" font-size="72" font-weight="300">X</text>
+  <circle cx="72" cy="96" r="40" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="3"/>
+  <circle cx="120" cy="96" r="40" fill="none" stroke="rgba(255,255,255,0.7)" stroke-width="3"/>
+  <!-- Zone d'intersection légèrement plus lumineuse -->
+  <path d="M96 64.6a40 40 0 0 1 0 62.8 40 40 0 0 1 0-62.8z" fill="rgba(255,255,255,0.08)"/>
 </svg>

@@ -47,7 +47,7 @@ function LandingContent() {
         <div className="relative flex items-center justify-center animate-stagger-1">
           <div className="absolute w-24 h-24 rounded-full border border-brand-white/10 animate-ring-pulse" />
           <div className="w-[72px] h-[72px] rounded-full border border-brand-white/40 flex items-center justify-center">
-            <span className="font-display text-3xl md:text-4xl font-light tracking-[0.05em]">X</span>
+            <span className="font-display text-3xl md:text-4xl font-light tracking-[0.05em]">)(</span>
           </div>
         </div>
 

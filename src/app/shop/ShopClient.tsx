@@ -109,7 +109,7 @@ export default function ShopClient() {
         style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 70%)' }} />
 
       <nav className="relative z-10 flex items-center justify-between px-6 py-6 border-b border-brand-gray/10">
-        <Link href="/" className="font-display text-xl font-light tracking-[0.1em]">X</Link>
+        <Link href="/" className="font-display text-xl font-light tracking-[0.1em]">)(</Link>
         <span className="font-ui text-xs text-brand-gray/30 tracking-[0.3em] uppercase">In Real Society</span>
         <Link href="/register" className="font-ui text-xs text-brand-gray/20 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray/50 transition-colors" style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}>
           Membres
@@ -156,7 +156,7 @@ export default function ShopClient() {
                 }`}>
                   <span className={`font-display text-5xl font-light ${
                     tshirtColor === 'dark' ? 'text-[#C5A059]/60' : 'text-[#0A192F]/60'
-                  }`}>X</span>
+                  }`}>)(</span>
                 </div>
               </div>
               <p className={`font-ui text-xs tracking-[0.2em] uppercase ${
