@@ -79,7 +79,7 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  if (user && pathname === '/auth/login') {
+  if (user && (pathname === '/auth/login' || pathname === '/')) {
     return NextResponse.redirect(new URL('/dashboard', req.url));
   }
 
