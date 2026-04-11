@@ -142,6 +142,12 @@ export default function ResetPasswordPage() {
           </button>
         </form>
 
+        <a href="/auth/login"
+          className="font-ui text-xs text-brand-gray/25 tracking-[0.1em] underline underline-offset-4 hover:text-brand-gray/50 transition-colors animate-stagger-3 mt-2"
+        >
+          &larr; retour &agrave; la connexion
+        </a>
+
       </div>
     </main>
   );

@@ -137,6 +137,12 @@ export default function LoginPage() {
           >
             Découvrir In Real Society
           </Link>
+          <Link
+            href="/"
+            className="font-ui text-xs text-brand-gray/20 tracking-[0.1em] underline underline-offset-4 hover:text-brand-gray/50 transition-colors"
+          >
+            &larr; retour &agrave; l&apos;accueil
+          </Link>
         </div>
 
       </div>

@@ -126,6 +126,12 @@ export default function ManifestePage() {
               >
                 Conditions Générales de Vente
               </Link>
+              <Link
+                href="/"
+                className="font-ui text-xs text-brand-gray/20 tracking-[0.1em] underline underline-offset-4 hover:text-brand-gray/50 transition-colors text-center"
+              >
+                &larr; retour &agrave; l&apos;accueil
+              </Link>
             </div>
           </div>
         </AnimatedBlock>

@@ -155,10 +155,16 @@ export default function MigratePage() {
     <main className="relative flex min-h-screen flex-col items-center justify-center bg-brand-black text-brand-white px-6 py-12 overflow-hidden">
       <div className="absolute top-[-15%] left-[-15%] w-[28rem] h-[28rem] rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%)' }} />
-      <div className="z-10 w-full max-w-xs md:max-w-sm">
+      <div className="z-10 w-full max-w-xs md:max-w-sm flex flex-col items-center gap-6">
         <React.Suspense fallback={null}>
           <MigrateContent />
         </React.Suspense>
+        <a href="/"
+          className="font-ui text-xs text-brand-gray/20 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray/50 transition-colors py-2"
+          style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}
+        >
+          &larr; retour &agrave; l&apos;accueil
+        </a>
       </div>
     </main>
   );
