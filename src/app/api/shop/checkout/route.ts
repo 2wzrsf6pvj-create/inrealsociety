@@ -59,6 +59,7 @@ export async function POST(req: NextRequest) {
         tshirt_color:  tshirtColor,
         tshirt_size:   tshirtSize,
         status:        'pending',
+        amount:        4900,
         referrer_id:   referrerId || null,
       })
       .select('id')
