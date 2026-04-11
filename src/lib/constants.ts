@@ -9,3 +9,17 @@ export const EMAIL_FROM = 'InRealSociety <noreply@inrealsociety.com>';
 
 /** URL de l'API Resend */
 export const RESEND_API_URL = 'https://api.resend.com/emails';
+
+// ─── Premium ─────────────────────────────────────────────────────────────────
+
+/** Durée de la fenêtre scanner selon le plan */
+export const SCAN_WINDOW_MS = {
+  free:    24 * 60 * 60 * 1000,  // 24h
+  premium: 48 * 60 * 60 * 1000,  // 48h
+} as const;
+
+/** Nombre max de conversations actives selon le plan */
+export const MAX_CONVERSATIONS = {
+  free:    3,
+  premium: Infinity,
+} as const;

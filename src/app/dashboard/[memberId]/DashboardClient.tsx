@@ -233,6 +233,71 @@ function InboxSection({ messages, memberId }: { messages: Message[]; memberId: s
 
 // ─── Settings ─────────────────────────────────────────────────────────────────
 
+function PremiumBlock({ member }: { member: Member }) {
+  const [loading, setLoading] = useState(false);
+  const isPremium = member.plan === 'premium';
+
+  const handleAction = async () => {
+    setLoading(true);
+    try {
+      const endpoint = isPremium ? '/api/subscription/portal' : '/api/subscription/checkout';
+      const res = await fetch(endpoint, { method: 'POST' });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+    } catch {
+      // ignore
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div className={`w-full border rounded-[2px] p-4 flex flex-col gap-3 ${isPremium ? 'bg-[#0a0a08] border-[#C5A059]/20' : 'bg-[#080808] border-brand-gray/10'}`}>
+      <div className="flex items-center gap-3 w-full">
+        <div className="flex-1 h-px bg-brand-gray/10" />
+        <span className={`font-ui text-xs tracking-[0.18em] uppercase ${isPremium ? 'text-[#C5A059]/60' : 'text-brand-gray/30'}`}>
+          {isPremium ? '✦ premium actif' : 'premium'}
+        </span>
+        <div className="flex-1 h-px bg-brand-gray/10" />
+      </div>
+
+      {isPremium ? (
+        <div className="flex flex-col gap-2">
+          <p className="font-ui text-xs md:text-sm text-brand-gray/50 leading-relaxed">
+            Vous bénéficiez de la fenêtre 48h, des conversations illimitées et du badge ✦ sur votre profil.
+          </p>
+          <button onClick={handleAction} disabled={loading}
+            className="w-full py-2.5 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.15em] uppercase text-brand-gray/40 hover:border-brand-gray/30 hover:text-brand-gray/60 transition-colors rounded-[2px] disabled:opacity-40">
+            {loading ? 'Chargement...' : 'Gérer mon abonnement'}
+          </button>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2">
+            {[
+              'Fenêtre scanner étendue à 48h (au lieu de 24h)',
+              'Conversations illimitées (au lieu de 3)',
+              'Badge ✦ visible sur votre profil',
+              'Stats avancées à venir',
+            ].map(item => (
+              <div key={item} className="flex items-start gap-2">
+                <span className="font-ui text-xs text-[#C5A059]/50 mt-0.5">✦</span>
+                <span className="font-ui text-xs text-brand-gray/50">{item}</span>
+              </div>
+            ))}
+          </div>
+          <button onClick={handleAction} disabled={loading}
+            className="animate-shimmer w-full py-3 bg-[#C5A059] text-brand-black font-ui font-bold text-sm tracking-[0.25em] uppercase rounded-[1px] hover:bg-[#d4af6a] active:scale-[0.98] transition-all duration-200 disabled:opacity-50">
+            {loading ? 'Chargement...' : 'Passer premium — 2,99€/mois'}
+          </button>
+          <p className="font-ui text-xxs text-brand-gray/20 text-center">
+            Sans engagement · Annulable à tout moment
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ReferralBlock({ memberId }: { memberId: string }) {
   const [count,     setCount]     = useState<number | null>(null);
   const [converted, setConverted] = useState<number>(0);
@@ -353,6 +418,9 @@ function SettingsSection({ member }: { member: Member }) {
         {pauseError && <p className="font-ui text-xs text-red-400">{pauseError}</p>}
       </div>
 
+      {/* Premium */}
+      <PremiumBlock member={member} />
+
       {/* Parrainage */}
       <ReferralBlock memberId={member.id} />
 
@@ -434,7 +502,10 @@ function HomeSection({ member, recentScans }: {
             </div>
           </div>
           <div className="flex flex-col gap-0.5">
-            <p className="font-ui text-sm font-medium tracking-[0.2em]">{member.name.toUpperCase()}</p>
+            <p className="font-ui text-sm font-medium tracking-[0.2em]">
+              {member.name.toUpperCase()}
+              {member.plan === 'premium' && <span className="ml-1.5 text-[#C5A059]/70">✦</span>}
+            </p>
             <p className="font-ui text-xs text-brand-gray/40">
               {member.is_paused
                 ? 'En pause'

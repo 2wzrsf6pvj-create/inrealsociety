@@ -1,17 +1,23 @@
 // src/lib/types.ts — InRealSociety
 
+export type MemberPlan = 'free' | 'premium';
+
 export interface Member {
-  id:           string;
-  name:         string;
-  pitch:        string;
-  instagram:    string | null;
-  email:        string | null;
-  photo_url:    string | null;
-  scan_count:   number;
-  is_paused:    boolean;
-  created_at:   string;
-  updated_at:   string;
-  auth_user_id: string | null;  // ← ajouté
+  id:                      string;
+  name:                    string;
+  pitch:                   string;
+  instagram:               string | null;
+  email:                   string | null;
+  photo_url:               string | null;
+  scan_count:              number;
+  is_paused:               boolean;
+  plan:                    MemberPlan;
+  stripe_customer_id:      string | null;
+  stripe_subscription_id:  string | null;
+  plan_expires_at:         string | null;
+  created_at:              string;
+  updated_at:              string;
+  auth_user_id:            string | null;
 }
 
 export interface Scan {

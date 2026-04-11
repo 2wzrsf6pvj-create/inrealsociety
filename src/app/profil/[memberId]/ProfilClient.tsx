@@ -12,16 +12,21 @@ function getInitials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-function useCountdown(firstScanAt: string | null) {
-  const [timeLeft, setTimeLeft] = useState({ hours: 24, minutes: 0, seconds: 0, percent: 100, active: false });
+import { SCAN_WINDOW_MS } from '@/lib/constants';
+import type { MemberPlan } from '@/lib/types';
+
+function useCountdown(firstScanAt: string | null, plan: MemberPlan = 'free') {
+  const windowMs = SCAN_WINDOW_MS[plan];
+  const windowH  = windowMs / 3_600_000;
+  const [timeLeft, setTimeLeft] = useState({ hours: windowH, minutes: 0, seconds: 0, percent: 100, active: false });
   useEffect(() => {
     if (!firstScanAt) {
-      setTimeLeft({ hours: 24, minutes: 0, seconds: 0, percent: 100, active: false });
+      setTimeLeft({ hours: windowH, minutes: 0, seconds: 0, percent: 100, active: false });
       return;
     }
     const update = () => {
       const start     = new Date(firstScanAt).getTime();
-      const total     = 24 * 60 * 60 * 1000;
+      const total     = windowMs;
       const remaining = Math.max(0, total - (Date.now() - start));
       setTimeLeft({
         hours:   Math.floor(remaining / 3_600_000),
@@ -34,7 +39,7 @@ function useCountdown(firstScanAt: string | null) {
     update();
     const iv = setInterval(update, 1_000);
     return () => clearInterval(iv);
-  }, [firstScanAt]);
+  }, [firstScanAt, windowMs, windowH]);
   return timeLeft;
 }
 
@@ -49,7 +54,7 @@ export default function ProfilClient({
 }) {
   const [scannerName, setScannerName] = useState('');
   const [convUrl, setConvUrl]         = useState<string | null>(null);
-  const countdown = useCountdown(firstScanAt);
+  const countdown = useCountdown(firstScanAt, member.plan);
   const isExpired = countdown.active && countdown.percent === 0;
 
   useEffect(() => {
@@ -143,9 +148,14 @@ export default function ProfilClient({
               )}
             </div>
           </div>
-          <p className="font-ui text-sm font-medium tracking-[0.25em] text-brand-white/80">
-            {member.name.toUpperCase()}
-          </p>
+          <div className="flex items-center gap-2">
+            <p className="font-ui text-sm font-medium tracking-[0.25em] text-brand-white/80">
+              {member.name.toUpperCase()}
+            </p>
+            {member.plan === 'premium' && (
+              <span className="font-ui text-xs text-[#C5A059]/70" title="Membre premium">✦</span>
+            )}
+          </div>
         </div>
 
         {/* Corps */}
@@ -222,7 +232,7 @@ export default function ProfilClient({
               {countdown.active ? 'Occasion éphémère' : 'Profil actif'}
             </span>
             <span className="font-ui text-xxs md:text-xs text-brand-gray/20 tabular-nums">
-              {isExpired ? 'Expiré' : countdown.active ? `${countdown.hours}h ${String(countdown.minutes).padStart(2, '0')}m ${String(countdown.seconds).padStart(2, '0')}s` : '24h'}
+              {isExpired ? 'Expiré' : countdown.active ? `${countdown.hours}h ${String(countdown.minutes).padStart(2, '0')}m ${String(countdown.seconds).padStart(2, '0')}s` : `${SCAN_WINDOW_MS[member.plan] / 3_600_000}h`}
             </span>
           </div>
           <div className="w-full h-px bg-brand-gray/10 relative overflow-hidden">

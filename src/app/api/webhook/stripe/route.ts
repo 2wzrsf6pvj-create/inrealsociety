@@ -58,14 +58,28 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Signature invalide.' }, { status: 400 });
   }
 
-  if (event.type === 'checkout.session.completed') {
-    const session = event.data.object as Stripe.Checkout.Session;
-    try {
-      await handleCheckoutCompleted(session);
-    } catch (err) {
-      console.error('[webhook] Erreur traitement session:', err);
-      return NextResponse.json({ received: true, warning: 'Erreur traitement interne.' });
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed': {
+        const session = event.data.object as Stripe.Checkout.Session;
+        // Abonnement = mode subscription, achat unique = mode payment
+        if (session.mode === 'subscription') {
+          await handleSubscriptionCheckout(session);
+        } else {
+          await handleCheckoutCompleted(session);
+        }
+        break;
+      }
+      case 'customer.subscription.updated':
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object as Stripe.Subscription;
+        await handleSubscriptionChange(subscription);
+        break;
+      }
     }
+  } catch (err) {
+    console.error('[webhook] Erreur traitement:', err);
+    return NextResponse.json({ received: true, warning: 'Erreur traitement interne.' });
   }
 
   return NextResponse.json({ received: true });
@@ -247,4 +261,58 @@ async function createPrintfulOrder({ recipient, qrCodeUrl, variantId, tshirtColo
 
   if (!res.ok) throw new Error(`Printful API error ${res.status}: ${await res.text()}`);
   return res.json() as Promise<PrintfulOrderResponse>;
+}
+
+// ─── Handlers abonnement premium ─────────────────────────────────────────────
+
+async function handleSubscriptionCheckout(session: Stripe.Checkout.Session): Promise<void> {
+  const memberId      = session.metadata?.memberId;
+  const subscriptionId = session.subscription as string;
+  const customerId     = session.customer as string;
+
+  if (!memberId) {
+    console.warn('[webhook] Subscription checkout sans memberId dans metadata');
+    return;
+  }
+
+  await supabaseAdmin
+    .from('members')
+    .update({
+      plan:                    'premium',
+      stripe_customer_id:      customerId,
+      stripe_subscription_id:  subscriptionId,
+      plan_expires_at:         null,
+    })
+    .eq('id', memberId);
+
+  console.log('[webhook] Membre', memberId, 'upgradé en premium.');
+}
+
+async function handleSubscriptionChange(subscription: Stripe.Subscription): Promise<void> {
+  const customerId = subscription.customer as string;
+
+  // Trouve le membre par customer ID
+  const { data: member } = await supabaseAdmin
+    .from('members')
+    .select('id')
+    .eq('stripe_customer_id', customerId)
+    .single();
+
+  if (!member) {
+    console.warn('[webhook] Subscription change pour customer inconnu:', customerId);
+    return;
+  }
+
+  const isActive = subscription.status === 'active' || subscription.status === 'trialing';
+
+  await supabaseAdmin
+    .from('members')
+    .update({
+      plan:                    isActive ? 'premium' : 'free',
+      stripe_subscription_id:  isActive ? subscription.id : null,
+      plan_expires_at:         isActive ? null : new Date((subscription as unknown as { current_period_end: number }).current_period_end * 1000).toISOString(),
+    })
+    .eq('id', member.id);
+
+  console.log('[webhook] Membre', member.id, isActive ? 'premium actif' : 'repassé en free');
 }

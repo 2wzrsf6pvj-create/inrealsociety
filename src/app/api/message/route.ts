@@ -8,6 +8,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { sendEmail, emailNouveauMessage } from '@/lib/email-templates';
 import { checkMessageRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
 import { audit } from '@/lib/audit';
+import { SCAN_WINDOW_MS, MAX_CONVERSATIONS } from '@/lib/constants';
 
 const QUICK_REPLIES = new Set(["Belle audace.", "J'aime la démarche.", "👁"]);
 
@@ -57,7 +58,7 @@ export async function POST(req: NextRequest) {
 
     // ─── Vérification membre ──────────────────────────────────────────────
     const { data: member } = await supabase
-      .from('members').select('id, name, email, is_paused').eq('id', memberId).single();
+      .from('members').select('id, name, email, is_paused, plan').eq('id', memberId).single();
 
     if (!member) {
       return NextResponse.json({ error: 'Membre introuvable' }, { status: 404 });
@@ -67,14 +68,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Ce membre est indisponible.' }, { status: 403 });
     }
 
-    // ─── Vérification timer 24h ──────────────────────────────────────────
+    // ─── Vérification fenêtre temporelle (24h free / 48h premium) ──────
+    const plan = (member.plan === 'premium' ? 'premium' : 'free') as keyof typeof SCAN_WINDOW_MS;
+    const windowMs = SCAN_WINDOW_MS[plan];
+
     const { data: firstScan } = await supabase
       .from('first_scans').select('first_scan_at').eq('member_id', memberId).single();
 
     if (firstScan?.first_scan_at) {
       const elapsed = Date.now() - new Date(firstScan.first_scan_at).getTime();
-      if (elapsed > 24 * 60 * 60 * 1000) {
-        return NextResponse.json({ error: 'La fenêtre de 24h est expirée.' }, { status: 403 });
+      if (elapsed > windowMs) {
+        const windowLabel = windowMs / 3_600_000;
+        return NextResponse.json({ error: `La fenêtre de ${windowLabel}h est expirée.` }, { status: 403 });
+      }
+    }
+
+    // ─── Limite de conversations actives (3 free / illimité premium) ──
+    if (MAX_CONVERSATIONS[plan] !== Infinity) {
+      const { count: activeConvs } = await supabase
+        .from('messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('member_id', memberId)
+        .eq('moderated', false);
+
+      if ((activeConvs ?? 0) >= MAX_CONVERSATIONS[plan]) {
+        return NextResponse.json({ error: 'Nombre maximum de conversations atteint pour ce profil.' }, { status: 403 });
       }
     }
 
