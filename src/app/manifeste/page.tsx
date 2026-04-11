@@ -60,6 +60,27 @@ export default function ManifestePage() {
         </div>
       </section>
 
+      {/* Sommaire cliquable */}
+      <nav className="relative z-10 max-w-lg mx-auto px-6 pb-16">
+        <div className="border border-brand-gray/10 rounded-[2px] p-5 md:p-6 bg-[#080808]">
+          <p className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase mb-4">Sommaire</p>
+          <div className="flex flex-col gap-2">
+            {MANIFESTO_BLOCKS.map((block: ManifestoBlock, i: number) => (
+              <a
+                key={i}
+                href={`#section-${i}`}
+                className="flex items-center gap-3 group py-1"
+              >
+                <span className="font-ui text-xxs text-brand-gray/20 tabular-nums w-5">{String(i + 1).padStart(2, '0')}</span>
+                <span className="font-ui text-sm text-brand-gray/50 group-hover:text-brand-white transition-colors">
+                  {block.title}
+                </span>
+              </a>
+            ))}
+          </div>
+        </div>
+      </nav>
+
       {/* Manifeste */}
       <section id="manifeste" className="relative z-10 max-w-lg mx-auto px-6 pb-24 flex flex-col gap-16 md:gap-20">
         {MANIFESTO_BLOCKS.map((block: ManifestoBlock, i: number) => (
@@ -68,7 +89,7 @@ export default function ManifestePage() {
             classNameInView="opacity-100 translate-y-0"
             classNameNotInView="opacity-0 translate-y-6"
           >
-            <div className="flex flex-col gap-4">
+            <div id={`section-${i}`} className="flex flex-col gap-4 scroll-mt-8">
               {block.label && (
                 <span className="font-ui text-xs text-brand-gray/30 tracking-[0.25em] uppercase">
                   {block.label}
