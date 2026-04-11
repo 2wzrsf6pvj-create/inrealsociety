@@ -16,6 +16,7 @@ const schema = z.object({
   email:       z.string().email().max(320),
   tshirtColor: z.enum(['dark', 'light']),
   tshirtSize:  z.enum(['S', 'M', 'L', 'XL', 'XXL']),
+  referrerId:  z.string().uuid().optional(),
 });
 
 const TSHIRT_PRICE_ID = process.env.STRIPE_PRICE_ID!;
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Données invalides.' }, { status: 400 });
     }
 
-    const { email, tshirtColor, tshirtSize } = body.data;
+    const { email, tshirtColor, tshirtSize, referrerId } = body.data;
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;
     if (!appUrl) {
       console.error('[api/shop/checkout] NEXT_PUBLIC_APP_URL non défini');
@@ -58,6 +59,7 @@ export async function POST(req: NextRequest) {
         tshirt_color:  tshirtColor,
         tshirt_size:   tshirtSize,
         status:        'pending',
+        referrer_id:   referrerId || null,
       })
       .select('id')
       .single();

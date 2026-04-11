@@ -1,19 +1,31 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 
 type TshirtColor = 'dark' | 'light';
 type TshirtSize  = 'S' | 'M' | 'L' | 'XL' | 'XXL';
 
 const SIZES: TshirtSize[] = ['S', 'M', 'L', 'XL', 'XXL'];
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default function ShopClient() {
+  const searchParams = useSearchParams();
   const [email, setEmail]             = useState('');
   const [tshirtColor, setTshirtColor] = useState<TshirtColor>('dark');
   const [tshirtSize, setTshirtSize]   = useState<TshirtSize>('M');
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState('');
+  const [referrerId, setReferrerId]   = useState<string | null>(null);
+
+  useEffect(() => {
+    // Capte le parrain depuis ?ref= ou depuis localStorage (page /join)
+    const ref = searchParams.get('ref') || localStorage.getItem('referral_code');
+    if (ref && UUID_RE.test(ref)) {
+      setReferrerId(ref);
+    }
+  }, [searchParams]);
 
   const handleBuy = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +39,7 @@ export default function ShopClient() {
       const res = await fetch('/api/shop/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), tshirtColor, tshirtSize }),
+        body: JSON.stringify({ email: email.trim(), tshirtColor, tshirtSize, referrerId: referrerId || undefined }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);

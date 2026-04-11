@@ -234,8 +234,9 @@ function InboxSection({ messages, memberId }: { messages: Message[]; memberId: s
 // ─── Settings ─────────────────────────────────────────────────────────────────
 
 function ReferralBlock({ memberId }: { memberId: string }) {
-  const [count,  setCount]  = useState<number | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [count,     setCount]     = useState<number | null>(null);
+  const [converted, setConverted] = useState<number>(0);
+  const [copied,    setCopied]    = useState(false);
   const referralUrl = typeof window !== 'undefined'
     ? `${window.location.origin}/shop?ref=${memberId}`
     : '';
@@ -243,7 +244,7 @@ function ReferralBlock({ memberId }: { memberId: string }) {
   React.useEffect(() => {
     fetch(`/api/referral?memberId=${memberId}`)
       .then(r => r.json())
-      .then(d => setCount(d.count ?? 0))
+      .then(d => { setCount(d.count ?? 0); setConverted(d.converted ?? 0); })
       .catch(() => {});
   }, [memberId]);
 
@@ -278,9 +279,16 @@ function ReferralBlock({ memberId }: { memberId: string }) {
         </button>
       )}
       {count !== null && (
-        <p className="font-ui text-xs text-brand-gray/30">
-          {count} parrainage{count !== 1 ? 's' : ''}
-        </p>
+        <div className="flex items-center gap-4">
+          <p className="font-ui text-xs text-brand-gray/30">
+            {count} parrainage{count !== 1 ? 's' : ''}
+          </p>
+          {converted > 0 && (
+            <p className="font-ui text-xs text-green-400/50">
+              {converted} achat{converted !== 1 ? 's' : ''} confirmé{converted !== 1 ? 's' : ''}
+            </p>
+          )}
+        </div>
       )}
     </div>
   );
