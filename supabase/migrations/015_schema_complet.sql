@@ -79,8 +79,7 @@ CREATE INDEX IF NOT EXISTS idx_silent_views_member_id ON silent_views(member_id)
 
 -- ─── activation_codes ────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS activation_codes (
-  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  code       TEXT NOT NULL UNIQUE,
+  code       TEXT PRIMARY KEY,
   used       BOOLEAN NOT NULL DEFAULT false,
   member_id  UUID REFERENCES members(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
