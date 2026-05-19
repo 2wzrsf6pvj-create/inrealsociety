@@ -7,6 +7,8 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { requireAuth, isHttpError } from '@/lib/require-auth';
 import { checkAuthRateLimit, rateLimitHeaders } from '@/lib/ratelimit';
 import { generateUniqueShortCode } from '@/lib/short-code';
+import { fulfillOrder } from '@/lib/fulfillment';
+import { audit } from '@/lib/audit';
 
 const schema = z.object({
   name:           z.string().min(1).max(50).trim(),
@@ -77,6 +79,53 @@ export async function POST(req: NextRequest) {
 
     if (result.already_exists) {
       return NextResponse.json({ memberId: result.member_id, alreadyExists: true });
+    }
+
+    // ─── Déclenche fulfillment Printful (non-bloquant) ────────────────────
+    // Cherche l'order lié à ce code d'activation. Si pas trouvé (membre créé
+    // sans achat — e.g. invité), on ignore. Si l'order est déjà fulfilled,
+    // fulfillOrder retourne alreadyFulfilled=true (idempotent).
+    if (result.member_id) {
+      try {
+        const { data: order } = await supabaseAdmin
+          .from('orders')
+          .select('id, tshirt_color, printful_order_id, status')
+          .eq('activation_code', activationCode)
+          .single();
+
+        if (order && order.status === 'paid' && !order.printful_order_id) {
+          const tshirtColor = (order.tshirt_color === 'light') ? 'light' : 'dark';
+          const fulfillResult = await fulfillOrder({
+            orderId:     order.id,
+            memberId:    result.member_id,
+            tshirtColor,
+          });
+          if (fulfillResult.ok) {
+            audit({
+              action:   'order.fulfilled',
+              memberId: result.member_id,
+              metadata: { orderId: order.id, printfulOrderId: fulfillResult.printfulOrderId, trigger: 'member_create' },
+            });
+          } else {
+            audit({
+              action:   'order.fulfillment_failed',
+              memberId: result.member_id,
+              metadata: { orderId: order.id, reason: fulfillResult.reason, trigger: 'member_create' },
+            });
+            console.error('[api/member/create] Fulfillment failed:', fulfillResult.reason);
+          }
+        }
+      } catch (fulfillErr) {
+        // Ne JAMAIS bloquer l'inscription pour un problème Printful — l'utilisateur
+        // a payé, son profil est créé, le support peut re-déclencher le fulfillment
+        // manuellement si besoin.
+        console.error('[api/member/create] Fulfillment exception:', fulfillErr);
+        audit({
+          action:   'order.fulfillment_failed',
+          memberId: result.member_id,
+          metadata: { reason: fulfillErr instanceof Error ? fulfillErr.message : String(fulfillErr), trigger: 'member_create' },
+        });
+      }
     }
 
     return NextResponse.json({ memberId: result.member_id });

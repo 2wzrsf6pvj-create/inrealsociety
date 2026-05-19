@@ -17,6 +17,10 @@ export type AuditAction =
   | 'dashboard.accessed'
   | 'qrcode.generated'
   | 'order.completed'
+  | 'order.email_failed'
+  | 'order.email_missing'
+  | 'order.fulfillment_failed'
+  | 'order.fulfilled'
   | 'push.subscribed'
   | 'message.reported';
 

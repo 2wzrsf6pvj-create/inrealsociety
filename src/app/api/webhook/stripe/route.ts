@@ -15,25 +15,12 @@ import Stripe from 'stripe';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { generateSecureCode } from '@/lib/generate-code';
 import { sendEmail, emailActivation, emailPremium } from '@/lib/email-templates';
-import { generatePremiumQRCode } from '@/lib/generate-qr-svg';
-import { buildShortUrl } from '@/lib/short-code';
-import type { PrintfulOrderPayload, PrintfulOrderResponse, PrintfulAddress } from '@/lib/printful.types';
 import { APP_URL } from '@/lib/constants';
 import { captureServerEvent } from '@/lib/posthog-server';
-
-// ─── Variant IDs Printful — Comfort Colors 1717 ──────────────────────────────
-// À configurer dans .env.local :
-//   PRINTFUL_VARIANT_ID_DARK=xxx   (Comfort Colors 1717 Black)
-//   PRINTFUL_VARIANT_ID_LIGHT=xxx  (Comfort Colors 1717 White)
-// Fallback : l'ancien PRINTFUL_VARIANT_ID unique
-const VARIANT_DARK  = parseInt(process.env.PRINTFUL_VARIANT_ID_DARK  || process.env.PRINTFUL_VARIANT_ID || '0', 10);
-const VARIANT_LIGHT = parseInt(process.env.PRINTFUL_VARIANT_ID_LIGHT || process.env.PRINTFUL_VARIANT_ID || '0', 10);
+import { audit } from '@/lib/audit';
+import { fulfillOrder } from '@/lib/fulfillment';
 
 type TshirtColor = 'dark' | 'light';
-
-function getVariantId(color: TshirtColor): number {
-  return color === 'dark' ? VARIANT_DARK : VARIANT_LIGHT;
-}
 
 export async function POST(req: NextRequest) {
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -89,109 +76,88 @@ export async function POST(req: NextRequest) {
 // ─── Handler principal ────────────────────────────────────────────────────────
 
 async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promise<void> {
-  const userId      = session.metadata?.userId;
-  const rawColor    = session.metadata?.tshirtColor;
+  const userId    = session.metadata?.userId;
+  const rawColor  = session.metadata?.tshirtColor;
   const tshirtColor: TshirtColor = (rawColor === 'dark' || rawColor === 'light') ? rawColor : 'dark';
-  const sessionId   = session.id;
-  const email       = session.customer_details?.email ?? session.customer_email;
+  const sessionId = session.id;
+  const email     = session.customer_details?.email ?? session.customer_email;
 
   // ─── Idempotence : vérifie si cet événement a déjà été traité ──────────
   const { data: existingOrder } = await supabaseAdmin
     .from('orders')
-    .select('id, status')
+    .select('id, status, activation_code')
     .eq('stripe_session_id', sessionId)
     .single();
 
-  if (existingOrder?.status === 'paid') {
+  if (!existingOrder) {
+    console.warn('[webhook] Order introuvable pour session:', sessionId);
+    return;
+  }
+
+  if (existingOrder.status === 'paid') {
     console.log('[webhook] Événement déjà traité pour session:', sessionId);
     return;
   }
 
-  // 1. Code d'activation + email
-  if (email) {
-    const code = await generateUniqueActivationCode();
-
-    const { error: orderError } = await supabaseAdmin
-      .from('orders')
-      .update({
-        status:            'paid',
-        activation_code:   code,
-        stripe_payment_id: session.payment_intent,
-        tshirt_color:      tshirtColor,
-      })
-      .eq('stripe_session_id', sessionId)
-      .neq('status', 'paid');
-
-    if (orderError) console.error('[webhook] Erreur mise à jour order:', orderError);
-
-    const appUrl = APP_URL;
-    const { subject, html } = emailActivation({
-      code,
-      registerUrl: `${appUrl}/register?code=${code}`,
-    });
-    await sendEmail({ to: email, subject, html });
+  // ─── 1. Code d'activation + email ──────────────────────────────────────
+  if (!email) {
+    audit({ action: 'order.email_missing', metadata: { orderId: existingOrder.id, sessionId } });
+    console.warn('[webhook] Email manquant — code non envoyé pour session:', sessionId);
+    return;
   }
 
-  // 2. Génération QR code SVG + commande Printful
-  if (userId) {
-    const shipping = getShippingDetails(session);
-    if (!shipping) {
-      console.warn('[webhook] Adresse de livraison manquante — commande Printful ignorée.');
-      return;
-    }
+  const code = await generateUniqueActivationCode();
 
-    const variantId = getVariantId(tshirtColor);
-    if (!variantId) throw new Error('PRINTFUL_VARIANT_ID non défini pour cette couleur.');
+  const { error: orderError } = await supabaseAdmin
+    .from('orders')
+    .update({
+      status:            'paid',
+      activation_code:   code,
+      stripe_payment_id: session.payment_intent,
+      tshirt_color:      tshirtColor,
+    })
+    .eq('stripe_session_id', sessionId)
+    .neq('status', 'paid');
 
-    // ─── Récupère le short_code du membre pour le QR code ───────────────────
-    const { data: member } = await supabaseAdmin
-      .from('members')
-      .select('id, short_code')
-      .eq('id', userId)
-      .single();
+  if (orderError) console.error('[webhook] Erreur mise à jour order:', orderError);
 
-    // URL courte si short_code disponible, sinon fallback sur l'URL profil
-    const appUrl    = APP_URL;
-    const qrDataUrl = member?.short_code
-      ? buildShortUrl(member.short_code)
-      : `${appUrl}/profil/${userId}`;
+  const appUrl = APP_URL;
+  const { subject, html } = emailActivation({
+    code,
+    registerUrl: `${appUrl}/register?code=${code}`,
+  });
 
-    // ─── Génère le QR code SVG premium ────────────────────────────────────
-    const qr = generatePremiumQRCode(qrDataUrl, tshirtColor);
-
-    // ─── Upload dans Supabase Storage ─────────────────────────────────────
-    const filePath = `${userId}/qr-${tshirtColor}.svg`;
-
-    const { error: uploadError } = await supabaseAdmin.storage
-      .from('qrcodes')
-      .upload(filePath, qr.buffer, {
-        contentType: 'image/svg+xml',
-        upsert:      true,
-      });
-
-    if (uploadError) {
-      throw new Error(`Upload SVG échoué: ${uploadError.message}`);
-    }
-
-    const { data: { publicUrl } } = supabaseAdmin.storage
-      .from('qrcodes')
-      .getPublicUrl(filePath);
-
-    // ─── Met à jour le membre avec l'URL du QR ───────────────────────────
-    await supabaseAdmin
-      .from('members')
-      .update({ qr_code_url: publicUrl })
-      .eq('id', userId);
-
-    // ─── Envoie la commande Printful ──────────────────────────────────────
-    await createPrintfulOrder({
-      recipient: shipping,
-      qrCodeUrl: publicUrl,
-      variantId,
-      tshirtColor,
+  try {
+    await sendEmail({ to: email, subject, html });
+  } catch (err) {
+    audit({
+      action:   'order.email_failed',
+      metadata: { orderId: existingOrder.id, email, error: err instanceof Error ? err.message : String(err) },
     });
+    console.error('[webhook] Échec envoi email activation:', err);
+    // L'order reste en 'paid' avec le code — support peut renvoyer manuellement.
+  }
 
-    console.log('[webhook] Commande Printful créée.');
+  // ─── 2. Fulfillment (membre existant uniquement) ─────────────────────
+  // Pour les nouveaux acheteurs, le fulfillment est déclenché depuis
+  // /api/member/create après création du profil (le member_id n'existe pas
+  // encore au moment du webhook).
+  if (userId) {
+    const result = await fulfillOrder({ orderId: existingOrder.id, memberId: userId, tshirtColor });
+    if (result.ok) {
+      audit({
+        action:   'order.fulfilled',
+        memberId: userId,
+        metadata: { orderId: existingOrder.id, printfulOrderId: result.printfulOrderId, alreadyFulfilled: result.alreadyFulfilled },
+      });
+    } else {
+      audit({
+        action:   'order.fulfillment_failed',
+        memberId: userId,
+        metadata: { orderId: existingOrder.id, reason: result.reason },
+      });
+      console.error('[webhook] Fulfillment failed:', result.reason);
+    }
   }
 }
 
@@ -206,62 +172,6 @@ async function generateUniqueActivationCode(): Promise<string> {
     if (error.code !== '23505') throw new Error(`Erreur insertion code: ${error.message}`);
   }
   throw new Error(`Impossible de générer un code unique après ${MAX_ATTEMPTS} tentatives.`);
-}
-
-function getShippingDetails(session: Stripe.Checkout.Session): PrintfulAddress | null {
-  const shipping = (session as unknown as { shipping_details?: Stripe.Checkout.Session['customer_details'] }).shipping_details ?? session.customer_details;
-  if (!shipping?.address || !shipping.name) return null;
-  return {
-    name:         shipping.name,
-    address1:     shipping.address.line1 ?? '',
-    address2:     shipping.address.line2 ?? undefined,
-    city:         shipping.address.city ?? '',
-    state_code:   shipping.address.state ?? '',
-    country_code: shipping.address.country ?? '',
-    zip:          shipping.address.postal_code ?? '',
-  };
-}
-
-async function createPrintfulOrder({ recipient, qrCodeUrl, variantId, tshirtColor }: {
-  recipient:    PrintfulAddress;
-  qrCodeUrl:    string;
-  variantId:    number;
-  tshirtColor:  TshirtColor;
-}): Promise<PrintfulOrderResponse> {
-  const colorLabel = tshirtColor === 'dark' ? 'Black' : 'White';
-
-  const payload: PrintfulOrderPayload = {
-    recipient,
-    items: [{
-      variant_id: variantId,
-      quantity:   1,
-      name:       `In Real Society — Comfort Colors 1717 ${colorLabel} (DTF)`,
-      files: [{
-        type: 'back',
-        url:  qrCodeUrl,
-        position: {
-          area_width:  1800,
-          area_height: 2400,
-          width:       800,
-          height:      800,
-          top:         200,
-          left:        500,
-        },
-      }],
-    }],
-  };
-
-  const res = await fetch('https://api.printful.com/orders', {
-    method:  'POST',
-    headers: {
-      'Content-Type':  'application/json',
-      'Authorization': `Bearer ${process.env.PRINTFUL_API_TOKEN}`,
-    },
-    body: JSON.stringify(payload),
-  });
-
-  if (!res.ok) throw new Error(`Printful API error ${res.status}: ${await res.text()}`);
-  return res.json() as Promise<PrintfulOrderResponse>;
 }
 
 // ─── Handlers abonnement premium ─────────────────────────────────────────────
