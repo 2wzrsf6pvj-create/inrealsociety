@@ -48,14 +48,30 @@ function isPublicRoute(pathname: string): boolean {
   return false;
 }
 
+// Dev-friendly : sans les clés Supabase, on bypasse le middleware au lieu de
+// crasher toutes les routes. Ça permet d'explorer le code et les pages
+// statiques (/, /shop, /manifeste, /cgv, /confidentialite) sans .env.local.
+// Les pages qui interrogent Supabase échoueront évidemment à l'exécution.
+const SUPABASE_URL  = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const SUPABASE_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const SUPABASE_CONFIGURED = !!(SUPABASE_URL && SUPABASE_ANON);
+
+if (!SUPABASE_CONFIGURED && process.env.NODE_ENV !== 'production') {
+  console.warn('[middleware] Supabase env vars absentes — auth check désactivé. Configure .env.local pour activer l\'auth.');
+}
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   const res = NextResponse.next({ request: { headers: req.headers } });
 
+  if (!SUPABASE_CONFIGURED) {
+    return res;
+  }
+
   const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    SUPABASE_URL!,
+    SUPABASE_ANON!,
     {
       cookies: {
         get(name: string) { return req.cookies.get(name)?.value; },
