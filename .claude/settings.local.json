@@ -1,0 +1,43 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -n \"localStorage\" /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/dashboard/**/*.tsx)",
+      "Bash(grep -n \"import.*supabase\\\\|import.*supabase-\" /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/register/page.tsx /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/conversation/[messageId]/ConversationClient.tsx /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/dashboard/[memberId]/DashboardClient.tsx)",
+      "Bash(grep -n \"process.env\\\\|INTERNAL_SECRET\\\\|ADMIN_SECRET\" /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/api/**/*.ts)",
+      "Bash(npm audit:*)",
+      "Bash(npx next:*)",
+      "Bash(grep -l \"use client\" /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/**/*.tsx)",
+      "Bash(grep -n \"\\\\.select\\\\|\\\\.insert\\\\|\\\\.update\\\\|\\\\.delete\\\\|\\\\.from\" /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/api/*/route.ts)",
+      "Bash(grep -A2 \"schema = z.object\" /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/api/*/route.ts)",
+      "Bash(grep -B3 \"\\\\.eq\\('member_id'\" /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/api/*/route.ts)",
+      "Bash(cat)",
+      "Bash(bash /tmp/check_routes.sh)",
+      "Bash(bash /tmp/analyze.sh)",
+      "Read(//tmp/**)",
+      "Bash(grep -l \"supabase-admin\\\\|supabaseAdmin\" /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/*/*.tsx /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/*/*/*.tsx)",
+      "Bash(xargs ls:*)",
+      "Bash(npm install:*)",
+      "Bash(npx vitest:*)",
+      "Bash(grep -n \"handleReply\\\\|POST\\\\|/api/reply\" /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/conversation/[messageId]/ConversationClient.tsx)",
+      "Bash(grep -A 50 \"export default function ConversationClient\" /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/conversation/[messageId]/ConversationClient.tsx)",
+      "Bash(grep -n \"Répondre\\\\|reply\\\\|conversation\" /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/dashboard/[memberId]/DashboardClient.tsx)",
+      "Bash(grep -A 30 \"InboxSection\" /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/dashboard/[memberId]/DashboardClient.tsx)",
+      "Bash(grep -A 5 \"export default async function ConversationPage\" /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/conversation/[messageId]/page.tsx)",
+      "Bash(xargs grep:*)",
+      "Bash(grep -B 2 -A 5 \"fetch.*api.*referral\\\\|fetch.*api.*member.*update\" /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/dashboard/[memberId]/DashboardClient.tsx)",
+      "Bash(ls -la /c/Users/cleme/OneDrive/Bureau/inrealsociety/src/app/r/[code]/)",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(git push:*)",
+      "Skill(update-config)",
+      "Skill(update-config:*)",
+      "Bash(node -e \"JSON.parse\\(require\\('fs'\\).readFileSync\\('.claude/settings.local.json','utf8'\\)\\); console.log\\('JSON valid'\\)\")",
+      "Bash(node -e \"const c = JSON.parse\\(require\\('fs'\\).readFileSync\\('.claude/settings.local.json','utf8'\\)\\); console.log\\('hooks:', JSON.stringify\\(c.hooks?.PostToolUse?.[0]?.matcher\\)\\)\")",
+      "Bash(git commit:*)",
+      "Bash(gh pr *)",
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
+      "Bash(git init *)",
+      "Bash(git -c user.email=clementprouno@gmail.com -c user.name=clement commit -m \"chore: initial snapshot before PostHog instrumentation\")"
+    ]
+  }
+}
