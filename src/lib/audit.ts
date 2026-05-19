@@ -22,6 +22,7 @@ export type AuditAction =
   | 'order.email_resent'
   | 'order.refunded'
   | 'subscription.payment_failed'
+  | 'member.deleted'
   | 'order.fulfillment_failed'
   | 'order.fulfilled'
   | 'push.subscribed'

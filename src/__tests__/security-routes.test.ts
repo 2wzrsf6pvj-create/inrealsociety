@@ -36,8 +36,10 @@ const PUBLIC_ROUTES = [
 
 /** Routes protégées par un secret header (pas par session) */
 const SECRET_PROTECTED_ROUTES = [
-  'api/push/notify',      // INTERNAL_SECRET
-  'api/member/migrate',   // ADMIN_SECRET
+  'api/push/notify',          // INTERNAL_SECRET
+  'api/member/migrate',       // ADMIN_SECRET
+  'api/cron/cleanup',         // CRON_SECRET (Vercel Cron)
+  'api/cron/scan-reminders',  // CRON_SECRET (Vercel Cron)
 ];
 
 /** Routes webhook (protégées par signature) */
@@ -78,7 +80,9 @@ describe('Sécurité des routes API', () => {
 
       if (isSecretRoute(routeKey)) {
         it(`${routeKey} — devrait vérifier un secret header`, () => {
-          const hasSecret = content.includes('INTERNAL_SECRET') || content.includes('ADMIN_SECRET');
+          const hasSecret = content.includes('INTERNAL_SECRET')
+                         || content.includes('ADMIN_SECRET')
+                         || content.includes('CRON_SECRET');
           expect(hasSecret).toBe(true);
         });
         continue;
@@ -116,6 +120,8 @@ describe('Sécurité des routes API', () => {
       if (isWebhookRoute(routeKey)) continue;
       // Skip migrate (admin one-shot)
       if (routeKey === 'member/migrate') continue;
+      // Skip cron routes (pas de body utilisateur — protégées par secret header)
+      if (routeKey.startsWith('cron/')) continue;
 
       it(`${routeKey} — devrait avoir une validation Zod ou équivalente`, () => {
         const hasZod = content.includes('z.object') || content.includes('z.string');

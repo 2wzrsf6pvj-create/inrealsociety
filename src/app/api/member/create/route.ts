@@ -9,6 +9,8 @@ import { checkAuthRateLimit, rateLimitHeaders } from '@/lib/ratelimit';
 import { generateUniqueShortCode } from '@/lib/short-code';
 import { fulfillOrder } from '@/lib/fulfillment';
 import { audit } from '@/lib/audit';
+import { sendEmail, emailBienvenue } from '@/lib/email-templates';
+import { APP_URL } from '@/lib/constants';
 
 const schema = z.object({
   name:           z.string().min(1).max(50).trim(),
@@ -79,6 +81,15 @@ export async function POST(req: NextRequest) {
 
     if (result.already_exists) {
       return NextResponse.json({ memberId: result.member_id, alreadyExists: true });
+    }
+
+    // ─── Email de bienvenue (non-bloquant) ──────────────────────────────
+    if (result.member_id && auth.user.email) {
+      const dashboardUrl = `${APP_URL}/dashboard`;
+      const profileUrl   = `${APP_URL}/profil/${result.member_id}`;
+      const { subject, html } = emailBienvenue({ name, dashboardUrl, profileUrl });
+      sendEmail({ to: auth.user.email, subject, html })
+        .catch(err => console.error('[api/member/create] Welcome email failed:', err));
     }
 
     // ─── Déclenche fulfillment Printful (non-bloquant) ────────────────────

@@ -143,6 +143,37 @@ export function emailBienvenue(params: {
   };
 }
 
+/** Email de relance J+7 : profil créé mais aucun scan reçu */
+export function emailScanReminder(params: {
+  name:         string;
+  dashboardUrl: string;
+}): { subject: string; html: string } {
+  const safeName = escapeHtml(params.name);
+  return {
+    subject: `${safeName}, le monde attend votre première rencontre.`,
+    html: layout(`
+      <h1 style="font-size:28px;font-weight:300;letter-spacing:0.04em;margin:0 0 16px;text-align:center;">
+        Pas encore de scan, ${safeName}.
+      </h1>
+      <p style="font-family:system-ui,sans-serif;font-size:13px;color:rgba(255,255,255,0.5);text-align:center;line-height:1.8;margin:0 0 24px;">
+        Votre profil est prêt depuis une semaine, mais votre vêtement reste silencieux.
+        La règle est simple : il doit être porté, et il doit être vu.
+      </p>
+      <div style="border:1px solid rgba(255,255,255,0.1);padding:24px;margin-bottom:8px;">
+        <p style="font-family:system-ui,sans-serif;font-size:12px;color:rgba(255,255,255,0.5);line-height:1.8;margin:0;">
+          ✦ Portez-le où vous allez naturellement<br/>
+          ✦ Choisissez les moments lents : café, librairie, vernissage<br/>
+          ✦ Faites confiance au hasard
+        </p>
+      </div>
+      ${cta('Voir mon tableau de bord', params.dashboardUrl)}
+      <p style="font-family:system-ui,sans-serif;font-size:11px;color:rgba(255,255,255,0.25);text-align:center;line-height:1.6;margin:24px 0 0;">
+        Cette relance n’est envoyée qu’une seule fois.
+      </p>
+    `),
+  };
+}
+
 /** Email de bienvenue premium */
 export function emailPremium(params: {
   name:         string;
