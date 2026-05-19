@@ -3,12 +3,10 @@
 // Pour les mutations protégées, utiliser supabase-admin.ts via les routes API.
 
 import { createClient } from '@supabase/supabase-js';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './supabase-config';
 import type { Member, Scan, Message } from './types';
 
-const supabaseUrl  = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-
-export const supabase = createClient(supabaseUrl, supabaseAnon);
+export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 // ─── Membres (lectures) ──────────────────────────────────────────────────────
 
