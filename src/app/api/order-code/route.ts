@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { checkPublicRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
 import Stripe from 'stripe';
 
 const querySchema = z.object({
@@ -13,6 +14,16 @@ const querySchema = z.object({
 });
 
 export async function GET(req: NextRequest) {
+  // Rate limit : sans throttle, un attaquant peut brute-force des session IDs
+  // Stripe pour récupérer des codes d'activation par inférence.
+  const rl = await checkPublicRateLimit(getIp(req));
+  if (!rl.success) {
+    return NextResponse.json(
+      { code: null, error: 'Trop de requêtes.' },
+      { status: 429, headers: rateLimitHeaders(rl) },
+    );
+  }
+
   const parsed = querySchema.safeParse({
     session: req.nextUrl.searchParams.get('session'),
   });

@@ -11,7 +11,13 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "analyze": "ANALYZE=true next build"
+    "analyze": "ANALYZE=true next build",
+    "prepare": "husky || true"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix"
+    ]
   },
   "dependencies": {
     "@sentry/nextjs": "^10.53.1",
@@ -41,6 +47,8 @@
     "@vitejs/plugin-react": "^6.0.1",
     "eslint": "^8",
     "eslint-config-next": "14.2.35",
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.5",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "typescript": "^5",

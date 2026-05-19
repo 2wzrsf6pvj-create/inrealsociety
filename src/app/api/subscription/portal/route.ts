@@ -7,11 +7,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { requireAuth, isHttpError } from '@/lib/require-auth';
+import { checkAuthRateLimit, rateLimitHeaders } from '@/lib/ratelimit';
 
 export async function POST(req: NextRequest) {
   try {
     const auth = await requireAuth(req);
     if (isHttpError(auth)) return auth;
+
+    const rl = await checkAuthRateLimit(auth.user.id);
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Trop de requêtes.' }, { status: 429, headers: rateLimitHeaders(rl) });
+    }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;
     if (!appUrl) {

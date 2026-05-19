@@ -41,9 +41,12 @@ export interface Message {
   is_quick_reply: boolean;
   moderated:      boolean;
   read_at:        string | null;
-  reply:          string | null;
-  replied_at:     string | null;
-  reply_read_at:  string | null;
+  // Champs dérivés du thread, exposés uniquement via la vue member_inbox
+  // (migration 025). Optionnels car absents des queries directes sur la
+  // table messages après la migration 029 (drop des colonnes legacy).
+  reply?:         string | null;
+  replied_at?:    string | null;
+  reply_read_at?: string | null;
   created_at:     string;
 }
 
