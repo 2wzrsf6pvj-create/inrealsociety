@@ -42,8 +42,10 @@ export async function getFirstScanAt(memberId: string): Promise<string | null> {
 // ─── Messages (lectures) ─────────────────────────────────────────────────────
 
 export async function getMessages(memberId: string, limit = 20, offset = 0): Promise<Message[]> {
+  // Lit la vue member_inbox qui filtre les top-level (parent_id IS NULL) et
+  // expose reply / replied_at / reply_read_at dérivés du thread.
   const { data, error } = await supabase
-    .from('messages')
+    .from('member_inbox')
     .select('*')
     .eq('member_id', memberId)
     .eq('moderated', false)
@@ -54,11 +56,13 @@ export async function getMessages(memberId: string, limit = 20, offset = 0): Pro
 }
 
 export async function getMessagesCount(memberId: string): Promise<number> {
+  // Compte les conversations actives = messages racine uniquement (pas le thread).
   const { count, error } = await supabase
     .from('messages')
     .select('*', { count: 'exact', head: true })
     .eq('member_id', memberId)
-    .eq('moderated', false);
+    .eq('moderated', false)
+    .is('parent_id', null);
   if (error) return 0;
   return count ?? 0;
 }
@@ -86,12 +90,14 @@ export async function getScansByDay(memberId: string, days = 7): Promise<{ date:
 }
 
 export async function getUnreadMessagesCount(memberId: string): Promise<number> {
+  // Compte les messages racine non lus uniquement (pas les replies dans le thread).
   const { count, error } = await supabase
     .from('messages')
     .select('*', { count: 'exact', head: true })
     .eq('member_id', memberId)
     .eq('moderated', false)
-    .is('read_at', null);
+    .is('read_at', null)
+    .is('parent_id', null);
   if (error) return 0;
   return count ?? 0;
 }

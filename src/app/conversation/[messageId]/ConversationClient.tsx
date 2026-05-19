@@ -7,12 +7,13 @@ import { supabase } from '@/lib/supabase';
 
 interface ConversationMessage {
   id: string; member_id: string; content: string; sender_contact: string | null;
-  reply: string | null; replied_at: string | null; read_at: string | null; created_at: string;
+  read_at: string | null; created_at: string;
   members: { name: string; photo_url: string | null; instagram: string | null; auth_user_id?: string | null; };
 }
 
 interface ThreadReply {
   id: string; content: string; author: string; created_at: string;
+  read_at?: string | null;
 }
 
 function getInitials(name: string): string {
@@ -136,20 +137,21 @@ export default function ConversationClient({
   isOwner?: boolean;
   thread?: ThreadReply[];
 }) {
-  const [message, setMessage]         = useState(initialMessage);
+  const message = initialMessage;
   const [thread, setThread]           = useState<ThreadReply[]>(initialThread);
   const [pushAsked, setPushAsked]     = useState(false);
   const [pushGranted, setPushGranted] = useState(false);
   const [pushLoading, setPushLoading] = useState(false);
 
   const memberName = message.members?.name || 'Ce membre';
-  const totalMessages = 1 + (message.reply ? 1 : 0) + thread.length; // message initial + reply legacy + thread
+  const totalMessages = 1 + thread.length; // message initial + thread
   const canReply = totalMessages < MAX_THREAD;
 
-  // Qui doit répondre en dernier ? Alterne scanner/member
+  // Qui doit répondre en dernier ? Alterne scanner/member.
+  // Le scanner est toujours l'auteur du message racine.
   const lastAuthor = thread.length > 0
     ? thread[thread.length - 1].author
-    : message.reply ? 'member' : 'scanner';
+    : 'scanner';
   const myRole = isOwner ? 'member' : 'scanner';
   const isMyTurn = lastAuthor !== myRole && canReply;
 
@@ -184,21 +186,10 @@ export default function ConversationClient({
           });
         }
       })
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'messages',
-        filter: `id=eq.${message.id}`,
-      }, (payload) => {
-        const updated = payload.new as ConversationMessage;
-        if (updated.reply && !message.reply) {
-          setMessage(m => ({ ...m, reply: updated.reply, replied_at: updated.replied_at }));
-        }
-      })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [message.id, message.reply]);
+  }, [message.id]);
 
   // ─── Push ──────────────────────────────────────────────────────────────
   const handleSubscribePush = async () => {
@@ -213,11 +204,6 @@ export default function ConversationClient({
 
   const handleThreadReply = (reply: ThreadReply) => {
     setThread(prev => [...prev, reply]);
-  };
-
-  // ─── Legacy : premier reply du membre (ancien système) ─────────────────
-  const handleLegacyReply = (reply: string) => {
-    setMessage(m => ({ ...m, reply, replied_at: new Date().toISOString() }));
   };
 
   // ─── Feedback ──────────────────────────────────────────────────────────
@@ -268,16 +254,7 @@ export default function ConversationClient({
             isRight={!isOwner}
           />
 
-          {/* Réponse legacy du membre (ancien champ reply) */}
-          {message.reply && (
-            <ChatBubble
-              content={message.reply}
-              date={message.replied_at || message.created_at}
-              isRight={isOwner}
-            />
-          )}
-
-          {/* Messages du thread */}
+          {/* Messages du thread (les anciennes replies legacy sont migrées ici) */}
           {thread.map((reply, i) => (
             <ChatBubble
               key={reply.id}
@@ -320,38 +297,12 @@ export default function ConversationClient({
               </p>
             </div>
           ) : isMyTurn ? (
-            /* C'est mon tour de répondre */
-            message.reply || thread.length > 0 ? (
-              /* Thread actif → formulaire thread */
-              <ThreadReplyForm
-                messageId={message.id}
-                author={myRole}
-                onSent={handleThreadReply}
-              />
-            ) : isOwner ? (
-              /* Premier reply du membre (utilise l'ancien système) */
-              <form onSubmit={async (e) => {
-                e.preventDefault();
-                const textarea = e.currentTarget.querySelector('textarea');
-                const text = textarea?.value.trim();
-                if (!text) return;
-                try {
-                  const res = await fetch('/api/reply', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ messageId: message.id, memberId: message.member_id, reply: text }),
-                  });
-                  if (res.ok) handleLegacyReply(text);
-                } catch {}
-              }} className="w-full flex flex-col gap-3">
-                <textarea maxLength={2000} rows={3} placeholder="Votre réponse..."
-                  className="w-full bg-transparent border border-brand-gray/20 focus:border-brand-white/50 text-brand-white font-ui font-light text-base p-3 outline-none transition-colors placeholder:text-brand-gray/20 rounded-[2px] resize-none" />
-                <button type="submit"
-                  className="w-full py-3 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200">
-                  Répondre
-                </button>
-              </form>
-            ) : null
+            /* C'est mon tour de répondre — unifié sur ThreadReplyForm */
+            <ThreadReplyForm
+              messageId={message.id}
+              author={myRole}
+              onSent={handleThreadReply}
+            />
           ) : (
             /* En attente de l'autre */
             <div className="flex flex-col items-start gap-3 py-2">

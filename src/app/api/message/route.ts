@@ -73,12 +73,15 @@ export async function POST(req: NextRequest) {
     }
 
     // ─── Limite de conversations actives (3 free / illimité premium) ──
+    // Compte les messages RACINE uniquement — les replies dans le thread
+    // ne multiplient pas les conversations.
     if (MAX_CONVERSATIONS[plan] !== Infinity) {
       const { count: activeConvs } = await supabase
         .from('messages')
         .select('*', { count: 'exact', head: true })
         .eq('member_id', memberId)
-        .eq('moderated', false);
+        .eq('moderated', false)
+        .is('parent_id', null);
 
       if ((activeConvs ?? 0) >= MAX_CONVERSATIONS[plan]) {
         return NextResponse.json({ error: 'Nombre maximum de conversations atteint pour ce profil.' }, { status: 403 });

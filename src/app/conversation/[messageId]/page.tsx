@@ -33,10 +33,10 @@ export default async function ConversationPage({ params }: Props) {
 
   if (!message || message.moderated) notFound();
 
-  // Charge les réponses du thread
+  // Charge les réponses du thread (avec read_at pour décider quoi marquer)
   const { data: threadReplies } = await supabase
     .from('messages')
-    .select('id, content, author, created_at')
+    .select('id, content, author, created_at, read_at')
     .eq('parent_id', params.messageId)
     .order('created_at', { ascending: true });
 
@@ -50,12 +50,24 @@ export default async function ConversationPage({ params }: Props) {
     }
   } catch {}
 
-  // Marque la réponse comme lue si le scanner revient
-  if (!isOwner && message.reply && !message.reply_read_at) {
+  // Marque comme lu les messages que le visiteur n'a pas écrits :
+  //   * membre qui visite → marque les messages du scanner (root + thread)
+  //   * scanner qui revient → marque les replies du membre dans le thread
+  const now = new Date().toISOString();
+  const otherAuthor = isOwner ? 'scanner' : 'member';
+  const unreadFromOther = (threadReplies ?? []).filter(r => r.author === otherAuthor && !r.read_at);
+
+  if (unreadFromOther.length > 0) {
     await supabase
       .from('messages')
-      .update({ reply_read_at: new Date().toISOString() })
-      .eq('id', params.messageId);
+      .update({ read_at: now })
+      .in('id', unreadFromOther.map(r => r.id));
+  }
+
+  // Le message racine est toujours écrit par le scanner. Si c'est le membre qui
+  // visite et que c'est non lu, on le marque.
+  if (isOwner && !message.read_at) {
+    await supabase.from('messages').update({ read_at: now }).eq('id', params.messageId);
   }
 
   return <ConversationClient message={message} isOwner={isOwner} thread={threadReplies || []} />;

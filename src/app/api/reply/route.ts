@@ -50,18 +50,28 @@ export async function POST(req: NextRequest) {
       .select('id, member_id, sender_contact')
       .eq('id', messageId)
       .eq('member_id', memberId)
+      .is('parent_id', null)
       .single();
 
     if (!msg) {
       return NextResponse.json({ error: 'Message introuvable' }, { status: 404 });
     }
 
-    const { error } = await supabaseAdmin
+    // Insère la réponse comme message thread (author='member'). Anciennement
+    // un UPDATE de messages.reply — désormais unifié avec /api/conversation/reply.
+    // La vue member_inbox expose toujours .reply pour la dashboard inbox.
+    const { error: insertErr } = await supabaseAdmin
       .from('messages')
-      .update({ reply: reply.trim(), replied_at: new Date().toISOString() })
-      .eq('id', messageId);
+      .insert({
+        member_id:      memberId,
+        parent_id:      messageId,
+        author:         'member',
+        content:        reply.trim(),
+        is_quick_reply: false,
+        moderated:      false,
+      });
 
-    if (error) throw error;
+    if (insertErr) throw insertErr;
 
     audit({
       action:   'reply.sent',

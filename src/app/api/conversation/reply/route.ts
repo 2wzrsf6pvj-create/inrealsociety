@@ -5,8 +5,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { checkPublicRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
-import { sendEmail, emailNouveauMessage } from '@/lib/email-templates';
+import { checkPublicRateLimit, checkAuthRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
+import { requireAuth, requireOwnership, isHttpError } from '@/lib/require-auth';
+import { sendEmail, emailNouveauMessage, emailReponse } from '@/lib/email-templates';
 import { APP_URL } from '@/lib/constants';
 
 const MAX_MESSAGES_PER_THREAD = 5;
@@ -17,14 +18,12 @@ const schema = z.object({
   author:    z.enum(['scanner', 'member']),
 });
 
+function isValidEmail(s: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
+}
+
 export async function POST(req: NextRequest) {
   try {
-    const ip = getIp(req);
-    const rl = await checkPublicRateLimit(ip);
-    if (!rl.success) {
-      return NextResponse.json({ error: 'Trop de requêtes.' }, { status: 429, headers: rateLimitHeaders(rl) });
-    }
-
     const body = schema.safeParse(await req.json());
     if (!body.success) {
       return NextResponse.json({ error: 'Données invalides.' }, { status: 400 });
@@ -32,7 +31,7 @@ export async function POST(req: NextRequest) {
 
     const { messageId, content, author } = body.data;
 
-    // Récupère le message racine
+    // Récupère le message racine d'abord (besoin de rootMsg.member_id pour l'auth)
     const { data: rootMsg } = await supabaseAdmin
       .from('messages')
       .select('id, member_id, sender_contact')
@@ -42,6 +41,28 @@ export async function POST(req: NextRequest) {
 
     if (!rootMsg) {
       return NextResponse.json({ error: 'Conversation introuvable.' }, { status: 404 });
+    }
+
+    // Auth + rate limit selon l'auteur :
+    //   * member : auth obligatoire + ownership du profil (anti-impersonation)
+    //   * scanner : public, rate limit par IP
+    if (author === 'member') {
+      const auth = await requireAuth(req);
+      if (isHttpError(auth)) return auth;
+
+      const own = await requireOwnership(auth.user.id, rootMsg.member_id);
+      if (isHttpError(own)) return own;
+
+      const rl = await checkAuthRateLimit(auth.user.id);
+      if (!rl.success) {
+        return NextResponse.json({ error: 'Trop de requêtes.' }, { status: 429, headers: rateLimitHeaders(rl) });
+      }
+    } else {
+      const ip = getIp(req);
+      const rl = await checkPublicRateLimit(ip);
+      if (!rl.success) {
+        return NextResponse.json({ error: 'Trop de requêtes.' }, { status: 429, headers: rateLimitHeaders(rl) });
+      }
     }
 
     // Compte les messages dans ce thread
@@ -71,7 +92,9 @@ export async function POST(req: NextRequest) {
 
     if (insertErr) throw insertErr;
 
-    // Notification email au membre si le scanner a répondu
+    // Notification email :
+    //   * scanner → notifie le membre sur son email (alerte dashboard)
+    //   * member → notifie le scanner sur sender_contact si c'est un email
     if (author === 'scanner') {
       const { data: member } = await supabaseAdmin
         .from('members')
@@ -87,7 +110,23 @@ export async function POST(req: NextRequest) {
           senderContact: rootMsg.sender_contact,
           dashboardUrl,
         });
-        sendEmail({ to: member.email, subject, html }).catch((err) => console.error('[conversation/reply] Échec email:', err));
+        sendEmail({ to: member.email, subject, html }).catch((err) => console.error('[conversation/reply] Échec email membre:', err));
+      }
+    } else if (author === 'member') {
+      const contact = rootMsg.sender_contact?.trim();
+      if (contact && isValidEmail(contact)) {
+        const { data: member } = await supabaseAdmin
+          .from('members')
+          .select('name')
+          .eq('id', rootMsg.member_id)
+          .single();
+
+        const { subject, html } = emailReponse({
+          memberName: member?.name || 'Ce membre',
+          reply:      content.trim(),
+          convUrl:    `${APP_URL}/conversation/${messageId}`,
+        });
+        sendEmail({ to: contact, subject, html }).catch((err) => console.error('[conversation/reply] Échec email scanner:', err));
       }
     }
 
