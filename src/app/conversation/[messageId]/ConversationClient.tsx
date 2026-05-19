@@ -54,6 +54,64 @@ async function subscribePush(messageId: string): Promise<void> {
 
 const MAX_THREAD = 5;
 
+// ─── Push prompt avec iOS-awareness ─────────────────────────────────────────
+// Sur iOS Safari, le Web Push exige que le site soit installé comme PWA
+// (iOS 16.4+). Sinon, la permission est silencieusement refusée. On affiche
+// un hint pour guider l'utilisateur vers "Ajouter à l'écran d'accueil".
+
+function isIOS(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !('MSStream' in window);
+}
+
+function isStandalonePWA(): boolean {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia('(display-mode: standalone)').matches
+      || (navigator as Navigator & { standalone?: boolean }).standalone === true;
+}
+
+function PushPrompt({ pushAsked, pushGranted, pushLoading, onSubscribe, hasContact }: {
+  pushAsked: boolean;
+  pushGranted: boolean;
+  pushLoading: boolean;
+  onSubscribe: () => void;
+  hasContact: boolean;
+}) {
+  const [iosNotPwa, setIosNotPwa] = useState(false);
+  useEffect(() => { setIosNotPwa(isIOS() && !isStandalonePWA()); }, []);
+
+  if (pushAsked) {
+    if (pushGranted) {
+      return <p className="font-ui text-xs text-green-400/50 italic">✓ Notifications activées.</p>;
+    }
+    return (
+      <p className="font-ui text-xs text-brand-gray/30 italic leading-relaxed">
+        Notifications désactivées.{' '}
+        {hasContact
+          ? 'Vous recevrez un email à la place.'
+          : 'Revenez sur cette page pour voir la réponse.'}
+      </p>
+    );
+  }
+
+  return (
+    <div className="w-full flex flex-col gap-2">
+      {iosNotPwa && (
+        <p className="font-ui text-xxs text-brand-gray/35 leading-relaxed">
+          Sur iPhone : ajoutez d&apos;abord la page à l&apos;écran d&apos;accueil
+          (<span className="text-brand-white/50">Partager → Sur l&apos;écran d&apos;accueil</span>)
+          pour activer les notifications.
+        </p>
+      )}
+      <button onClick={onSubscribe} disabled={pushLoading}
+        className="w-full py-3 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.1em] hover:border-brand-gray/35 transition-colors disabled:opacity-40"
+        style={{ minHeight: '44px' }}>
+        {pushLoading ? 'Activation...' : 'Me notifier quand il répond'}
+      </button>
+    </div>
+  );
+}
+
 // ─── Formulaire de réponse (membre OU scanner) ──────────────────────────────
 
 function ThreadReplyForm({ messageId, author, onSent }: {
@@ -314,16 +372,17 @@ export default function ConversationClient({
                 <div className="w-1.5 h-1.5 rounded-full bg-brand-gray/30 animate-typing-2" />
                 <div className="w-1.5 h-1.5 rounded-full bg-brand-gray/30 animate-typing-3" />
               </div>
-              {!pushAsked ? (
-                <button onClick={handleSubscribePush} disabled={pushLoading}
-                  className="w-full py-3 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.1em] hover:border-brand-gray/35 transition-colors disabled:opacity-40"
-                  style={{ minHeight: '44px' }}>
-                  {pushLoading ? 'Activation...' : 'Me notifier quand il répond'}
-                </button>
-              ) : pushGranted ? (
-                <p className="font-ui text-xs text-green-400/50 italic">✓ Notifications activées.</p>
-              ) : (
-                <p className="font-ui text-xs text-brand-gray/20 italic">Notifications refusées — revenez sur cette page.</p>
+              <PushPrompt
+                pushAsked={pushAsked}
+                pushGranted={pushGranted}
+                pushLoading={pushLoading}
+                onSubscribe={handleSubscribePush}
+                hasContact={!!message.sender_contact}
+              />
+              {!isOwner && !message.sender_contact && (
+                <p className="font-ui text-xxs text-brand-gray/20 italic mt-1">
+                  Vous n&apos;avez pas laissé de contact — la notification push est le seul moyen d&apos;être prévenu.
+                </p>
               )}
             </div>
           )}

@@ -33,6 +33,7 @@ const recommended = [
   'SENTRY_PROJECT',
   'SENTRY_AUTH_TOKEN',
   'CRON_SECRET',
+  'STRIPE_REFERRAL_COUPON_ID',
 ] as const;
 
 type EnvKey = typeof required[number] | typeof recommended[number];

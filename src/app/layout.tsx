@@ -5,6 +5,7 @@ import { Cormorant_Garamond, Montserrat } from 'next/font/google';
 import AuthIndicator from './components/ui/AuthIndicator';
 import PostHogProvider from './components/PostHogProvider';
 import ConsentBanner from './components/ConsentBanner';
+import ServiceWorkerRegistration from './components/ServiceWorkerRegistration';
 import './globals.css';
 
 const cormorant = Cormorant_Garamond({
@@ -42,10 +43,15 @@ export const metadata: Metadata = {
     description: 'Le premier vêtement conçu pour les rencontres dans la vraie vie.',
   },
   icons: {
-    icon: '/favicon.svg',
+    icon:  '/favicon.svg',
     apple: '/icon.svg',
   },
   manifest: '/manifest.json',
+  appleWebApp: {
+    capable:       true,
+    title:         'In Real Society',
+    statusBarStyle: 'black-translucent',
+  },
 };
 
 export default function RootLayout({
@@ -58,6 +64,7 @@ export default function RootLayout({
       <head />
       <body className="antialiased bg-brand-black">
         <a href="#main" className="skip-link">Aller au contenu principal</a>
+        <ServiceWorkerRegistration />
         <Suspense fallback={null}>
           <PostHogProvider>
             <AuthIndicator />

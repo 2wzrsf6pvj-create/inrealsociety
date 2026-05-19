@@ -70,13 +70,19 @@ export async function POST(req: NextRequest) {
     }
 
     // Crée la session checkout pour l'abonnement
+    // automatic_tax + customer_update : Stripe calcule la TVA selon l'adresse
+    // de facturation. customer_update permet de mettre à jour le customer
+    // si l'utilisateur change son adresse.
     const session = await stripe.checkout.sessions.create({
-      mode:     'subscription',
-      customer: customerId,
-      line_items: [{ price: priceId, quantity: 1 }],
-      metadata: { memberId: member.id },
-      success_url: `${appUrl}/dashboard?upgraded=1`,
-      cancel_url:  `${appUrl}/dashboard`,
+      mode:              'subscription',
+      customer:          customerId,
+      customer_update:   { address: 'auto', name: 'auto' },
+      line_items:        [{ price: priceId, quantity: 1 }],
+      automatic_tax:     { enabled: true },
+      billing_address_collection: 'required',
+      metadata:          { memberId: member.id },
+      success_url:       `${appUrl}/dashboard?upgraded=1`,
+      cancel_url:        `${appUrl}/dashboard`,
     });
 
     return NextResponse.json({ url: session.url });

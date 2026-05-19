@@ -71,14 +71,23 @@ export async function POST(req: NextRequest) {
     }
 
     // ─── Crée la session Stripe ───────────────────────────────────────────
+    // automatic_tax : Stripe calcule la TVA selon l'adresse de livraison.
+    // Requiert Stripe Tax activé dans le dashboard + enregistrements TVA déclarés
+    // (sinon Stripe applique 0%). Sans config, ça n'échoue pas en mode test.
     const session = await stripe.checkout.sessions.create({
       mode:           'payment',
       customer_email: email,
       line_items:     [{ price: TSHIRT_PRICE_ID, quantity: 1 }],
+      automatic_tax:  { enabled: true },
 
       shipping_address_collection: {
         allowed_countries: ['FR', 'BE', 'CH', 'LU', 'DE', 'GB', 'US', 'CA'],
       },
+
+      // Discount automatique si le visiteur vient d'un lien de parrainage
+      ...(referrerId && process.env.STRIPE_REFERRAL_COUPON_ID
+        ? { discounts: [{ coupon: process.env.STRIPE_REFERRAL_COUPON_ID }] }
+        : {}),
 
       shipping_options: [
         {

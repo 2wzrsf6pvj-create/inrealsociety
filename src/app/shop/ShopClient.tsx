@@ -116,6 +116,15 @@ export default function ShopClient() {
         </Link>
       </nav>
 
+      {/* Bandeau parrainage — affiché quand le visiteur arrive avec ?ref= */}
+      {referrerId && (
+        <div className="relative z-10 bg-[#0a0a08] border-b border-[#C5A059]/20 px-6 py-3">
+          <p className="font-ui text-xs md:text-sm text-[#C5A059]/80 text-center tracking-wide">
+            ✦ Vous arrivez par un parrainage — votre remise sera appliquée au paiement.
+          </p>
+        </div>
+      )}
+
       <div className="relative z-10 max-w-lg mx-auto px-6">
 
         {/* Hero */}

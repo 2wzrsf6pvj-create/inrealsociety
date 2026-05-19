@@ -65,6 +65,7 @@ export async function POST(req: NextRequest) {
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       line_items: [{ price: TSHIRT_PRICE_ID, quantity: 1 }],
+      automatic_tax: { enabled: true },
 
       shipping_address_collection: {
         allowed_countries: ['FR', 'BE', 'CH', 'LU', 'DE', 'GB', 'US', 'CA'],

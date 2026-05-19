@@ -8,6 +8,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { checkPublicRateLimit, checkAuthRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
 import { requireAuth, requireOwnership, isHttpError } from '@/lib/require-auth';
 import { sendEmail, emailNouveauMessage, emailReponse } from '@/lib/email-templates';
+import { notifyThreadSubscribers } from '@/lib/push-notify';
 import { APP_URL } from '@/lib/constants';
 
 const MAX_MESSAGES_PER_THREAD = 5;
@@ -129,6 +130,16 @@ export async function POST(req: NextRequest) {
         sendEmail({ to: contact, subject, html }).catch((err) => console.error('[conversation/reply] Échec email scanner:', err));
       }
     }
+
+    // Push notification fire-and-forget — abonnés au thread (scanners qui ont
+    // accepté les notifs sur cette conversation). Notifie l'auteur opposé.
+    const otherSide = author === 'member' ? 'scanner' : 'membre';
+    notifyThreadSubscribers({
+      messageId,
+      title: `Nouveau message — réponse du ${otherSide}`,
+      body:  content.trim().slice(0, 80),
+      url:   `${APP_URL}/conversation/${messageId}`,
+    }).catch((err) => console.error('[conversation/reply] Échec push notif:', err));
 
     return NextResponse.json({ ok: true, replyId: newMsg?.id });
 

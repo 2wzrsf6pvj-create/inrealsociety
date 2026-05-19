@@ -436,7 +436,7 @@ function ReferralBlock({ memberId }: { memberId: string }) {
         <div className="flex-1 h-px bg-brand-gray/10" />
       </div>
       <p className="font-ui text-xs md:text-sm text-brand-gray/50 leading-relaxed">
-        Partagez votre lien. Chaque parrainage est comptabilisé.
+        Partagez votre lien. Chaque personne qui commande via ce lien bénéficie d&apos;une remise — vous, vous suivez vos parrainages ici.
       </p>
       <div className="flex items-center gap-2">
         <p className="font-mono text-xs text-brand-gray/40 break-all flex-1 leading-relaxed">{referralUrl}</p>

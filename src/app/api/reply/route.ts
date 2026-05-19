@@ -7,6 +7,7 @@ import { APP_URL } from '@/lib/constants';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { requireAuth, requireOwnership, isHttpError } from '@/lib/require-auth';
 import { sendEmail, emailReponse } from '@/lib/email-templates';
+import { notifyThreadSubscribers } from '@/lib/push-notify';
 import { audit } from '@/lib/audit';
 import { getIp, checkAuthRateLimit, rateLimitHeaders } from '@/lib/ratelimit';
 
@@ -96,6 +97,14 @@ export async function POST(req: NextRequest) {
 
       emailSent = await sendEmail({ to: contact, subject, html });
     }
+
+    // Push notification fire-and-forget — scanners qui ont activé les notifs.
+    notifyThreadSubscribers({
+      messageId,
+      title: 'Nouveau message — réponse du membre',
+      body:  reply.trim().slice(0, 80),
+      url:   `${APP_URL}/conversation/${messageId}`,
+    }).catch((err) => console.error('[api/reply] Échec push notif:', err));
 
     return NextResponse.json({
       ok:          true,
