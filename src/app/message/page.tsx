@@ -3,6 +3,7 @@
 import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { captureEvent } from '@/lib/posthog-client';
 
 function MessageForm() {
   const router = useRouter();
@@ -37,10 +38,22 @@ function MessageForm() {
       const data = await res.json();
       if (!res.ok) {
         const errorMsg = typeof data.error === 'string' ? data.error : 'Erreur lors de l\'envoi.';
-        if (res.status === 403 && (errorMsg.includes('expirée') || errorMsg.includes('fenêtre'))) { setExpired(true); setSending(false); return; }
+        if (res.status === 403 && (errorMsg.includes('expirée') || errorMsg.includes('fenêtre'))) {
+          captureEvent('message_blocked_window_expired', { member_id: memberId });
+          setExpired(true); setSending(false); return;
+        }
+        if (res.status === 403 && errorMsg.includes('Nombre maximum de conversations')) {
+          captureEvent('message_blocked_conversation_limit', { member_id: memberId });
+        }
         throw new Error(errorMsg);
       }
       if (data.moderated) { setModerated(true); setSending(false); return; }
+
+      captureEvent('message_submitted', {
+        member_id:     memberId,
+        is_quick_reply: isQuickReply,
+        has_contact:    !!contact.trim(),
+      });
 
       const url = `${window.location.origin}/conversation/${data.messageId}`;
       localStorage.setItem(`conversation_${memberId}`, url);

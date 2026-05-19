@@ -19,6 +19,7 @@ import { generatePremiumQRCode } from '@/lib/generate-qr-svg';
 import { buildShortUrl } from '@/lib/short-code';
 import type { PrintfulOrderPayload, PrintfulOrderResponse, PrintfulAddress } from '@/lib/printful.types';
 import { APP_URL } from '@/lib/constants';
+import { captureServerEvent } from '@/lib/posthog-server';
 
 // ─── Variant IDs Printful — Comfort Colors 1717 ──────────────────────────────
 // À configurer dans .env.local :
@@ -301,6 +302,12 @@ async function handleSubscriptionCheckout(session: Stripe.Checkout.Session): Pro
     sendEmail({ to: upgradedMember.email, subject, html }).catch((err) => console.error('[webhook] Échec email premium:', err));
   }
 
+  await captureServerEvent({
+    distinctId: memberId,
+    event:      'subscription_active',
+    properties: { member_id: memberId, plan: 'premium' },
+  });
+
   console.log('[webhook] Membre', memberId, 'upgradé en premium.');
 }
 
@@ -329,6 +336,14 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription): Prom
       plan_expires_at:         isActive ? null : new Date((subscription as unknown as { current_period_end: number }).current_period_end * 1000).toISOString(),
     })
     .eq('id', member.id);
+
+  if (!isActive) {
+    await captureServerEvent({
+      distinctId: member.id,
+      event:      'subscription_cancelled',
+      properties: { member_id: member.id, reason: subscription.status },
+    });
+  }
 
   console.log('[webhook] Membre', member.id, isActive ? 'premium actif' : 'repassé en free');
 }

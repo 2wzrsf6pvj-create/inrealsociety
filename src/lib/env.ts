@@ -25,6 +25,8 @@ const recommended = [
   'STRIPE_PREMIUM_PRICE_ID',
   'VAPID_PUBLIC_KEY',
   'VAPID_PRIVATE_KEY',
+  'NEXT_PUBLIC_POSTHOG_KEY',
+  'NEXT_PUBLIC_POSTHOG_HOST',
 ] as const;
 
 type EnvKey = typeof required[number] | typeof recommended[number];

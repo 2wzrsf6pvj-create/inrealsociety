@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { captureEvent } from '@/lib/posthog-client';
 import type { Member } from '@/lib/types';
 
 function getInitials(name: string): string {
@@ -64,6 +65,8 @@ export default function ProfilClient({
     // Le propriétaire n'a pas besoin du contexte scanner
     if (isOwner) return;
 
+    captureEvent('profile_viewed', { member_id: member.id, plan: member.plan });
+
     const name = localStorage.getItem('scannerName') ?? '';
     setScannerName(name);
 
@@ -83,6 +86,10 @@ export default function ProfilClient({
 
     // Tente d'obtenir la géoloc du scanner (non-bloquant)
     const sendScan = (lat?: number, lng?: number) => {
+      captureEvent('scan_submitted', {
+        member_id: member.id,
+        has_location: lat != null && lng != null,
+      });
       fetch('/api/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

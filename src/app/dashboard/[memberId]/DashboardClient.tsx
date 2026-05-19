@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase-browser';
+import { captureEvent, identifyMember } from '@/lib/posthog-client';
 import type { Member, Scan, Message } from '@/lib/types';
 
 // ─── Utilitaires ──────────────────────────────────────────────────────────────
@@ -275,6 +276,9 @@ function PremiumBlock({ member }: { member: Member }) {
 
   const handleAction = async () => {
     setLoading(true);
+    if (!isPremium) {
+      captureEvent('upgrade_clicked', { member_id: member.id, plan: 'free' });
+    }
     try {
       const endpoint = isPremium ? '/api/subscription/portal' : '/api/subscription/checkout';
       const res = await fetch(endpoint, { method: 'POST' });
@@ -285,6 +289,12 @@ function PremiumBlock({ member }: { member: Member }) {
     }
     setLoading(false);
   };
+
+  React.useEffect(() => {
+    if (!isPremium) {
+      captureEvent('upgrade_cta_viewed', { member_id: member.id, plan: 'free' });
+    }
+  }, [isPremium, member.id]);
 
   return (
     <div className={`w-full border rounded-[2px] p-4 flex flex-col gap-3 ${isPremium ? 'bg-[#0a0a08] border-[#C5A059]/20' : 'bg-[#080808] border-brand-gray/10'}`}>
@@ -782,6 +792,18 @@ export default function DashboardClient({
 }) {
   const [tab, setTab]     = useState<Tab>('home');
   const [toast, setToast] = useState('');
+
+  React.useEffect(() => {
+    identifyMember(member.id, {
+      plan:       member.plan,
+      scan_count: member.scan_count,
+    });
+    captureEvent('member_dashboard_viewed', {
+      member_id:  member.id,
+      plan:       member.plan,
+      scan_count: member.scan_count,
+    });
+  }, [member.id, member.plan, member.scan_count]);
 
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
