@@ -5,7 +5,7 @@
 
 import { redirect, notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase-server';
-import { getMemberById, getRecentScans, getMessages, getUnreadMessagesCount } from '@/lib/supabase';
+import { getMemberById, getRecentScans, getMessages, getMessagesCount, getUnreadMessagesCount } from '@/lib/supabase';
 import DashboardClient from './DashboardClient';
 
 interface Props {
@@ -35,11 +35,12 @@ export default async function DashboardByIdPage({ params }: Props) {
   }
   // Si auth_user_id est null → membre legacy, accès par UUID conservé
 
-  const [recentScans, messages, unreadCount] = await Promise.all([
+  const [recentScans, messages, unreadCount, activeConversations] = await Promise.all([
     getRecentScans(memberId, 5),
     getMessages(memberId, 10),
     getUnreadMessagesCount(memberId),
+    getMessagesCount(memberId),
   ]);
 
-  return <DashboardClient member={member} recentScans={recentScans} messages={messages} unreadCount={unreadCount} />;
+  return <DashboardClient member={member} recentScans={recentScans} messages={messages} unreadCount={unreadCount} activeConversations={activeConversations} />;
 }

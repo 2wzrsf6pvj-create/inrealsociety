@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { createClient } from '@/lib/supabase-browser';
 import { captureEvent, identifyMember } from '@/lib/posthog-client';
+import { MAX_CONVERSATIONS } from '@/lib/constants';
 import type { Member, Scan, Message } from '@/lib/types';
 
 // ─── Utilitaires ──────────────────────────────────────────────────────────────
@@ -130,9 +131,59 @@ function StatsBlock({ member, recentScans }: { member: Member; recentScans: Scan
   );
 }
 
+// ─── Upgrade banner (contextual CTAs) ────────────────────────────────────────
+
+function UpgradeBanner({ memberId, source, headline, sublabel }: {
+  memberId: string;
+  source:   string;
+  headline: string;
+  sublabel: string;
+}) {
+  const [loading, setLoading] = useState(false);
+
+  React.useEffect(() => {
+    captureEvent('upgrade_cta_viewed', { member_id: memberId, plan: 'free', source });
+  }, [memberId, source]);
+
+  const handleClick = async () => {
+    setLoading(true);
+    captureEvent('upgrade_clicked', { member_id: memberId, plan: 'free', source });
+    try {
+      const res  = await fetch('/api/subscription/checkout', { method: 'POST' });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+    } catch {
+      // ignore
+    }
+    setLoading(false);
+  };
+
+  return (
+    <button
+      onClick={handleClick}
+      disabled={loading}
+      className="w-full bg-[#0a0a08] border border-[#C5A059]/25 rounded-[2px] p-3 flex items-center gap-3 hover:border-[#C5A059]/50 transition-colors disabled:opacity-50 text-left"
+    >
+      <span className="font-ui text-base text-[#C5A059]/70 leading-none">✦</span>
+      <div className="flex-1 flex flex-col gap-0.5">
+        <span className="font-ui text-xs tracking-[0.12em] uppercase text-[#C5A059]/80">{headline}</span>
+        <span className="font-ui text-xxs text-brand-gray/40">{sublabel}</span>
+      </div>
+      <span className="font-ui text-xxs text-[#C5A059]/60 tracking-[0.15em] uppercase">
+        {loading ? '...' : 'Passer ✦'}
+      </span>
+    </button>
+  );
+}
+
 // ─── Inbox (Messages) ─────────────────────────────────────────────────────────
 
-function InboxSection({ messages: initialMessages, memberId }: { messages: Message[]; memberId: string }) {
+function InboxSection({ messages: initialMessages, memberId, plan, activeConversations }: {
+  messages: Message[];
+  memberId: string;
+  plan: 'free' | 'premium';
+  activeConversations: number;
+}) {
   const [messages, setMessages]         = useState(initialMessages);
   const [reportingId,  setReportingId]  = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
@@ -191,8 +242,20 @@ function InboxSection({ messages: initialMessages, memberId }: { messages: Messa
     );
   }
 
+  const limit       = MAX_CONVERSATIONS[plan];
+  const showWarning = plan === 'free' && limit !== Infinity && activeConversations >= 2;
+  const atLimit     = plan === 'free' && limit !== Infinity && activeConversations >= limit;
+
   return (
-    <div className="w-full flex flex-col gap-1">
+    <div className="w-full flex flex-col gap-2">
+      {showWarning && (
+        <UpgradeBanner
+          memberId={memberId}
+          source="inbox_conversation_limit"
+          headline={atLimit ? 'Limite atteinte' : `${activeConversations}/${limit} conversations`}
+          sublabel={atLimit ? 'Plus aucun message ne peut t’atteindre. Passe premium pour débloquer.' : 'Passe premium pour des conversations illimitées.'}
+        />
+      )}
       {messages.map(msg => {
         const isReported = reported.has(msg.id);
         return (
@@ -782,13 +845,15 @@ export default function DashboardClient({
   recentScans,
   messages,
   unreadCount,
+  activeConversations = 0,
   scansByDay = [],
 }: {
-  member:      Member;
-  recentScans: Scan[];
-  messages:    Message[];
-  unreadCount: number;
-  scansByDay?: { date: string; count: number }[];
+  member:               Member;
+  recentScans:          Scan[];
+  messages:             Message[];
+  unreadCount:          number;
+  activeConversations?: number;
+  scansByDay?:          { date: string; count: number }[];
 }) {
   const [tab, setTab]     = useState<Tab>('home');
   const [toast, setToast] = useState('');
@@ -873,7 +938,12 @@ export default function DashboardClient({
           )}
 
           {tab === 'inbox' && (
-            <InboxSection messages={messages} memberId={member.id} />
+            <InboxSection
+              messages={messages}
+              memberId={member.id}
+              plan={member.plan}
+              activeConversations={activeConversations}
+            />
           )}
 
           {tab === 'settings' && (

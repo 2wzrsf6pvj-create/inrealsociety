@@ -17,6 +17,7 @@ function MessageForm() {
   const [error, setError]         = useState('');
   const [moderated, setModerated] = useState(false);
   const [expired, setExpired]     = useState(false);
+  const [limitReached, setLimitReached] = useState(false);
   const [conversationUrl, setConversationUrl] = useState<string | null>(null);
   const [copied, setCopied]       = useState(false);
 
@@ -44,6 +45,7 @@ function MessageForm() {
         }
         if (res.status === 403 && errorMsg.includes('Nombre maximum de conversations')) {
           captureEvent('message_blocked_conversation_limit', { member_id: memberId });
+          setLimitReached(true); setSending(false); return;
         }
         throw new Error(errorMsg);
       }
@@ -81,6 +83,28 @@ function MessageForm() {
         <p className="font-ui text-sm text-brand-gray/40 leading-relaxed">
           La fenêtre de 24 heures est terminée.<br />
           La prochaine occasion sera la bonne.
+        </p>
+        <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
+        <button onClick={() => memberId ? router.push(`/profil/${memberId}`) : router.push('/')}
+          className="font-ui text-sm text-brand-gray/30 tracking-[0.15em] uppercase underline underline-offset-4 py-3"
+          style={{ minHeight: '44px' }}>
+          ← retour au profil
+        </button>
+      </div>
+    );
+  }
+
+  if (limitReached) {
+    return (
+      <div className="flex flex-col items-center gap-6 text-center animate-stagger-1">
+        <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
+        <p className="font-display text-2xl font-light">{memberName} a déjà du monde autour.</p>
+        <p className="font-ui text-sm text-brand-gray/40 leading-relaxed">
+          Cette personne attire l&apos;attention.<br />
+          Ses conversations en cours sont au complet.
+        </p>
+        <p className="font-ui text-xxs text-brand-gray/25 leading-relaxed">
+          Revenez plus tard, ou croisez-la à nouveau.
         </p>
         <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
         <button onClick={() => memberId ? router.push(`/profil/${memberId}`) : router.push('/')}

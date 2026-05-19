@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   description: 'Gérez votre profil, consultez vos scans et vos messages sur In Real Society.',
 };
 import { createClient } from '@/lib/supabase-server';
-import { getMemberByAuthUserId, getRecentScans, getMessages, getUnreadMessagesCount, getScansByDay } from '@/lib/supabase';
+import { getMemberByAuthUserId, getRecentScans, getMessages, getMessagesCount, getUnreadMessagesCount, getScansByDay } from '@/lib/supabase';
 import DashboardClient from './[memberId]/DashboardClient';
 
 export default async function DashboardPage() {
@@ -30,12 +30,13 @@ export default async function DashboardPage() {
     redirect('/register');
   }
 
-  const [recentScans, messages, unreadCount, scansByDay] = await Promise.all([
+  const [recentScans, messages, unreadCount, activeConversations, scansByDay] = await Promise.all([
     getRecentScans(member.id, 5),
     getMessages(member.id, 10),
     getUnreadMessagesCount(member.id),
+    getMessagesCount(member.id),
     member.plan === 'premium' ? getScansByDay(member.id, 7) : Promise.resolve([]),
   ]);
 
-  return <DashboardClient member={member} recentScans={recentScans} messages={messages} unreadCount={unreadCount} scansByDay={scansByDay} />;
+  return <DashboardClient member={member} recentScans={recentScans} messages={messages} unreadCount={unreadCount} activeConversations={activeConversations} scansByDay={scansByDay} />;
 }
