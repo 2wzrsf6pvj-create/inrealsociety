@@ -186,3 +186,80 @@ button, a {
 .animate-success {
   animation: successPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
+
+/* ─────────────────────────────────────────
+   SKELETON — loading pulse pour les blocs de chargement (inbox "Voir plus")
+   ───────────────────────────────────────── */
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 0.06; }
+  50%       { opacity: 0.14; }
+}
+.animate-skeleton {
+  animation: skeletonPulse 1.5s ease-in-out infinite;
+  background: rgba(255,255,255,0.1);
+  border-radius: 2px;
+}
+
+/* ─────────────────────────────────────────
+   PING BADGE — point rouge non lu qui rayonne (TabBar inbox)
+   ───────────────────────────────────────── */
+@keyframes pingBadge {
+  0%   { transform: scale(1);   opacity: 0.7; }
+  70%  { transform: scale(2.2); opacity: 0;   }
+  100% { transform: scale(2.2); opacity: 0;   }
+}
+.animate-ping-badge {
+  position: relative;
+}
+.animate-ping-badge::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: currentColor;
+  animation: pingBadge 2s ease-out infinite;
+  pointer-events: none;
+}
+
+/* ─────────────────────────────────────────
+   SCAN SWEEP — gradient vertical qui simule un scan (QR code dashboard)
+   Une seule passe au mount — pas infinie pour éviter la fatigue visuelle.
+   ───────────────────────────────────────── */
+@keyframes scanSweep {
+  0%   { top: 0%;   opacity: 0;   }
+  20%  { opacity: 0.8; }
+  80%  { opacity: 0.8; }
+  100% { top: 100%; opacity: 0;   }
+}
+.animate-scan {
+  position: relative;
+  overflow: hidden;
+}
+.animate-scan::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 30%;
+  background: linear-gradient(
+    to bottom,
+    transparent 0%,
+    rgba(197,160,89,0.25) 50%,
+    transparent 100%
+  );
+  animation: scanSweep 1.8s ease-out 0.3s 1 forwards;
+  pointer-events: none;
+  top: 0%;
+}
+
+/* ─────────────────────────────────────────
+   TOAST OUT — sortie progressive des notifications toast
+   Appliqué quand le toast est en train de disparaître.
+   ───────────────────────────────────────── */
+@keyframes toastOut {
+  from { opacity: 1; transform: translateY(0);     }
+  to   { opacity: 0; transform: translateY(-10px); }
+}
+.animate-toast-out {
+  animation: toastOut 0.3s ease-in forwards;
+}

@@ -469,20 +469,23 @@ function RegisterContent() {
         </p>
       </div>
 
-      {step === 1 && <StepAccount onNext={() => setStep(2)} codeState={codeState} />}
-      {step === 2 && (
-        <StepProfile
-          form={form}
-          onChange={setForm}
-          onSubmit={handleSubmit}
-          onBack={() => setStep(1)}
-          loading={loading}
-          error={error}
-          isEditing={isEditing}
-          isLoggedIn={isLoggedIn}
-          codeState={codeState}
-        />
-      )}
+      {/* key={step} force le re-mount → la nouvelle step entre avec animate-stagger-* */}
+      <div key={step} className="w-full">
+        {step === 1 && <StepAccount onNext={() => setStep(2)} codeState={codeState} />}
+        {step === 2 && (
+          <StepProfile
+            form={form}
+            onChange={setForm}
+            onSubmit={handleSubmit}
+            onBack={() => setStep(1)}
+            loading={loading}
+            error={error}
+            isEditing={isEditing}
+            isLoggedIn={isLoggedIn}
+            codeState={codeState}
+          />
+        )}
+      </div>
     </div>
   );
 }

@@ -36,8 +36,9 @@ function TabBar({ active, onChange, unreadCount }: {
         >
           {tab.label}
           {tab.badge && tab.badge > 0 ? (
-            <span className="absolute top-2 right-[calc(50%-16px)] w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-xxs text-white font-bold">
-              {tab.badge > 9 ? '9+' : tab.badge}
+            <span className="animate-ping-badge absolute top-2 right-[calc(50%-16px)] w-4 h-4 bg-red-500 text-red-500 rounded-full flex items-center justify-center text-xxs text-white font-bold z-10"
+                  aria-label={`${tab.badge} messages non lus`}>
+              <span className="relative z-10 text-white">{tab.badge > 9 ? '9+' : tab.badge}</span>
             </span>
           ) : null}
         </button>
@@ -63,6 +64,18 @@ export default function DashboardClient({
 }) {
   const [tab, setTab]     = useState<Tab>('home');
   const [toast, setToast] = useState('');
+  const [toastHiding, setToastHiding] = useState(false);
+
+  // Affiche un toast avec entrée + sortie animée. La sortie est déclenchée
+  // après `durationMs` puis l'unmount effectif arrive 300ms plus tard
+  // (durée de animate-toast-out dans globals.css).
+  const showToast = React.useCallback((message: string, durationMs: number) => {
+    setToastHiding(false);
+    setToast(message);
+    const hideAt   = setTimeout(() => setToastHiding(true), durationMs);
+    const unmount  = setTimeout(() => { setToast(''); setToastHiding(false); }, durationMs + 300);
+    return () => { clearTimeout(hideAt); clearTimeout(unmount); };
+  }, []);
 
   React.useEffect(() => {
     identifyMember(member.id, {
@@ -82,38 +95,33 @@ export default function DashboardClient({
     // Toast profil mis à jour
     const updated = sessionStorage.getItem('profile_updated');
     if (updated) {
-      setToast('Profil mis à jour.');
       sessionStorage.removeItem('profile_updated');
-      setTimeout(() => setToast(''), 3000);
-      return;
+      return showToast('Profil mis à jour.', 3000);
     }
 
     // Toast upgrade premium
     const params = new URLSearchParams(window.location.search);
     if (params.get('upgraded') === '1') {
-      setToast('✦ Bienvenue dans le cercle premium.');
       window.history.replaceState({}, '', '/dashboard');
-      setTimeout(() => setToast(''), 4000);
-      return;
+      return showToast('✦ Bienvenue dans le cercle premium.', 4000);
     }
 
     // Toast connexion réussie
     const justLoggedIn = sessionStorage.getItem('just_logged_in');
     if (!justLoggedIn) {
       sessionStorage.setItem('just_logged_in', '1');
-      setToast(`Bienvenue, ${member.name}.`);
-      setTimeout(() => setToast(''), 3000);
+      return showToast(`Bienvenue, ${member.name}.`, 3000);
     }
-  }, [member.name]);
+  }, [member.name, showToast]);
 
   return (
     <main className="relative flex min-h-screen flex-col items-center bg-brand-black text-brand-white px-6 py-8 overflow-hidden">
       <div className="absolute top-[-15%] right-[-15%] w-[28rem] h-[28rem] rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.07) 0%, transparent 70%)' }} />
 
-      {/* Toast notification */}
+      {/* Toast notification — entrée animate-stagger-1, sortie animate-toast-out */}
       {toast && (
-        <div className="fixed top-4 z-50 px-4 py-2 bg-brand-white/10 border border-brand-white/20 rounded-[2px] backdrop-blur-sm animate-stagger-1">
+        <div className={`fixed top-4 z-50 px-4 py-2 bg-brand-white/10 border border-brand-white/20 rounded-[2px] backdrop-blur-sm ${toastHiding ? 'animate-toast-out' : 'animate-stagger-1'}`}>
           <p className="font-ui text-sm text-brand-white/80">{toast}</p>
         </div>
       )}

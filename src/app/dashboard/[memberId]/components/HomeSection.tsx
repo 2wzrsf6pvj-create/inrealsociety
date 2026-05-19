@@ -5,8 +5,19 @@ import Link from 'next/link';
 import Image from 'next/image';
 import type { Member, Scan } from '@/lib/types';
 import { daysActive, formatDate, getInitials, getWaitingPhrase, recentScansCount } from './utils';
+import { useCountUp } from './hooks';
 
 // ─── Stats Block ──────────────────────────────────────────────────────────────
+
+function StatNumber({ value, label }: { value: number; label: string }) {
+  const display = useCountUp(value);
+  return (
+    <div className="flex flex-col items-center gap-1">
+      <span className="font-display text-3xl md:text-4xl font-light tabular-nums">{display}</span>
+      <span className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">{label}</span>
+    </div>
+  );
+}
 
 function StatsBlock({ member, recentScans }: { member: Member; recentScans: Scan[] }) {
   const days   = daysActive(member.created_at);
@@ -27,19 +38,18 @@ function StatsBlock({ member, recentScans }: { member: Member; recentScans: Scan
     );
   }
 
+  const stats = [
+    { value: member.scan_count,             label: 'Scans' },
+    { value: recentScansCount(recentScans), label: '7 jours' },
+    { value: days,                          label: 'Jours' },
+  ];
+
   return (
     <div className="flex items-center gap-6 w-full justify-center">
-      {[
-        { value: member.scan_count.toString(),                  label: 'Scans' },
-        { value: recentScansCount(recentScans).toString(),      label: '7 jours' },
-        { value: days.toString(),                               label: 'Jours' },
-      ].map((s, i) => (
+      {stats.map((s, i) => (
         <React.Fragment key={s.label}>
           {i > 0 && <div className="w-px h-8 bg-brand-gray/10" />}
-          <div className="flex flex-col items-center gap-1">
-            <span className="font-display text-3xl md:text-4xl font-light">{s.value}</span>
-            <span className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">{s.label}</span>
-          </div>
+          <StatNumber value={s.value} label={s.label} />
         </React.Fragment>
       ))}
     </div>

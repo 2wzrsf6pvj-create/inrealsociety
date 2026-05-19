@@ -101,17 +101,17 @@ export default function InboxSection({ messages: initialMessages, memberId, plan
   if (messages.length === 0) {
     return (
       <div className="flex flex-col items-center gap-4 py-8 text-center">
-        <div className="w-16 h-16 rounded-full border border-brand-gray/10 flex items-center justify-center">
+        <div className="animate-float w-16 h-16 rounded-full border border-brand-gray/10 flex items-center justify-center">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="text-brand-gray/20">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
         </div>
-        <p className="font-display text-lg md:text-xl font-light italic text-brand-gray/40">Aucun message pour l&apos;instant.</p>
-        <p className="font-ui text-xs md:text-sm text-brand-gray/25 leading-relaxed">
+        <p className="animate-stagger-1 font-display text-lg md:text-xl font-light italic text-brand-gray/40">Aucun message pour l&apos;instant.</p>
+        <p className="animate-stagger-2 font-ui text-xs md:text-sm text-brand-gray/25 leading-relaxed">
           Quand quelqu&apos;un scannera votre QR code<br />et vous enverra un message, il appara&icirc;tra ici.
         </p>
-        <div className="w-px h-6 bg-gradient-to-b from-transparent via-brand-white/10 to-transparent" />
-        <p className="font-ui text-xxs text-brand-gray/20 leading-relaxed">
+        <div className="animate-stagger-3 w-px h-6 bg-gradient-to-b from-transparent via-brand-white/10 to-transparent" />
+        <p className="animate-stagger-4 font-ui text-xxs text-brand-gray/20 leading-relaxed">
           Portez votre t-shirt. Sortez. Le reste suivra.
         </p>
       </div>
@@ -197,10 +197,20 @@ export default function InboxSection({ messages: initialMessages, memberId, plan
         );
       })}
 
-      {hasMore && (
-        <button onClick={loadMore} disabled={loadingMore}
-          className="w-full py-3 border border-brand-gray/10 text-center font-ui text-xs font-light tracking-[0.15em] uppercase text-brand-gray/30 hover:border-brand-gray/25 hover:text-brand-gray/50 transition-colors rounded-[2px] mt-2 disabled:opacity-40">
-          {loadingMore ? 'Chargement...' : 'Voir plus'}
+      {/* Skeleton loaders : 3 cartes pulsantes pendant le fetch — meilleure
+          perceived performance que le simple texte "Chargement..." */}
+      {loadingMore && (
+        <>
+          {[0, 1, 2].map(i => (
+            <div key={`skel-${i}`} className="animate-skeleton h-[68px]" />
+          ))}
+        </>
+      )}
+
+      {hasMore && !loadingMore && (
+        <button onClick={loadMore}
+          className="w-full py-3 border border-brand-gray/10 text-center font-ui text-xs font-light tracking-[0.15em] uppercase text-brand-gray/30 hover:border-brand-gray/25 hover:text-brand-gray/50 transition-colors rounded-[2px] mt-2">
+          Voir plus
         </button>
       )}
     </div>

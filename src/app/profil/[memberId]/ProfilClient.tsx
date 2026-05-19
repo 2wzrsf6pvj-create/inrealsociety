@@ -153,11 +153,11 @@ export default function ProfilClient({
           <div className="flex-1 h-px bg-brand-gray/10 animate-line-draw" style={{ animationDelay: '0.5s' }} />
         </div>
 
-        {/* Avatar */}
+        {/* Avatar — scan sweep au mount pour rappeler le concept "être scanné" */}
         <div className="flex flex-col items-center gap-2 animate-stagger-2">
           <div className="relative">
             <div className="absolute inset-[-8px] rounded-full border border-brand-white/5 animate-ring-pulse" />
-            <div className="w-28 h-28 rounded-full border border-brand-gray/20 bg-[#0a0a0a] flex items-center justify-center overflow-hidden">
+            <div className="animate-scan w-28 h-28 rounded-full border border-brand-gray/20 bg-[#0a0a0a] flex items-center justify-center overflow-hidden">
               {member.photo_url ? (
                 <Image
                   src={member.photo_url}

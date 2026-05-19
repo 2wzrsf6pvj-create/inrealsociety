@@ -117,8 +117,14 @@ function ReferralBlock({ memberId }: { memberId: string }) {
       </p>
       <div className="flex items-center gap-2">
         <p className="font-mono text-xs text-brand-gray/40 break-all flex-1 leading-relaxed">{referralUrl}</p>
-        <button onClick={handleCopy} className="font-ui text-xs text-brand-white/60 hover:text-brand-white transition-colors flex-shrink-0 px-2 py-1 border border-brand-gray/20 rounded-[2px]">
-          {copied ? 'Copié' : 'Copier'}
+        <button onClick={handleCopy} className="font-ui text-xs text-brand-white/60 hover:text-brand-white transition-colors flex-shrink-0 px-2 py-1 border border-brand-gray/20 rounded-[2px] min-w-[58px]">
+          {copied ? (
+            <span key="copied" className="animate-success inline-flex items-center gap-1 text-green-400/70">
+              <span aria-hidden>✓</span> Copié
+            </span>
+          ) : (
+            <span>Copier</span>
+          )}
         </button>
       </div>
       {typeof navigator !== 'undefined' && 'share' in navigator && (
