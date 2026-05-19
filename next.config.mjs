@@ -1,3 +1,5 @@
+import { withSentryConfig } from '@sentry/nextjs';
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   images: {
@@ -25,4 +27,14 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+// withSentryConfig est un no-op si SENTRY_AUTH_TOKEN n'est pas défini (pas d'upload de source maps).
+// Désactive le tunneling côté client pour éviter une route /monitoring conflictuelle.
+export default withSentryConfig(nextConfig, {
+  silent:             !process.env.CI,
+  org:                process.env.SENTRY_ORG,
+  project:            process.env.SENTRY_PROJECT,
+  authToken:          process.env.SENTRY_AUTH_TOKEN,
+  widenClientFileUpload:   true,
+  disableLogger:           true,
+  automaticVercelMonitors: false,
+});

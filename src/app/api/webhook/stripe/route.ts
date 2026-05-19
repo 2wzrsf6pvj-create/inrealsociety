@@ -14,7 +14,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { generateSecureCode } from '@/lib/generate-code';
-import { sendEmail, emailActivation, emailPremium } from '@/lib/email-templates';
+import { sendEmail, emailActivation, emailPremium, emailPaymentFailed } from '@/lib/email-templates';
 import { APP_URL } from '@/lib/constants';
 import { captureServerEvent } from '@/lib/posthog-server';
 import { audit } from '@/lib/audit';
@@ -67,6 +67,11 @@ export async function POST(req: NextRequest) {
       case 'charge.refunded': {
         const charge = event.data.object as Stripe.Charge;
         await handleChargeRefunded(charge);
+        break;
+      }
+      case 'invoice.payment_failed': {
+        const invoice = event.data.object as Stripe.Invoice;
+        await handleInvoicePaymentFailed(invoice);
         break;
       }
     }
@@ -249,6 +254,54 @@ async function handleChargeRefunded(charge: Stripe.Charge): Promise<void> {
   });
 
   console.log('[webhook] Order', order.id, 'refunded');
+}
+
+// ─── Handler échec de paiement abonnement ────────────────────────────────────
+
+async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<void> {
+  const customerId = typeof invoice.customer === 'string'
+    ? invoice.customer
+    : invoice.customer?.id;
+
+  if (!customerId) {
+    console.warn('[webhook] invoice.payment_failed sans customer — ignoré');
+    return;
+  }
+
+  const { data: member } = await supabaseAdmin
+    .from('members')
+    .select('id, name, email')
+    .eq('stripe_customer_id', customerId)
+    .maybeSingle();
+
+  if (!member?.email) {
+    console.warn('[webhook] invoice.payment_failed : member sans email pour customer', customerId);
+    return;
+  }
+
+  const attemptNumber = (invoice as unknown as { attempt_count?: number }).attempt_count ?? 1;
+
+  audit({
+    action:   'subscription.payment_failed',
+    memberId: member.id,
+    metadata: { customerId, invoiceId: invoice.id, attemptNumber, amountDue: invoice.amount_due },
+  });
+
+  // N'envoie qu'à la première tentative — Stripe envoie son propre email aux suivantes,
+  // et on évite le spam. Pour les autres tentatives, l'audit log suffit.
+  if (attemptNumber > 1) {
+    console.log('[webhook] Payment failed attempt', attemptNumber, '— email skipped (Stripe handles)');
+    return;
+  }
+
+  const dashboardUrl = `${APP_URL}/dashboard`;
+  const { subject, html } = emailPaymentFailed({ name: member.name, dashboardUrl, attemptNumber });
+
+  try {
+    await sendEmail({ to: member.email, subject, html });
+  } catch (err) {
+    console.error('[webhook] Échec envoi email payment_failed:', err);
+  }
 }
 
 // ─── Handlers abonnement premium ─────────────────────────────────────────────

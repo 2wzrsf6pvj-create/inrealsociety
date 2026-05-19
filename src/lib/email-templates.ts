@@ -171,6 +171,36 @@ export function emailPremium(params: {
   };
 }
 
+/** Email de relance quand un paiement d'abonnement premium échoue */
+export function emailPaymentFailed(params: {
+  name:         string;
+  dashboardUrl: string;
+  attemptNumber?: number;
+}): { subject: string; html: string } {
+  const safeName = escapeHtml(params.name);
+  const attempt  = params.attemptNumber ?? 1;
+  return {
+    subject: `${safeName}, votre paiement premium n’a pas pu être traité.`,
+    html: layout(`
+      <h1 style="font-size:24px;font-weight:300;letter-spacing:0.04em;margin:0 0 16px;text-align:center;">
+        Le paiement n’est pas passé.
+      </h1>
+      <p style="font-family:system-ui,sans-serif;font-size:13px;color:rgba(255,255,255,0.5);text-align:center;line-height:1.8;margin:0 0 24px;">
+        ${safeName}, nous avons essayé de renouveler votre abonnement premium mais votre carte n’a pas pu être débitée.
+        Cela peut venir d’une carte expirée, d’un plafond atteint ou d’un blocage temporaire.
+      </p>
+      <p style="font-family:system-ui,sans-serif;font-size:12px;color:rgba(255,255,255,0.4);text-align:center;line-height:1.8;margin:0 0 24px;">
+        Stripe va automatiquement réessayer dans les prochains jours. Pour éviter une coupure de votre abonnement,
+        mettez à jour votre moyen de paiement depuis votre tableau de bord.
+      </p>
+      ${cta('Mettre à jour ma carte', params.dashboardUrl)}
+      <p style="font-family:system-ui,sans-serif;font-size:11px;color:rgba(255,255,255,0.25);text-align:center;line-height:1.6;margin:24px 0 0;">
+        Tentative ${attempt} — Si rien n’est mis à jour, votre abonnement passera en free automatiquement.
+      </p>
+    `),
+  };
+}
+
 /** Email d'activation après achat Stripe */
 export function emailActivation(params: {
   code:        string;

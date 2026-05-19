@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import { Cormorant_Garamond, Montserrat } from 'next/font/google';
 import AuthIndicator from './components/ui/AuthIndicator';
 import PostHogProvider from './components/PostHogProvider';
+import ConsentBanner from './components/ConsentBanner';
 import './globals.css';
 
 const cormorant = Cormorant_Garamond({
@@ -60,6 +61,7 @@ export default function RootLayout({
           <PostHogProvider>
             <AuthIndicator />
             {children}
+            <ConsentBanner />
           </PostHogProvider>
         </Suspense>
       </body>

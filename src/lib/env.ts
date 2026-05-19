@@ -28,6 +28,10 @@ const recommended = [
   'NEXT_PUBLIC_POSTHOG_KEY',
   'NEXT_PUBLIC_POSTHOG_HOST',
   'OPENAI_API_KEY',
+  'NEXT_PUBLIC_SENTRY_DSN',
+  'SENTRY_ORG',
+  'SENTRY_PROJECT',
+  'SENTRY_AUTH_TOKEN',
 ] as const;
 
 type EnvKey = typeof required[number] | typeof recommended[number];

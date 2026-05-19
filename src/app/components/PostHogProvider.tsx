@@ -25,6 +25,9 @@ export default function PostHogProvider({ children }: { children: React.ReactNod
       capture_pageleave:  true,
       autocapture:        true,
       disable_session_recording: true,
+      // RGPD : pas de capture tant que l'utilisateur n'a pas consenti.
+      // Le ConsentBanner appelle posthog.opt_in_capturing() au clic 'Accepter'.
+      opt_out_capturing_by_default: true,
     });
   }, []);
 
