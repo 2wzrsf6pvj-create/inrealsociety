@@ -28,20 +28,10 @@ const config: Config = {
         '4xl':  ['2.25rem',  { lineHeight: '2.5rem' }],   // 36px — hero large
         '5xl':  ['3rem',     { lineHeight: '3.25rem' }],  // 48px — display
       },
-      animation: {
-        fadeUp: 'fadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both',
-        fadeIn: 'fadeIn 0.35s ease both',
-      },
-      keyframes: {
-        fadeUp: {
-          from: { opacity: '0', transform: 'translateY(14px)' },
-          to:   { opacity: '1', transform: 'translateY(0)'    },
-        },
-        fadeIn: {
-          from: { opacity: '0' },
-          to:   { opacity: '1' },
-        },
-      },
+      // Les animations custom du projet sont définies dans src/app/globals.css
+      // (staggerUp, ringPulse, shimmer, lineDraw, float, slideInRight, typingDot,
+      // successPop). On garde uniquement les Tailwind built-ins (animate-pulse,
+      // animate-spin, etc.) sans extension custom ici.
     },
   },
   plugins: [],
