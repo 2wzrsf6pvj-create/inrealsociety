@@ -340,7 +340,7 @@ function PremiumBlock({ member }: { member: Member }) {
   const handleAction = async () => {
     setLoading(true);
     if (!isPremium) {
-      captureEvent('upgrade_clicked', { member_id: member.id, plan: 'free' });
+      captureEvent('upgrade_clicked', { member_id: member.id, plan: 'free', source: 'settings_premium_block' });
     }
     try {
       const endpoint = isPremium ? '/api/subscription/portal' : '/api/subscription/checkout';
@@ -355,7 +355,7 @@ function PremiumBlock({ member }: { member: Member }) {
 
   React.useEffect(() => {
     if (!isPremium) {
-      captureEvent('upgrade_cta_viewed', { member_id: member.id, plan: 'free' });
+      captureEvent('upgrade_cta_viewed', { member_id: member.id, plan: 'free', source: 'settings_premium_block' });
     }
   }, [isPremium, member.id]);
 

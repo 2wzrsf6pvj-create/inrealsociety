@@ -9,15 +9,9 @@ import { sendEmail, emailNouveauMessage } from '@/lib/email-templates';
 import { checkMessageRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
 import { audit } from '@/lib/audit';
 import { SCAN_WINDOW_MS, MAX_CONVERSATIONS } from '@/lib/constants';
+import { moderateContent } from '@/lib/moderation';
 
 const QUICK_REPLIES = new Set(["Belle audace.", "J'aime la démarche.", "👁"]);
-
-const BANNED_WORDS = [
-  'salope', 'pute', 'connasse', 'bitch', 'whore', 'slut',
-  'viol', 'rape', 'tuer', 'kill', 'mort', 'suicide',
-  'nique', 'fuck', 'baiser', 'sexe', 'cul',
-  'menacer', 'adresse', 'retrouver', 'suivre',
-];
 
 const schema = z.object({
   memberId:      z.string().uuid('memberId doit être un UUID valide'),
@@ -25,11 +19,6 @@ const schema = z.object({
   senderContact: z.string().max(200).optional(),
   isQuickReply:  z.boolean().optional(),
 });
-
-function moderateContent(content: string): boolean {
-  const lower = content.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-  return BANNED_WORDS.some(word => lower.includes(word));
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -98,9 +87,10 @@ export async function POST(req: NextRequest) {
 
     // ─── Modération ───────────────────────────────────────────────────────
     const isKnownQuickReply = QUICK_REPLIES.has(content.trim());
-    const moderated = (!isQuickReply && !isKnownQuickReply)
-      ? moderateContent(content)
-      : false;
+    const moderation = (!isQuickReply && !isKnownQuickReply)
+      ? await moderateContent(content)
+      : { flagged: false, source: 'regex' as const, categories: [] };
+    const moderated = moderation.flagged;
 
     // ─── Insertion BDD ────────────────────────────────────────────────────
     const { data: message, error: msgError } = await supabaseAdmin
@@ -122,7 +112,11 @@ export async function POST(req: NextRequest) {
       action:   moderated ? 'message.moderated' : 'message.sent',
       memberId,
       ip,
-      metadata: { messageId: message?.id, isQuickReply: isKnownQuickReply },
+      metadata: {
+        messageId:    message?.id,
+        isQuickReply: isKnownQuickReply,
+        ...(moderated ? { moderationSource: moderation.source, categories: moderation.categories } : {}),
+      },
     });
 
     // ─── Notification email ───────────────────────────────────────────────

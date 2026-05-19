@@ -27,6 +27,7 @@ const recommended = [
   'VAPID_PRIVATE_KEY',
   'NEXT_PUBLIC_POSTHOG_KEY',
   'NEXT_PUBLIC_POSTHOG_HOST',
+  'OPENAI_API_KEY',
 ] as const;
 
 type EnvKey = typeof required[number] | typeof recommended[number];
