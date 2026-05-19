@@ -1,4 +1,9 @@
 import { withSentryConfig } from '@sentry/nextjs';
+import bundleAnalyzer from '@next/bundle-analyzer';
+
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === 'true',
+});
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -28,7 +33,8 @@ const nextConfig = {
 };
 
 // withSentryConfig est un no-op si SENTRY_AUTH_TOKEN n'est pas défini (pas d'upload de source maps).
-export default withSentryConfig(nextConfig, {
+// withBundleAnalyzer s'active uniquement avec ANALYZE=true (npm run analyze).
+export default withSentryConfig(withBundleAnalyzer(nextConfig), {
   silent:               !process.env.CI,
   org:                  process.env.SENTRY_ORG,
   project:              process.env.SENTRY_PROJECT,
