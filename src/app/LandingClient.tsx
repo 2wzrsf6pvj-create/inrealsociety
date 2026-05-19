@@ -4,6 +4,8 @@ import Link from 'next/link';
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 function LandingContent() {
   const searchParams = useSearchParams();
   const router       = useRouter();
@@ -14,15 +16,22 @@ function LandingContent() {
   const [ready, setReady]             = useState(false);
 
   useEffect(() => {
-    // Ancien flow QR via /?id=xxx → redirige directement vers le profil
+    // Compat legacy : t-shirts imprimés avec QR pointant sur /?id=<UUID>.
+    // Les nouveaux QR utilisent les URLs courtes /r/<code>. On valide le format
+    // UUID avant de rediriger pour ne pas envoyer le visiteur sur un /profil/xxx
+    // qui crashera. Si l'id est malformé, on affiche l'erreur QR au lieu de
+    // rediriger vers une route morte.
     const id = searchParams.get('id');
     if (id) {
-      router.replace(`/profil/${id}`);
-      return;
+      if (UUID_REGEX.test(id)) {
+        router.replace(`/profil/${id}`);
+        return;
+      }
+      setQrError('Ce QR code est invalide.');
     }
-    // QR code invalide
+    // QR code invalide (passé en query par /profil/[id]/page.tsx quand notFound)
     const err = searchParams.get('error');
-    if (err === 'qr_invalid') setQrError('Ce QR code est invalide.');
+    if (err === 'qr_invalid')        setQrError('Ce QR code est invalide.');
     else if (err === 'qr_not_found') setQrError('Ce QR code ne correspond à aucun membre.');
 
     const saved = localStorage.getItem('scannerName');

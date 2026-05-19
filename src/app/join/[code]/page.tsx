@@ -53,7 +53,7 @@ export default function JoinPage() {
           >
             Découvrir le t-shirt
           </Link>
-          <Link href="/"
+          <Link href="/manifeste"
             className="w-full py-3 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.15em] uppercase text-brand-gray/35 hover:border-brand-gray/30 transition-colors"
             style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >

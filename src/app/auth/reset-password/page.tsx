@@ -16,18 +16,25 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     const supabase = createClient();
+    let recovered = false;
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') setReady(true);
+      if (event === 'PASSWORD_RECOVERY') {
+        recovered = true;
+        setReady(true);
+      }
     });
 
-    // Timeout : si pas de PASSWORD_RECOVERY après 10s, le lien est invalide
+    // Si l'event PASSWORD_RECOVERY ne fire pas dans les 30s, on considère le
+    // lien invalide ou expiré. Avant : 10s — trop court sur 3G ou connexion
+    // lente, l'utilisateur voyait "expiré" puis le formulaire apparaissait.
+    // Closure flag (`recovered`) au lieu de l'état React pour ne pas déclencher
+    // setExpired après que setReady soit passé (closure stale).
     const timeout = setTimeout(() => {
-      if (!ready) setExpired(true);
-    }, 10_000);
+      if (!recovered) setExpired(true);
+    }, 30_000);
 
     return () => { subscription.unsubscribe(); clearTimeout(timeout); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -64,9 +71,10 @@ export default function ResetPasswordPage() {
           <div className="w-px h-12 bg-gradient-to-b from-transparent via-brand-white/20 to-transparent" />
           {expired ? (
             <>
-              <p className="font-display text-2xl font-light">Ce lien a expiré.</p>
+              <p className="font-display text-2xl font-light">Ce lien est invalide ou expiré.</p>
               <p className="font-ui text-sm text-brand-gray/40 leading-relaxed">
-                Demandez un nouveau lien de réinitialisation.
+                Les liens de réinitialisation sont à usage unique et limités dans le temps.
+                Demandez-en un nouveau.
               </p>
               <a href="/auth/forgot-password" className="font-ui text-sm text-brand-gray/30 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white transition-colors mt-4">
                 Renvoyer un lien

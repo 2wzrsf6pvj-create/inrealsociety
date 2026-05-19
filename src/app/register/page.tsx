@@ -214,15 +214,21 @@ function StepAccount({ onNext, codeState }: {
   );
 }
 
-// ─── Étape 2 : Profil ─────────────────────────────────────────────────────────
+// ─── Étape 2 : Profil complet (avant : Profile + Optional en 2 étapes) ─────
+// Tout-en-un pour réduire la friction d'inscription. Champs requis (name, pitch)
+// en premier, puis section "Détails optionnels" pour la photo et Instagram.
 
-function StepProfile({ form, onChange, onNext, onBack, isEditing, isLoggedIn, codeState }: {
-  form: FormData; onChange: (f: FormData) => void; onNext: () => void; onBack: () => void;
+function StepProfile({ form, onChange, onSubmit, onBack, loading, error, isEditing, isLoggedIn, codeState }: {
+  form: FormData; onChange: (f: FormData) => void; onSubmit: () => void; onBack: () => void;
+  loading: boolean; error: string;
   isEditing: boolean; isLoggedIn: boolean;
   codeState: ReturnType<typeof useCodeValidation>;
 }) {
   const [aiLoading, setAiLoading] = useState(false);
-  const [error,     setError]     = useState('');
+  const [localError, setLocalError] = useState('');
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [preview, setPreview]   = useState<string | null>(null);
+  const [fileErr, setFileErr]   = useState('');
 
   const field = (key: keyof FormData, value: string) => onChange({ ...form, [key]: value });
 
@@ -236,12 +242,31 @@ function StepProfile({ form, onChange, onNext, onBack, isEditing, isLoggedIn, co
     setAiLoading(false);
   };
 
-  const handleNext = () => {
-    if (needsCode && !codeState.codeOk) { setError("Code d'activation requis."); return; }
-    if (!form.name.trim()) { setError('Votre prénom est requis.'); return; }
-    if (!composePitch(form).trim()) { setError('Rédigez votre pitch ou générez-en un.'); return; }
-    setError(''); onNext();
+  const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setFileErr('');
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      setFileErr('Format non supporté. Utilisez JPEG, PNG ou WebP.');
+      return;
+    }
+    if (file.size > MAX_IMAGE_SIZE) {
+      setFileErr('Photo trop volumineuse (5 Mo max).');
+      return;
+    }
+    onChange({ ...form, photo: file });
+    setPreview(URL.createObjectURL(file));
   };
+
+  const handleSubmit = () => {
+    if (needsCode && !codeState.codeOk) { setLocalError("Code d'activation requis."); return; }
+    if (!form.name.trim()) { setLocalError('Votre prénom est requis.'); return; }
+    if (!composePitch(form).trim()) { setLocalError('Rédigez votre pitch ou générez-en un.'); return; }
+    setLocalError('');
+    onSubmit();
+  };
+
+  const displayedError = localError || error;
 
   return (
     <div className="w-full flex flex-col gap-6">
@@ -264,6 +289,7 @@ function StepProfile({ form, onChange, onNext, onBack, isEditing, isLoggedIn, co
             className="w-full bg-transparent border-b border-brand-gray/15 focus:border-brand-white/60 font-ui font-light text-base text-brand-white py-3 outline-none transition-colors"
             style={{ minHeight: '44px' }} />
         </div>
+
         <div className="flex flex-col gap-3">
           <p className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">Votre pitch</p>
           <button type="button" onClick={handleAi} disabled={aiLoading}
@@ -299,11 +325,47 @@ function StepProfile({ form, onChange, onNext, onBack, isEditing, isLoggedIn, co
             </div>
           )}
         </div>
-        {error && <p className="font-ui text-sm text-red-400 text-center">{error}</p>}
-        <button onClick={handleNext}
-          className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.3em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200"
+
+        {/* Section Détails optionnels — était une étape séparée, maintenant inline */}
+        <div className="flex items-center gap-3 pt-2">
+          <div className="flex-1 h-px bg-brand-gray/10" />
+          <span className="font-ui text-xxs text-brand-gray/30 tracking-[0.15em] uppercase">Détails optionnels</span>
+          <div className="flex-1 h-px bg-brand-gray/10" />
+        </div>
+
+        <div className="flex items-center gap-4">
+          <button type="button" onClick={() => fileRef.current?.click()}
+            aria-label="Ajouter une photo de profil"
+            className="relative w-16 h-16 rounded-full border border-brand-gray/20 bg-[#0a0a0a] flex items-center justify-center overflow-hidden hover:border-brand-gray/40 transition-colors flex-shrink-0">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            {preview
+              ? <img src={preview} alt="Aperçu de votre photo" className="w-full h-full object-cover" />
+              : <span className="font-ui text-xxs text-brand-gray/30 tracking-[0.1em] uppercase">+ Photo</span>}
+          </button>
+          <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handlePhoto} />
+          <div className="flex flex-col gap-0.5">
+            <p className="font-ui text-xs text-brand-gray/40">Photo de profil</p>
+            <p className="font-ui text-xxs text-brand-gray/20">JPEG, PNG ou WebP · 5 Mo max</p>
+            {fileErr && <p className="font-ui text-xs text-red-400">{fileErr}</p>}
+          </div>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label htmlFor="register-instagram" className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">
+            Instagram <span className="text-brand-gray/15 normal-case tracking-normal">(optionnel)</span>
+          </label>
+          <input id="register-instagram" type="text" placeholder="votre_pseudo" value={form.instagram}
+            onChange={e => onChange({ ...form, instagram: e.target.value })}
+            className="w-full bg-transparent border-b border-brand-gray/15 focus:border-brand-white/50 font-ui font-light text-base text-brand-white py-3 outline-none transition-colors placeholder:text-brand-gray/15"
+            style={{ minHeight: '44px' }} />
+        </div>
+
+        {displayedError && <p className="font-ui text-sm text-red-400 text-center">{displayedError}</p>}
+
+        <button onClick={handleSubmit} disabled={loading}
+          className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.3em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 disabled:opacity-50"
           style={{ minHeight: '44px' }}>
-          Continuer
+          {loading ? 'Activation...' : isEditing ? 'Sauvegarder' : 'Activer mon vêtement'}
         </button>
         {!isLoggedIn && (
           <button onClick={onBack} className="font-ui text-xs text-brand-gray/25 tracking-[0.15em] uppercase underline underline-offset-4 py-2">
@@ -315,80 +377,12 @@ function StepProfile({ form, onChange, onNext, onBack, isEditing, isLoggedIn, co
   );
 }
 
-// ─── Étape 3 : Détails optionnels ─────────────────────────────────────────────
-
-function StepOptional({ form, onChange, onSubmit, onBack, loading, error, isEditing }: {
-  form: FormData; onChange: (f: FormData) => void; onSubmit: () => void;
-  onBack: () => void; loading: boolean; error: string; isEditing: boolean;
-}) {
-  const fileRef = useRef<HTMLInputElement>(null);
-  const [preview, setPreview]   = useState<string | null>(null);
-  const [fileErr, setFileErr]   = useState('');
-
-  const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setFileErr('');
-
-    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
-      setFileErr('Format non supporté. Utilisez JPEG, PNG ou WebP.');
-      return;
-    }
-    if (file.size > MAX_IMAGE_SIZE) {
-      setFileErr('Photo trop volumineuse (5 Mo max).');
-      return;
-    }
-
-    onChange({ ...form, photo: file });
-    setPreview(URL.createObjectURL(file));
-  };
-
-  return (
-    <div className="w-full flex flex-col gap-6">
-      <div className="text-center flex flex-col gap-2 animate-stagger-1">
-        <h2 className="font-display text-3xl font-light tracking-[0.04em]">{isEditing ? 'Modifier les détails' : 'Pour aller plus loin'}</h2>
-        <p className="font-ui text-sm font-light text-brand-gray/40">{isEditing ? 'Photo et Instagram.' : 'Tout est optionnel.'}</p>
-      </div>
-      <div className="flex flex-col gap-5 animate-stagger-2">
-        <div className="flex flex-col items-center gap-2">
-          <button type="button" onClick={() => fileRef.current?.click()}
-            className="relative w-20 h-20 rounded-full border border-brand-gray/20 bg-[#0a0a0a] flex items-center justify-center overflow-hidden hover:border-brand-gray/40 transition-colors">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            {preview ? <img src={preview} alt="Aperçu de votre photo" className="w-full h-full object-cover" /> : <span className="font-ui text-xs text-brand-gray/20 tracking-[0.1em] uppercase">Photo</span>}
-          </button>
-          <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handlePhoto} />
-          {fileErr && <p className="font-ui text-xs text-red-400">{fileErr}</p>}
-          <p className="font-ui text-xxs text-brand-gray/20">JPEG, PNG ou WebP · 5 Mo max</p>
-        </div>
-        <div className="flex flex-col gap-1">
-          <label htmlFor="register-instagram" className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">
-            Instagram <span className="text-brand-gray/15 normal-case tracking-normal">(optionnel)</span>
-          </label>
-          <input id="register-instagram" type="text" placeholder="votre_pseudo" value={form.instagram}
-            onChange={e => onChange({ ...form, instagram: e.target.value })}
-            className="w-full bg-transparent border-b border-brand-gray/15 focus:border-brand-white/50 font-ui font-light text-base text-brand-white py-3 outline-none transition-colors placeholder:text-brand-gray/15"
-            style={{ minHeight: '44px' }} />
-        </div>
-        {error && <p className="font-ui text-sm text-red-400 text-center">{error}</p>}
-        <button onClick={onSubmit} disabled={loading}
-          className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.3em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 disabled:opacity-50"
-          style={{ minHeight: '44px' }}>
-          {loading ? 'Activation...' : isEditing ? 'Sauvegarder' : 'Activer mon vêtement'}
-        </button>
-        <button onClick={onBack} className="font-ui text-xs text-brand-gray/25 tracking-[0.15em] uppercase underline underline-offset-4 py-2">
-          ← retour
-        </button>
-      </div>
-    </div>
-  );
-}
-
 // ─── Composant principal ──────────────────────────────────────────────────────
 
 function RegisterContent() {
   const router       = useRouter();
   const searchParams = useSearchParams();
-  const [step,           setStep]           = useState<1 | 2 | 3>(1);
+  const [step,           setStep]           = useState<1 | 2>(1);
   const [isEditing,      setIsEditing]      = useState(false);
   const [isLoggedIn,     setIsLoggedIn]     = useState(false);
   const [existingId,     setExistingId]     = useState<string | null>(null);
@@ -453,7 +447,7 @@ function RegisterContent() {
     } finally { setLoading(false); }
   };
 
-  const totalSteps = isLoggedIn ? 2 : 3;
+  const totalSteps = isLoggedIn ? 1 : 2;
   const currentStep = isLoggedIn ? step - 1 : step;
 
   return (
@@ -476,8 +470,19 @@ function RegisterContent() {
       </div>
 
       {step === 1 && <StepAccount onNext={() => setStep(2)} codeState={codeState} />}
-      {step === 2 && <StepProfile form={form} onChange={setForm} onNext={() => setStep(3)} onBack={() => setStep(1)} isEditing={isEditing} isLoggedIn={isLoggedIn} codeState={codeState} />}
-      {step === 3 && <StepOptional form={form} onChange={setForm} onSubmit={handleSubmit} onBack={() => setStep(2)} loading={loading} error={error} isEditing={isEditing} />}
+      {step === 2 && (
+        <StepProfile
+          form={form}
+          onChange={setForm}
+          onSubmit={handleSubmit}
+          onBack={() => setStep(1)}
+          loading={loading}
+          error={error}
+          isEditing={isEditing}
+          isLoggedIn={isLoggedIn}
+          codeState={codeState}
+        />
+      )}
     </div>
   );
 }
