@@ -24,11 +24,13 @@ function composePitch(f: FormData): string {
 
 function friendlyAuthError(code?: string): string {
   switch (code) {
+    // Réponse neutre anti-énumération : on ne confirme pas qu'un compte existe.
+    // L'utilisateur légitime peut récupérer son accès via "Mot de passe oublié".
     case 'user_already_exists':
-    case 'email_exists':    return 'Un compte existe déjà avec cet email. Connectez-vous.';
-    case 'weak_password':   return 'Mot de passe trop faible (8 caractères min).';
-    case 'over_email_send_rate_limit': return 'Trop de tentatives. Réessayez dans quelques minutes.';
-    default:                return 'Une erreur est survenue. Réessayez.';
+    case 'email_exists':                return 'Si vous avez déjà un compte, connectez-vous ou réinitialisez votre mot de passe.';
+    case 'weak_password':               return 'Mot de passe trop faible (8 caractères min).';
+    case 'over_email_send_rate_limit':  return 'Trop de tentatives. Réessayez dans quelques minutes.';
+    default:                            return 'Une erreur est survenue. Réessayez.';
   }
 }
 

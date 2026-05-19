@@ -289,15 +289,34 @@ export default function ConversationClient({
           ))}
         </div>
 
+        {/* Compteur de messages — donne au lecteur la visibilité sur la limite */}
+        {totalMessages > 0 && (
+          <div className="flex items-center justify-center gap-3 -my-2">
+            <div className="flex-1 h-px bg-brand-gray/10" />
+            <span className="font-ui text-xxs text-brand-gray/30 tracking-[0.2em] uppercase tabular-nums">
+              {totalMessages}/{MAX_THREAD} échanges
+            </span>
+            <div className="flex-1 h-px bg-brand-gray/10" />
+          </div>
+        )}
+
         {/* ─── Zone de réponse ────────────────────────────────────────────── */}
         <div className="animate-stagger-3">
           {!canReply ? (
             /* Conversation terminée */
             <div className="flex flex-col items-center gap-3 py-4">
               <div className="w-px h-6 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
-              <p className="font-ui text-xs text-brand-gray/25 text-center leading-relaxed">
-                Cette conversation a atteint sa limite.
-                {message.sender_contact && !isOwner && <><br />Continuez sur un autre canal.</>}
+              <p className="font-ui text-sm text-brand-gray/50 text-center leading-relaxed">
+                Cet échange est arrivé à terme.
+              </p>
+              <p className="font-ui text-xs text-brand-gray/30 text-center leading-relaxed max-w-[18rem]">
+                In Real Society limite chaque conversation à {MAX_THREAD} messages — pour que la suite se passe ailleurs.
+                {message.sender_contact && !isOwner && (
+                  <><br /><br />Continuez sur le canal partagé.</>
+                )}
+                {isOwner && (
+                  <><br /><br />Si la conversation a du potentiel, proposez un canal direct (Instagram, numéro) dans votre dernier message.</>
+                )}
               </p>
             </div>
           ) : isMyTurn ? (

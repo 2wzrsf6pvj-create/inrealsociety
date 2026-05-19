@@ -12,7 +12,6 @@ const PUBLIC_PAGES = new Set([
   '/shop',
   '/confirmation',
   '/register',
-  '/migrate',        // page migration legacy — doit être accessible sans session
   '/auth/login',
   '/auth/callback',
   '/auth/forgot-password',
@@ -35,8 +34,6 @@ const PUBLIC_API_PREFIXES = [
   '/api/order-code',
   '/api/activate',
   '/api/shop/',          // checkout public du shop
-  '/api/member/link',    // liaison legacy — protégée par session dans le handler
-  '/api/member/migrate', // migration email — protégée par admin secret
   '/api/feedback',       // feedback conversation accessible aux scanners anonymes
   '/api/conversation/',  // réponses dans le thread (scanner anonyme)
 ];

@@ -37,7 +37,6 @@ const PUBLIC_ROUTES = [
 /** Routes protégées par un secret header (pas par session) */
 const SECRET_PROTECTED_ROUTES = [
   'api/push/notify',          // INTERNAL_SECRET
-  'api/member/migrate',       // ADMIN_SECRET
   'api/cron/cleanup',         // CRON_SECRET (Vercel Cron)
   'api/cron/scan-reminders',  // CRON_SECRET (Vercel Cron)
 ];
@@ -118,8 +117,6 @@ describe('Sécurité des routes API', () => {
 
       // Skip webhook (validé par signature Stripe)
       if (isWebhookRoute(routeKey)) continue;
-      // Skip migrate (admin one-shot)
-      if (routeKey === 'member/migrate') continue;
       // Skip cron routes (pas de body utilisateur — protégées par secret header)
       if (routeKey.startsWith('cron/')) continue;
 

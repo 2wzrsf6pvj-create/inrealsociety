@@ -196,6 +196,9 @@ export default function ShopClient() {
                 <p className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">Taille</p>
                 <SizeGuide />
               </div>
+              <p className="font-ui text-xxs text-brand-gray/30 -mt-1">
+                Coupe <span className="text-brand-gray/50">oversize</span> · M sélectionné par défaut · prenez votre taille habituelle
+              </p>
               <div className="flex gap-2">
                 {SIZES.map(size => (
                   <button
@@ -243,6 +246,22 @@ export default function ShopClient() {
                 ))}
               </div>
 
+              {/* Livraison & délais — affichés AVANT le CTA pour ne pas surprendre au checkout */}
+              <div className="flex flex-col gap-1.5 py-3 px-4 bg-[#0a0a0a] border border-brand-gray/10 rounded-[2px]">
+                <div className="flex items-center justify-between">
+                  <span className="font-ui text-xxs text-brand-gray/40 tracking-[0.15em] uppercase">Livraison</span>
+                  <span className="font-ui text-xs text-brand-gray/60">5€ standard · 12€ express</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="font-ui text-xxs text-brand-gray/40 tracking-[0.15em] uppercase">Délai</span>
+                  <span className="font-ui text-xs text-brand-gray/60">5-10 j. ouvrés · 2-4 j. en express</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="font-ui text-xxs text-brand-gray/40 tracking-[0.15em] uppercase">Expédition</span>
+                  <span className="font-ui text-xs text-brand-gray/60">UE · UK · USA · Canada</span>
+                </div>
+              </div>
+
               <form onSubmit={handleBuy} className="flex flex-col gap-3">
                 <div className="flex flex-col gap-1">
                   <label className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">Votre email</label>
@@ -270,7 +289,7 @@ export default function ShopClient() {
                 </button>
 
                 <p className="font-ui text-xxs md:text-xs text-brand-gray/20 text-center leading-relaxed">
-                  Paiement sécurisé par Stripe · Livraison 5-7 jours ouvrés
+                  Paiement sécurisé par Stripe · Livraison choisie à l&apos;étape suivante
                 </p>
                 <p className="font-ui text-xxs text-brand-gray/15 text-center leading-relaxed">
                   En commandant, vous acceptez les{' '}
