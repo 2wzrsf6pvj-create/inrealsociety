@@ -17,10 +17,16 @@ export async function getMemberById(id: string): Promise<Member | null> {
   return data as Member;
 }
 
+// L'argument authUserId est conservé dans la signature pour rétrocompat des
+// callers, mais n'est pas utilisé : la RPC get_own_member() utilise auth.uid()
+// de la session courante côté Postgres.
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function getMemberByAuthUserId(authUserId: string): Promise<Member | null> {
-  const { data, error } = await supabase
-    .from('members').select('*').eq('auth_user_id', authUserId).single();
-  if (error) return null;
+  // SECURITY DEFINER RPC (migration 030) — bypass le column-level REVOKE sur
+  // email/stripe_*/plan_expires_at pour permettre au membre de lire son propre
+  // profil complet sans exposer ces colonnes aux autres utilisateurs.
+  const { data, error } = await supabase.rpc('get_own_member').single();
+  if (error || !data) return null;
   return data as Member;
 }
 
