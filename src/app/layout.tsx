@@ -57,10 +57,11 @@ export default function RootLayout({
     <html lang="fr" className={`${cormorant.variable} ${montserrat.variable}`}>
       <head />
       <body className="antialiased bg-brand-black">
+        <a href="#main" className="skip-link">Aller au contenu principal</a>
         <Suspense fallback={null}>
           <PostHogProvider>
             <AuthIndicator />
-            {children}
+            <div id="main">{children}</div>
             <ConsentBanner />
           </PostHogProvider>
         </Suspense>

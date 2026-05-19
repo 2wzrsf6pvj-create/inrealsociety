@@ -30,7 +30,7 @@ function SizeGuide() {
           <div className="bg-[#0a0a0a] border border-brand-gray/15 rounded-[2px] p-6 w-full max-w-xs flex flex-col gap-4" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <p className="font-ui text-xs text-brand-gray/40 tracking-[0.2em] uppercase">Guide des tailles</p>
-              <button onClick={() => setOpen(false)} className="font-ui text-xs text-brand-gray/30 hover:text-brand-white transition-colors">✕</button>
+              <button onClick={() => setOpen(false)} aria-label="Fermer le guide des tailles" className="font-ui text-xs text-brand-gray/30 hover:text-brand-white transition-colors">✕</button>
             </div>
             <p className="font-ui text-xxs text-brand-gray/25">Comfort Colors 1717 — coupe oversize. En cas de doute, prenez votre taille habituelle.</p>
             <table className="w-full">
