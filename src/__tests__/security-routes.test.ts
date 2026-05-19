@@ -32,6 +32,8 @@ const PUBLIC_ROUTES = [
   'api/order/resend-code',
   'api/push/subscribe',
   'api/shop/checkout',
+  'api/health',
+  'api/newsletter',
 ];
 
 /** Routes protégées par un secret header (pas par session) */
@@ -119,6 +121,8 @@ describe('Sécurité des routes API', () => {
       if (isWebhookRoute(routeKey)) continue;
       // Skip cron routes (pas de body utilisateur — protégées par secret header)
       if (routeKey.startsWith('cron/')) continue;
+      // Skip GET-only readonly endpoints (pas de body à valider)
+      if (['health', 'member/export'].includes(routeKey)) continue;
 
       it(`${routeKey} — devrait avoir une validation Zod ou équivalente`, () => {
         const hasZod = content.includes('z.object') || content.includes('z.string');
@@ -138,6 +142,8 @@ describe('Sécurité des routes API', () => {
       if (isWebhookRoute(routeKey)) continue;
       if (isSecretRoute(routeKey)) continue; // push/notify, member/migrate — protégés par secret
       if (['activate', 'order-code', 'member/avatar'].includes(routeKey)) continue;
+      // Health : endpoint readonly idempotent, monitoring uptime ping fréquemment
+      if (routeKey === 'health') continue;
 
       it(`${routeKey} — devrait avoir du rate limiting`, () => {
         const hasRateLimit = content.includes('Ratelimit') ||

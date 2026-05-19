@@ -8,10 +8,11 @@ import { requireAuth, isHttpError } from '@/lib/require-auth';
 import { checkAuthRateLimit, rateLimitHeaders } from '@/lib/ratelimit';
 
 const schema = z.object({
-  name:      z.string().min(1).max(50).trim().optional(),
-  pitch:     z.string().min(1).max(500).trim().optional(),
-  instagram: z.string().max(50).optional(),
-  is_paused: z.boolean().optional(),
+  name:              z.string().min(1).max(50).trim().optional(),
+  pitch:             z.string().min(1).max(500).trim().optional(),
+  instagram:         z.string().max(50).optional(),
+  is_paused:         z.boolean().optional(),
+  marketing_consent: z.boolean().optional(),
 });
 
 export async function PATCH(req: NextRequest) {
@@ -40,9 +41,15 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Profil introuvable.' }, { status: 404 });
     }
 
-    const updateData = { ...body.data };
+    const updateData: Record<string, unknown> = { ...body.data };
     if (updateData.instagram) {
-      updateData.instagram = updateData.instagram.trim().replace(/^@/, '');
+      updateData.instagram = (updateData.instagram as string).trim().replace(/^@/, '');
+    }
+    // RGPD : horodate explicitement le consentement marketing à chaque flip true
+    if (body.data.marketing_consent === true) {
+      updateData.marketing_consent_at = new Date().toISOString();
+    } else if (body.data.marketing_consent === false) {
+      updateData.marketing_consent_at = null;
     }
 
     const { error: updateError } = await supabaseAdmin

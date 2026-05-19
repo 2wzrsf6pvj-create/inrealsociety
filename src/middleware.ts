@@ -36,6 +36,8 @@ const PUBLIC_API_PREFIXES = [
   '/api/shop/',          // checkout public du shop
   '/api/feedback',       // feedback conversation accessible aux scanners anonymes
   '/api/conversation/',  // réponses dans le thread (scanner anonyme)
+  '/api/health',         // healthcheck pour monitoring uptime
+  '/api/newsletter',     // capture email newsletter
 ];
 
 function isPublicRoute(pathname: string): boolean {

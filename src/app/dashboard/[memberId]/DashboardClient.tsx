@@ -470,22 +470,22 @@ function ReferralBlock({ memberId }: { memberId: string }) {
 
 function SettingsSection({ member }: { member: Member }) {
   const [isPaused,    setIsPaused]    = useState(member.is_paused);
+  const [marketingConsent, setMarketingConsent] = useState(member.marketing_consent ?? false);
   const [saving,      setSaving]      = useState(false);
   const [saved,       setSaved]       = useState(false);
 
   const [pauseError, setPauseError] = useState('');
 
-  const togglePause = async () => {
+  const updateField = async (patch: Record<string, unknown>) => {
     setSaving(true);
     setPauseError('');
     try {
       const res = await fetch('/api/member/update', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ is_paused: !isPaused }),
+        body: JSON.stringify(patch),
       });
       if (res.ok) {
-        setIsPaused(!isPaused);
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
       } else {
@@ -496,6 +496,18 @@ function SettingsSection({ member }: { member: Member }) {
       setPauseError('Erreur réseau.');
     }
     setSaving(false);
+  };
+
+  const togglePause = () => {
+    const next = !isPaused;
+    setIsPaused(next);
+    updateField({ is_paused: next });
+  };
+
+  const toggleMarketing = () => {
+    const next = !marketingConsent;
+    setMarketingConsent(next);
+    updateField({ marketing_consent: next });
   };
 
   return (
@@ -525,6 +537,31 @@ function SettingsSection({ member }: { member: Member }) {
         </div>
         {saved && <p className="font-ui text-xs text-green-400/60">Sauvegardé.</p>}
         {pauseError && <p className="font-ui text-xs text-red-400">{pauseError}</p>}
+      </div>
+
+      {/* Communications email (consent marketing — distinct du consent analytics) */}
+      <div className="w-full bg-[#080808] border border-brand-gray/10 rounded-[2px] p-4 flex flex-col gap-3">
+        <div className="flex items-center gap-3 w-full">
+          <div className="flex-1 h-px bg-brand-gray/10" />
+          <span className="font-ui text-xs text-brand-gray/30 tracking-[0.18em] uppercase">communications</span>
+          <div className="flex-1 h-px bg-brand-gray/10" />
+        </div>
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-0.5">
+            <p className="font-ui text-sm text-brand-white/80">Newsletter et actualités</p>
+            <p className="font-ui text-xs text-brand-gray/40 leading-relaxed">
+              Recevoir les nouveautés produit, mises à jour de l&apos;app et événements. Indépendant des emails transactionnels (codes, réponses).
+            </p>
+          </div>
+          <button
+            onClick={toggleMarketing}
+            disabled={saving}
+            aria-label={marketingConsent ? 'Désactiver les emails marketing' : 'Activer les emails marketing'}
+            className={`w-10 h-5 rounded-full transition-colors flex-shrink-0 relative ${marketingConsent ? 'bg-brand-white/60' : 'bg-brand-gray/20'}`}
+          >
+            <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${marketingConsent ? 'left-5' : 'left-0.5'}`} />
+          </button>
+        </div>
       </div>
 
       {/* Premium */}
@@ -571,8 +608,11 @@ function SettingsSection({ member }: { member: Member }) {
       {/* Déconnexion */}
       <LogoutButton />
 
-      {/* Suppression de compte */}
-      <DeleteAccountButton />
+      {/* Export RGPD + Suppression de compte */}
+      <div className="flex flex-col items-center gap-1 mt-2">
+        <ExportDataLink />
+        <DeleteAccountButton />
+      </div>
     </div>
   );
 }
@@ -673,6 +713,18 @@ function LogoutButton() {
         Confirmer
       </button>
     </div>
+  );
+}
+
+function ExportDataLink() {
+  return (
+    <a
+      href="/api/member/export"
+      download
+      className="font-ui text-xxs text-brand-gray/25 tracking-[0.1em] underline underline-offset-4 hover:text-brand-gray/60 transition-colors py-2"
+    >
+      Télécharger mes données (RGPD)
+    </a>
   );
 }
 

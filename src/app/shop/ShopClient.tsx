@@ -10,6 +10,70 @@ type TshirtSize  = 'S' | 'M' | 'L' | 'XL' | 'XXL';
 const SIZES: TshirtSize[] = ['S', 'M', 'L', 'XL', 'XXL'];
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+function NewsletterCapture({ source }: { source: string }) {
+  const [email, setEmail]     = useState('');
+  const [sending, setSending] = useState(false);
+  const [done, setDone]       = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim() || sending) return;
+    setSending(true);
+    try {
+      await fetch('/api/newsletter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), source }),
+      });
+    } catch { /* silencieux */ }
+    setSending(false);
+    setDone(true);
+  };
+
+  if (done) {
+    return (
+      <div className="flex flex-col items-center gap-2 text-center">
+        <p className="font-display text-lg font-light italic text-brand-gray/60">
+          Vous serez prévenu·e.
+        </p>
+        <p className="font-ui text-xs text-brand-gray/30">
+          Pas de spam, juste les vrais moments du projet.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3 max-w-sm mx-auto">
+      <div className="text-center flex flex-col gap-1">
+        <p className="font-ui text-xs text-brand-gray/30 tracking-[0.25em] uppercase">Pas encore prêt·e ?</p>
+        <p className="font-display text-xl md:text-2xl font-light text-brand-gray/70">
+          Restez informé·e du lancement et des prochaines collections.
+        </p>
+      </div>
+      <div className="flex gap-2">
+        <input
+          type="email"
+          placeholder="votre@email.com"
+          value={email}
+          onChange={e => setEmail(e.target.value)}
+          required
+          className="flex-1 bg-transparent border-b border-brand-gray/20 focus:border-brand-white/50 text-brand-white font-ui font-light text-sm py-3 outline-none transition-colors placeholder:text-brand-gray/20"
+          style={{ minHeight: '44px' }}
+        />
+        <button type="submit" disabled={sending || !email.trim()}
+          className="px-5 py-3 border border-brand-gray/25 hover:border-brand-white/60 font-ui text-xs tracking-[0.15em] uppercase text-brand-gray/60 hover:text-brand-white rounded-[2px] transition-colors disabled:opacity-40"
+          style={{ minHeight: '44px' }}>
+          {sending ? '...' : 'OK'}
+        </button>
+      </div>
+      <p className="font-ui text-xxs text-brand-gray/20 text-center">
+        Désabonnable à tout moment via le lien dans chaque email.
+      </p>
+    </form>
+  );
+}
+
 function SizeGuide() {
   const [open, setOpen] = useState(false);
   const sizes = [
@@ -357,6 +421,11 @@ export default function ShopClient() {
               ))}
             </div>
           </div>
+        </section>
+
+        {/* Capture newsletter pour les visiteurs pas prêts à acheter */}
+        <section className="py-12 border-t border-brand-gray/10 animate-stagger-4">
+          <NewsletterCapture source="shop_inline" />
         </section>
 
         <footer className="py-12 border-t border-brand-gray/10 flex flex-col gap-4">
