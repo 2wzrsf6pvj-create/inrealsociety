@@ -189,6 +189,13 @@ export default function CGVPage() {
             L&apos;Acheteur peut également recourir à la plateforme européenne de règlement des litiges
             en ligne : <span className="text-brand-white/70">ec.europa.eu/consumers/odr</span>.
           </p>
+          <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
+            Conformément aux articles L611-1 à L616-3 du Code de la consommation, l&apos;Acheteur peut
+            également faire appel au médiateur de la consommation indiqué dans nos{' '}
+            <Link href="/mentions-legales" className="underline underline-offset-4 hover:text-brand-white transition-colors">
+              mentions légales
+            </Link>.
+          </p>
         </section>
 
         {/* Retour */}

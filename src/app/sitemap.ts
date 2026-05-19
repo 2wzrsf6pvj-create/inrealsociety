@@ -15,6 +15,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/manifeste`,        lastModified: now, changeFrequency: 'monthly', priority: 0.6 },
     { url: `${baseUrl}/cgv`,              lastModified: now, changeFrequency: 'yearly',  priority: 0.2 },
     { url: `${baseUrl}/confidentialite`,  lastModified: now, changeFrequency: 'yearly',  priority: 0.2 },
+    { url: `${baseUrl}/mentions-legales`, lastModified: now, changeFrequency: 'yearly',  priority: 0.2 },
   ];
 
   // Profils publics actifs — limite à 5000 pour rester sous la limite Google (50k urls / sitemap).

@@ -1,36 +1,245 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# In Real Society
 
-## Getting Started
+> Le premier vêtement conçu pour les rencontres dans la vraie vie.
+> Pas d'algorithme. Pas de swipe. Un QR code, une rencontre.
 
-First, run the development server:
+## Stack
+
+- **Framework** : Next.js 14 (App Router) + TypeScript strict
+- **Auth + DB** : Supabase (Postgres + RLS + Auth + Storage)
+- **Paiements** : Stripe (one-shot t-shirt + abonnement premium)
+- **Emails** : Resend (transactionnels)
+- **POD** : Printful (impression à la demande)
+- **Modération** : OpenAI Moderation API (fallback regex)
+- **Analytics** : PostHog Cloud EU (RGPD, consent-gated)
+- **Errors** : Sentry
+- **Rate limiting** : Upstash Redis
+- **Push** : Web Push API + VAPID
+- **PWA** : service worker + manifest
+
+---
+
+## Démarrage rapide
+
+### 1. Cloner et installer
+
+```bash
+git clone <repo-url>
+cd inrealsociety-main
+npm install
+```
+
+### 2. Variables d'environnement
+
+Copier `.env.example` en `.env.local` et remplir les valeurs :
+
+```bash
+cp .env.example .env.local
+```
+
+Variables **obligatoires** pour démarrer :
+
+| Variable | Où la trouver |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Supabase Dashboard → Settings → API |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase Dashboard → Settings → API |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase Dashboard → Settings → API ⚠️ secret |
+| `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` en local |
+
+> Sans Supabase, le serveur démarre quand même (placeholders) mais les pages
+> dynamiques crashent à la query. Voir [src/lib/supabase-config.ts](src/lib/supabase-config.ts).
+
+Variables **recommandées** pour activer toutes les features (Stripe, emails,
+push, analytics, etc.) : voir `.env.example` — chaque section a un commentaire
+expliquant où récupérer la clé.
+
+### 3. Appliquer les migrations Supabase
+
+Depuis [supabase/migrations/](supabase/migrations/), appliquer **dans l'ordre numérique**
+via le SQL editor du dashboard Supabase ou la CLI :
+
+```bash
+supabase db push
+```
+
+Migrations critiques :
+- `015_schema_complet.sql` : schéma de référence
+- `025_fuse_reply_into_thread.sql` : backfill thread + view `member_inbox`
+- `026_rls_audit.sql` : durcissement RLS (anon)
+- `029_drop_legacy_reply_columns.sql` : drop colonnes legacy ⚠️ **après 2 semaines d'observation post-025**
+- `030_rls_members_complete.sql` : RLS members + RPC `get_own_member`
+
+### 4. Lancer le serveur de dev
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+→ http://localhost:3000
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Scripts
 
-## Learn More
+| Commande | Description |
+|---|---|
+| `npm run dev` | Serveur de développement Next.js |
+| `npm run build` | Build production |
+| `npm run start` | Serve le build prod |
+| `npm run lint` | ESLint |
+| `npm test` | Tests unitaires (vitest) |
+| `npm run test:watch` | Vitest en watch mode |
+| `npm run test:e2e` | Tests E2E Playwright (smoke + tunnel) |
+| `npm run test:e2e:ui` | Playwright en mode UI interactive |
+| `npm run analyze` | Build avec bundle analyzer (3 rapports HTML) |
 
-To learn more about Next.js, take a look at the following resources:
+Pour les tests E2E du tunnel achat complet (Stripe test mode + Supabase test) :
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+TEST_E2E_FULL=1 npm run test:e2e
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## Architecture
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```
+src/
+├── app/                           # Next.js App Router
+│   ├── api/                       # Routes API (~30 endpoints)
+│   │   ├── shop/checkout/         # Achat t-shirt
+│   │   ├── subscription/checkout/ # Premium subscription
+│   │   ├── webhook/stripe/        # Webhook Stripe (events business critiques)
+│   │   ├── member/                # CRUD profile + export RGPD + delete
+│   │   ├── push/                  # Web Push subscribe + notify
+│   │   ├── cron/                  # Cron jobs Vercel (cleanup, scan-reminders)
+│   │   └── health/                # Healthcheck pour monitoring uptime
+│   ├── dashboard/[memberId]/      # Espace membre (Home + Inbox + Settings)
+│   ├── profil/[memberId]/         # Profil public + OG image dynamique
+│   ├── shop/                      # Tunnel d'achat
+│   ├── conversation/[messageId]/  # Thread scanner ↔ membre
+│   └── components/                # Provider PostHog, ConsentBanner, etc.
+├── lib/                           # Helpers serveur partagés
+│   ├── supabase.ts                # Client anon (lectures)
+│   ├── supabase-admin.ts          # Client service_role (mutations)
+│   ├── fulfillment.ts             # QR + Printful (post-activation)
+│   ├── moderation.ts              # OpenAI + fallback regex
+│   ├── push-notify.ts             # Web Push helper
+│   ├── audit.ts                   # Audit logs
+│   ├── ratelimit.ts               # Upstash Redis rate limit
+│   └── env.ts                     # Validation env vars au boot
+├── __tests__/                     # Tests unitaires vitest
+└── middleware.ts                  # Auth + cookies + redirect
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+supabase/migrations/               # SQL versionné (~30 fichiers, ordre numérique)
+e2e/                               # Tests Playwright
+public/
+├── sw.js                          # Service worker (push + PWA cache)
+├── manifest.json                  # PWA manifest
+└── .well-known/security.txt       # Signalement de faille
+docs/                              # Guides ops (monitoring, perf, email DNS)
+```
+
+---
+
+## Déploiement
+
+### Vercel (recommandé)
+
+1. Connecter le repo GitHub à Vercel
+2. Importer toutes les env vars du `.env.local` dans Vercel Dashboard → Settings → Environment Variables
+3. **Pour Vercel Cron** : ajouter `CRON_SECRET` (Vercel injecte auto dans le header `Authorization: Bearer`)
+4. Push sur `main` → déploiement auto
+
+### Webhook Stripe
+
+Dans Stripe Dashboard → Developers → Webhooks → Add endpoint :
+- URL : `https://inrealsociety.com/api/webhook/stripe`
+- Events :
+  - `checkout.session.completed` (achat + subscription)
+  - `customer.subscription.updated`
+  - `customer.subscription.deleted`
+  - `charge.refunded`
+  - `invoice.payment_failed`
+- Copier le `whsec_...` dans `STRIPE_WEBHOOK_SECRET`
+
+### Configuration des services tiers
+
+Avant lancement public :
+- [docs/EMAIL_DELIVERABILITY.md](docs/EMAIL_DELIVERABILITY.md) — DNS SPF/DKIM/DMARC
+- [docs/MONITORING.md](docs/MONITORING.md) — Uptime + Sentry alerts
+- [docs/PERFORMANCE.md](docs/PERFORMANCE.md) — Lighthouse + bundle budget
+
+---
+
+## Sécurité
+
+- **RLS Supabase** activée sur toutes les tables (voir migrations `001-011` + `026` + `030`)
+- **Rate limiting** sur toutes les routes mutables (Upstash Redis, double IP + userId)
+- **CSP** stricte dans `next.config.mjs` (whitelist Stripe/Supabase/PostHog/Sentry)
+- **Audit logs** sur les actions sensibles (table `audit_logs`)
+- **Modération** des messages via OpenAI (fallback regex sans clé)
+- **Idempotence** Stripe webhook (vérification status + row count)
+- **Push tokens** validés VAPID
+- **Cron secret** pour les endpoints `/api/cron/*` (Vercel inject `Authorization: Bearer`)
+- **Pre-commit hook** husky + lint-staged (eslint --fix)
+
+Signaler une faille : voir [public/.well-known/security.txt](public/.well-known/security.txt).
+
+---
+
+## Données personnelles & RGPD
+
+- **Politique de confidentialité** : `/confidentialite` ([page](src/app/confidentialite/page.tsx))
+- **Mentions légales** : `/mentions-legales` ([page](src/app/mentions-legales/page.tsx))
+- **Consent banner** PostHog opt-in par défaut (CNIL)
+- **Marketing consent** séparé (`members.marketing_consent`)
+- **GDPR export** : `GET /api/member/export` (JSON download)
+- **GDPR delete** : `DELETE /api/member/delete` (suppression complète + Storage)
+- **Cleanup auto** : `cleanup_old_data()` (audit_logs 12 mois, activation_codes orphelins 90j, scans 24 mois)
+
+---
+
+## Tests
+
+Stack actuelle :
+- **Unitaires** (vitest) : 270+ tests, dont security-routes auto-discover
+- **E2E** (Playwright) : smoke tests pages publiques + skeleton tunnel
+- **CI** (GitHub Actions) : lint + typecheck + vitest + build + playwright sur PR
+
+Couverture explicite :
+- ✅ `src/lib/moderation.ts` — chemins OpenAI + fallback regex
+- ✅ `src/lib/fulfillment.ts` — idempotence Printful
+- ✅ `src/lib/generate-qr-svg.ts` — génération QR premium
+- ✅ Routes API : auth + validation + rate limit + mutations admin-only
+- ⚠️ Tunnel E2E complet (achat → activation → scan) : skeleton à finir avec Stripe test mode
+
+---
+
+## Conventions de code
+
+- **TypeScript strict** partout (`tsconfig.json` strict: true)
+- **Server Components** par défaut ; `'use client'` uniquement si interactivité
+- **`supabase`** (anon) pour les lectures publiques, **`supabaseAdmin`** (service_role) pour toute mutation
+- **Validation Zod** sur tous les bodies POST/PATCH
+- **Rate limit** systématique sur les routes publiques (IP) ou auth (userId)
+- **Audit log** sur les actions sensibles (`@/lib/audit`)
+- **No backwards-compat hacks** : si une feature change, on migre les données + on supprime le legacy proprement
+
+---
+
+## Roadmap connue
+
+Items en attente après l'audit complet 2026-05 :
+
+**Critique côté humain** : remplir mentions légales (SIRET, médiateur conso), configurer DNS email (SPF/DKIM/DMARC), tester E2E tunnel complet avec Stripe.
+
+**Nice-to-have** : refacto WCAG contrastes (palette grise), i18n (currently FR-only), visual regression tests, annual subscription, gift purchases.
+
+---
+
+## Contact
+
+- **Site** : https://inrealsociety.com
+- **Email** : hello@inrealsociety.com
+- **Sécurité** : security@inrealsociety.com
