@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { checkPublicRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
 
 const schema = z.object({
   code: z.string().min(6).max(12).toUpperCase(),
@@ -12,6 +13,14 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
+    const rl = await checkPublicRateLimit(getIp(req));
+    if (!rl.success) {
+      return NextResponse.json(
+        { valid: false, error: 'Trop de tentatives. Réessayez dans quelques minutes.' },
+        { status: 429, headers: rateLimitHeaders(rl) },
+      );
+    }
+
     const body = schema.safeParse(await req.json());
     if (!body.success) {
       return NextResponse.json({ valid: false, error: 'Code invalide.' }, { status: 400 });

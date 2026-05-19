@@ -29,6 +29,7 @@ const PUBLIC_ROUTES = [
   'api/silent-view',
   'api/activate',
   'api/order-code',
+  'api/order/resend-code',
   'api/push/subscribe',
   'api/shop/checkout',
 ];

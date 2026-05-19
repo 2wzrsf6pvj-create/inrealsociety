@@ -94,6 +94,56 @@ function CodeField({ code, codeOk, codeErr, checking, onChange }: {
 
 // ─── Étape 1 : Activation + Compte (visiteur non connecté) ───────────────────
 
+function ResendCodeBlock() {
+  const [open,    setOpen]    = useState(false);
+  const [email,   setEmail]   = useState('');
+  const [sending, setSending] = useState(false);
+  const [done,    setDone]    = useState(false);
+
+  const handleResend = async () => {
+    if (!email.trim()) return;
+    setSending(true);
+    try {
+      await fetch('/api/order/resend-code', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ email: email.trim() }),
+      });
+    } catch { /* ignore */ }
+    setSending(false);
+    setDone(true);
+  };
+
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)}
+        className="font-ui text-xxs md:text-xs text-brand-gray/20 underline underline-offset-4 hover:text-brand-gray/50 transition-colors -mt-2 self-start">
+        Code perdu ? Renvoyer l&apos;email.
+      </button>
+    );
+  }
+
+  if (done) {
+    return (
+      <p className="font-ui text-xxs md:text-xs text-brand-gray/40 -mt-2">
+        Si une commande correspond à cet email, vous recevrez le code dans quelques minutes.
+      </p>
+    );
+  }
+
+  return (
+    <div className="flex items-end gap-2 -mt-2">
+      <input type="email" placeholder="votre@email.com" value={email} onChange={e => setEmail(e.target.value)}
+        className="flex-1 bg-transparent border-b border-brand-gray/20 focus:border-brand-white/50 font-ui font-light text-sm text-brand-white py-2 outline-none transition-colors"
+        style={{ minHeight: '36px' }} />
+      <button type="button" onClick={handleResend} disabled={sending || !email.trim()}
+        className="font-ui text-xxs tracking-[0.15em] uppercase text-brand-gray/40 hover:text-brand-white/70 transition-colors disabled:opacity-40 py-2">
+        {sending ? '...' : 'Envoyer'}
+      </button>
+    </div>
+  );
+}
+
 function StepAccount({ onNext, codeState }: {
   onNext: () => void;
   codeState: ReturnType<typeof useCodeValidation>;
@@ -130,6 +180,7 @@ function StepAccount({ onNext, codeState }: {
       </div>
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         <CodeField {...codeState} onChange={codeState.handleChange} />
+        <ResendCodeBlock />
         <p className="font-ui text-xxs md:text-xs text-brand-gray/20 -mt-3">
           Pas encore de t-shirt ? <a href="/shop" className="underline underline-offset-4 hover:text-brand-gray/50 transition-colors">Commander</a>
         </p>

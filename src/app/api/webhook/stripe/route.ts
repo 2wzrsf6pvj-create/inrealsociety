@@ -64,6 +64,11 @@ export async function POST(req: NextRequest) {
         await handleSubscriptionChange(subscription);
         break;
       }
+      case 'charge.refunded': {
+        const charge = event.data.object as Stripe.Charge;
+        await handleChargeRefunded(charge);
+        break;
+      }
     }
   } catch (err) {
     console.error('[webhook] Erreur traitement:', err);
@@ -108,7 +113,11 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
 
   const code = await generateUniqueActivationCode();
 
-  const { error: orderError } = await supabaseAdmin
+  // UPDATE optimiste : si une autre invocation a déjà flippé l'order en 'paid'
+  // entre la lecture ci-dessus et maintenant, .neq('status', 'paid') retourne 0
+  // lignes. On rollback alors le code qu'on vient d'insérer pour éviter le bloat,
+  // et on return sans envoyer l'email (l'autre invocation s'en est chargée).
+  const { data: updated, error: orderError } = await supabaseAdmin
     .from('orders')
     .update({
       status:            'paid',
@@ -117,9 +126,21 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
       tshirt_color:      tshirtColor,
     })
     .eq('stripe_session_id', sessionId)
-    .neq('status', 'paid');
+    .neq('status', 'paid')
+    .select('id');
 
-  if (orderError) console.error('[webhook] Erreur mise à jour order:', orderError);
+  if (orderError) {
+    console.error('[webhook] Erreur mise à jour order:', orderError);
+    await supabaseAdmin.from('activation_codes').delete().eq('code', code);
+    return;
+  }
+
+  if (!updated || updated.length === 0) {
+    // Race lost : un autre webhook a déjà finalisé cet order
+    console.log('[webhook] Race lost on session', sessionId, '— code rollback');
+    await supabaseAdmin.from('activation_codes').delete().eq('code', code);
+    return;
+  }
 
   const appUrl = APP_URL;
   const { subject, html } = emailActivation({
@@ -172,6 +193,62 @@ async function generateUniqueActivationCode(): Promise<string> {
     if (error.code !== '23505') throw new Error(`Erreur insertion code: ${error.message}`);
   }
   throw new Error(`Impossible de générer un code unique après ${MAX_ATTEMPTS} tentatives.`);
+}
+
+// ─── Handler refund ──────────────────────────────────────────────────────────
+
+async function handleChargeRefunded(charge: Stripe.Charge): Promise<void> {
+  const paymentIntent = typeof charge.payment_intent === 'string'
+    ? charge.payment_intent
+    : charge.payment_intent?.id;
+
+  if (!paymentIntent) {
+    console.warn('[webhook] charge.refunded sans payment_intent — ignoré');
+    return;
+  }
+
+  const { data: order } = await supabaseAdmin
+    .from('orders')
+    .select('id, status, activation_code')
+    .eq('stripe_payment_id', paymentIntent)
+    .maybeSingle();
+
+  if (!order) {
+    // Probablement un refund de subscription (géré par customer.subscription.deleted)
+    console.log('[webhook] charge.refunded sans order match — payment_intent:', paymentIntent);
+    return;
+  }
+
+  if (order.status === 'refunded') {
+    console.log('[webhook] Order déjà refunded:', order.id);
+    return;
+  }
+
+  await supabaseAdmin
+    .from('orders')
+    .update({ status: 'refunded' })
+    .eq('id', order.id);
+
+  // Si le code n'a pas encore été consommé, on l'invalide en le supprimant.
+  // Si déjà utilisé : le profil existe, on ne touche pas (refund commercial,
+  // pas annulation technique — décision business à arbitrer côté support).
+  if (order.activation_code) {
+    const { data: codeRow } = await supabaseAdmin
+      .from('activation_codes')
+      .select('used')
+      .eq('code', order.activation_code)
+      .maybeSingle();
+    if (codeRow && !codeRow.used) {
+      await supabaseAdmin.from('activation_codes').delete().eq('code', order.activation_code);
+    }
+  }
+
+  audit({
+    action:   'order.refunded',
+    metadata: { orderId: order.id, paymentIntent, amountRefunded: charge.amount_refunded },
+  });
+
+  console.log('[webhook] Order', order.id, 'refunded');
 }
 
 // ─── Handlers abonnement premium ─────────────────────────────────────────────
