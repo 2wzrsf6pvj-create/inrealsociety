@@ -32,7 +32,14 @@ export const MANIFESTO_BLOCKS = [
   },
   {
     label: "Le pacte",
-    title: "Portez-le et vivez.",
-    body: "Ce n'est pas un gadget. C'est un engagement. Celui de sortir, de circuler, d'exister dans l'espace public avec l'intention d'être vu — pas sur un écran, mais dans la vraie vie.",
+    title: "Vous êtes le profil.",
+    body: "Ici, rien à remplir. Pas de bio à fignoler, pas de photos retouchées. Votre présence dans la rue, c'est votre profil. Votre démarche, votre regard, votre façon de prendre la lumière du jour — c'est ce que l'autre verra avant de scanner. Tout le reste est superflu.\n\nCe n'est pas un gadget. C'est un engagement à exister dans l'espace public avec l'intention d'être vu — pas par un algorithme, mais par un autre regard.",
+  },
+  {
+    // ⚠️ À COMPLÉTER : remplis les placeholders ci-dessous avec ta vraie histoire.
+    // Sans visage derrière la voix, le manifeste reste anonyme et perd en confiance.
+    label: "Qui parle",
+    title: "[Prénom], fondateur.",
+    body: "[À COMPLÉTER — 2 phrases : qui tu es, où tu vis, et la rencontre manquée concrète qui t'a poussé à créer In Real Society. Un vrai souvenir, pas une généralité.]\n\n[À COMPLÉTER — 1 phrase d'intention : ce que tu veux que la personne ressente quand elle porte le vêtement et croise un regard.]",
   },
 ];

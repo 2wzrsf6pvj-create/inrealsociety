@@ -136,14 +136,20 @@ export default function ManifestePage() {
             </p>
             <div className="flex flex-col gap-3 w-full max-w-xs mt-4">
               <Link
-                href="/register"
+                href="/shop"
                 className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-200 active:scale-[0.98] transition-all duration-200 block text-center"
               >
-                Rejoindre le club
+                Commander le vêtement
+              </Link>
+              <Link
+                href="/register"
+                className="w-full py-3 border border-brand-gray/25 hover:border-brand-white/60 font-ui text-xs tracking-[0.2em] uppercase text-brand-gray/60 hover:text-brand-white rounded-[1px] transition-colors block text-center"
+              >
+                J&apos;ai déjà un code · M&apos;inscrire
               </Link>
               <Link
                 href="/cgv"
-                className="font-ui text-xs text-brand-gray/25 tracking-[0.1em] text-center hover:text-brand-gray/50 transition-colors"
+                className="font-ui text-xs text-brand-gray/25 tracking-[0.1em] text-center hover:text-brand-gray/50 transition-colors mt-2"
               >
                 Conditions Générales de Vente
               </Link>
