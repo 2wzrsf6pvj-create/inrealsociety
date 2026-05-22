@@ -25,23 +25,31 @@ const PUBLIC_PAGE_PREFIXES = [
   '/r/',       // redirections URL courtes (QR codes t-shirts)
 ];
 
-const PUBLIC_API_PREFIXES = [
-  '/api/webhook/',
-  '/api/message',
+// Routes API publiques à match EXACT — évite qu'un préfixe trop large rende
+// publique une route voisine (ex. /api/message ne doit PAS couvrir
+// /api/messages, l'inbox authentifiée).
+const PUBLIC_API_EXACT = new Set([
+  '/api/message',        // envoi message scanner anonyme
   '/api/scan',
   '/api/silent-view',
-  '/api/push/',
   '/api/order-code',
   '/api/activate',
-  '/api/shop/',          // checkout public du shop
   '/api/feedback',       // feedback conversation accessible aux scanners anonymes
-  '/api/conversation/',  // réponses dans le thread (scanner anonyme)
   '/api/health',         // healthcheck pour monitoring uptime
   '/api/newsletter',     // capture email newsletter
+]);
+
+// Vrais préfixes (familles de routes avec sous-chemins).
+const PUBLIC_API_PREFIXES = [
+  '/api/webhook/',
+  '/api/push/',
+  '/api/shop/',          // checkout public du shop
+  '/api/conversation/',  // réponses dans le thread (scanner anonyme)
 ];
 
 function isPublicRoute(pathname: string): boolean {
   if (PUBLIC_PAGES.has(pathname)) return true;
+  if (PUBLIC_API_EXACT.has(pathname)) return true;
   if (PUBLIC_PAGE_PREFIXES.some(p => pathname.startsWith(p))) return true;
   if (PUBLIC_API_PREFIXES.some(p => pathname.startsWith(p))) return true;
   return false;

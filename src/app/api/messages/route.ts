@@ -7,6 +7,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, requireOwnership, isHttpError } from '@/lib/require-auth';
 import { getMessages } from '@/lib/inbox';
 
+// Pas de rate-limit ici volontairement : route en LECTURE seule, gated par
+// requireAuth + requireOwnership (un membre ne lit que sa propre inbox). Le
+// limiteur auth (5/10min) casserait la pagination « charger plus ». Le coût
+// d'abus est nul (données propres au membre).
 export async function GET(req: NextRequest) {
   try {
     const auth = await requireAuth(req);

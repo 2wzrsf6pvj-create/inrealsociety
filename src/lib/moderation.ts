@@ -6,12 +6,31 @@
 //
 // Sans clé, on garde le comportement historique (regex sur liste de mots).
 
+// Fallback regex — liste haute précision (OpenAI gère le contexte/la nuance).
+// Stockés SANS accent : le contenu est dé-accentué (NFD) avant comparaison.
+// Volontairement exclus car légitimes dans un contexte de rencontre :
+//   retrouver, adresse, suivre, mort, baiser, sexe, cul → délégués à OpenAI.
 const BANNED_WORDS = [
-  'salope', 'pute', 'connasse', 'bitch', 'whore', 'slut',
-  'viol', 'rape', 'tuer', 'kill', 'mort', 'suicide',
-  'nique', 'fuck', 'baiser', 'sexe', 'cul',
-  'menacer', 'adresse', 'retrouver', 'suivre',
+  // Insultes FR
+  'salope', 'salopard', 'pute', 'putain', 'connard', 'connasse',
+  'encule', 'enculer', 'enfoire', 'batard',
+  // Slurs FR
+  'pede', 'tapette', 'negre', 'bougnoule',
+  // Abréviations vulgaires
+  'ntm', 'fdp', 'tg',
+  // Insultes / slurs EN
+  'bitch', 'whore', 'slut', 'cunt', 'fuck', 'fucker', 'faggot', 'nigger',
+  // Agression sexuelle
+  'viol', 'violer', 'pedophile', 'nique', 'niquer',
+  // Violence / menaces
+  'tuer', 'tue', 'crever', 'buter', 'egorger', 'menacer', 'kill',
+  // Auto-mutilation
+  'suicide', 'suicider',
 ];
+
+// Frontière de mot + pluriel optionnel : bloque « salope(s) », « te suivre »,
+// mais plus « technique », « culture », « violet », « râpé », « situer »…
+const BANNED_PATTERN = new RegExp(`\\b(?:${BANNED_WORDS.join('|')})s?\\b`);
 
 export interface ModerationResult {
   flagged:    boolean;
@@ -20,8 +39,8 @@ export interface ModerationResult {
 }
 
 function regexCheck(content: string): boolean {
-  const lower = content.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-  return BANNED_WORDS.some(word => lower.includes(word));
+  const normalized = content.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  return BANNED_PATTERN.test(normalized);
 }
 
 export async function moderateContent(content: string): Promise<ModerationResult> {

@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { requireAuth, isHttpError } from '@/lib/require-auth';
+import { checkAuthRateLimit, rateLimitHeaders } from '@/lib/ratelimit';
 
 const MAX_SIZE = 5 * 1024 * 1024; // 5 Mo
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -13,6 +14,12 @@ export async function POST(req: NextRequest) {
   try {
     const auth = await requireAuth(req);
     if (isHttpError(auth)) return auth;
+
+    // ─── Rate limit : upload de fichier coûteux (storage/bande passante) ──
+    const rl = await checkAuthRateLimit(auth.user.id);
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Trop de requêtes.' }, { status: 429, headers: rateLimitHeaders(rl) });
+    }
 
     // ─── Récupère le membre lié à ce user ─────────────────────────────────
     const { data: member } = await supabaseAdmin

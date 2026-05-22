@@ -12,6 +12,7 @@ import { broadcastThreadMessage } from '@/lib/realtime-broadcast';
 import { audit } from '@/lib/audit';
 import { getIp, checkAuthRateLimit, rateLimitHeaders } from '@/lib/ratelimit';
 import { isValidEmail, isInstagramHandle } from '@/lib/validators';
+import { moderateContent } from '@/lib/moderation';
 
 const schema = z.object({
   messageId: z.string().uuid(),
@@ -52,6 +53,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Message introuvable' }, { status: 404 });
     }
 
+    // Modération de la réponse membre (cohérence avec le message racine).
+    const moderation = await moderateContent(reply);
+
     // Insère la réponse comme message thread (author='member'). Anciennement
     // un UPDATE de messages.reply — désormais unifié avec /api/conversation/reply.
     // La vue member_inbox expose toujours .reply pour la dashboard inbox.
@@ -63,26 +67,15 @@ export async function POST(req: NextRequest) {
         author:         'member',
         content:        reply.trim(),
         is_quick_reply: false,
-        moderated:      false,
+        moderated:      moderation.flagged,
       })
       .select('id')
       .single();
 
     if (insertErr) throw insertErr;
 
-    // Realtime fire-and-forget — diffuse au canal du thread (le scanner anon
-    // reçoit la réponse en direct sans lecture DB, donc sans blocage RLS).
-    if (newMsg?.id) {
-      broadcastThreadMessage(messageId, {
-        id:         newMsg.id,
-        content:    reply.trim(),
-        author:     'member',
-        created_at: new Date().toISOString(),
-      }).catch(() => {});
-    }
-
     audit({
-      action:   'reply.sent',
+      action:   moderation.flagged ? 'message.moderated' : 'reply.sent',
       memberId,
       ip,
       metadata: { messageId },
@@ -91,30 +84,44 @@ export async function POST(req: NextRequest) {
     const contact = msg.sender_contact?.trim();
     let emailSent = false;
 
-    if (contact && isValidEmail(contact)) {
-      const { data: memberData } = await supabaseAdmin
-        .from('members').select('name').eq('id', memberId).single();
+    // Si modéré : stocké (moderated:true, masqué) mais NON diffusé ni notifié.
+    if (!moderation.flagged) {
+      // Realtime fire-and-forget — diffuse au canal du thread (scanner anon
+      // reçoit la réponse en direct sans lecture DB, donc sans blocage RLS).
+      if (newMsg?.id) {
+        broadcastThreadMessage(messageId, {
+          id:         newMsg.id,
+          content:    reply.trim(),
+          author:     'member',
+          created_at: new Date().toISOString(),
+        }).catch(() => {});
+      }
 
-      const appUrl = APP_URL;
-      const { subject, html } = emailReponse({
-        memberName: memberData?.name || 'Ce membre',
-        reply:      reply.trim(),
-        convUrl:    `${appUrl}/conversation/${messageId}`,
-      });
+      if (contact && isValidEmail(contact)) {
+        const { data: memberData } = await supabaseAdmin
+          .from('members').select('name').eq('id', memberId).single();
 
-      emailSent = await sendEmail({ to: contact, subject, html });
+        const { subject, html } = emailReponse({
+          memberName: memberData?.name || 'Ce membre',
+          reply:      reply.trim(),
+          convUrl:    `${APP_URL}/conversation/${messageId}`,
+        });
+
+        emailSent = await sendEmail({ to: contact, subject, html });
+      }
+
+      // Push notification fire-and-forget — scanners qui ont activé les notifs.
+      notifyThreadSubscribers({
+        messageId,
+        title: 'Nouveau message — réponse du membre',
+        body:  reply.trim().slice(0, 80),
+        url:   `${APP_URL}/conversation/${messageId}`,
+      }).catch((err) => console.error('[api/reply] Échec push notif:', err));
     }
-
-    // Push notification fire-and-forget — scanners qui ont activé les notifs.
-    notifyThreadSubscribers({
-      messageId,
-      title: 'Nouveau message — réponse du membre',
-      body:  reply.trim().slice(0, 80),
-      url:   `${APP_URL}/conversation/${messageId}`,
-    }).catch((err) => console.error('[api/reply] Échec push notif:', err));
 
     return NextResponse.json({
       ok:          true,
+      moderated:   moderation.flagged,
       emailSent,
       isInstagram: contact ? isInstagramHandle(contact) : false,
       contact:     contact || null,

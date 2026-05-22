@@ -12,6 +12,7 @@ import { notifyThreadSubscribers } from '@/lib/push-notify';
 import { broadcastThreadMessage } from '@/lib/realtime-broadcast';
 import { APP_URL, MAX_THREAD_MESSAGES } from '@/lib/constants';
 import { isValidEmail } from '@/lib/validators';
+import { moderateContent } from '@/lib/moderation';
 
 const schema = z.object({
   messageId: z.string().uuid(),      // ID du message racine (le premier)
@@ -72,6 +73,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Cette conversation a atteint sa limite.' }, { status: 403 });
     }
 
+    // Modération (scanner anonyme inclus) — comme le message racine.
+    const moderation = await moderateContent(content);
+
     // Insère le nouveau message dans le thread
     const { data: newMsg, error: insertErr } = await supabaseAdmin
       .from('messages')
@@ -82,73 +86,76 @@ export async function POST(req: NextRequest) {
         author,
         sender_contact: rootMsg.sender_contact,
         is_quick_reply: false,
-        moderated:      false,
+        moderated:      moderation.flagged,
       })
       .select('id')
       .single();
 
     if (insertErr) throw insertErr;
 
-    // Realtime fire-and-forget — diffuse le message aux clients abonnés au
-    // canal du thread (scanner anon inclus, via broadcast public).
-    if (newMsg?.id) {
-      broadcastThreadMessage(messageId, {
-        id:         newMsg.id,
-        content:    content.trim(),
-        author,
-        created_at: new Date().toISOString(),
-      }).catch(() => {});
-    }
-
-    // Notification email :
-    //   * scanner → notifie le membre sur son email (alerte dashboard)
-    //   * member → notifie le scanner sur sender_contact si c'est un email
-    if (author === 'scanner') {
-      const { data: member } = await supabaseAdmin
-        .from('members')
-        .select('name, email')
-        .eq('id', rootMsg.member_id)
-        .single();
-
-      if (member?.email) {
-        const dashboardUrl = `${APP_URL}/conversation/${messageId}`;
-        const { subject, html } = emailNouveauMessage({
-          memberName:    member.name,
-          content:       content.trim(),
-          senderContact: rootMsg.sender_contact,
-          dashboardUrl,
-        });
-        sendEmail({ to: member.email, subject, html }).catch((err) => console.error('[conversation/reply] Échec email membre:', err));
+    // Si modéré : stocké (moderated:true, masqué partout) mais NON diffusé ni
+    // notifié — on ne propage pas le contenu abusif.
+    if (!moderation.flagged) {
+      // Realtime fire-and-forget — diffuse aux clients abonnés au canal du
+      // thread (scanner anon inclus, via broadcast public).
+      if (newMsg?.id) {
+        broadcastThreadMessage(messageId, {
+          id:         newMsg.id,
+          content:    content.trim(),
+          author,
+          created_at: new Date().toISOString(),
+        }).catch(() => {});
       }
-    } else if (author === 'member') {
-      const contact = rootMsg.sender_contact?.trim();
-      if (contact && isValidEmail(contact)) {
+
+      // Notification email :
+      //   * scanner → notifie le membre sur son email (alerte dashboard)
+      //   * member → notifie le scanner sur sender_contact si c'est un email
+      if (author === 'scanner') {
         const { data: member } = await supabaseAdmin
           .from('members')
-          .select('name')
+          .select('name, email')
           .eq('id', rootMsg.member_id)
           .single();
 
-        const { subject, html } = emailReponse({
-          memberName: member?.name || 'Ce membre',
-          reply:      content.trim(),
-          convUrl:    `${APP_URL}/conversation/${messageId}`,
-        });
-        sendEmail({ to: contact, subject, html }).catch((err) => console.error('[conversation/reply] Échec email scanner:', err));
+        if (member?.email) {
+          const dashboardUrl = `${APP_URL}/conversation/${messageId}`;
+          const { subject, html } = emailNouveauMessage({
+            memberName:    member.name,
+            content:       content.trim(),
+            senderContact: rootMsg.sender_contact,
+            dashboardUrl,
+          });
+          sendEmail({ to: member.email, subject, html }).catch((err) => console.error('[conversation/reply] Échec email membre:', err));
+        }
+      } else if (author === 'member') {
+        const contact = rootMsg.sender_contact?.trim();
+        if (contact && isValidEmail(contact)) {
+          const { data: member } = await supabaseAdmin
+            .from('members')
+            .select('name')
+            .eq('id', rootMsg.member_id)
+            .single();
+
+          const { subject, html } = emailReponse({
+            memberName: member?.name || 'Ce membre',
+            reply:      content.trim(),
+            convUrl:    `${APP_URL}/conversation/${messageId}`,
+          });
+          sendEmail({ to: contact, subject, html }).catch((err) => console.error('[conversation/reply] Échec email scanner:', err));
+        }
       }
+
+      // Push notification fire-and-forget — abonnés au thread. Notifie l'autre côté.
+      const otherSide = author === 'member' ? 'scanner' : 'membre';
+      notifyThreadSubscribers({
+        messageId,
+        title: `Nouveau message — réponse du ${otherSide}`,
+        body:  content.trim().slice(0, 80),
+        url:   `${APP_URL}/conversation/${messageId}`,
+      }).catch((err) => console.error('[conversation/reply] Échec push notif:', err));
     }
 
-    // Push notification fire-and-forget — abonnés au thread (scanners qui ont
-    // accepté les notifs sur cette conversation). Notifie l'auteur opposé.
-    const otherSide = author === 'member' ? 'scanner' : 'membre';
-    notifyThreadSubscribers({
-      messageId,
-      title: `Nouveau message — réponse du ${otherSide}`,
-      body:  content.trim().slice(0, 80),
-      url:   `${APP_URL}/conversation/${messageId}`,
-    }).catch((err) => console.error('[conversation/reply] Échec push notif:', err));
-
-    return NextResponse.json({ ok: true, replyId: newMsg?.id });
+    return NextResponse.json({ ok: true, moderated: moderation.flagged, replyId: newMsg?.id });
 
   } catch (err) {
     console.error('[conversation/reply]', err);

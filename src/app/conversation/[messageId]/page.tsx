@@ -41,6 +41,7 @@ export default async function ConversationPage({ params }: Props) {
     .from('messages')
     .select('id, content, author, created_at, read_at')
     .eq('parent_id', params.messageId)
+    .eq('moderated', false)
     .order('created_at', { ascending: true });
 
   // Détecte si le visiteur est le propriétaire du profil (le membre)

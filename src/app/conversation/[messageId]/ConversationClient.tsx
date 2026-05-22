@@ -135,6 +135,10 @@ function ThreadReplyForm({ messageId, author, onSent }: {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Erreur.');
+      if (data.moderated) {
+        setError('Ce message enfreint nos règles et n’a pas été envoyé.');
+        return;
+      }
       onSent({ id: data.replyId, content: text.trim(), author, created_at: new Date().toISOString() });
       setText('');
     } catch (err) {
