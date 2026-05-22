@@ -36,6 +36,9 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/_next/')) return;
+  // Jamais en cache : pages authentifiées / contenu de conversation (données
+  // perso au repos dans Cache Storage + risque offline cross-URL). Réseau direct.
+  if (/^\/(dashboard|conversation)(\/|$)/.test(url.pathname)) return;
 
   const accept = req.headers.get('accept') || '';
   const isHTML = accept.includes('text/html');
