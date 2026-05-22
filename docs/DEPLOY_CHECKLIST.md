@@ -18,6 +18,7 @@ Les migrations sont numérotées et **doivent s'appliquer dans l'ordre** (`supab
 | `033` | `member_inbox` / `first_scans` : `security_invoker = on` + `REVOKE … FROM anon, authenticated` | 🔴 ferme une fuite cross-membre via la clé publique |
 | `034` | RPC `record_scan` (insert scan + incrément atomiques) | corrige la dérive de `scan_count` |
 | `035` | `REVOKE EXECUTE create_member_with_code FROM anon, public` + grant service_role | 🔴 ferme un bypass d'auth (création de membre arbitraire) |
+| `036` | `cleanup_old_data()` purge aussi les `push_subscriptions` > 90j | hygiène (subs scanner orphelines retenues sinon indéfiniment) |
 
 ### Base NEUVE (staging / nouveau projet)
 ```bash
@@ -30,7 +31,7 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -1 -f <(cat supabase/migrations/0*.sql s
 ### Base EXISTANTE (prod déjà à 032)
 Appliquer **uniquement les nouvelles** dans l'ordre :
 ```bash
-for f in 033_rls_hardening_views 034_record_scan 035_secure_create_member_rpc; do
+for f in 033_rls_hardening_views 034_record_scan 035_secure_create_member_rpc 036_cleanup_push_subscriptions; do
   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -1 -f "supabase/migrations/$f.sql"
 done
 # 021 a été édité (guard idempotent) : sûr à ré-exécuter si tu veux l'aligner.

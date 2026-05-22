@@ -5,6 +5,7 @@
 //  - activation_codes non utilisés > 90 jours
 //  - scans > 24 mois
 //  - silent_views > 24 mois
+//  - push_subscriptions > 90 jours (subs scanner orphelines)
 
 export const dynamic = 'force-dynamic';
 
@@ -12,10 +13,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
 interface CleanupResult {
-  audit_logs_deleted:       number;
-  activation_codes_deleted: number;
-  scans_deleted:            number;
-  silent_views_deleted:     number;
+  audit_logs_deleted:         number;
+  activation_codes_deleted:   number;
+  scans_deleted:              number;
+  silent_views_deleted:       number;
+  push_subscriptions_deleted: number;
 }
 
 function authorized(req: NextRequest): boolean {

@@ -51,12 +51,19 @@ export async function GET(req: NextRequest) {
     if (!m.email) continue;
     const { subject, html } = emailScanReminder({ name: m.name, dashboardUrl });
     try {
-      await sendEmail({ to: m.email, subject, html });
-      await supabaseAdmin
-        .from('members')
-        .update({ scan_reminder_sent_at: new Date().toISOString() })
-        .eq('id', m.id);
-      sent++;
+      // sendEmail renvoie false (sans throw) en cas d'échec → on ne marque
+      // `scan_reminder_sent_at` QUE si l'envoi a réussi, sinon la relance était
+      // perdue en silence (marquée envoyée mais jamais reçue, jamais retentée).
+      const ok = await sendEmail({ to: m.email, subject, html });
+      if (ok) {
+        await supabaseAdmin
+          .from('members')
+          .update({ scan_reminder_sent_at: new Date().toISOString() })
+          .eq('id', m.id);
+        sent++;
+      } else {
+        failed++;
+      }
     } catch (err) {
       console.error('[cron/scan-reminders] failed for', m.id, err);
       failed++;
