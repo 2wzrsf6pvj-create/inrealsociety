@@ -33,14 +33,16 @@ const PUBLIC_ROUTES = [
   'api/shop/checkout',
   'api/health',
   'api/newsletter',
+  'api/newsletter/unsubscribe', // lien de désinscription cliqué depuis un email
   'api/feedback',   // feedback conversation — accessible aux scanners anonymes
 ];
 
 /** Routes protégées par un secret header (pas par session) */
 const SECRET_PROTECTED_ROUTES = [
-  'api/push/notify',          // INTERNAL_SECRET
-  'api/cron/cleanup',         // CRON_SECRET (Vercel Cron)
-  'api/cron/scan-reminders',  // CRON_SECRET (Vercel Cron)
+  'api/push/notify',            // INTERNAL_SECRET
+  'api/cron/cleanup',           // CRON_SECRET (Vercel Cron)
+  'api/cron/scan-reminders',    // CRON_SECRET (Vercel Cron)
+  'api/cron/premium-reconcile', // CRON_SECRET (Vercel Cron)
 ];
 
 /** Routes webhook (protégées par signature) */
@@ -125,7 +127,8 @@ describe('Sécurité des routes API', () => {
       //   * GET en lecture seule (health, messages, member/export)
       //   * DELETE/POST dérivant tout de la session (member/delete, subscription/*)
       if (['health', 'member/export', 'messages', 'member/delete',
-           'subscription/checkout', 'subscription/portal'].includes(routeKey)) continue;
+           'subscription/checkout', 'subscription/portal',
+           'newsletter/unsubscribe'].includes(routeKey)) continue;
 
       it(`${routeKey} — devrait avoir une validation Zod ou équivalente`, () => {
         const hasZod = content.includes('z.object') || content.includes('z.string');

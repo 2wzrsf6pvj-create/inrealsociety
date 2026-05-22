@@ -138,3 +138,17 @@ stripe trigger charge.refunded
 ## 4. Merge / déploiement code
 - Brancher le lot de durcissement sur `main` (voir PR), déployer **après** §1 (migrations) et §2 (config).
 - Surveiller Sentry les premières heures : le webhook renvoie désormais **5xx sur erreur** (Stripe réessaie) — un pic de retries signale un handler défaillant.
+- 3 crons Vercel actifs : cleanup (dim 3h), scan-reminders (quotidien 9h), premium-reconcile (lun 4h).
+
+## 5. À COMPLÉTER avant prod — légal (données entreprise, hors code)
+Placeholders `[À COMPLÉTER]` à remplir (ne peuvent pas être devinés) :
+- `src/app/mentions-legales/page.tsx` : raison sociale + forme juridique, SIRET, siège, RCS, TVA intra, téléphone, directeur de publication, **médiateur de la consommation** (nom + URL).
+- `src/app/confidentialite/page.tsx` : identité du responsable de traitement + **contact DPO**.
+- Faire **valider par un juriste** la conformité RGPD/CGV finale.
+- DNS email : **SPF / DKIM / DMARC** (cf. `docs/EMAIL_DELIVERABILITY.md`).
+
+## 6. Différés assumés (notés, non bloquants)
+- **Consentement analytics serveur** : les events `subscription_*` partent à PostHog via le webhook sans connaître le choix du membre (pseudonyme = memberId). À traiter en *intérêt légitime opérationnel* documenté, OU stocker le consentement analytics en DB et le vérifier serveur.
+- **Newsletter** : capture + **désinscription** signée (`/api/newsletter/unsubscribe`) prêtes, mais l'**envoi** n'est pas implémenté. Le futur envoi doit filtrer `unsubscribed_at IS NULL` + poser `signUnsubscribe(email)` + header `List-Unsubscribe`.
+- **`marketing_consent`** : collecté/audité mais jamais lu (aucun envoi marketing aujourd'hui). À filtrer (`= true`) quand un envoi existera. (scan-reminder = transactionnel, lié à l'achat.)
+- **RLS `members` allowlist** : `members_select_public USING(true)` expose encore les colonnes *non sensibles* de tous les membres (les sensibles sont revoke en 026/030). Refonte allowlist reportée.

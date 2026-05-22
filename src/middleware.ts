@@ -36,6 +36,7 @@ const PUBLIC_API_EXACT = new Set([
   '/api/feedback',       // feedback conversation accessible aux scanners anonymes
   '/api/health',         // healthcheck pour monitoring uptime
   '/api/newsletter',     // capture email newsletter
+  '/api/newsletter/unsubscribe', // lien de désinscription (cliqué depuis un email)
 ]);
 
 // Vrais préfixes (familles de routes avec sous-chemins).

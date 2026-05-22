@@ -1,3 +1,5 @@
+import ManageConsentButton from './ManageConsentButton';
+
 export const metadata = {
   title: 'Politique de confidentialité — In Real Society',
   description: 'Politique de confidentialité et traitement des données personnelles d\'In Real Society.',
@@ -133,7 +135,7 @@ export default function ConfidentialitePage() {
           </p>
           <ul className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed list-disc pl-5 flex flex-col gap-2">
             <li><strong>Essentiels</strong> (toujours actifs) : authentification Supabase, consentement.</li>
-            <li><strong>Mesure d&apos;audience</strong> (consentement requis) : PostHog Cloud EU pour comprendre comment le site est utilisé. Vous pouvez accepter ou refuser via le bandeau affiché à votre première visite, et révoquer votre choix en supprimant la clé <code className="text-brand-white/70 font-mono text-xs">irs_consent</code> de votre localStorage.</li>
+            <li><strong>Mesure d&apos;audience</strong> (consentement requis) : PostHog Cloud EU pour comprendre comment le site est utilisé. Vous pouvez accepter ou refuser via le bandeau affiché à votre première visite, et{' '}<ManageConsentButton /> à tout moment.</li>
           </ul>
         </section>
 
