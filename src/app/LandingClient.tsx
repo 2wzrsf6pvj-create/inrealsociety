@@ -13,7 +13,6 @@ function LandingContent() {
   const [hasMemberId, setHasMemberId] = useState(false);
   const [memberName, setMemberName]   = useState('');
   const [qrError, setQrError]         = useState('');
-  const [ready, setReady]             = useState(false);
 
   useEffect(() => {
     // Compat legacy : t-shirts imprimés avec QR pointant sur /?id=<UUID>.
@@ -40,7 +39,6 @@ function LandingContent() {
     if (saved) setScannerName(saved);
     if (mid) setHasMemberId(true);
     if (mName) setMemberName(mName);
-    setTimeout(() => setReady(true), 800);
   }, [searchParams, router]);
 
   return (
@@ -110,10 +108,9 @@ function LandingContent() {
           )}
         </div>
 
-        {/* CTA principal */}
-        <div
-          className={`w-full flex flex-col gap-3 transition-all duration-500 ${ready ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-2'}`}
-        >
+        {/* CTA principal — visible par défaut, entrée CSS (stagger-3) comme ses
+            voisins. Jamais gaté par le JS : c'est l'élément de conversion clé. */}
+        <div className="w-full flex flex-col gap-3 animate-stagger-3">
           {scannerName && hasMemberId ? (
             <Link href="/unlock"
               className="animate-shimmer w-full py-4 px-6 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.3em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 block text-center"
