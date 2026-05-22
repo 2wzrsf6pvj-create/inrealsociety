@@ -4,25 +4,12 @@ import React, { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase-browser';
-
-/** Accepte uniquement les chemins internes pour éviter les open redirects */
-function safeRedirect(raw: string | null): string {
-  if (!raw) return '/dashboard';
-  try {
-    const url = new URL(raw, 'http://localhost');
-    if (url.origin !== 'http://localhost') return '/dashboard';
-  } catch {
-    return '/dashboard';
-  }
-  if (!raw.startsWith('/') || raw.startsWith('//')) return '/dashboard';
-  if (/^\/[^/]*:/i.test(raw)) return '/dashboard';
-  return raw;
-}
+import { safeInternalPath } from '@/lib/safe-redirect';
 
 export default function LoginPage() {
   const router       = useRouter();
   const searchParams = useSearchParams();
-  const redirect     = safeRedirect(searchParams.get('redirect'));
+  const redirect     = safeInternalPath(searchParams.get('redirect'));
 
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
