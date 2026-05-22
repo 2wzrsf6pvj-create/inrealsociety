@@ -55,6 +55,7 @@ export default function ConfidentialitePage() {
             <li><strong>Achat :</strong> email, adresse de livraison, taille et couleur du t-shirt, identifiants Stripe (paiement, abonnement).</li>
             <li><strong>Activité :</strong> scans reçus, géolocalisation approximative au scan (si autorisée), messages envoyés et reçus.</li>
             <li><strong>Technique :</strong> adresse IP (rate limiting, logs de sécurité), user-agent, identifiants de session.</li>
+            <li><strong>Sécurité (côté scanneur) :</strong> un jeton anonyme déposé sur votre appareil (cookie), sans lien avec votre identité, qui permet à un porteur de vous bloquer en cas d&apos;abus.</li>
             <li><strong>Analytique (avec consentement) :</strong> pages vues, événements de conversion (PostHog, Cloud EU).</li>
           </ul>
         </section>
@@ -65,7 +66,7 @@ export default function ConfidentialitePage() {
           </h2>
           <ul className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed list-disc pl-5 flex flex-col gap-2">
             <li><strong>Exécution du contrat (art. 6.1.b RGPD) :</strong> création du compte, gestion des commandes, envoi du t-shirt, gestion de l&apos;abonnement premium.</li>
-            <li><strong>Intérêt légitime (art. 6.1.f) :</strong> sécurité du service (rate limiting, audit logs, modération), prévention de la fraude.</li>
+            <li><strong>Intérêt légitime (art. 6.1.f) :</strong> sécurité du service (rate limiting, audit logs, modération), blocage des comportements abusifs (anti-harcèlement), prévention de la fraude.</li>
             <li><strong>Consentement (art. 6.1.a) :</strong> mesure d&apos;audience (PostHog), cookies non essentiels.</li>
             <li><strong>Obligation légale (art. 6.1.c) :</strong> conservation des factures (10 ans).</li>
           </ul>
@@ -134,7 +135,7 @@ export default function ConfidentialitePage() {
             Nous utilisons deux catégories de cookies :
           </p>
           <ul className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed list-disc pl-5 flex flex-col gap-2">
-            <li><strong>Essentiels</strong> (toujours actifs) : authentification Supabase, consentement.</li>
+            <li><strong>Essentiels</strong> (toujours actifs) : authentification Supabase, consentement, jeton de sécurité anti-harcèlement (côté scanneur).</li>
             <li><strong>Mesure d&apos;audience</strong> (consentement requis) : PostHog Cloud EU pour comprendre comment le site est utilisé. Vous pouvez accepter ou refuser via le bandeau affiché à votre première visite, et{' '}<ManageConsentButton /> à tout moment.</li>
           </ul>
         </section>

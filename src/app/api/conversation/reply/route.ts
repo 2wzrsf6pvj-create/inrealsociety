@@ -13,6 +13,8 @@ import { broadcastThreadMessage } from '@/lib/realtime-broadcast';
 import { APP_URL, MAX_THREAD_MESSAGES } from '@/lib/constants';
 import { isValidEmail } from '@/lib/validators';
 import { moderateContent } from '@/lib/moderation';
+import { getSenderToken } from '@/lib/sender-token';
+import { isBlocked } from '@/lib/blocks';
 
 const schema = z.object({
   messageId: z.string().uuid(),      // ID du message racine (le premier)
@@ -32,13 +34,23 @@ export async function POST(req: NextRequest) {
     // Récupère le message racine d'abord (besoin de rootMsg.member_id pour l'auth)
     const { data: rootMsg } = await supabaseAdmin
       .from('messages')
-      .select('id, member_id, sender_contact')
+      .select('id, member_id, sender_contact, blocked_at')
       .eq('id', messageId)
       .is('parent_id', null)
       .single();
 
     if (!rootMsg) {
       return NextResponse.json({ error: 'Conversation introuvable.' }, { status: 404 });
+    }
+
+    // ─── Blocage ──────────────────────────────────────────────────────────
+    // Conversation fermée par le porteur → plus aucun message, des deux côtés.
+    if (rootMsg.blocked_at) {
+      return NextResponse.json({ error: 'Cette conversation est close.', code: 'blocked' }, { status: 403 });
+    }
+    // Device bloqué par ce porteur via une AUTRE conversation → on coupe aussi ici.
+    if (author === 'scanner' && await isBlocked(rootMsg.member_id, getSenderToken(req))) {
+      return NextResponse.json({ error: 'Cette conversation est close.', code: 'blocked' }, { status: 403 });
     }
 
     // Auth + rate limit selon l'auteur :

@@ -9,6 +9,8 @@ import { checkMessageRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit'
 import { audit } from '@/lib/audit';
 import { SCAN_WINDOW_MS, MAX_CONVERSATIONS, QUICK_REPLIES as QUICK_REPLIES_LIST } from '@/lib/constants';
 import { moderateContent } from '@/lib/moderation';
+import { getSenderToken, createSenderToken, setSenderTokenCookie } from '@/lib/sender-token';
+import { isBlocked } from '@/lib/blocks';
 
 const QUICK_REPLIES = new Set<string>(QUICK_REPLIES_LIST);
 
@@ -28,6 +30,11 @@ export async function POST(req: NextRequest) {
 
     const { memberId, content, senderContact, isQuickReply } = body.data;
     const ip = getIp(req);
+
+    // Jeton device du scanneur (cookie httpOnly). `existingToken` n'existe que
+    // s'il a déjà écrit auparavant — seul un device connu peut être bloqué.
+    const existingToken = getSenderToken(req);
+    const senderToken = existingToken ?? createSenderToken();
 
     // ─── Rate limiting double : IP + membre cible ─────────────────────────
     const rateLimit = await checkMessageRateLimit(ip, memberId);
@@ -54,6 +61,13 @@ export async function POST(req: NextRequest) {
     }
 
     if (member.is_paused) {
+      return NextResponse.json({ error: 'Ce membre est indisponible.', code: 'paused' }, { status: 403 });
+    }
+
+    // ─── Blocage device ───────────────────────────────────────────────────
+    // Si ce porteur a bloqué ce device, on refuse. Réponse volontairement
+    // identique à « indisponible » pour ne pas révéler le blocage au harceleur.
+    if (await isBlocked(memberId, existingToken)) {
       return NextResponse.json({ error: 'Ce membre est indisponible.', code: 'paused' }, { status: 403 });
     }
 
@@ -88,7 +102,8 @@ export async function POST(req: NextRequest) {
         .select('*', { count: 'exact', head: true })
         .eq('member_id', memberId)
         .eq('moderated', false)
-        .is('parent_id', null);
+        .is('parent_id', null)
+        .is('blocked_at', null); // une conv bloquée n'occupe pas un créneau actif
 
       if ((activeConvs ?? 0) >= MAX_CONVERSATIONS[plan]) {
         return NextResponse.json(
@@ -114,6 +129,7 @@ export async function POST(req: NextRequest) {
         sender_contact: senderContact?.trim() || null,
         is_quick_reply: isQuickReply || isKnownQuickReply,
         moderated,
+        sender_token:   senderToken,
       })
       .select('id')
       .single();
@@ -144,7 +160,11 @@ export async function POST(req: NextRequest) {
       sendEmail({ to: member.email, subject, html }).catch((err) => console.error('[api/message] Échec envoi email:', err));
     }
 
-    return NextResponse.json({ ok: true, moderated, messageId: message?.id });
+    // Pose/rafraîchit le cookie de jeton device (httpOnly) — permet au porteur
+    // de bloquer ce scanneur plus tard, même sur une autre conversation.
+    const res = NextResponse.json({ ok: true, moderated, messageId: message?.id });
+    setSenderTokenCookie(res, senderToken);
+    return res;
 
   } catch (err) {
     console.error('[api/message]', err);

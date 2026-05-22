@@ -1,6 +1,6 @@
 // Envoie une notification push à tous les abonnés d'un thread (push_subscriptions
 // rows ayant message_id = <messageId>). Utilisé par /api/push/notify (endpoint
-// externe) ET par /api/reply / /api/conversation/reply (appel direct interne).
+// externe) ET par /api/conversation/reply (appel direct interne).
 //
 // No-op silencieux si VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY ne sont pas définis
 // (permet de dev/test sans configurer le push).

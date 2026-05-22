@@ -41,15 +41,21 @@ function wireSupabase({ member, firstScanAt, activeConvs }: {
       }) }) }) };
     }
     if (table === 'messages') {
-      return { select: () => ({ eq: () => ({ eq: () => ({ is: () =>
-        Promise.resolve({ count: activeConvs ?? 0, error: null }) }) }) }) };
+      // .eq().eq().is('parent_id').is('blocked_at') → count
+      return { select: () => ({ eq: () => ({ eq: () => ({ is: () => ({ is: () =>
+        Promise.resolve({ count: activeConvs ?? 0, error: null }) }) }) }) }) };
+    }
+    if (table === 'blocks') {
+      return { select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: () =>
+        Promise.resolve({ data: null, error: null }) }) }) }) };
     }
     return {};
   });
 }
 
+// req sans cookie irs_sender (scanneur jamais vu) → getSenderToken renvoie null.
 function makeReq(body: Record<string, unknown>): NextRequest {
-  return { json: async () => body } as unknown as NextRequest;
+  return { json: async () => body, cookies: { get: () => undefined } } as unknown as NextRequest;
 }
 
 describe('POST /api/message — contrat des codes d\'erreur', () => {

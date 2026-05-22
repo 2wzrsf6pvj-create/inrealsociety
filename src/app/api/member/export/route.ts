@@ -52,7 +52,11 @@ export async function GET(req: NextRequest) {
       { data: newsletter },
       { data: feedback },
     ] = await Promise.all([
-      supabaseAdmin.from('messages').select('*').eq('member_id', member.id).order('created_at', { ascending: true }),
+      // Colonnes explicites : on EXCLUT sender_token (jeton device d'un tiers, le
+      // scanneur — ne fait pas partie des données personnelles du porteur).
+      supabaseAdmin.from('messages')
+        .select('id, member_id, content, sender_contact, is_quick_reply, moderated, starred, read_at, created_at, parent_id, author, blocked_at')
+        .eq('member_id', member.id).order('created_at', { ascending: true }),
       supabaseAdmin.from('scans').select('*').eq('member_id', member.id).order('scanned_at', { ascending: true }),
       supabaseAdmin.from('silent_views').select('*').eq('member_id', member.id).order('created_at', { ascending: true }),
       supabaseAdmin.from('push_subscriptions').select('endpoint, message_id, created_at').eq('member_id', member.id),

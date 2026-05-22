@@ -193,16 +193,43 @@ export default function ConversationClient({
   message: initialMessage,
   isOwner = false,
   thread: initialThread = [],
+  blocked: initialBlocked = false,
 }: {
   message: ConversationMessage;
   isOwner?: boolean;
   thread?: ThreadReply[];
+  blocked?: boolean;
 }) {
   const message = initialMessage;
   const [thread, setThread]           = useState<ThreadReply[]>(initialThread);
   const [pushAsked, setPushAsked]     = useState(false);
   const [pushGranted, setPushGranted] = useState(false);
   const [pushLoading, setPushLoading] = useState(false);
+
+  // ─── Blocage (porteur uniquement) ──────────────────────────────────────
+  const [isBlocked, setIsBlocked]       = useState(initialBlocked);
+  const [blockLoading, setBlockLoading] = useState(false);
+  const [blockError, setBlockError]     = useState('');
+
+  const setBlock = async (action: 'block' | 'unblock') => {
+    if (action === 'block' && !window.confirm('Bloquer cette personne ? Elle ne pourra plus vous écrire, ici comme ailleurs.')) return;
+    setBlockLoading(true);
+    setBlockError('');
+    try {
+      const res = await fetch('/api/conversation/block', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messageId: message.id, memberId: message.member_id, action }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erreur.');
+      setIsBlocked(action === 'block');
+    } catch (err) {
+      setBlockError(err instanceof Error ? err.message : 'Erreur serveur.');
+    } finally {
+      setBlockLoading(false);
+    }
+  };
 
   const memberName = message.members?.name || 'Ce membre';
   const totalMessages = 1 + thread.length; // message initial + thread
@@ -351,7 +378,28 @@ export default function ConversationClient({
 
         {/* ─── Zone de réponse ────────────────────────────────────────────── */}
         <div className="animate-stagger-3">
-          {!canReply ? (
+          {isBlocked ? (
+            /* Conversation bloquée par le porteur */
+            <div className="flex flex-col items-center gap-3 py-4">
+              <div className="w-px h-6 bg-gradient-to-b from-transparent via-red-500/20 to-transparent" />
+              <p className="font-ui text-sm text-brand-gray/50 text-center leading-relaxed">
+                {isOwner ? 'Vous avez bloqué cette personne.' : 'Cette conversation est close.'}
+              </p>
+              {isOwner && (
+                <>
+                  <p className="font-ui text-xs text-brand-gray/30 text-center leading-relaxed max-w-[18rem]">
+                    Elle ne peut plus vous écrire, ici comme ailleurs.
+                  </p>
+                  <button onClick={() => setBlock('unblock')} disabled={blockLoading}
+                    className="font-ui text-xs text-brand-gray/30 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray transition-colors py-2 disabled:opacity-40"
+                    style={{ minHeight: '44px' }}>
+                    {blockLoading ? '...' : 'Débloquer'}
+                  </button>
+                </>
+              )}
+              {blockError && <p className="font-ui text-xs text-red-400">{blockError}</p>}
+            </div>
+          ) : !canReply ? (
             /* Conversation terminée */
             <div className="flex flex-col items-center gap-3 py-4">
               <div className="w-px h-6 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
@@ -447,6 +495,18 @@ export default function ConversationClient({
             style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {isOwner ? '← retour au dashboard' : '← retour'}
           </Link>
+
+          {/* Bloquer — réservé au porteur, masqué si déjà bloqué */}
+          {isOwner && !isBlocked && (
+            <button onClick={() => setBlock('block')} disabled={blockLoading}
+              className="font-ui text-xxs text-brand-gray/20 tracking-[0.15em] uppercase hover:text-red-400/70 transition-colors text-center py-2 disabled:opacity-40"
+              style={{ minHeight: '44px' }}>
+              {blockLoading ? '...' : 'Bloquer cette personne'}
+            </button>
+          )}
+          {isOwner && !isBlocked && blockError && (
+            <p className="font-ui text-xxs text-red-400 text-center">{blockError}</p>
+          )}
         </div>
       </div>
     </main>

@@ -30,12 +30,14 @@ export async function getMessages(memberId: string, limit = 20, offset = 0): Pro
 
 export async function getMessagesCount(memberId: string): Promise<number> {
   // Compte les conversations actives = messages racine uniquement (pas le thread).
+  // Exclut les conv bloquées — cohérent avec le plafond appliqué dans /api/message.
   const { count, error } = await supabaseAdmin
     .from('messages')
     .select('*', { count: 'exact', head: true })
     .eq('member_id', memberId)
     .eq('moderated', false)
-    .is('parent_id', null);
+    .is('parent_id', null)
+    .is('blocked_at', null);
   if (error) return 0;
   return count ?? 0;
 }

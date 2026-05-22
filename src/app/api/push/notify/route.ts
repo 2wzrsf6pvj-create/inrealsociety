@@ -2,7 +2,7 @@
 // POST { messageId, title, body, url }
 // Route interne protégée par INTERNAL_SECRET. La logique est extraite dans
 // lib/push-notify.ts pour pouvoir aussi être appelée en interne directement
-// (depuis /api/reply, /api/conversation/reply, etc.) sans HTTP roundtrip.
+// (depuis /api/conversation/reply, etc.) sans HTTP roundtrip.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';

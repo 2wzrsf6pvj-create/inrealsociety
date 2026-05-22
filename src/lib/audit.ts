@@ -29,7 +29,9 @@ export type AuditAction =
   | 'order.fulfillment_failed'
   | 'order.fulfilled'
   | 'push.subscribed'
-  | 'message.reported';
+  | 'message.reported'
+  | 'conversation.blocked'
+  | 'conversation.unblocked';
 
 interface AuditParams {
   action:    AuditAction;

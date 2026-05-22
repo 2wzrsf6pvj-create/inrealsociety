@@ -80,5 +80,9 @@ export default async function ConversationPage({ params }: Props) {
     (message.members as { auth_user_id?: string | null }).auth_user_id = null;
   }
 
-  return <ConversationClient message={message} isOwner={isOwner} thread={threadReplies || []} />;
+  // Jeton device du scanneur : donnée de sécurité, jamais exposée au navigateur.
+  const blocked = !!message.blocked_at;
+  (message as { sender_token?: string | null }).sender_token = null;
+
+  return <ConversationClient message={message} isOwner={isOwner} thread={threadReplies || []} blocked={blocked} />;
 }
