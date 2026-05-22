@@ -5,6 +5,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { APP_URL } from '@/lib/constants';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { checkPublicRateLimit, getIp } from '@/lib/ratelimit';
 
 export async function GET(
   _req: NextRequest,
@@ -15,6 +16,13 @@ export async function GET(
   // Validation basique : alphanumériques minuscules, 2-6 chars
   if (!/^[a-z0-9]{2,6}$/.test(code)) {
     return NextResponse.redirect(new URL('/?error=qr_invalid', _req.url));
+  }
+
+  // Rate limit : empêche l'énumération de l'espace des short-codes (codes courts
+  // → mapping vers les profils). 30/min/IP suffit largement pour des scans réels.
+  const rl = await checkPublicRateLimit(getIp(_req));
+  if (!rl.success) {
+    return NextResponse.redirect(new URL('/?error=rate_limited', _req.url));
   }
 
   // Lookup du membre par short_code

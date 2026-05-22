@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { sendEmail, emailNouveauScan } from '@/lib/email-templates';
-import { checkScanRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
+import { checkScanRateLimit, isNewScan, getIp, rateLimitHeaders } from '@/lib/ratelimit';
 import { audit } from '@/lib/audit';
 
 const schema = z.object({
@@ -74,37 +74,46 @@ export async function POST(req: NextRequest) {
     if (!member) return NextResponse.json({ error: 'Membre introuvable' }, { status: 404 });
     if (member.is_paused) return NextResponse.json({ ok: true, paused: true });
 
+    // ─── Déduplication : un rechargement de /profil par le même scanneur
+    // (IP + membre, fenêtre 30 min) ne re-compte pas, ne ré-insère pas et ne
+    // ré-emaile pas. scan_count reflète des rencontres uniques, pas des vues.
+    if (!(await isNewScan(memberId, ip))) {
+      return NextResponse.json({ ok: true, duplicate: true });
+    }
+
     // ─── Reverse geocoding (non-bloquant) ──────────────────────────────
     let location: string | null = null;
     if (latitude != null && longitude != null) {
       location = await reverseGeocode(latitude, longitude);
     }
 
-    // ─── Insertion scan ───────────────────────────────────────────────────
-    const { error: scanError } = await supabaseAdmin.from('scans')
-      .insert({
-        member_id:    memberId,
-        scanner_name: scannerName || null,
-        latitude:     latitude ?? null,
-        longitude:    longitude ?? null,
-        location,
-      });
+    // ─── Enregistrement atomique (insert scan + incrément scan_count) ──────
+    // Coordonnées arrondies à 3 décimales (~110 m) avant stockage : on garde
+    // l'info de quartier (cf. `location`) sans pinpointer un lieu précis —
+    // minimisation RGPD, cohérent avec la politique « géoloc approximative ».
+    // record_scan (migration 034) fait l'insert + l'incrément dans une seule
+    // transaction → plus de dérive possible de scan_count.
+    const round3 = (n: number) => Math.round(n * 1000) / 1000;
+    const { error: scanError } = await supabaseAdmin.rpc('record_scan', {
+      p_member_id:    memberId,
+      p_scanner_name: scannerName || null,
+      p_latitude:     latitude != null ? round3(latitude) : null,
+      p_longitude:    longitude != null ? round3(longitude) : null,
+      p_location:     location,
+    });
 
-    if (scanError && scanError.code !== '23505') throw scanError;
-
-    const { error: rpcError } = await supabaseAdmin.rpc('increment_scan_count', { member_id: memberId });
-    if (rpcError) console.warn('[api/scan] RPC failed');
+    if (scanError) throw scanError;
 
     // ─── Audit ────────────────────────────────────────────────────────────
     audit({
       action:   'scan.recorded',
       memberId,
       ip,
-      metadata: { scannerName, duplicate: !!scanError },
+      metadata: { scannerName },
     });
 
     // ─── Notification email ───────────────────────────────────────────────
-    if (!scanError && member.email) {
+    if (member.email) {
       const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/${member.id}`;
       const { subject, html } = emailNouveauScan({
         memberName:   member.name,

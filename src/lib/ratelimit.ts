@@ -62,6 +62,15 @@ const limitPublicByIp = () => new Ratelimit({
   prefix:  'rl:public:ip',
 });
 
+/** Déduplication des scans : 1 comptage par (membre, IP) toutes les 30 min.
+ *  Distinct du rate-limit (anti-abus) : ici on évite juste de gonfler
+ *  scan_count + de spammer l'email du membre quand un scanneur recharge /profil. */
+const limitScanDedup = () => new Ratelimit({
+  redis:   getRedis(),
+  limiter: Ratelimit.fixedWindow(1, '30 m'),
+  prefix:  'scan:dedup',
+});
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 export interface RateLimitResult {
@@ -182,6 +191,24 @@ export async function checkPublicRateLimit(ip: string): Promise<RateLimitResult>
     remaining: result.remaining,
     reset:     result.reset,
   };
+}
+
+/**
+ * Déduplication d'un scan : renvoie true si c'est un scan « neuf » pour ce
+ * couple (membre, IP) dans la fenêtre, false si c'est un rechargement récent.
+ * Permet de ne compter (et n'emailer) qu'une rencontre unique par scanneur.
+ */
+export async function isNewScan(memberId: string, ip: string): Promise<boolean> {
+  // IP inconnue : impossible de dédupliquer de façon fiable (tous les scanneurs
+  // sans IP partageraient le même bucket → faux doublons). On laisse passer.
+  if (!ip || ip === 'anonymous') return true;
+  try {
+    const { success } = await limitScanDedup().limit(`${memberId}:${ip}`);
+    return success;
+  } catch {
+    // Panne Redis : best-effort comme le reste du scan (RPC/email) → on compte.
+    return true;
+  }
 }
 
 /** Extrait l'IP réelle depuis les headers Next.js / Vercel */
