@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     // ─── Vérification membre ──────────────────────────────────────────────
     // admin : lit email (revoke pour anon en 026) pour la notification.
     const { data: member } = await supabaseAdmin
-      .from('members').select('id, name, email, is_paused, plan').eq('id', memberId).single();
+      .from('members').select('id, name, email, is_paused, require_contact, plan').eq('id', memberId).single();
 
     if (!member) {
       return NextResponse.json({ error: 'Membre introuvable' }, { status: 404 });
@@ -69,6 +69,15 @@ export async function POST(req: NextRequest) {
     // identique à « indisponible » pour ne pas révéler le blocage au harceleur.
     if (await isBlocked(memberId, existingToken)) {
       return NextResponse.json({ error: 'Ce membre est indisponible.', code: 'paused' }, { status: 403 });
+    }
+
+    // ─── Contact requis ───────────────────────────────────────────────────
+    // Le porteur peut exiger un @insta/email pour filtrer les messages anonymes.
+    if (member.require_contact && !senderContact?.trim()) {
+      return NextResponse.json(
+        { error: 'Ce membre demande un moyen de le recontacter.', code: 'contact_required' },
+        { status: 403 },
+      );
     }
 
     // ─── Vérification fenêtre temporelle (24h free / 48h premium) ──────

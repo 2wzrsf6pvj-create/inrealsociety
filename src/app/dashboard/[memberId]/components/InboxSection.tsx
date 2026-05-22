@@ -54,21 +54,22 @@ function UpgradeBanner({ memberId, source, headline, sublabel }: {
 
 // ─── Inbox (Messages) ─────────────────────────────────────────────────────────
 
-export default function InboxSection({ messages: initialMessages, memberId, plan, activeConversations }: {
+export default function InboxSection({ messages: initialMessages, memberId, plan, activeConversations, totalConversations }: {
   messages: Message[];
   memberId: string;
   plan: 'free' | 'premium';
   activeConversations: number;
+  totalConversations: number;
 }) {
   const [messages, setMessages]         = useState(initialMessages);
   const [reportingId,  setReportingId]  = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [reported,     setReported]     = useState<Set<string>>(new Set());
   const [loadingMore, setLoadingMore]   = useState(false);
-  // Dérivé de la vraie source (activeConversations = nb total de messages
-  // racine) plutôt que length>=10, qui affichait "Voir plus" à tort quand le
-  // total est un multiple exact de 10.
-  const hasMore = messages.length < activeConversations;
+  // Pagination basée sur le total AFFICHÉ (totalConversations = racine, bloquées
+  // incluses) — pas sur activeConversations (hors bloquées, qui pilote le plafond
+  // premium). Sinon les conv bloquées masqueraient "Voir plus".
+  const hasMore = messages.length < totalConversations;
 
   const loadMore = async () => {
     setLoadingMore(true);
@@ -133,7 +134,7 @@ export default function InboxSection({ messages: initialMessages, memberId, plan
       {messages.map(msg => {
         const isReported = reported.has(msg.id);
         return (
-          <div key={msg.id} className={`w-full bg-[#080808] border rounded-[2px] p-3 flex flex-col gap-2 ${!msg.read_at ? 'border-brand-white/20' : 'border-brand-gray/10'}`}>
+          <div key={msg.id} className={`w-full bg-[#080808] border rounded-[2px] p-3 flex flex-col gap-2 ${msg.blocked_at ? 'border-red-500/20 opacity-60' : !msg.read_at ? 'border-brand-white/20' : 'border-brand-gray/10'}`}>
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
                 <p className={`font-ui text-sm leading-relaxed ${!msg.read_at ? 'text-brand-white/90' : 'text-brand-gray/60'}`}>
@@ -156,6 +157,17 @@ export default function InboxSection({ messages: initialMessages, memberId, plan
                 </span>
               </div>
 
+              {msg.blocked_at ? (
+                /* Conversation bloquée — gérer/débloquer depuis la conversation */
+                <div className="flex items-center gap-2">
+                  <span className="font-ui text-xxs text-red-400/60 tracking-[0.1em] uppercase">Bloqué</span>
+                  <span className="text-brand-gray/10">|</span>
+                  <Link href={`/conversation/${msg.id}`}
+                    className="font-ui text-xs text-brand-gray/40 hover:text-brand-gray/70 transition-colors">
+                    Gérer
+                  </Link>
+                </div>
+              ) : (
               <div className="flex items-center gap-2">
                 {msg.reply ? (
                   <span className="font-ui text-xxs text-brand-gray/30">
@@ -190,6 +202,7 @@ export default function InboxSection({ messages: initialMessages, memberId, plan
                   </button>
                 )}
               </div>
+              )}
             </div>
           </div>
         );

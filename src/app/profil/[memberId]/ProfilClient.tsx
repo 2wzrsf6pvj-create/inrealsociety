@@ -266,7 +266,7 @@ export default function ProfilClient({
             )}
 
             <Link
-              href={`/message?to=${member.id}&name=${encodeURIComponent(member.name)}`}
+              href={`/message?to=${member.id}&name=${encodeURIComponent(member.name)}${member.require_contact ? '&rc=1' : ''}`}
               className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 text-center block"
               style={{ minHeight: '44px' }}
             >

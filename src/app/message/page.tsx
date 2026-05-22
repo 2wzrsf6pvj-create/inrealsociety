@@ -42,6 +42,9 @@ function MessageForm() {
   const searchParams = useSearchParams();
   const memberName = searchParams.get('name') || 'ce membre';
   const memberId   = searchParams.get('to')   || '';
+  // rc=1 → ce membre exige un contact (surfacé en amont par le profil). La
+  // source de vérité reste le serveur (code contact_required).
+  const [contactRequired, setContactRequired] = useState(searchParams.get('rc') === '1');
 
   const [message, setMessage]     = useState('');
   const [contact, setContact]     = useState('');
@@ -56,6 +59,11 @@ function MessageForm() {
 
   const sendMessage = async (content: string, isQuickReply = false) => {
     if (!content.trim() || !memberId) return;
+    // Garde client : si un contact est exigé et absent, on évite le roundtrip.
+    if (contactRequired && !contact.trim()) {
+      setError('Ce membre demande un @instagram ou un email pour pouvoir vous répondre.');
+      return;
+    }
     setSending(true);
     setError('');
     try {
@@ -81,6 +89,11 @@ function MessageForm() {
         if (data.code === 'conversation_limit') {
           captureEvent('message_blocked_conversation_limit', { member_id: memberId });
           setLimitReached(true); setSending(false); return;
+        }
+        if (data.code === 'contact_required') {
+          setContactRequired(true);
+          setError('Ce membre demande un @instagram ou un email pour pouvoir vous répondre.');
+          setSending(false); return;
         }
         throw new Error(errorMsg);
       }
@@ -225,14 +238,19 @@ function MessageForm() {
       {/* Contact remonté */}
       <div className="flex flex-col gap-1 animate-stagger-2">
         <label className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">
-          Votre @instagram ou email <span className="text-brand-white/30 normal-case tracking-normal ml-1">(recommandé)</span>
+          Votre @instagram ou email{' '}
+          <span className={`normal-case tracking-normal ml-1 ${contactRequired ? 'text-[#C5A059]/80' : 'text-brand-white/30'}`}>
+            ({contactRequired ? 'requis' : 'recommandé'})
+          </span>
         </label>
         <p className="font-ui text-xxs md:text-xs text-brand-gray/20 leading-relaxed mb-1">
-          Sans contact, il ne pourra pas vous répondre.
+          {contactRequired
+            ? 'Ce membre n’accepte que les messages avec un contact.'
+            : 'Sans contact, il ne pourra pas vous répondre.'}
         </p>
-        <input type="text" placeholder="Anonyme par défaut" value={contact} maxLength={50}
+        <input type="text" placeholder={contactRequired ? '@instagram ou email' : 'Anonyme par défaut'} value={contact} maxLength={50}
           onChange={(e) => setContact(e.target.value)}
-          className="w-full bg-transparent border-b border-brand-gray/15 focus:border-brand-white/40 text-brand-white font-ui font-light text-base py-3 outline-none transition-colors placeholder:text-brand-gray/15"
+          className={`w-full bg-transparent border-b text-brand-white font-ui font-light text-base py-3 outline-none transition-colors placeholder:text-brand-gray/15 ${contactRequired && !contact.trim() ? 'border-[#C5A059]/40 focus:border-[#C5A059]/70' : 'border-brand-gray/15 focus:border-brand-white/40'}`}
           style={{ minHeight: '44px' }}
         />
       </div>

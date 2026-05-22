@@ -11,6 +11,7 @@ export interface Member {
   photo_url:               string | null;
   scan_count:              number;
   is_paused:               boolean;
+  require_contact:         boolean;
   plan:                    MemberPlan;
   stripe_customer_id:      string | null;
   stripe_subscription_id:  string | null;
@@ -47,6 +48,8 @@ export interface Message {
   reply?:         string | null;
   replied_at?:    string | null;
   reply_read_at?: string | null;
+  // Exposé par la vue member_inbox (migration 038) — conv fermée par blocage.
+  blocked_at?:    string | null;
   created_at:     string;
 }
 

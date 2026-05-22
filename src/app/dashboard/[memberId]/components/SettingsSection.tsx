@@ -319,11 +319,12 @@ function DeleteAccountButton() {
 
 export default function SettingsSection({ member }: { member: Member }) {
   const [isPaused,    setIsPaused]    = useState(member.is_paused);
+  const [requireContact, setRequireContact] = useState(member.require_contact ?? false);
   const [marketingConsent, setMarketingConsent] = useState(member.marketing_consent ?? false);
   // saved/error sont PAR CHAMP : un succès sur un toggle ne doit pas effacer
   // l'erreur live de l'autre (ni afficher "Sauvegardé" sous le toggle qui a
   // échoué).
-  type Field = 'pause' | 'marketing';
+  type Field = 'pause' | 'require_contact' | 'marketing';
   const [saving,      setSaving]      = useState(false);
   const [savedField,  setSavedField]  = useState<Field | null>(null);
   const [errorField,  setErrorField]  = useState<{ field: Field; msg: string } | null>(null);
@@ -361,6 +362,12 @@ export default function SettingsSection({ member }: { member: Member }) {
     if (!(await updateField('pause', { is_paused: next }))) setIsPaused(!next);
   };
 
+  const toggleRequireContact = async () => {
+    const next = !requireContact;
+    setRequireContact(next);
+    if (!(await updateField('require_contact', { require_contact: next }))) setRequireContact(!next);
+  };
+
   const toggleMarketing = async () => {
     const next = !marketingConsent;
     setMarketingConsent(next);
@@ -391,6 +398,27 @@ export default function SettingsSection({ member }: { member: Member }) {
         </div>
         {savedField === 'pause' && <p className="font-ui text-xs text-green-400/60">Sauvegardé.</p>}
         {errorField?.field === 'pause' && <p className="font-ui text-xs text-red-400">{errorField.msg}</p>}
+
+        <div className="w-full h-px bg-brand-gray/10" />
+
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-0.5">
+            <p className="font-ui text-sm text-brand-white/80">Exiger un contact</p>
+            <p className="font-ui text-xs text-brand-gray/40 leading-relaxed">
+              Seules les personnes qui laissent un @instagram ou un email pourront vous écrire. Filtre les messages anonymes.
+            </p>
+          </div>
+          <button
+            onClick={toggleRequireContact}
+            disabled={saving}
+            aria-label={requireContact ? 'Ne plus exiger un contact' : 'Exiger un contact pour vous écrire'}
+            className={`w-10 h-5 rounded-full transition-colors flex-shrink-0 relative ${requireContact ? 'bg-brand-white/60' : 'bg-brand-gray/20'}`}
+          >
+            <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${requireContact ? 'left-5' : 'left-0.5'}`} />
+          </button>
+        </div>
+        {savedField === 'require_contact' && <p className="font-ui text-xs text-green-400/60">Sauvegardé.</p>}
+        {errorField?.field === 'require_contact' && <p className="font-ui text-xs text-red-400">{errorField.msg}</p>}
       </div>
 
       {/* Communications email (consent marketing — distinct du consent analytics) */}

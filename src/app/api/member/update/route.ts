@@ -13,6 +13,7 @@ const schema = z.object({
   pitch:             z.string().min(1).max(500).trim().optional(),
   instagram:         z.string().max(50).optional(),
   is_paused:         z.boolean().optional(),
+  require_contact:   z.boolean().optional(),
   marketing_consent: z.boolean().optional(),
 });
 

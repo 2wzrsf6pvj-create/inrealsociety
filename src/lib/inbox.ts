@@ -42,6 +42,21 @@ export async function getMessagesCount(memberId: string): Promise<number> {
   return count ?? 0;
 }
 
+// Total des conversations AFFICHÉES dans l'inbox (racine, non modérées, BLOQUÉES
+// INCLUSES) — sert à la pagination « Voir plus ». Distinct de getMessagesCount
+// (actives, hors bloquées) qui pilote le plafond premium : les conv bloquées
+// apparaissent dans la liste (avec badge) mais ne comptent pas comme actives.
+export async function getConversationsTotal(memberId: string): Promise<number> {
+  const { count, error } = await supabaseAdmin
+    .from('messages')
+    .select('*', { count: 'exact', head: true })
+    .eq('member_id', memberId)
+    .eq('moderated', false)
+    .is('parent_id', null);
+  if (error) return 0;
+  return count ?? 0;
+}
+
 export async function getUnreadMessagesCount(memberId: string): Promise<number> {
   // Compte les messages racine non lus uniquement (pas les replies dans le thread).
   const { count, error } = await supabaseAdmin

@@ -19,7 +19,7 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 export async function getPublicMember(id: string): Promise<Member | null> {
   const { data, error } = await supabase
     .from('members')
-    .select('id, name, pitch, instagram, photo_url, scan_count, is_paused, plan, created_at, updated_at')
+    .select('id, name, pitch, instagram, photo_url, scan_count, is_paused, require_contact, plan, created_at, updated_at')
     .eq('id', id)
     .single();
   if (error || !data) return null;

@@ -53,6 +53,7 @@ export default function DashboardClient({
   messages,
   unreadCount,
   activeConversations = 0,
+  totalConversations = 0,
   scansByDay = [],
 }: {
   member:               Member;
@@ -60,6 +61,7 @@ export default function DashboardClient({
   messages:             Message[];
   unreadCount:          number;
   activeConversations?: number;
+  totalConversations?:  number;
   scansByDay?:          { date: string; count: number }[];
 }) {
   const [tab, setTab]     = useState<Tab>('home');
@@ -157,6 +159,7 @@ export default function DashboardClient({
               memberId={member.id}
               plan={member.plan}
               activeConversations={activeConversations}
+              totalConversations={totalConversations}
             />
           )}
 

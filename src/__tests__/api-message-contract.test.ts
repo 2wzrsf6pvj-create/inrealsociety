@@ -27,7 +27,7 @@ const UUID = '11111111-1111-4111-8111-111111111111';
 
 // Construit l'implémentation de supabaseAdmin.from selon le scénario.
 function wireSupabase({ member, firstScanAt, activeConvs }: {
-  member: { id: string; name: string; email: string | null; is_paused: boolean; plan: string } | null;
+  member: { id: string; name: string; email: string | null; is_paused: boolean; require_contact?: boolean; plan: string } | null;
   firstScanAt?: string | null;
   activeConvs?: number;
 }) {
@@ -99,5 +99,14 @@ describe('POST /api/message — contrat des codes d\'erreur', () => {
     const res = await POST(makeReq({ memberId: UUID, content: 'salut' }));
     expect(res.status).toBe(403);
     expect((await res.json()).code).toBe('conversation_limit');
+  });
+
+  it('require_contact actif + aucun contact → 403 code=contact_required', async () => {
+    wireSupabase({
+      member: { id: UUID, name: 'A', email: 'a@b.c', is_paused: false, require_contact: true, plan: 'free' },
+    });
+    const res = await POST(makeReq({ memberId: UUID, content: 'salut' })); // pas de senderContact
+    expect(res.status).toBe(403);
+    expect((await res.json()).code).toBe('contact_required');
   });
 });
