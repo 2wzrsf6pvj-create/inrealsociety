@@ -72,16 +72,16 @@ export default function ResetPasswordPage() {
           {expired ? (
             <>
               <p className="font-display text-2xl font-light">Ce lien est invalide ou expiré.</p>
-              <p className="font-ui text-sm text-brand-gray/40 leading-relaxed">
+              <p className="font-ui text-sm text-brand-gray/50 leading-relaxed">
                 Les liens de réinitialisation sont à usage unique et limités dans le temps.
                 Demandez-en un nouveau.
               </p>
-              <a href="/auth/forgot-password" className="font-ui text-sm text-brand-gray/30 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white transition-colors mt-4">
+              <a href="/auth/forgot-password" className="font-ui text-sm text-brand-gray/55 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white transition-colors mt-4">
                 Renvoyer un lien
               </a>
             </>
           ) : (
-            <p className="font-ui text-sm font-light text-brand-gray/40 tracking-wide">
+            <p className="font-ui text-sm font-light text-brand-gray/50 tracking-wide">
               Vérification du lien en cours...
             </p>
           )}
@@ -109,8 +109,8 @@ export default function ResetPasswordPage() {
 
         <form onSubmit={handleSubmit} noValidate className="w-full flex flex-col gap-5 animate-stagger-2">
           <div className="flex flex-col gap-1">
-            <label className="font-ui text-xs text-brand-gray/40 tracking-[0.18em] uppercase">
-              Nouveau mot de passe <span className="text-brand-gray/20 normal-case tracking-normal">(8 car. min)</span>
+            <label className="font-ui text-xs text-brand-gray/50 tracking-[0.18em] uppercase">
+              Nouveau mot de passe <span className="text-brand-gray/50 normal-case tracking-normal">(8 car. min)</span>
             </label>
             <input
               type="password"
@@ -123,7 +123,7 @@ export default function ResetPasswordPage() {
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="font-ui text-xs text-brand-gray/40 tracking-[0.18em] uppercase">
+            <label className="font-ui text-xs text-brand-gray/50 tracking-[0.18em] uppercase">
               Confirmer
             </label>
             <input
@@ -151,7 +151,7 @@ export default function ResetPasswordPage() {
         </form>
 
         <a href="/auth/login"
-          className="font-ui text-xs text-brand-gray/25 tracking-[0.1em] underline underline-offset-4 hover:text-brand-gray/50 transition-colors animate-stagger-3 mt-2"
+          className="font-ui text-xs text-brand-gray/55 tracking-[0.1em] underline underline-offset-4 hover:text-brand-white/80 transition-colors animate-stagger-3 mt-2"
         >
           &larr; retour &agrave; la connexion
         </a>

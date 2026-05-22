@@ -37,14 +37,14 @@ export default function JoinPage() {
         </div>
 
         <div className="flex flex-col gap-4 animate-stagger-1">
-          <p className="font-ui text-xs text-brand-gray/30 tracking-[0.3em] uppercase">Invitation</p>
+          <p className="font-ui text-xs text-brand-gray/55 tracking-[0.3em] uppercase">Invitation</p>
           <h1 className="font-display text-3xl md:text-4xl font-light tracking-[0.04em] leading-tight">
             {referrer
               ? <>{referrer}<br /><span className="text-brand-gray/50 text-2xl">vous invite.</span></>
               : <>Vous avez été invité.</>
             }
           </h1>
-          <p className="font-ui text-sm font-light text-brand-gray/40 leading-relaxed">
+          <p className="font-ui text-sm font-light text-brand-gray/50 leading-relaxed">
             InRealSociety — le vêtement qui dit oui.<br />
             Portez le consentement social.
           </p>
@@ -60,14 +60,14 @@ export default function JoinPage() {
             Découvrir le t-shirt
           </Link>
           <Link href="/manifeste"
-            className="w-full py-3 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.15em] uppercase text-brand-gray/35 hover:border-brand-gray/30 transition-colors"
+            className="w-full py-3 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.15em] uppercase text-brand-gray/60 hover:border-brand-gray/30 transition-colors"
             style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
             En savoir plus
           </Link>
         </div>
 
-        <p className="font-ui text-xxs text-brand-gray/20 leading-relaxed animate-stagger-3">
+        <p className="font-ui text-xxs text-brand-gray/50 leading-relaxed animate-stagger-3">
           Votre lien d&apos;invitation est actif.<br />
           Il sera associé à votre commande.
         </p>

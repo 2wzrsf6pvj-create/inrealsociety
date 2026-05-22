@@ -76,14 +76,14 @@ function LandingContent() {
                 <span className="font-semibold italic">{scannerName}</span>.
               </p>
               {memberName && (
-                <p className="font-ui text-xs text-brand-gray/30 tracking-[0.1em]">
+                <p className="font-ui text-xs text-brand-gray/55 tracking-[0.1em]">
                   Profil de <span className="text-brand-white/50">{memberName}</span>
                 </p>
               )}
               <button
                 onClick={() => { localStorage.removeItem('scannerName'); localStorage.removeItem('memberId'); setScannerName(''); setHasMemberId(false); }}
                 aria-label="Changer d'identité — ce n'est pas vous"
-                className="font-ui text-xs text-brand-gray/30 tracking-[0.1em] underline underline-offset-4 py-2"
+                className="font-ui text-xs text-brand-gray/55 tracking-[0.1em] underline underline-offset-4 py-2"
                 style={{ minHeight: '44px' }}
               >
                 Ce n&apos;est pas vous ?
@@ -100,11 +100,11 @@ function LandingContent() {
                 Donnez le contrôle à ceux qui osent.
               </p>
               <div className="flex items-center justify-center gap-4">
-                <span className="font-ui text-xs text-brand-gray/25 tracking-[0.15em] uppercase">Anonyme</span>
+                <span className="font-ui text-xs text-brand-gray/55 tracking-[0.15em] uppercase">Anonyme</span>
                 <span className="text-brand-gray/15">·</span>
-                <span className="font-ui text-xs text-brand-gray/25 tracking-[0.15em] uppercase">Éphémère</span>
+                <span className="font-ui text-xs text-brand-gray/55 tracking-[0.15em] uppercase">Éphémère</span>
                 <span className="text-brand-gray/15">·</span>
-                <span className="font-ui text-xs text-brand-gray/25 tracking-[0.15em] uppercase">Sécurisé</span>
+                <span className="font-ui text-xs text-brand-gray/55 tracking-[0.15em] uppercase">Sécurisé</span>
               </div>
             </div>
           )}
@@ -131,7 +131,7 @@ function LandingContent() {
           )}
         </div>
 
-        <p className="font-ui text-xs text-brand-gray/20 tracking-[0.25em] uppercase animate-stagger-4">
+        <p className="font-ui text-xs text-brand-gray/50 tracking-[0.25em] uppercase animate-stagger-4">
           The IRL Social Club
         </p>
       </div>
@@ -139,21 +139,21 @@ function LandingContent() {
       {/* Liens discrets en bas */}
       <div className="absolute bottom-6 flex items-center justify-center gap-6 w-full px-6">
         <Link href="/manifeste"
-          className="font-ui text-xxs md:text-xs text-brand-gray/15 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray/40 transition-colors py-3"
+          className="font-ui text-xxs md:text-xs text-brand-gray/50 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white/80 transition-colors py-3"
           style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}
         >
           Manifeste
         </Link>
         <span className="text-brand-gray/15">·</span>
         <Link href="/shop"
-          className="font-ui text-xxs md:text-xs text-brand-gray/15 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray/40 transition-colors py-3"
+          className="font-ui text-xxs md:text-xs text-brand-gray/50 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white/80 transition-colors py-3"
           style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}
         >
           Boutique
         </Link>
         <span className="text-brand-gray/15">·</span>
         <Link href="/auth/login"
-          className="font-ui text-xxs md:text-xs text-brand-gray/15 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray/40 transition-colors py-3"
+          className="font-ui text-xxs md:text-xs text-brand-gray/50 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white/80 transition-colors py-3"
           style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}
         >
           Membres

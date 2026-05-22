@@ -25,7 +25,7 @@ export default function CGVPage() {
           <h1 className="font-display text-3xl md:text-4xl font-light tracking-[0.04em]">
             Conditions Générales de Vente
           </h1>
-          <p className="font-ui text-sm text-brand-gray/40 tracking-wide">
+          <p className="font-ui text-sm text-brand-gray/50 tracking-wide">
             Version en vigueur — Dernière mise à jour : avril 2025
           </p>
         </div>
@@ -137,7 +137,7 @@ export default function CGVPage() {
               'Colis perdu ou non livré dans un délai de 30 jours ouvrés',
             ].map((item) => (
               <li key={item} className="flex items-start gap-2">
-                <span className="text-brand-gray/30 font-ui text-sm md:text-base flex-shrink-0">—</span>
+                <span className="text-brand-gray/55 font-ui text-sm md:text-base flex-shrink-0">—</span>
                 <span className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">{item}</span>
               </li>
             ))}
@@ -205,11 +205,11 @@ export default function CGVPage() {
         <div className="border-t border-brand-gray/10 pt-6 flex items-center justify-between">
           <Link
             href="/"
-            className="font-ui text-sm text-brand-gray/40 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white transition-colors"
+            className="font-ui text-sm text-brand-gray/50 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white transition-colors"
           >
             ← Retour à l&apos;accueil
           </Link>
-          <span className="font-ui text-xs text-brand-gray/20 tracking-wide">
+          <span className="font-ui text-xs text-brand-gray/50 tracking-wide">
             In Real Society © {new Date().getFullYear()}
           </span>
         </div>

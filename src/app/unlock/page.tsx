@@ -61,12 +61,12 @@ export default function UnlockPage() {
           </div>
           <div className="flex flex-col gap-2">
             <p className="font-display text-2xl md:text-3xl font-light">Ce lien est incomplet.</p>
-            <p className="font-ui text-sm text-brand-gray/40 leading-relaxed">
+            <p className="font-ui text-sm text-brand-gray/50 leading-relaxed">
               Il vous faut un QR code valide<br />pour accéder à un profil.
             </p>
           </div>
           <button onClick={() => router.push('/')}
-            className="font-ui text-sm text-brand-gray/30 tracking-[0.15em] uppercase underline underline-offset-4 py-3"
+            className="font-ui text-sm text-brand-gray/55 tracking-[0.15em] uppercase underline underline-offset-4 py-3"
             style={{ minHeight: '44px' }}>
             ← retour à l&apos;accueil
           </button>
@@ -91,7 +91,7 @@ export default function UnlockPage() {
             : (
               <div className="flex flex-col gap-1">
                 <p className="font-ui text-sm font-light text-brand-gray/50">À qui ai-je l&apos;honneur ?</p>
-                <p className="font-ui text-xs text-brand-gray/25 tracking-[0.05em] leading-relaxed mt-1">
+                <p className="font-ui text-xs text-brand-gray/55 tracking-[0.05em] leading-relaxed mt-1">
                   Votre prénom apparaîtra sur son profil.<br />Rien d&apos;autre n&apos;est demandé.
                 </p>
               </div>
@@ -104,7 +104,7 @@ export default function UnlockPage() {
             <input ref={inputRef} type="text" placeholder="votre prénom..." value={firstName}
               maxLength={30} autoComplete="given-name" autoFocus
               onChange={(e) => { setFirstName(e.target.value); if (error) setError(''); }}
-              className={`w-full bg-transparent border-b text-brand-white font-ui font-light text-base py-3 outline-none transition-colors placeholder:text-brand-gray/20 ${error ? 'border-red-500' : 'border-brand-gray/20 focus:border-brand-white'}`}
+              className={`w-full bg-transparent border-b text-brand-white font-ui font-light text-base py-3 outline-none transition-colors placeholder:text-brand-gray/50 ${error ? 'border-red-500' : 'border-brand-gray/20 focus:border-brand-white'}`}
               style={{ minHeight: '44px' }}
             />
             <div className={`font-ui text-sm text-red-400 tracking-wide transition-all duration-200 overflow-hidden ${error ? 'max-h-8 opacity-100' : 'max-h-0 opacity-0'}`}>
@@ -122,7 +122,7 @@ export default function UnlockPage() {
           {savedName && (
             <button type="button"
               onClick={() => { setSavedName(''); setFirstName(''); localStorage.removeItem('scannerName'); }}
-              className="font-ui text-sm text-brand-gray/30 tracking-[0.1em] underline underline-offset-4 py-2"
+              className="font-ui text-sm text-brand-gray/55 tracking-[0.1em] underline underline-offset-4 py-2"
               style={{ minHeight: '44px' }}
             >
               Ce n&apos;est pas moi
@@ -131,7 +131,7 @@ export default function UnlockPage() {
         </form>
 
         <button onClick={() => router.push('/')}
-          className="font-ui text-sm text-brand-gray/40 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray transition-colors py-2"
+          className="font-ui text-sm text-brand-gray/50 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray transition-colors py-2"
           style={{ minHeight: '44px' }}
         >
           ← retour

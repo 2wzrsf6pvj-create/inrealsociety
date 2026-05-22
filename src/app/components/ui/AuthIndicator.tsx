@@ -82,7 +82,7 @@ export default function AuthIndicator() {
             {auth.name ? getInitials(auth.name) : '?'}
           </span>
         </div>
-        <span className="font-ui text-[10px] text-brand-white/40 tracking-[0.15em] uppercase group-hover:text-brand-white/70 transition-colors">
+        <span className="font-ui text-[10px] text-brand-white/50 tracking-[0.15em] uppercase group-hover:text-brand-white/80 transition-colors">
           Mon espace
         </span>
       </Link>
@@ -96,12 +96,12 @@ export default function AuthIndicator() {
       aria-label="Se connecter"
     >
       <div className="w-6 h-6 rounded-full border border-brand-gray/15 flex items-center justify-center">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-brand-gray/30">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-brand-gray/55">
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
           <circle cx="12" cy="7" r="4" />
         </svg>
       </div>
-      <span className="font-ui text-[10px] text-brand-gray/30 tracking-[0.15em] uppercase hover:text-brand-gray/60 transition-colors">
+      <span className="font-ui text-[10px] text-brand-gray/55 tracking-[0.15em] uppercase hover:text-brand-white/80 transition-colors">
         Connexion
       </span>
     </Link>

@@ -36,7 +36,7 @@ function NewsletterCapture({ source }: { source: string }) {
         <p className="font-display text-lg font-light italic text-brand-gray/60">
           Vous serez prévenu·e.
         </p>
-        <p className="font-ui text-xs text-brand-gray/30">
+        <p className="font-ui text-xs text-brand-gray/55">
           Pas de spam, juste les vrais moments du projet.
         </p>
       </div>
@@ -46,7 +46,7 @@ function NewsletterCapture({ source }: { source: string }) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3 max-w-sm mx-auto">
       <div className="text-center flex flex-col gap-1">
-        <p className="font-ui text-xs text-brand-gray/30 tracking-[0.25em] uppercase">Pas encore prêt·e ?</p>
+        <p className="font-ui text-xs text-brand-gray/55 tracking-[0.25em] uppercase">Pas encore prêt·e ?</p>
         <p className="font-display text-xl md:text-2xl font-light text-brand-gray/70">
           Restez informé·e du lancement et des prochaines collections.
         </p>
@@ -58,7 +58,7 @@ function NewsletterCapture({ source }: { source: string }) {
           value={email}
           onChange={e => setEmail(e.target.value)}
           required
-          className="flex-1 bg-transparent border-b border-brand-gray/20 focus:border-brand-white/50 text-brand-white font-ui font-light text-sm py-3 outline-none transition-colors placeholder:text-brand-gray/20"
+          className="flex-1 bg-transparent border-b border-brand-gray/20 focus:border-brand-white/50 text-brand-white font-ui font-light text-sm py-3 outline-none transition-colors placeholder:text-brand-gray/50"
           style={{ minHeight: '44px' }}
         />
         <button type="submit" disabled={sending || !email.trim()}
@@ -67,7 +67,7 @@ function NewsletterCapture({ source }: { source: string }) {
           {sending ? '...' : 'OK'}
         </button>
       </div>
-      <p className="font-ui text-xxs text-brand-gray/20 text-center">
+      <p className="font-ui text-xxs text-brand-gray/50 text-center">
         Désabonnable à tout moment via le lien dans chaque email.
       </p>
     </form>
@@ -86,23 +86,23 @@ function SizeGuide() {
 
   return (
     <>
-      <button onClick={() => setOpen(true)} className="font-ui text-xxs text-brand-gray/25 underline underline-offset-2 hover:text-brand-gray/50 transition-colors">
+      <button onClick={() => setOpen(true)} className="font-ui text-xxs text-brand-gray/55 underline underline-offset-2 hover:text-brand-white/80 transition-colors">
         Guide des tailles
       </button>
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-6" onClick={() => setOpen(false)}>
           <div className="bg-[#0a0a0a] border border-brand-gray/15 rounded-[2px] p-6 w-full max-w-xs flex flex-col gap-4" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between">
-              <p className="font-ui text-xs text-brand-gray/40 tracking-[0.2em] uppercase">Guide des tailles</p>
-              <button onClick={() => setOpen(false)} aria-label="Fermer le guide des tailles" className="font-ui text-xs text-brand-gray/30 hover:text-brand-white transition-colors">✕</button>
+              <p className="font-ui text-xs text-brand-gray/50 tracking-[0.2em] uppercase">Guide des tailles</p>
+              <button onClick={() => setOpen(false)} aria-label="Fermer le guide des tailles" className="font-ui text-xs text-brand-gray/55 hover:text-brand-white transition-colors">✕</button>
             </div>
-            <p className="font-ui text-xxs text-brand-gray/25">Comfort Colors 1717 — coupe oversize. En cas de doute, prenez votre taille habituelle.</p>
+            <p className="font-ui text-xxs text-brand-gray/55">Comfort Colors 1717 — coupe oversize. En cas de doute, prenez votre taille habituelle.</p>
             <table className="w-full">
               <thead>
                 <tr className="border-b border-brand-gray/10">
-                  <th className="font-ui text-xxs text-brand-gray/30 tracking-[0.15em] uppercase text-left py-2">Taille</th>
-                  <th className="font-ui text-xxs text-brand-gray/30 tracking-[0.15em] uppercase text-center py-2">Poitrine</th>
-                  <th className="font-ui text-xxs text-brand-gray/30 tracking-[0.15em] uppercase text-center py-2">Longueur</th>
+                  <th className="font-ui text-xxs text-brand-gray/55 tracking-[0.15em] uppercase text-left py-2">Taille</th>
+                  <th className="font-ui text-xxs text-brand-gray/55 tracking-[0.15em] uppercase text-center py-2">Poitrine</th>
+                  <th className="font-ui text-xxs text-brand-gray/55 tracking-[0.15em] uppercase text-center py-2">Longueur</th>
                 </tr>
               </thead>
               <tbody>
@@ -174,8 +174,8 @@ export default function ShopClient() {
 
       <nav className="relative z-10 flex items-center justify-between px-6 py-6 border-b border-brand-gray/10">
         <Link href="/" className="font-display text-xl font-light tracking-[0.1em]">)(</Link>
-        <span className="font-ui text-xs text-brand-gray/30 tracking-[0.3em] uppercase">In Real Society</span>
-        <Link href="/register" className="font-ui text-xs text-brand-gray/20 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray/50 transition-colors" style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}>
+        <span className="font-ui text-xs text-brand-gray/55 tracking-[0.3em] uppercase">In Real Society</span>
+        <Link href="/register" className="font-ui text-xs text-brand-gray/50 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white/80 transition-colors" style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}>
           Membres
         </Link>
       </nav>
@@ -194,7 +194,7 @@ export default function ShopClient() {
         {/* Hero */}
         <section className="py-16 md:py-20 flex flex-col items-center text-center gap-8 animate-stagger-1">
           <div className="flex flex-col gap-2">
-            <p className="font-ui text-xs text-brand-gray/30 tracking-[0.35em] uppercase">The IRL Social Club</p>
+            <p className="font-ui text-xs text-brand-gray/55 tracking-[0.35em] uppercase">The IRL Social Club</p>
             <h1 className="font-display text-4xl md:text-5xl font-light leading-[1.1] tracking-[0.03em]">
               Portez une<br />intention.
             </h1>
@@ -204,11 +204,11 @@ export default function ShopClient() {
             Il donne le contrôle à celle qui ose scanner.
           </p>
           <div className="flex items-center gap-4">
-            <span className="font-ui text-xs text-brand-gray/20 tracking-[0.2em] uppercase">Anonyme</span>
+            <span className="font-ui text-xs text-brand-gray/50 tracking-[0.2em] uppercase">Anonyme</span>
             <span className="text-brand-gray/15">·</span>
-            <span className="font-ui text-xs text-brand-gray/20 tracking-[0.2em] uppercase">Éphémère</span>
+            <span className="font-ui text-xs text-brand-gray/50 tracking-[0.2em] uppercase">Éphémère</span>
             <span className="text-brand-gray/15">·</span>
-            <span className="font-ui text-xs text-brand-gray/20 tracking-[0.2em] uppercase">Sécurisé</span>
+            <span className="font-ui text-xs text-brand-gray/50 tracking-[0.2em] uppercase">Sécurisé</span>
           </div>
         </section>
 
@@ -233,7 +233,7 @@ export default function ShopClient() {
                 </div>
               </div>
               <p className={`font-ui text-xs tracking-[0.2em] uppercase ${
-                tshirtColor === 'dark' ? 'text-brand-gray/20' : 'text-brand-black/30'
+                tshirtColor === 'dark' ? 'text-brand-gray/50' : 'text-brand-black/30'
               }`}>
                 T-shirt · Comfort Colors 1717 · {colorLabel}
               </p>
@@ -241,7 +241,7 @@ export default function ShopClient() {
 
             {/* Sélecteur couleur */}
             <div className="flex flex-col gap-2">
-              <p className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">Couleur</p>
+              <p className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Couleur</p>
               <div className="flex gap-3">
                 {([
                   { value: 'dark'  as const, label: 'Noir',  bg: '#0a0a0a' },
@@ -266,10 +266,10 @@ export default function ShopClient() {
             {/* Sélecteur taille + guide */}
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <p className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">Taille</p>
+                <p className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Taille</p>
                 <SizeGuide />
               </div>
-              <p className="font-ui text-xxs text-brand-gray/30 -mt-1">
+              <p className="font-ui text-xxs text-brand-gray/55 -mt-1">
                 Coupe <span className="text-brand-gray/50">oversize</span> · M sélectionné par défaut · prenez votre taille habituelle
               </p>
               <div className="flex gap-2">
@@ -280,7 +280,7 @@ export default function ShopClient() {
                     className={`flex-1 py-2.5 rounded-[2px] border transition-all font-ui text-sm tracking-[0.1em] ${
                       tshirtSize === size
                         ? 'border-brand-white/60 bg-brand-white/5 text-brand-white'
-                        : 'border-brand-gray/15 text-brand-gray/40 hover:border-brand-gray/30'
+                        : 'border-brand-gray/15 text-brand-gray/50 hover:border-brand-gray/30'
                     }`}
                   >
                     {size}
@@ -296,7 +296,7 @@ export default function ShopClient() {
                   <h2 className="font-display text-2xl md:text-3xl font-light tracking-[0.04em]">
                     T-shirt In Real Society
                   </h2>
-                  <p className="font-ui text-xs md:text-sm text-brand-gray/40">
+                  <p className="font-ui text-xs md:text-sm text-brand-gray/50">
                     Comfort Colors 1717 · {colorLabel} · QR code imprimé dans le dos
                   </p>
                 </div>
@@ -323,27 +323,27 @@ export default function ShopClient() {
                   Chronologie honnête : production à la demande PUIS expédition. */}
               <div className="flex flex-col gap-1.5 py-3 px-4 bg-[#0a0a0a] border border-brand-gray/10 rounded-[2px]">
                 <div className="flex items-center justify-between">
-                  <span className="font-ui text-xxs text-brand-gray/40 tracking-[0.15em] uppercase">Production</span>
+                  <span className="font-ui text-xxs text-brand-gray/50 tracking-[0.15em] uppercase">Production</span>
                   <span className="font-ui text-xs text-brand-gray/60">2-5 j. (à la demande)</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="font-ui text-xxs text-brand-gray/40 tracking-[0.15em] uppercase">Expédition</span>
+                  <span className="font-ui text-xxs text-brand-gray/50 tracking-[0.15em] uppercase">Expédition</span>
                   <span className="font-ui text-xs text-brand-gray/60">5-10 j. · 2-4 j. en express</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="font-ui text-xxs text-brand-gray/40 tracking-[0.15em] uppercase">Frais</span>
+                  <span className="font-ui text-xxs text-brand-gray/50 tracking-[0.15em] uppercase">Frais</span>
                   <span className="font-ui text-xs text-brand-gray/60">5€ standard · 12€ express</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="font-ui text-xxs text-brand-gray/40 tracking-[0.15em] uppercase">Zones</span>
+                  <span className="font-ui text-xxs text-brand-gray/50 tracking-[0.15em] uppercase">Zones</span>
                   <span className="font-ui text-xs text-brand-gray/60">UE · UK · USA · Canada</span>
                 </div>
               </div>
 
               <form onSubmit={handleBuy} className="flex flex-col gap-3">
                 <div className="flex flex-col gap-1">
-                  <label className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">Votre email</label>
-                  <p className="font-ui text-xxs md:text-xs text-brand-gray/20 leading-relaxed">
+                  <label className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Votre email</label>
+                  <p className="font-ui text-xxs md:text-xs text-brand-gray/50 leading-relaxed">
                     Votre code d&apos;activation vous sera envoyé ici après paiement.
                   </p>
                   <input
@@ -351,7 +351,7 @@ export default function ShopClient() {
                     placeholder="votre@email.com"
                     value={email}
                     onChange={e => { setEmail(e.target.value); setError(''); }}
-                    className="w-full bg-transparent border-b border-brand-gray/20 focus:border-brand-white/50 text-brand-white font-ui font-light text-base py-3 outline-none transition-colors placeholder:text-brand-gray/20"
+                    className="w-full bg-transparent border-b border-brand-gray/20 focus:border-brand-white/50 text-brand-white font-ui font-light text-base py-3 outline-none transition-colors placeholder:text-brand-gray/50"
                     style={{ minHeight: '44px' }}
                   />
                   {error && <p className="font-ui text-sm text-red-400">{error}</p>}
@@ -366,12 +366,12 @@ export default function ShopClient() {
                   {loading ? 'Redirection...' : `Commander en ${colorLabel} — 49€`}
                 </button>
 
-                <p className="font-ui text-xxs md:text-xs text-brand-gray/20 text-center leading-relaxed">
+                <p className="font-ui text-xxs md:text-xs text-brand-gray/50 text-center leading-relaxed">
                   Paiement sécurisé par Stripe · Livraison choisie à l&apos;étape suivante
                 </p>
-                <p className="font-ui text-xxs text-brand-gray/15 text-center leading-relaxed">
+                <p className="font-ui text-xxs text-brand-gray/50 text-center leading-relaxed">
                   En commandant, vous acceptez les{' '}
-                  <Link href="/cgv" className="underline underline-offset-2 hover:text-brand-gray/40 transition-colors">
+                  <Link href="/cgv" className="underline underline-offset-2 hover:text-brand-white/80 transition-colors">
                     Conditions Générales de Vente
                   </Link>
                 </p>
@@ -394,10 +394,10 @@ export default function ShopClient() {
                 { step: '04', title: 'Recevez', desc: 'Quelqu\'un ose scanner. Vous recevez un message. Vous décidez de la suite.' },
               ].map((item) => (
                 <div key={item.step} className="flex gap-5">
-                  <span className="font-ui text-xs text-brand-gray/20 tracking-[0.1em] mt-1 flex-shrink-0">{item.step}</span>
+                  <span className="font-ui text-xs text-brand-gray/50 tracking-[0.1em] mt-1 flex-shrink-0">{item.step}</span>
                   <div className="flex flex-col gap-1">
                     <p className="font-ui text-sm md:text-base font-medium text-brand-white/80">{item.title}</p>
-                    <p className="font-ui text-sm text-brand-gray/40 leading-relaxed">{item.desc}</p>
+                    <p className="font-ui text-sm text-brand-gray/50 leading-relaxed">{item.desc}</p>
                   </div>
                 </div>
               ))}
@@ -421,7 +421,7 @@ export default function ShopClient() {
                   <p className="font-display text-base md:text-lg font-light italic text-brand-gray/60 leading-relaxed">
                     &ldquo;{t.quote}&rdquo;
                   </p>
-                  <p className="font-ui text-xs text-brand-gray/25 tracking-[0.1em]">— {t.name}</p>
+                  <p className="font-ui text-xs text-brand-gray/55 tracking-[0.1em]">— {t.name}</p>
                 </div>
               ))}
             </div>
@@ -435,16 +435,16 @@ export default function ShopClient() {
 
         <footer className="py-12 border-t border-brand-gray/10 flex flex-col gap-4">
           <div className="flex items-center justify-between">
-            <span className="font-ui text-xs text-brand-gray/20 tracking-[0.2em] uppercase">In Real Society</span>
-            <Link href="/" className="font-ui text-xs text-brand-gray/20 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray/40 transition-colors">
+            <span className="font-ui text-xs text-brand-gray/50 tracking-[0.2em] uppercase">In Real Society</span>
+            <Link href="/" className="font-ui text-xs text-brand-gray/50 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white/80 transition-colors">
               L&apos;application
             </Link>
           </div>
           <div className="flex items-center gap-4">
-            <Link href="/cgv" className="font-ui text-xxs text-brand-gray/15 hover:text-brand-gray/40 transition-colors">
+            <Link href="/cgv" className="font-ui text-xxs text-brand-gray/50 hover:text-brand-white/80 transition-colors">
               CGV
             </Link>
-            <Link href="/manifeste" className="font-ui text-xxs text-brand-gray/15 hover:text-brand-gray/40 transition-colors">
+            <Link href="/manifeste" className="font-ui text-xxs text-brand-gray/50 hover:text-brand-white/80 transition-colors">
               Manifeste
             </Link>
           </div>

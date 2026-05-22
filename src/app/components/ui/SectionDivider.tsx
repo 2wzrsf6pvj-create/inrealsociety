@@ -7,7 +7,7 @@ export default function SectionDivider({ label }: { label: string }) {
   return (
     <div className="flex items-center gap-3 w-full">
       <div className="flex-1 h-px bg-brand-gray/10" />
-      <span className="font-ui text-xs text-brand-gray/30 tracking-[0.18em] uppercase">{label}</span>
+      <span className="font-ui text-xs text-brand-gray/55 tracking-[0.18em] uppercase">{label}</span>
       <div className="flex-1 h-px bg-brand-gray/10" />
     </div>
   );

@@ -33,7 +33,7 @@ function ActivationGuide({ member }: { member: Member }) {
   return (
     <div className="w-full bg-[#080808] border border-brand-gray/10 rounded-[2px] p-4 flex flex-col gap-4">
       <SectionDivider label="préparez votre arrivée" />
-      <p className="font-ui text-xs text-brand-gray/40 leading-relaxed">
+      <p className="font-ui text-xs text-brand-gray/50 leading-relaxed">
         Le premier scan est le plus dur. Trois étapes pour y être prêt·e.
       </p>
 
@@ -66,7 +66,7 @@ function ActivationGuide({ member }: { member: Member }) {
         <StepDot done={false} />
         <div className="flex flex-col gap-0.5">
           <span className="font-ui text-sm text-brand-white/70">Portez-le. Sortez.</span>
-          <span className="font-ui text-xxs text-brand-gray/30">C&apos;est là que tout se joue.</span>
+          <span className="font-ui text-xxs text-brand-gray/55">C&apos;est là que tout se joue.</span>
         </div>
       </div>
     </div>
@@ -80,7 +80,7 @@ function StatNumber({ value, label }: { value: number; label: string }) {
   return (
     <div className="flex flex-col items-center gap-1">
       <span className="font-display text-3xl md:text-4xl font-light tabular-nums">{display}</span>
-      <span className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">{label}</span>
+      <span className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">{label}</span>
     </div>
   );
 }
@@ -96,7 +96,7 @@ function StatsBlock({ member, recentScans }: { member: Member; recentScans: Scan
         <p className="font-display text-lg md:text-xl font-light italic text-brand-gray/50 leading-relaxed">
           &ldquo;{getWaitingPhrase(member.id)}&rdquo;
         </p>
-        <p className="font-ui text-xs text-brand-gray/25 tracking-[0.15em] uppercase">
+        <p className="font-ui text-xs text-brand-gray/55 tracking-[0.15em] uppercase">
           Membre depuis {days} jour{days > 1 ? 's' : ''}
         </p>
         <div className="w-px h-6 bg-gradient-to-b from-transparent via-brand-white/20 to-transparent" />
@@ -142,13 +142,13 @@ function ScanChart({ data }: { data: { date: string; count: number }[] }) {
                 style={{ height: `${Math.max(2, (d.count / max) * 48)}px` }}
               />
             </div>
-            <span className="font-ui text-[8px] text-brand-gray/25 tabular-nums">
+            <span className="font-ui text-[8px] text-brand-gray/55 tabular-nums">
               {new Date(d.date).toLocaleDateString('fr-FR', { weekday: 'narrow' })}
             </span>
           </div>
         ))}
       </div>
-      <p className="font-ui text-xxs text-brand-gray/25 text-center">
+      <p className="font-ui text-xxs text-brand-gray/55 text-center">
         {data.reduce((s, d) => s + d.count, 0)} scans cette semaine
       </p>
     </div>
@@ -195,7 +195,7 @@ export default function HomeSection({ member, recentScans, scansByDay = [] }: {
               {member.name.toUpperCase()}
               {member.plan === 'premium' && <span className="ml-1.5 text-[#C5A059]/70">✦</span>}
             </p>
-            <p className="font-ui text-xs text-brand-gray/40">
+            <p className="font-ui text-xs text-brand-gray/50">
               {member.is_paused
                 ? 'En pause'
                 : member.scan_count > 0
@@ -212,16 +212,16 @@ export default function HomeSection({ member, recentScans, scansByDay = [] }: {
       {/* Recent scans */}
       {recentScans.length > 0 && (
         <div className="w-full flex flex-col gap-2">
-          <p className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">Derniers scans</p>
+          <p className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Derniers scans</p>
           {recentScans.map(scan => (
             <div key={scan.id} className="flex items-center justify-between py-2 border-b border-brand-gray/10">
               <div className="flex flex-col gap-0.5">
                 <span className="font-ui text-sm font-light text-brand-white/70">{scan.scanner_name || 'Anonyme'}</span>
                 {scan.location && (
-                  <span className="font-ui text-xxs text-brand-gray/25">📍 {scan.location}</span>
+                  <span className="font-ui text-xxs text-brand-gray/55">📍 {scan.location}</span>
                 )}
               </div>
-              <span className="font-ui text-xs text-brand-gray/40 flex-shrink-0">{formatDate(scan.scanned_at)}</span>
+              <span className="font-ui text-xs text-brand-gray/50 flex-shrink-0">{formatDate(scan.scanned_at)}</span>
             </div>
           ))}
         </div>

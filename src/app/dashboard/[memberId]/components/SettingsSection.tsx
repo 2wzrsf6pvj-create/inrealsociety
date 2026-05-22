@@ -39,7 +39,7 @@ function PremiumBlock({ member }: { member: Member }) {
     <div className={`w-full border rounded-[2px] p-4 flex flex-col gap-3 ${isPremium ? 'bg-[#0a0a08] border-[#C5A059]/20' : 'bg-[#080808] border-brand-gray/10'}`}>
       <div className="flex items-center gap-3 w-full">
         <div className="flex-1 h-px bg-brand-gray/10" />
-        <span className={`font-ui text-xs tracking-[0.18em] uppercase ${isPremium ? 'text-[#C5A059]/60' : 'text-brand-gray/30'}`}>
+        <span className={`font-ui text-xs tracking-[0.18em] uppercase ${isPremium ? 'text-[#C5A059]/60' : 'text-brand-gray/55'}`}>
           {isPremium ? '✦ premium actif' : 'premium'}
         </span>
         <div className="flex-1 h-px bg-brand-gray/10" />
@@ -51,7 +51,7 @@ function PremiumBlock({ member }: { member: Member }) {
             Vous bénéficiez de la fenêtre 48h, des conversations illimitées et du badge ✦ sur votre profil.
           </p>
           <button onClick={handleAction} disabled={loading}
-            className="w-full py-2.5 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.15em] uppercase text-brand-gray/40 hover:border-brand-gray/30 hover:text-brand-gray/60 transition-colors rounded-[2px] disabled:opacity-40">
+            className="w-full py-2.5 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.15em] uppercase text-brand-gray/50 hover:border-brand-gray/30 hover:text-brand-white/80 transition-colors rounded-[2px] disabled:opacity-40">
             {loading ? 'Chargement...' : 'Gérer mon abonnement'}
           </button>
         </div>
@@ -74,7 +74,7 @@ function PremiumBlock({ member }: { member: Member }) {
             className="animate-shimmer w-full py-3 bg-[#C5A059] text-brand-black font-ui font-bold text-sm tracking-[0.25em] uppercase rounded-[1px] hover:bg-[#d4af6a] active:scale-[0.98] transition-all duration-200 disabled:opacity-50">
             {loading ? 'Chargement...' : 'Passer premium — 2,99€/mois'}
           </button>
-          <p className="font-ui text-xxs text-brand-gray/20 text-center">
+          <p className="font-ui text-xxs text-brand-gray/50 text-center">
             Sans engagement · Annulable à tout moment
           </p>
         </div>
@@ -115,7 +115,7 @@ function ReferralBlock({ memberId }: { memberId: string }) {
         Partagez votre lien. Chaque personne qui commande via ce lien bénéficie d&apos;une remise — vous, vous suivez vos parrainages ici.
       </p>
       <div className="flex items-center gap-2">
-        <p className="font-mono text-xs text-brand-gray/40 break-all flex-1 leading-relaxed">{referralUrl}</p>
+        <p className="font-mono text-xs text-brand-gray/50 break-all flex-1 leading-relaxed">{referralUrl}</p>
         <button onClick={handleCopy} className="font-ui text-xs text-brand-white/60 hover:text-brand-white transition-colors flex-shrink-0 px-2 py-1 border border-brand-gray/20 rounded-[2px] min-w-[58px]">
           {copied ? (
             <span key="copied" className="animate-success inline-flex items-center gap-1 text-green-400/70">
@@ -129,14 +129,14 @@ function ReferralBlock({ memberId }: { memberId: string }) {
       {typeof navigator !== 'undefined' && 'share' in navigator && (
         <button
           onClick={() => navigator.share({ title: 'In Real Society', text: 'Rejoins le club.', url: referralUrl }).catch(() => {})}
-          className="w-full py-2.5 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.15em] uppercase text-brand-gray/40 hover:border-brand-gray/30 hover:text-brand-gray/60 transition-colors rounded-[2px]"
+          className="w-full py-2.5 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.15em] uppercase text-brand-gray/50 hover:border-brand-gray/30 hover:text-brand-white/80 transition-colors rounded-[2px]"
         >
           Partager le lien
         </button>
       )}
       {count !== null && (
         <div className="flex items-center gap-4">
-          <p className="font-ui text-xs text-brand-gray/30">
+          <p className="font-ui text-xs text-brand-gray/55">
             {count} parrainage{count !== 1 ? 's' : ''}
           </p>
           {converted > 0 && (
@@ -190,7 +190,7 @@ function FeedbackBlock({ memberId }: { memberId: string }) {
         </p>
       ) : (
         <>
-          <p className="font-ui text-xxs md:text-xs text-brand-gray/40 leading-relaxed">
+          <p className="font-ui text-xxs md:text-xs text-brand-gray/50 leading-relaxed">
             Bug, suggestion, impression — tout retour est précieux.
           </p>
           <textarea
@@ -199,7 +199,7 @@ function FeedbackBlock({ memberId }: { memberId: string }) {
             maxLength={2000}
             rows={3}
             placeholder="Votre message..."
-            className="w-full bg-transparent border border-brand-gray/15 focus:border-brand-white/30 text-brand-white font-ui font-light text-sm p-3 outline-none transition-colors placeholder:text-brand-gray/15 rounded-[2px] resize-none"
+            className="w-full bg-transparent border border-brand-gray/15 focus:border-brand-white/30 text-brand-white font-ui font-light text-sm p-3 outline-none transition-colors placeholder:text-brand-gray/50 rounded-[2px] resize-none"
           />
           {error && <p className="font-ui text-xs text-red-400">{error}</p>}
           <button onClick={handleSubmit} disabled={sending || !message.trim()}
@@ -259,7 +259,7 @@ function ExportDataLink() {
     <a
       href="/api/member/export"
       download
-      className="font-ui text-xxs text-brand-gray/25 tracking-[0.1em] underline underline-offset-4 hover:text-brand-gray/60 transition-colors py-2"
+      className="font-ui text-xxs text-brand-gray/55 tracking-[0.1em] underline underline-offset-4 hover:text-brand-white/80 transition-colors py-2"
     >
       Télécharger mes données (RGPD)
     </a>
@@ -289,7 +289,7 @@ function DeleteAccountButton() {
     return (
       <button
         onClick={() => setConfirming(true)}
-        className="font-ui text-xxs text-brand-gray/20 tracking-[0.1em] underline underline-offset-4 hover:text-red-400/50 transition-colors py-2"
+        className="font-ui text-xxs text-brand-gray/50 tracking-[0.1em] underline underline-offset-4 hover:text-red-400/50 transition-colors py-2"
       >
         Supprimer mon compte
       </button>
@@ -383,7 +383,7 @@ export default function SettingsSection({ member }: { member: Member }) {
         <div className="flex items-center justify-between">
           <div className="flex flex-col gap-0.5">
             <p className="font-ui text-sm text-brand-white/80">Mettre en pause</p>
-            <p className="font-ui text-xs text-brand-gray/40 leading-relaxed">
+            <p className="font-ui text-xs text-brand-gray/50 leading-relaxed">
               Votre profil sera masqué. Les scanneurs verront &ldquo;Ce membre est indisponible&rdquo;.
             </p>
           </div>
@@ -404,7 +404,7 @@ export default function SettingsSection({ member }: { member: Member }) {
         <div className="flex items-center justify-between">
           <div className="flex flex-col gap-0.5">
             <p className="font-ui text-sm text-brand-white/80">Exiger un contact</p>
-            <p className="font-ui text-xs text-brand-gray/40 leading-relaxed">
+            <p className="font-ui text-xs text-brand-gray/50 leading-relaxed">
               Seules les personnes qui laissent un @instagram ou un email pourront vous écrire. Filtre les messages anonymes.
             </p>
           </div>
@@ -427,7 +427,7 @@ export default function SettingsSection({ member }: { member: Member }) {
         <div className="flex items-center justify-between">
           <div className="flex flex-col gap-0.5">
             <p className="font-ui text-sm text-brand-white/80">Newsletter et actualités</p>
-            <p className="font-ui text-xs text-brand-gray/40 leading-relaxed">
+            <p className="font-ui text-xs text-brand-gray/50 leading-relaxed">
               Recevoir les nouveautés produit, mises à jour de l&apos;app et événements. Indépendant des emails transactionnels (codes, réponses).
             </p>
           </div>
@@ -458,16 +458,16 @@ export default function SettingsSection({ member }: { member: Member }) {
 
       {/* Infos */}
       <div className="flex flex-col gap-2">
-        <p className="font-ui text-xs text-brand-gray/30 tracking-[0.18em] uppercase">Compte</p>
+        <p className="font-ui text-xs text-brand-gray/55 tracking-[0.18em] uppercase">Compte</p>
         <p className="font-ui text-xs md:text-sm text-brand-gray/50">{member.email || 'Pas d\'email associé'}</p>
-        <p className="font-ui text-xs text-brand-gray/25">
+        <p className="font-ui text-xs text-brand-gray/55">
           Membre depuis le {new Date(member.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
         </p>
       </div>
 
       {/* Changer mot de passe */}
       <Link href="/auth/forgot-password"
-        className="w-full py-3 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.15em] uppercase text-brand-gray/40 hover:border-brand-gray/30 hover:text-brand-gray/60 transition-colors rounded-[2px]"
+        className="w-full py-3 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.15em] uppercase text-brand-gray/50 hover:border-brand-gray/30 hover:text-brand-white/80 transition-colors rounded-[2px]"
       >
         Changer mon mot de passe
       </Link>
@@ -477,10 +477,10 @@ export default function SettingsSection({ member }: { member: Member }) {
 
       {/* Liens légaux */}
       <div className="flex flex-col gap-2 border-t border-brand-gray/10 pt-4">
-        <Link href="/cgv" className="font-ui text-xs text-brand-gray/30 hover:text-brand-gray/60 transition-colors">
+        <Link href="/cgv" className="font-ui text-xs text-brand-gray/55 hover:text-brand-white/80 transition-colors">
           Conditions Générales de Vente
         </Link>
-        <Link href="/manifeste" className="font-ui text-xs text-brand-gray/30 hover:text-brand-gray/60 transition-colors">
+        <Link href="/manifeste" className="font-ui text-xs text-brand-gray/55 hover:text-brand-white/80 transition-colors">
           Manifeste
         </Link>
       </div>

@@ -43,7 +43,7 @@ function UpgradeBanner({ memberId, source, headline, sublabel }: {
       <span className="font-ui text-base text-[#C5A059]/70 leading-none">✦</span>
       <div className="flex-1 flex flex-col gap-0.5">
         <span className="font-ui text-xs tracking-[0.12em] uppercase text-[#C5A059]/80">{headline}</span>
-        <span className="font-ui text-xxs text-brand-gray/40">{sublabel}</span>
+        <span className="font-ui text-xxs text-brand-gray/50">{sublabel}</span>
       </div>
       <span className="font-ui text-xxs text-[#C5A059]/60 tracking-[0.15em] uppercase">
         {loading ? '...' : 'Passer ✦'}
@@ -101,16 +101,16 @@ export default function InboxSection({ messages: initialMessages, memberId, plan
     return (
       <div className="flex flex-col items-center gap-4 py-8 text-center">
         <div className="animate-float w-16 h-16 rounded-full border border-brand-gray/10 flex items-center justify-center">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="text-brand-gray/20">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" className="text-brand-gray/50">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
         </div>
-        <p className="animate-stagger-1 font-display text-lg md:text-xl font-light italic text-brand-gray/40">Aucun message pour l&apos;instant.</p>
-        <p className="animate-stagger-2 font-ui text-xs md:text-sm text-brand-gray/25 leading-relaxed">
+        <p className="animate-stagger-1 font-display text-lg md:text-xl font-light italic text-brand-gray/50">Aucun message pour l&apos;instant.</p>
+        <p className="animate-stagger-2 font-ui text-xs md:text-sm text-brand-gray/55 leading-relaxed">
           Quand quelqu&apos;un scannera votre QR code<br />et vous enverra un message, il appara&icirc;tra ici.
         </p>
         <div className="animate-stagger-3 w-px h-6 bg-gradient-to-b from-transparent via-brand-white/10 to-transparent" />
-        <p className="animate-stagger-4 font-ui text-xxs text-brand-gray/20 leading-relaxed">
+        <p className="animate-stagger-4 font-ui text-xxs text-brand-gray/50 leading-relaxed">
           Portez votre t-shirt. Sortez. Le reste suivra.
         </p>
         <Link href={`/profil/${memberId}?preview=1`}
@@ -153,11 +153,11 @@ export default function InboxSection({ messages: initialMessages, memberId, plan
 
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className="font-ui text-xs text-brand-gray/30">
+                <span className="font-ui text-xs text-brand-gray/55">
                   {msg.sender_contact || 'Anonyme'}
                 </span>
                 <span className="text-brand-gray/15">·</span>
-                <span className="font-ui text-xs text-brand-gray/25">
+                <span className="font-ui text-xs text-brand-gray/55">
                   {timeAgo(msg.created_at)}
                 </span>
               </div>
@@ -168,14 +168,14 @@ export default function InboxSection({ messages: initialMessages, memberId, plan
                   <span className="font-ui text-xxs text-red-400/60 tracking-[0.1em] uppercase">Bloqué</span>
                   <span className="text-brand-gray/10">|</span>
                   <Link href={`/conversation/${msg.id}`}
-                    className="font-ui text-xs text-brand-gray/40 hover:text-brand-gray/70 transition-colors">
+                    className="font-ui text-xs text-brand-gray/50 hover:text-brand-white/80 transition-colors">
                     Gérer
                   </Link>
                 </div>
               ) : (
               <div className="flex items-center gap-2">
                 {msg.reply ? (
-                  <span className="font-ui text-xxs text-brand-gray/30">
+                  <span className="font-ui text-xxs text-brand-gray/55">
                     {msg.reply_read_at ? 'Lu ✓' : 'Répondu'}
                   </span>
                 ) : (
@@ -194,14 +194,14 @@ export default function InboxSection({ messages: initialMessages, memberId, plan
                       Confirmer
                     </button>
                     <button onClick={() => setConfirmingId(null)}
-                      className="font-ui text-xxs text-brand-gray/30 hover:text-brand-gray/60 transition-colors">
+                      className="font-ui text-xxs text-brand-gray/55 hover:text-brand-white/80 transition-colors">
                       Annuler
                     </button>
                   </span>
                 ) : (
                   <button
                     onClick={() => setConfirmingId(msg.id)}
-                    className="font-ui text-xxs text-brand-gray/25 hover:text-red-400 transition-colors"
+                    className="font-ui text-xxs text-brand-gray/55 hover:text-red-400 transition-colors"
                   >
                     Signaler
                   </button>
@@ -225,7 +225,7 @@ export default function InboxSection({ messages: initialMessages, memberId, plan
 
       {hasMore && !loadingMore && (
         <button onClick={loadMore}
-          className="w-full py-3 border border-brand-gray/10 text-center font-ui text-xs font-light tracking-[0.15em] uppercase text-brand-gray/30 hover:border-brand-gray/25 hover:text-brand-gray/50 transition-colors rounded-[2px] mt-2">
+          className="w-full py-3 border border-brand-gray/10 text-center font-ui text-xs font-light tracking-[0.15em] uppercase text-brand-gray/55 hover:border-brand-gray/25 hover:text-brand-white/80 transition-colors rounded-[2px] mt-2">
           Voir plus
         </button>
       )}

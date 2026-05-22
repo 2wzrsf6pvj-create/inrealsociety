@@ -136,15 +136,15 @@ export default function ProfilClient({
       <main className="relative flex min-h-screen flex-col items-center justify-center bg-brand-black text-brand-white px-6 py-12 overflow-hidden">
         <div className="z-10 flex flex-col items-center text-center gap-6 w-full max-w-xs md:max-w-sm">
           <div className="w-20 h-20 rounded-full border border-brand-gray/15 flex items-center justify-center">
-            <span className="font-display text-2xl font-light text-brand-gray/30">{getInitials(member.name)}</span>
+            <span className="font-display text-2xl font-light text-brand-gray/55">{getInitials(member.name)}</span>
           </div>
           <div className="flex flex-col gap-3">
             <p className="font-display text-2xl md:text-3xl font-light tracking-[0.04em]">Ce membre est indisponible.</p>
-            <p className="font-ui text-sm text-brand-gray/30 leading-relaxed">
+            <p className="font-ui text-sm text-brand-gray/55 leading-relaxed">
               Peut-être une prochaine fois.
             </p>
           </div>
-          <Link href="/" className="font-ui text-xs text-brand-gray/20 tracking-[0.15em] uppercase underline underline-offset-4 py-2" style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}>
+          <Link href="/" className="font-ui text-xs text-brand-gray/50 tracking-[0.15em] uppercase underline underline-offset-4 py-2" style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}>
             ← retour
           </Link>
         </div>
@@ -176,7 +176,7 @@ export default function ProfilClient({
         {/* Tag */}
         <div className="flex items-center gap-3 w-full animate-stagger-1">
           <div className="flex-1 h-px bg-brand-gray/10 animate-line-draw" />
-          <span className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">profil</span>
+          <span className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">profil</span>
           <div className="flex-1 h-px bg-brand-gray/10 animate-line-draw" style={{ animationDelay: '0.5s' }} />
         </div>
 
@@ -217,12 +217,12 @@ export default function ProfilClient({
         {showOwnerView ? (
           /* ─── Vue propriétaire ─────────────────────────────────────────── */
           <div className="flex flex-col items-center gap-4 animate-stagger-3">
-            <p className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">Votre profil public</p>
+            <p className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Votre profil public</p>
             <p className="font-display text-lg md:text-xl font-light italic text-brand-gray/60 text-center leading-relaxed">
               &ldquo;{member.pitch}&rdquo;
             </p>
             {instagramHandle && (
-              <p className="font-ui text-xs text-brand-gray/30">@{instagramHandle}</p>
+              <p className="font-ui text-xs text-brand-gray/55">@{instagramHandle}</p>
             )}
           </div>
         ) : !isExpired ? (
@@ -237,7 +237,7 @@ export default function ProfilClient({
               &ldquo;{member.pitch}&rdquo;
             </p>
             {!scannerName && (
-              <p className="font-ui text-xs md:text-sm font-light text-brand-gray/35 text-center leading-relaxed tracking-wide">
+              <p className="font-ui text-xs md:text-sm font-light text-brand-gray/60 text-center leading-relaxed tracking-wide">
                 Ce vêtement signifie que son porteur est ouvert<br />à une conversation. Vous avez le contrôle.
               </p>
             )}
@@ -245,8 +245,8 @@ export default function ProfilClient({
         ) : (
           <div className="flex flex-col items-center gap-3 animate-stagger-3">
             <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
-            <p className="font-display text-xl font-light italic text-center text-brand-gray/40">Ce moment est passé.</p>
-            <p className="font-ui text-xs md:text-sm text-brand-gray/25 text-center leading-relaxed">
+            <p className="font-display text-xl font-light italic text-center text-brand-gray/50">Ce moment est passé.</p>
+            <p className="font-ui text-xs md:text-sm text-brand-gray/55 text-center leading-relaxed">
               La fenêtre de {SCAN_WINDOW_MS[member.plan === 'premium' ? 'premium' : 'free'] / 3_600_000} heures est terminée.<br />Un nouveau scan relancera le compteur.
             </p>
             <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
@@ -259,7 +259,7 @@ export default function ProfilClient({
         {showOwnerView ? (
           /* ─── Actions propriétaire ─────────────────────────────────────── */
           <div className="w-full flex flex-col gap-3 animate-stagger-4">
-            <p className="font-ui text-xxs text-brand-gray/25 text-center leading-relaxed">
+            <p className="font-ui text-xxs text-brand-gray/55 text-center leading-relaxed">
               C&apos;est ce que les scanneurs voient quand ils scannent votre QR code.
             </p>
             <Link href="/dashboard"
@@ -296,7 +296,7 @@ export default function ProfilClient({
 
             {instagramHandle && (
               <div className="flex flex-col items-center gap-1">
-                <p className="font-ui text-xxs md:text-xs text-brand-gray/25 tracking-[0.15em] uppercase">ou retrouvez ce membre sur</p>
+                <p className="font-ui text-xxs md:text-xs text-brand-gray/55 tracking-[0.15em] uppercase">ou retrouvez ce membre sur</p>
                 <a
                   href={`https://instagram.com/${instagramHandle}`}
                   target="_blank" rel="noopener noreferrer"
@@ -314,10 +314,10 @@ export default function ProfilClient({
         {!showOwnerView && (
           <div className="w-full flex flex-col gap-2 animate-stagger-5 mt-2">
             <div className="flex items-center justify-between">
-              <span className="font-ui text-xxs md:text-xs text-brand-gray/20 tracking-[0.2em] uppercase">
+              <span className="font-ui text-xxs md:text-xs text-brand-gray/50 tracking-[0.2em] uppercase">
                 {countdown.active ? 'Occasion éphémère' : 'Profil actif'}
               </span>
-              <span className="font-ui text-xxs md:text-xs text-brand-gray/20 tabular-nums">
+              <span className="font-ui text-xxs md:text-xs text-brand-gray/50 tabular-nums">
                 {isExpired ? 'Expiré' : countdown.active ? `${countdown.hours}h ${String(countdown.minutes).padStart(2, '0')}m ${String(countdown.seconds).padStart(2, '0')}s` : `${SCAN_WINDOW_MS[member.plan === 'premium' ? 'premium' : 'free'] / 3_600_000}h`}
               </span>
             </div>
@@ -329,7 +329,7 @@ export default function ProfilClient({
         )}
 
         <Link href={preview ? `/profil/${member.id}` : isOwner ? '/dashboard' : '/'}
-          className="font-ui text-xs text-brand-gray/20 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray/50 transition-colors py-2"
+          className="font-ui text-xs text-brand-gray/50 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white/80 transition-colors py-2"
           style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}
         >
           {preview ? '← quitter l’aperçu' : isOwner ? '← retour au dashboard' : '← retour'}

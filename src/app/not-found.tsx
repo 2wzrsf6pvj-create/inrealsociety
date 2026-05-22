@@ -19,7 +19,7 @@ export default function NotFound() {
         </div>
 
         <div className="flex flex-col gap-3 animate-stagger-2">
-          <p className="font-ui text-xs text-brand-gray/40 tracking-[0.3em] uppercase">
+          <p className="font-ui text-xs text-brand-gray/50 tracking-[0.3em] uppercase">
             Erreur 404
           </p>
           <h1 className="font-display text-3xl font-light tracking-[0.06em]">
@@ -32,7 +32,7 @@ export default function NotFound() {
 
         <div className="flex items-center gap-3 w-full animate-stagger-3">
           <div className="flex-1 h-px bg-brand-gray/10 animate-line-draw" />
-          <span className="font-ui text-xs text-brand-gray/20 tracking-[0.2em] uppercase">In Real Society</span>
+          <span className="font-ui text-xs text-brand-gray/50 tracking-[0.2em] uppercase">In Real Society</span>
           <div className="flex-1 h-px bg-brand-gray/10" />
         </div>
 

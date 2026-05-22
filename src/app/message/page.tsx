@@ -26,7 +26,7 @@ function BecomeWearerCTA({ source, hook }: { source: string; hook: React.ReactNo
 
   return (
     <div className="w-full flex flex-col items-center gap-3">
-      <p className="font-ui text-xxs text-brand-gray/25 tracking-[0.25em] uppercase">Et toi ?</p>
+      <p className="font-ui text-xxs text-brand-gray/55 tracking-[0.25em] uppercase">Et toi ?</p>
       <p className="font-display text-xl font-light leading-snug text-center tracking-[0.02em]">{hook}</p>
       <button onClick={goShop}
         className="w-full py-3 border border-brand-white/30 font-ui text-sm font-light tracking-[0.2em] uppercase hover:border-brand-white/60 hover:bg-brand-white/5 active:scale-[0.98] transition-all rounded-[1px]"
@@ -136,14 +136,14 @@ function MessageForm() {
       <div className="flex flex-col items-center gap-6 text-center animate-stagger-1">
         <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
         <p className="font-display text-2xl font-light">Ce moment est passé.</p>
-        <p className="font-ui text-sm text-brand-gray/40 leading-relaxed">
+        <p className="font-ui text-sm text-brand-gray/50 leading-relaxed">
           La fenêtre de {windowHours} heures est terminée.<br />
           La prochaine occasion sera la bonne.
         </p>
         <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
         <BecomeWearerCTA source="window_expired" hook={<>La prochaine fois,<br />sois de l&apos;autre côté.</>} />
         <button onClick={() => memberId ? router.push(`/profil/${memberId}`) : router.push('/')}
-          className="font-ui text-sm text-brand-gray/30 tracking-[0.15em] uppercase underline underline-offset-4 py-3"
+          className="font-ui text-sm text-brand-gray/55 tracking-[0.15em] uppercase underline underline-offset-4 py-3"
           style={{ minHeight: '44px' }}>
           ← retour au profil
         </button>
@@ -156,17 +156,17 @@ function MessageForm() {
       <div className="flex flex-col items-center gap-6 text-center animate-stagger-1">
         <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
         <p className="font-display text-2xl font-light">{memberName} a déjà du monde autour.</p>
-        <p className="font-ui text-sm text-brand-gray/40 leading-relaxed">
+        <p className="font-ui text-sm text-brand-gray/50 leading-relaxed">
           Cette personne attire l&apos;attention.<br />
           Ses conversations en cours sont au complet.
         </p>
-        <p className="font-ui text-xxs text-brand-gray/25 leading-relaxed">
+        <p className="font-ui text-xxs text-brand-gray/55 leading-relaxed">
           Revenez plus tard, ou croisez-la à nouveau.
         </p>
         <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
         <BecomeWearerCTA source="conversation_limit" hook={<>Toi aussi,<br />fais tourner les têtes.</>} />
         <button onClick={() => memberId ? router.push(`/profil/${memberId}`) : router.push('/')}
-          className="font-ui text-sm text-brand-gray/30 tracking-[0.15em] uppercase underline underline-offset-4 py-3"
+          className="font-ui text-sm text-brand-gray/55 tracking-[0.15em] uppercase underline underline-offset-4 py-3"
           style={{ minHeight: '44px' }}>
           ← retour au profil
         </button>
@@ -181,7 +181,7 @@ function MessageForm() {
           <span className="font-display text-xl text-red-400/60">!</span>
         </div>
         <p className="font-display text-2xl font-light">Ce message ne peut pas être envoyé.</p>
-        <p className="font-ui text-sm text-brand-gray/40 leading-relaxed">
+        <p className="font-ui text-sm text-brand-gray/50 leading-relaxed">
           Votre message contient des termes qui ne respectent pas<br />
           les règles de notre espace. Évitez le langage offensant,<br />
           les menaces ou les contenus inappropriés.
@@ -208,7 +208,7 @@ function MessageForm() {
           </p>
         </div>
         <div className="w-full flex flex-col gap-3">
-          <p className="font-ui text-xs text-brand-gray/25 tracking-[0.2em] uppercase">Votre fil de conversation</p>
+          <p className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Votre fil de conversation</p>
           <button onClick={() => router.push(conversationUrl)}
             className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200"
             style={{ minHeight: '44px' }}
@@ -221,14 +221,14 @@ function MessageForm() {
           >
             {copied ? '✓ Lien copié' : 'Copier le lien'}
           </button>
-          <p className="font-ui text-xxs md:text-xs text-brand-gray/20 leading-relaxed">
+          <p className="font-ui text-xxs md:text-xs text-brand-gray/50 leading-relaxed">
             Ce lien est sauvegardé automatiquement.<br />Vous le retrouverez sur le profil de {memberName}.
           </p>
         </div>
         <div className="w-full h-px bg-brand-gray/10" />
         <BecomeWearerCTA source="message_sent" hook={<>Et si c&apos;était toi<br />qu&apos;on scannait ?</>} />
         <button onClick={() => memberId ? router.push(`/profil/${memberId}`) : router.push('/')}
-          className="font-ui text-xs text-brand-gray/25 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray transition-colors py-2"
+          className="font-ui text-xs text-brand-gray/55 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray transition-colors py-2"
           style={{ minHeight: '44px' }}>
           ← retour au profil
         </button>
@@ -240,7 +240,7 @@ function MessageForm() {
     <div className="flex flex-col gap-6 w-full">
       <div className="text-center flex flex-col gap-2 animate-stagger-1">
         <h2 className="font-display text-2xl md:text-3xl font-light tracking-[0.04em]">Un signal discret.</h2>
-        <p className="font-ui text-sm font-light text-brand-gray/40 leading-relaxed">À {memberName}. Il pourra vous répondre directement.</p>
+        <p className="font-ui text-sm font-light text-brand-gray/50 leading-relaxed">À {memberName}. Il pourra vous répondre directement.</p>
       </div>
 
       {isPreview && (
@@ -254,20 +254,20 @@ function MessageForm() {
 
       {/* Contact remonté */}
       <div className="flex flex-col gap-1 animate-stagger-2">
-        <label className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">
+        <label className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">
           Votre @instagram ou email{' '}
-          <span className={`normal-case tracking-normal ml-1 ${contactRequired ? 'text-[#C5A059]/80' : 'text-brand-white/30'}`}>
+          <span className={`normal-case tracking-normal ml-1 ${contactRequired ? 'text-[#C5A059]/80' : 'text-brand-white/55'}`}>
             ({contactRequired ? 'requis' : 'recommandé'})
           </span>
         </label>
-        <p className="font-ui text-xxs md:text-xs text-brand-gray/20 leading-relaxed mb-1">
+        <p className="font-ui text-xxs md:text-xs text-brand-gray/50 leading-relaxed mb-1">
           {contactRequired
             ? 'Ce membre n’accepte que les messages avec un contact.'
             : 'Sans contact, il ne pourra pas vous répondre.'}
         </p>
         <input type="text" placeholder={contactRequired ? '@instagram ou email' : 'Anonyme par défaut'} value={contact} maxLength={50}
           onChange={(e) => setContact(e.target.value)}
-          className={`w-full bg-transparent border-b text-brand-white font-ui font-light text-base py-3 outline-none transition-colors placeholder:text-brand-gray/15 ${contactRequired && !contact.trim() ? 'border-[#C5A059]/40 focus:border-[#C5A059]/70' : 'border-brand-gray/15 focus:border-brand-white/40'}`}
+          className={`w-full bg-transparent border-b text-brand-white font-ui font-light text-base py-3 outline-none transition-colors placeholder:text-brand-gray/50 ${contactRequired && !contact.trim() ? 'border-[#C5A059]/40 focus:border-[#C5A059]/70' : 'border-brand-gray/15 focus:border-brand-white/40'}`}
           style={{ minHeight: '44px' }}
         />
       </div>
@@ -276,7 +276,7 @@ function MessageForm() {
 
       {/* Quick replies */}
       <div className="flex flex-col gap-2 animate-stagger-3">
-        <p className="font-ui text-xs text-brand-gray/25 tracking-[0.2em] uppercase">Réponse rapide</p>
+        <p className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Réponse rapide</p>
         <div className="flex flex-col gap-2">
           {[
             { label: 'Belle audace.',       symbol: '✦' },
@@ -297,20 +297,20 @@ function MessageForm() {
 
       <div className="flex items-center gap-3">
         <div className="flex-1 h-px bg-brand-gray/10" />
-        <span className="font-ui text-xxs text-brand-gray/20 tracking-[0.15em] uppercase">ou</span>
+        <span className="font-ui text-xxs text-brand-gray/50 tracking-[0.15em] uppercase">ou</span>
         <div className="flex-1 h-px bg-brand-gray/10" />
       </div>
 
       {/* Message libre */}
       <div className="flex flex-col gap-3 animate-stagger-4">
         <div className="flex flex-col gap-1">
-          <label className="font-ui text-xs text-brand-gray/25 tracking-[0.2em] uppercase">Message libre</label>
+          <label className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Message libre</label>
           <textarea rows={4} placeholder="Quelque chose vous a traversé l'esprit..." value={message}
             maxLength={1000} onChange={(e) => setMessage(e.target.value)}
-            className="w-full bg-transparent border-b border-brand-gray/15 focus:border-brand-white/40 text-brand-white font-ui font-light text-base py-3 outline-none transition-colors resize-none placeholder:text-brand-gray/20 leading-relaxed"
+            className="w-full bg-transparent border-b border-brand-gray/15 focus:border-brand-white/40 text-brand-white font-ui font-light text-base py-3 outline-none transition-colors resize-none placeholder:text-brand-gray/50 leading-relaxed"
           />
           <div className="flex justify-end">
-            <span className="font-ui text-xxs text-brand-gray/20 tabular-nums">{1000 - message.length}</span>
+            <span className="font-ui text-xxs text-brand-gray/50 tabular-nums">{1000 - message.length}</span>
           </div>
         </div>
         {error && <p className="font-ui text-sm text-red-400 text-center">{error}</p>}
@@ -333,7 +333,7 @@ export default function MessagePage() {
       <div className="z-10 flex flex-col items-center w-full max-w-xs md:max-w-sm gap-6">
         <Suspense fallback={null}><MessageForm /></Suspense>
         <Link href="/"
-          className="font-ui text-xs text-brand-gray/20 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray/50 transition-colors py-3"
+          className="font-ui text-xs text-brand-gray/50 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white/80 transition-colors py-3"
           style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}>
           ← retour
         </Link>

@@ -25,13 +25,17 @@ function TabBar({ active, onChange, unreadCount }: {
   ];
 
   return (
-    <div className="w-full flex border-b border-brand-gray/10 mb-2">
+    <div role="tablist" aria-label="Sections du dashboard" className="w-full flex border-b border-brand-gray/10 mb-2">
       {tabs.map(tab => (
         <button
           key={tab.key}
+          role="tab"
+          id={`tab-${tab.key}`}
+          aria-selected={active === tab.key}
+          aria-controls={`panel-${tab.key}`}
           onClick={() => onChange(tab.key)}
           className={`flex-1 py-3 font-ui text-xs tracking-[0.2em] uppercase transition-colors relative ${
-            active === tab.key ? 'text-brand-white border-b border-brand-white' : 'text-brand-gray/30 hover:text-brand-gray/60'
+            active === tab.key ? 'text-brand-white border-b border-brand-white' : 'text-brand-gray/55 hover:text-brand-white/80'
           }`}
         >
           {tab.label}
@@ -67,6 +71,21 @@ export default function DashboardClient({
   const [tab, setTab]     = useState<Tab>('home');
   const [toast, setToast] = useState('');
   const [toastHiding, setToastHiding] = useState(false);
+
+  // Onglet reflété dans l'URL (?tab=) → deep-linkable et partageable. On lit au
+  // mount (post-hydratation pour éviter tout mismatch SSR) et on met à jour via
+  // replaceState (pas de refetch serveur, pas de pollution de l'historique).
+  const isTab = (v: string | null): v is Tab => v === 'home' || v === 'inbox' || v === 'settings';
+  React.useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get('tab');
+    if (isTab(t)) setTab(t);
+  }, []);
+  const changeTab = React.useCallback((t: Tab) => {
+    setTab(t);
+    const url = new URL(window.location.href);
+    url.searchParams.set('tab', t);
+    window.history.replaceState(null, '', url.toString());
+  }, []);
 
   // Affiche un toast avec entrée + sortie animée. La sortie est déclenchée
   // après `durationMs` puis l'unmount effectif arrive 300ms plus tard
@@ -145,10 +164,10 @@ export default function DashboardClient({
         </div>
 
         {/* Tabs */}
-        <TabBar active={tab} onChange={setTab} unreadCount={unreadCount} />
+        <TabBar active={tab} onChange={changeTab} unreadCount={unreadCount} />
 
         {/* Tab content with transition */}
-        <div className="w-full animate-stagger-1" key={tab}>
+        <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="w-full animate-stagger-1" key={tab}>
           {tab === 'home' && (
             <HomeSection member={member} recentScans={recentScans} scansByDay={scansByDay} />
           )}

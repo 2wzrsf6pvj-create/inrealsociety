@@ -56,13 +56,13 @@ export default function ForgotPasswordPage() {
             <span className="text-brand-white/80">{email}</span><br />
             vous recevrez un lien de réinitialisation.
           </p>
-          <p className="font-ui text-sm text-brand-gray/30 leading-relaxed">
+          <p className="font-ui text-sm text-brand-gray/55 leading-relaxed">
             Le lien expire dans 1 heure.
           </p>
           <div className="w-px h-12 bg-gradient-to-b from-transparent via-brand-white/20 to-transparent" />
           <Link
             href="/auth/login"
-            className="font-ui text-sm text-brand-gray/40 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white transition-colors"
+            className="font-ui text-sm text-brand-gray/50 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white transition-colors"
           >
             ← Retour à la connexion
           </Link>
@@ -90,7 +90,7 @@ export default function ForgotPasswordPage() {
 
         <form onSubmit={handleSubmit} noValidate className="w-full flex flex-col gap-5 animate-stagger-2">
           <div className="flex flex-col gap-1">
-            <label className="font-ui text-xs text-brand-gray/40 tracking-[0.18em] uppercase">
+            <label className="font-ui text-xs text-brand-gray/50 tracking-[0.18em] uppercase">
               Email
             </label>
             <input
@@ -98,7 +98,7 @@ export default function ForgotPasswordPage() {
               autoComplete="email"
               value={email}
               onChange={e => { setEmail(e.target.value); setError(''); }}
-              className="w-full bg-transparent border-b border-brand-gray/20 focus:border-brand-white font-ui font-light text-base text-brand-white py-3 outline-none transition-colors placeholder:text-brand-gray/20"
+              className="w-full bg-transparent border-b border-brand-gray/20 focus:border-brand-white font-ui font-light text-base text-brand-white py-3 outline-none transition-colors placeholder:text-brand-gray/50"
               style={{ minHeight: '44px' }}
             />
           </div>
@@ -119,7 +119,7 @@ export default function ForgotPasswordPage() {
 
         <Link
           href="/auth/login"
-          className="font-ui text-sm text-brand-gray/30 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white transition-colors animate-stagger-3"
+          className="font-ui text-sm text-brand-gray/55 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white transition-colors animate-stagger-3"
         >
           ← Retour à la connexion
         </Link>

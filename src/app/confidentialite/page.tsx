@@ -28,7 +28,7 @@ export default function ConfidentialitePage() {
           <h1 className="font-display text-3xl md:text-4xl font-light tracking-[0.04em]">
             Politique de confidentialité
           </h1>
-          <p className="font-ui text-sm text-brand-gray/40 tracking-wide">
+          <p className="font-ui text-sm text-brand-gray/50 tracking-wide">
             Conforme au RGPD (Règlement UE 2016/679) — Dernière mise à jour : 2026
           </p>
         </div>
@@ -153,7 +153,7 @@ export default function ConfidentialitePage() {
         </section>
 
         <div className="flex flex-col gap-2 pt-6 border-t border-brand-gray/10">
-          <p className="font-ui text-xs text-brand-gray/30 tracking-wide">
+          <p className="font-ui text-xs text-brand-gray/55 tracking-wide">
             Cette politique peut être mise à jour. La date en haut de page indique la version en vigueur.
           </p>
         </div>

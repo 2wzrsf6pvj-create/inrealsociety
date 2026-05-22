@@ -54,7 +54,7 @@ export default function ManifestePage() {
             Le premier vêtement conçu pour<br />les rencontres dans la vraie vie.
           </p>
           <div className="w-px h-10 bg-gradient-to-b from-transparent via-brand-white/20 to-transparent" />
-          <a href="#manifeste" className="font-ui text-sm text-brand-gray/40 tracking-[0.2em] uppercase hover:text-brand-white transition-colors">
+          <a href="#manifeste" className="font-ui text-sm text-brand-gray/50 tracking-[0.2em] uppercase hover:text-brand-white transition-colors">
             Lire le manifeste ↓
           </a>
         </div>
@@ -63,7 +63,7 @@ export default function ManifestePage() {
       {/* Sommaire cliquable */}
       <nav className="relative z-10 max-w-lg mx-auto px-6 pb-16">
         <div className="border border-brand-gray/10 rounded-[2px] p-5 md:p-6 bg-[#080808]">
-          <p className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase mb-4">Sommaire</p>
+          <p className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase mb-4">Sommaire</p>
           <div className="flex flex-col gap-2">
             {MANIFESTO_BLOCKS.map((block: ManifestoBlock, i: number) => (
               <a
@@ -71,7 +71,7 @@ export default function ManifestePage() {
                 href={`#section-${i}`}
                 className="flex items-center gap-3 group py-1"
               >
-                <span className="font-ui text-xxs text-brand-gray/20 tabular-nums w-5">{String(i + 1).padStart(2, '0')}</span>
+                <span className="font-ui text-xxs text-brand-gray/50 tabular-nums w-5">{String(i + 1).padStart(2, '0')}</span>
                 <span className="font-ui text-sm text-brand-gray/50 group-hover:text-brand-white transition-colors">
                   {block.title}
                 </span>
@@ -91,7 +91,7 @@ export default function ManifestePage() {
           >
             <div id={`section-${i}`} className="flex flex-col gap-4 scroll-mt-8">
               {block.label && (
-                <span className="font-ui text-xs text-brand-gray/30 tracking-[0.25em] uppercase">
+                <span className="font-ui text-xs text-brand-gray/55 tracking-[0.25em] uppercase">
                   {block.label}
                 </span>
               )}
@@ -149,13 +149,13 @@ export default function ManifestePage() {
               </Link>
               <Link
                 href="/cgv"
-                className="font-ui text-xs text-brand-gray/25 tracking-[0.1em] text-center hover:text-brand-gray/50 transition-colors mt-2"
+                className="font-ui text-xs text-brand-gray/55 tracking-[0.1em] text-center hover:text-brand-white/80 transition-colors mt-2"
               >
                 Conditions Générales de Vente
               </Link>
               <Link
                 href="/"
-                className="font-ui text-xs text-brand-gray/20 tracking-[0.1em] underline underline-offset-4 hover:text-brand-gray/50 transition-colors text-center"
+                className="font-ui text-xs text-brand-gray/50 tracking-[0.1em] underline underline-offset-4 hover:text-brand-white/80 transition-colors text-center"
               >
                 &larr; retour &agrave; l&apos;accueil
               </Link>

@@ -37,7 +37,7 @@ export default function MentionsLegalesPage() {
           <h1 className="font-display text-3xl md:text-4xl font-light tracking-[0.04em]">
             Mentions légales
           </h1>
-          <p className="font-ui text-sm text-brand-gray/40 tracking-wide">
+          <p className="font-ui text-sm text-brand-gray/50 tracking-wide">
             Conforme à la LCEN (art. 6) — Dernière mise à jour : 2026
           </p>
         </div>
@@ -158,11 +158,11 @@ export default function MentionsLegalesPage() {
         <div className="border-t border-brand-gray/10 pt-6 flex items-center justify-between">
           <Link
             href="/"
-            className="font-ui text-sm text-brand-gray/40 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white transition-colors"
+            className="font-ui text-sm text-brand-gray/50 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white transition-colors"
           >
             ← Retour à l&apos;accueil
           </Link>
-          <span className="font-ui text-xs text-brand-gray/20 tracking-wide">
+          <span className="font-ui text-xs text-brand-gray/50 tracking-wide">
             In Real Society © {new Date().getFullYear()}
           </span>
         </div>

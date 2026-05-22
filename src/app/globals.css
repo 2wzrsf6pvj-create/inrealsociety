@@ -67,6 +67,22 @@ html {
 }
 
 /* ─────────────────────────────────────────
+   A11y — prefers-contrast: more
+   UI monochrome (blanc sur noir) : le texte secondaire utilise des blancs à
+   opacité réduite. Quand l'utilisateur demande plus de contraste (réglage
+   système, ou usage en plein soleil sur mobile), on remonte tout le texte vers
+   le blanc plein. Cible les utilitaires de COULEUR DE TEXTE uniquement
+   (text-brand-*) — jamais les bordures/fonds (border-/bg-/via-…), qui restent
+   décoratifs. Les couleurs sémantiques (rouge/vert/or) ne sont pas concernées.
+   ───────────────────────────────────────── */
+@media (prefers-contrast: more) {
+  [class*="text-brand-gray/"],
+  [class*="text-brand-white/"] {
+    color: rgba(255, 255, 255, 0.95) !important;
+  }
+}
+
+/* ─────────────────────────────────────────
    STAGGER — cascade d'éléments (apparition séquentielle)
    Utilisé partout : manifeste, register, dashboard, conversation, shop…
    ───────────────────────────────────────── */

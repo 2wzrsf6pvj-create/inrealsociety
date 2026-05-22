@@ -81,13 +81,13 @@ function CodeField({ code, codeOk, codeErr, checking, onChange }: {
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor="activation-code" className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">Code d&apos;activation</label>
+      <label htmlFor="activation-code" className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Code d&apos;activation</label>
       <div className="flex items-end gap-2">
         <input id="activation-code" type="text" placeholder="XXXXXXXX" value={code} maxLength={12}
           onChange={e => onChange(e.target.value)}
           className={`flex-1 bg-transparent border-b font-mono text-lg text-brand-white py-3 outline-none tracking-[0.3em] transition-colors ${codeErr ? 'border-red-500' : codeOk ? 'border-brand-white/60' : 'border-brand-gray/20 focus:border-brand-white/50'}`}
           style={{ minHeight: '44px' }} />
-        <span className="font-ui text-xs text-brand-gray/30 pb-3">{checking ? '...' : codeOk ? 'Valide' : ''}</span>
+        <span className="font-ui text-xs text-brand-gray/55 pb-3">{checking ? '...' : codeOk ? 'Valide' : ''}</span>
       </div>
       {codeErr && <p className="font-ui text-sm text-red-400">{codeErr}</p>}
     </div>
@@ -119,7 +119,7 @@ function ResendCodeBlock() {
   if (!open) {
     return (
       <button type="button" onClick={() => setOpen(true)}
-        className="font-ui text-xxs md:text-xs text-brand-gray/20 underline underline-offset-4 hover:text-brand-gray/50 transition-colors -mt-2 self-start">
+        className="font-ui text-xxs md:text-xs text-brand-gray/50 underline underline-offset-4 hover:text-brand-white/80 transition-colors -mt-2 self-start">
         Code perdu ? Renvoyer l&apos;email.
       </button>
     );
@@ -127,7 +127,7 @@ function ResendCodeBlock() {
 
   if (done) {
     return (
-      <p className="font-ui text-xxs md:text-xs text-brand-gray/40 -mt-2">
+      <p className="font-ui text-xxs md:text-xs text-brand-gray/50 -mt-2">
         Si une commande correspond à cet email, vous recevrez le code dans quelques minutes.
       </p>
     );
@@ -139,7 +139,7 @@ function ResendCodeBlock() {
         className="flex-1 bg-transparent border-b border-brand-gray/20 focus:border-brand-white/50 font-ui font-light text-sm text-brand-white py-2 outline-none transition-colors"
         style={{ minHeight: '36px' }} />
       <button type="button" onClick={handleResend} disabled={sending || !email.trim()}
-        className="font-ui text-xxs tracking-[0.15em] uppercase text-brand-gray/40 hover:text-brand-white/70 transition-colors disabled:opacity-40 py-2">
+        className="font-ui text-xxs tracking-[0.15em] uppercase text-brand-gray/50 hover:text-brand-white/80 transition-colors disabled:opacity-40 py-2">
         {sending ? '...' : 'Envoyer'}
       </button>
     </div>
@@ -178,25 +178,25 @@ function StepAccount({ onNext, codeState }: {
     <div className="w-full flex flex-col gap-6 animate-stagger-2">
       <div className="text-center flex flex-col gap-2">
         <h2 className="font-display text-3xl font-light tracking-[0.04em]">Votre compte.</h2>
-        <p className="font-ui text-sm font-light text-brand-gray/40 leading-relaxed">
+        <p className="font-ui text-sm font-light text-brand-gray/50 leading-relaxed">
           Le code d&apos;activation vous a été envoyé par email après votre commande.
         </p>
       </div>
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         <CodeField {...codeState} onChange={codeState.handleChange} />
         <ResendCodeBlock />
-        <p className="font-ui text-xxs md:text-xs text-brand-gray/20 -mt-3">
-          Pas encore de t-shirt ? <a href="/shop" className="underline underline-offset-4 hover:text-brand-gray/50 transition-colors">Commander</a>
+        <p className="font-ui text-xxs md:text-xs text-brand-gray/50 -mt-3">
+          Pas encore de t-shirt ? <a href="/shop" className="underline underline-offset-4 hover:text-brand-white/80 transition-colors">Commander</a>
         </p>
         <div className="flex flex-col gap-1">
-          <label htmlFor="register-email" className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">Email</label>
+          <label htmlFor="register-email" className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Email</label>
           <input id="register-email" type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)}
             className="w-full bg-transparent border-b border-brand-gray/20 focus:border-brand-white/60 font-ui font-light text-base text-brand-white py-3 outline-none transition-colors"
             style={{ minHeight: '44px' }} />
         </div>
         <div className="flex flex-col gap-1">
-          <label htmlFor="register-password" className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">
-            Mot de passe <span className="text-brand-gray/15 normal-case tracking-normal">(8 caractères min)</span>
+          <label htmlFor="register-password" className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">
+            Mot de passe <span className="text-brand-gray/50 normal-case tracking-normal">(8 caractères min)</span>
           </label>
           <input id="register-password" type="password" autoComplete="new-password" value={password} onChange={e => setPassword(e.target.value)}
             className="w-full bg-transparent border-b border-brand-gray/20 focus:border-brand-white/60 font-ui font-light text-base text-brand-white py-3 outline-none transition-colors"
@@ -208,7 +208,7 @@ function StepAccount({ onNext, codeState }: {
           style={{ minHeight: '44px' }}>
           {loading ? 'Création du compte...' : 'Créer mon compte'}
         </button>
-        <a href="/auth/login" className="font-ui text-xs text-brand-gray/25 tracking-[0.15em] uppercase text-center hover:text-brand-gray/50 transition-colors">
+        <a href="/auth/login" className="font-ui text-xs text-brand-gray/55 tracking-[0.15em] uppercase text-center hover:text-brand-white/80 transition-colors">
           Déjà un compte ? Se connecter
         </a>
       </form>
@@ -276,7 +276,7 @@ function StepProfile({ form, onChange, onSubmit, onBack, loading, error, isEditi
         <h2 className="font-display text-3xl font-light tracking-[0.04em]">
           {isEditing ? 'Modifier votre profil.' : 'Votre présence.'}
         </h2>
-        <p className="font-ui text-sm font-light text-brand-gray/40">
+        <p className="font-ui text-sm font-light text-brand-gray/50">
           {isEditing ? 'Mettez à jour vos informations.' : 'Ce que vous êtes, en quelques mots.'}
         </p>
       </div>
@@ -286,14 +286,14 @@ function StepProfile({ form, onChange, onSubmit, onBack, loading, error, isEditi
         )}
 
         <div className="flex flex-col gap-1">
-          <label htmlFor="register-name" className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">Prénom ou pseudo</label>
+          <label htmlFor="register-name" className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Prénom ou pseudo</label>
           <input id="register-name" type="text" maxLength={30} value={form.name} onChange={e => field('name', e.target.value)}
             className="w-full bg-transparent border-b border-brand-gray/15 focus:border-brand-white/60 font-ui font-light text-base text-brand-white py-3 outline-none transition-colors"
             style={{ minHeight: '44px' }} />
         </div>
 
         <div className="flex flex-col gap-3">
-          <p className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">Votre pitch</p>
+          <p className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Votre pitch</p>
           <button type="button" onClick={handleAi} disabled={aiLoading}
             className="w-full py-3 border border-brand-white/20 rounded-[1px] flex items-center justify-center gap-2 hover:border-brand-white/40 transition-colors disabled:opacity-40"
             style={{ minHeight: '44px' }}>
@@ -304,7 +304,7 @@ function StepProfile({ form, onChange, onSubmit, onBack, loading, error, isEditi
           </button>
           <div className="flex items-center gap-3">
             <div className="flex-1 h-px bg-brand-gray/10" />
-            <span className="font-ui text-xxs text-brand-gray/20 uppercase">ou rédigez</span>
+            <span className="font-ui text-xxs text-brand-gray/50 uppercase">ou rédigez</span>
             <div className="flex-1 h-px bg-brand-gray/10" />
           </div>
           {[
@@ -313,16 +313,16 @@ function StepProfile({ form, onChange, onSubmit, onBack, loading, error, isEditi
             { key: 'closing', label: 'Votre phrase de fin',             ph: 'Celle qui reste.' },
           ].map(f => (
             <div key={f.key} className="flex flex-col gap-1">
-              <label className="font-ui text-xxs md:text-xs text-brand-gray/20 tracking-[0.15em] uppercase">{f.label}</label>
+              <label className="font-ui text-xxs md:text-xs text-brand-gray/50 tracking-[0.15em] uppercase">{f.label}</label>
               <input type="text" maxLength={200} placeholder={f.ph} value={form[f.key as keyof FormData] as string}
                 onChange={e => field(f.key as keyof FormData, e.target.value)}
-                className="w-full bg-transparent border-b border-brand-gray/10 focus:border-brand-white/50 font-ui font-light text-base text-brand-white py-2.5 outline-none transition-colors placeholder:text-brand-gray/15"
+                className="w-full bg-transparent border-b border-brand-gray/10 focus:border-brand-white/50 font-ui font-light text-base text-brand-white py-2.5 outline-none transition-colors placeholder:text-brand-gray/50"
                 style={{ minHeight: '44px' }} />
             </div>
           ))}
           {composePitch(form) && (
             <div className="p-3 border border-brand-gray/10 rounded-[1px]">
-              <p className="font-ui text-xxs text-brand-gray/25 tracking-[0.15em] uppercase mb-1">Aperçu</p>
+              <p className="font-ui text-xxs text-brand-gray/55 tracking-[0.15em] uppercase mb-1">Aperçu</p>
               <p className="font-display text-base font-light italic text-brand-gray/50 leading-relaxed">&ldquo;{composePitch(form)}&rdquo;</p>
             </div>
           )}
@@ -331,7 +331,7 @@ function StepProfile({ form, onChange, onSubmit, onBack, loading, error, isEditi
         {/* Section Détails optionnels — était une étape séparée, maintenant inline */}
         <div className="flex items-center gap-3 pt-2">
           <div className="flex-1 h-px bg-brand-gray/10" />
-          <span className="font-ui text-xxs text-brand-gray/30 tracking-[0.15em] uppercase">Détails optionnels</span>
+          <span className="font-ui text-xxs text-brand-gray/55 tracking-[0.15em] uppercase">Détails optionnels</span>
           <div className="flex-1 h-px bg-brand-gray/10" />
         </div>
 
@@ -342,23 +342,23 @@ function StepProfile({ form, onChange, onSubmit, onBack, loading, error, isEditi
             {/* eslint-disable-next-line @next/next/no-img-element */}
             {preview
               ? <img src={preview} alt="Aperçu de votre photo" className="w-full h-full object-cover" />
-              : <span className="font-ui text-xxs text-brand-gray/30 tracking-[0.1em] uppercase">+ Photo</span>}
+              : <span className="font-ui text-xxs text-brand-gray/55 tracking-[0.1em] uppercase">+ Photo</span>}
           </button>
           <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handlePhoto} />
           <div className="flex flex-col gap-0.5">
-            <p className="font-ui text-xs text-brand-gray/40">Photo de profil</p>
-            <p className="font-ui text-xxs text-brand-gray/20">JPEG, PNG ou WebP · 5 Mo max</p>
+            <p className="font-ui text-xs text-brand-gray/50">Photo de profil</p>
+            <p className="font-ui text-xxs text-brand-gray/50">JPEG, PNG ou WebP · 5 Mo max</p>
             {fileErr && <p className="font-ui text-xs text-red-400">{fileErr}</p>}
           </div>
         </div>
 
         <div className="flex flex-col gap-1">
-          <label htmlFor="register-instagram" className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">
-            Instagram <span className="text-brand-gray/15 normal-case tracking-normal">(optionnel)</span>
+          <label htmlFor="register-instagram" className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">
+            Instagram <span className="text-brand-gray/50 normal-case tracking-normal">(optionnel)</span>
           </label>
           <input id="register-instagram" type="text" placeholder="votre_pseudo" value={form.instagram}
             onChange={e => onChange({ ...form, instagram: e.target.value })}
-            className="w-full bg-transparent border-b border-brand-gray/15 focus:border-brand-white/50 font-ui font-light text-base text-brand-white py-3 outline-none transition-colors placeholder:text-brand-gray/15"
+            className="w-full bg-transparent border-b border-brand-gray/15 focus:border-brand-white/50 font-ui font-light text-base text-brand-white py-3 outline-none transition-colors placeholder:text-brand-gray/50"
             style={{ minHeight: '44px' }} />
         </div>
 
@@ -370,7 +370,7 @@ function StepProfile({ form, onChange, onSubmit, onBack, loading, error, isEditi
           {loading ? 'Activation...' : isEditing ? 'Sauvegarder' : 'Activer mon vêtement'}
         </button>
         {!isLoggedIn && (
-          <button onClick={onBack} className="font-ui text-xs text-brand-gray/25 tracking-[0.15em] uppercase underline underline-offset-4 py-2">
+          <button onClick={onBack} className="font-ui text-xs text-brand-gray/55 tracking-[0.15em] uppercase underline underline-offset-4 py-2">
             ← retour
           </button>
         )}
@@ -475,7 +475,7 @@ function RegisterContent() {
             </div>
           ))}
         </div>
-        <p className="font-ui text-xxs text-brand-gray/20 tracking-[0.15em] uppercase">
+        <p className="font-ui text-xxs text-brand-gray/50 tracking-[0.15em] uppercase">
           Étape {currentStep}/{totalSteps}
         </p>
       </div>

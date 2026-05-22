@@ -84,7 +84,7 @@ function PushPrompt({ pushAsked, pushGranted, pushLoading, onSubscribe, hasConta
       return <p className="font-ui text-xs text-green-400/50 italic">✓ Notifications activées.</p>;
     }
     return (
-      <p className="font-ui text-xs text-brand-gray/30 italic leading-relaxed">
+      <p className="font-ui text-xs text-brand-gray/55 italic leading-relaxed">
         Notifications désactivées.{' '}
         {hasContact
           ? 'Vous recevrez un email à la place.'
@@ -96,7 +96,7 @@ function PushPrompt({ pushAsked, pushGranted, pushLoading, onSubscribe, hasConta
   return (
     <div className="w-full flex flex-col gap-2">
       {iosNotPwa && (
-        <p className="font-ui text-xxs text-brand-gray/35 leading-relaxed">
+        <p className="font-ui text-xxs text-brand-gray/60 leading-relaxed">
           Sur iPhone : ajoutez d&apos;abord la page à l&apos;écran d&apos;accueil
           (<span className="text-brand-white/50">Partager → Sur l&apos;écran d&apos;accueil</span>)
           pour activer les notifications.
@@ -156,7 +156,7 @@ function ThreadReplyForm({ messageId, author, onSent }: {
         maxLength={2000}
         rows={3}
         placeholder={author === 'member' ? 'Votre réponse...' : 'Répondre...'}
-        className="w-full bg-transparent border border-brand-gray/20 focus:border-brand-white/50 text-brand-white font-ui font-light text-base p-3 outline-none transition-colors placeholder:text-brand-gray/20 rounded-[2px] resize-none"
+        className="w-full bg-transparent border border-brand-gray/20 focus:border-brand-white/50 text-brand-white font-ui font-light text-base p-3 outline-none transition-colors placeholder:text-brand-gray/50 rounded-[2px] resize-none"
       />
       {error && <p className="font-ui text-sm text-red-400">{error}</p>}
       <button
@@ -182,7 +182,7 @@ function ChatBubble({ content, date, isRight, animate }: {
           &ldquo;{content}&rdquo;
         </p>
       </div>
-      <p className={`font-ui text-xxs text-brand-gray/20 mt-1 ${isRight ? 'text-right' : ''}`}>{formatDate(date)}</p>
+      <p className={`font-ui text-xxs text-brand-gray/50 mt-1 ${isRight ? 'text-right' : ''}`}>{formatDate(date)}</p>
     </div>
   );
 }
@@ -330,12 +330,12 @@ export default function ConversationClient({
           <div className="w-10 h-10 rounded-full border border-brand-gray/20 bg-[#0a0a0a] flex items-center justify-center overflow-hidden flex-shrink-0">
             {message.members?.photo_url
               ? <Image src={message.members.photo_url} alt={`Photo de ${memberName}`} width={40} height={40} className="w-full h-full object-cover" />
-              : <span className="font-display text-sm font-light text-brand-gray/40">{getInitials(memberName)}</span>
+              : <span className="font-display text-sm font-light text-brand-gray/50">{getInitials(memberName)}</span>
             }
           </div>
           <div>
             <p className="font-ui text-sm font-medium tracking-[0.2em]">{memberName.toUpperCase()}</p>
-            <p className="font-ui text-xs text-brand-gray/30 tracking-[0.05em]">
+            <p className="font-ui text-xs text-brand-gray/55 tracking-[0.05em]">
               {isOwner ? 'Message reçu' : 'Votre conversation'}
             </p>
           </div>
@@ -369,7 +369,7 @@ export default function ConversationClient({
         {totalMessages > 0 && (
           <div className="flex items-center justify-center gap-3 -my-2">
             <div className="flex-1 h-px bg-brand-gray/10" />
-            <span className="font-ui text-xxs text-brand-gray/30 tracking-[0.2em] uppercase tabular-nums">
+            <span className="font-ui text-xxs text-brand-gray/55 tracking-[0.2em] uppercase tabular-nums">
               {totalMessages}/{MAX_THREAD} échanges
             </span>
             <div className="flex-1 h-px bg-brand-gray/10" />
@@ -387,11 +387,11 @@ export default function ConversationClient({
               </p>
               {isOwner && (
                 <>
-                  <p className="font-ui text-xs text-brand-gray/30 text-center leading-relaxed max-w-[18rem]">
+                  <p className="font-ui text-xs text-brand-gray/55 text-center leading-relaxed max-w-[18rem]">
                     Elle ne peut plus vous écrire, ici comme ailleurs.
                   </p>
                   <button onClick={() => setBlock('unblock')} disabled={blockLoading}
-                    className="font-ui text-xs text-brand-gray/30 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray transition-colors py-2 disabled:opacity-40"
+                    className="font-ui text-xs text-brand-gray/55 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray transition-colors py-2 disabled:opacity-40"
                     style={{ minHeight: '44px' }}>
                     {blockLoading ? '...' : 'Débloquer'}
                   </button>
@@ -406,7 +406,7 @@ export default function ConversationClient({
               <p className="font-ui text-sm text-brand-gray/50 text-center leading-relaxed">
                 Cet échange est arrivé à terme.
               </p>
-              <p className="font-ui text-xs text-brand-gray/30 text-center leading-relaxed max-w-[18rem]">
+              <p className="font-ui text-xs text-brand-gray/55 text-center leading-relaxed max-w-[18rem]">
                 In Real Society limite chaque conversation à {MAX_THREAD} messages — pour que la suite se passe ailleurs.
                 {message.sender_contact && !isOwner && (
                   <><br /><br />Continuez sur le canal partagé.</>
@@ -426,7 +426,7 @@ export default function ConversationClient({
           ) : (
             /* En attente de l'autre */
             <div className="flex flex-col items-start gap-3 py-2">
-              <p className="font-ui text-xs text-brand-gray/25 tracking-[0.15em] uppercase">
+              <p className="font-ui text-xs text-brand-gray/55 tracking-[0.15em] uppercase">
                 En attente de réponse
               </p>
               <div className="flex items-center gap-1.5 px-4 py-3 border border-brand-gray/10 rounded-[2px] rounded-tl-none">
@@ -442,7 +442,7 @@ export default function ConversationClient({
                 hasContact={!!message.sender_contact}
               />
               {!isOwner && !message.sender_contact && (
-                <p className="font-ui text-xxs text-brand-gray/20 italic mt-1">
+                <p className="font-ui text-xxs text-brand-gray/50 italic mt-1">
                   Vous n&apos;avez pas laissé de contact — la notification push est le seul moyen d&apos;être prévenu.
                 </p>
               )}
@@ -453,7 +453,7 @@ export default function ConversationClient({
         {/* ─── Feedback (quand il y a eu au moins 1 échange) ──────────────── */}
         {!canReply && !feedbackSent && (
           <div className="flex flex-col items-center gap-2">
-            <p className="font-ui text-xxs text-brand-gray/25 tracking-[0.15em] uppercase">
+            <p className="font-ui text-xxs text-brand-gray/55 tracking-[0.15em] uppercase">
               Comment s&apos;est passé cet échange ?
             </p>
             <div className="flex items-center gap-4">
@@ -466,14 +466,14 @@ export default function ConversationClient({
                   className="flex flex-col items-center gap-1 px-3 py-2 border border-brand-gray/10 rounded-[2px] hover:border-brand-gray/30 hover:bg-brand-white/5 transition-all"
                   aria-label={opt.label}>
                   <span className="text-lg">{opt.emoji}</span>
-                  <span className="font-ui text-[9px] text-brand-gray/25 tracking-wide uppercase">{opt.label}</span>
+                  <span className="font-ui text-[9px] text-brand-gray/55 tracking-wide uppercase">{opt.label}</span>
                 </button>
               ))}
             </div>
           </div>
         )}
         {feedbackSent && (
-          <p className="font-ui text-xxs text-brand-gray/25 text-center italic">
+          <p className="font-ui text-xxs text-brand-gray/55 text-center italic">
             Merci pour votre retour{feedbackValue === 'positive' ? ' 😊' : feedbackValue === 'negative' ? ' — on fera mieux.' : '.'}
           </p>
         )}
@@ -491,7 +491,7 @@ export default function ConversationClient({
             </a>
           )}
           <Link href={isOwner ? '/dashboard' : '/'}
-            className="font-ui text-xs text-brand-gray/20 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray/50 transition-colors text-center py-2"
+            className="font-ui text-xs text-brand-gray/50 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white/80 transition-colors text-center py-2"
             style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {isOwner ? '← retour au dashboard' : '← retour'}
           </Link>
@@ -499,7 +499,7 @@ export default function ConversationClient({
           {/* Bloquer — réservé au porteur, masqué si déjà bloqué */}
           {isOwner && !isBlocked && (
             <button onClick={() => setBlock('block')} disabled={blockLoading}
-              className="font-ui text-xxs text-brand-gray/20 tracking-[0.15em] uppercase hover:text-red-400/70 transition-colors text-center py-2 disabled:opacity-40"
+              className="font-ui text-xxs text-brand-gray/50 tracking-[0.15em] uppercase hover:text-red-400/70 transition-colors text-center py-2 disabled:opacity-40"
               style={{ minHeight: '44px' }}>
               {blockLoading ? '...' : 'Bloquer cette personne'}
             </button>

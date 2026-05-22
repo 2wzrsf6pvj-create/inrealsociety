@@ -62,7 +62,7 @@ export default function LoginPage() {
         <form onSubmit={handleLogin} noValidate className="w-full flex flex-col gap-5 animate-stagger-2">
 
           <div className="flex flex-col gap-1">
-            <label className="font-ui text-xs text-brand-gray/40 tracking-[0.18em] uppercase">
+            <label className="font-ui text-xs text-brand-gray/50 tracking-[0.18em] uppercase">
               Email
             </label>
             <input
@@ -70,19 +70,19 @@ export default function LoginPage() {
               autoComplete="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              className="w-full bg-transparent border-b border-brand-gray/20 focus:border-brand-white font-ui font-light text-base text-brand-white py-3 outline-none transition-colors placeholder:text-brand-gray/20"
+              className="w-full bg-transparent border-b border-brand-gray/20 focus:border-brand-white font-ui font-light text-base text-brand-white py-3 outline-none transition-colors placeholder:text-brand-gray/50"
               style={{ minHeight: '44px' }}
             />
           </div>
 
           <div className="flex flex-col gap-1">
             <div className="flex items-center justify-between">
-              <label className="font-ui text-xs text-brand-gray/40 tracking-[0.18em] uppercase">
+              <label className="font-ui text-xs text-brand-gray/50 tracking-[0.18em] uppercase">
                 Mot de passe
               </label>
               <Link
                 href="/auth/forgot-password"
-                className="font-ui text-xs text-brand-gray/25 tracking-[0.1em] hover:text-brand-gray/60 transition-colors"
+                className="font-ui text-xs text-brand-gray/55 tracking-[0.1em] hover:text-brand-white/80 transition-colors"
               >
                 Oublié ?
               </Link>
@@ -120,13 +120,13 @@ export default function LoginPage() {
           </Link>
           <Link
             href="/manifeste"
-            className="font-ui text-xs text-brand-gray/25 tracking-[0.1em] hover:text-brand-gray/50 transition-colors"
+            className="font-ui text-xs text-brand-gray/55 tracking-[0.1em] hover:text-brand-white/80 transition-colors"
           >
             Découvrir In Real Society
           </Link>
           <Link
             href="/"
-            className="font-ui text-xs text-brand-gray/20 tracking-[0.1em] underline underline-offset-4 hover:text-brand-gray/50 transition-colors"
+            className="font-ui text-xs text-brand-gray/50 tracking-[0.1em] underline underline-offset-4 hover:text-brand-white/80 transition-colors"
           >
             &larr; retour &agrave; l&apos;accueil
           </Link>

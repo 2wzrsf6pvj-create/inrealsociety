@@ -41,7 +41,7 @@ function SuccessContent() {
     return (
       <div className="flex flex-col items-center gap-6 animate-pulse">
         <div className="w-14 h-14 rounded-full border border-brand-gray/20" />
-        <p className="font-ui text-sm text-brand-gray/30 tracking-[0.2em] uppercase">Confirmation en cours...</p>
+        <p className="font-ui text-sm text-brand-gray/55 tracking-[0.2em] uppercase">Confirmation en cours...</p>
       </div>
     );
   }
@@ -50,7 +50,7 @@ function SuccessContent() {
     return (
       <div className="flex flex-col items-center gap-6 text-center">
         <p className="font-display text-2xl font-light">Une erreur est survenue.</p>
-        <Link href="/shop" className="font-ui text-sm text-brand-gray/30 underline underline-offset-4">← Retour à la boutique</Link>
+        <Link href="/shop" className="font-ui text-sm text-brand-gray/55 underline underline-offset-4">← Retour à la boutique</Link>
       </div>
     );
   }
@@ -77,11 +77,11 @@ function SuccessContent() {
 
       {code && (
         <div className="w-full border border-brand-white/15 p-5 flex flex-col items-center gap-3">
-          <p className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">Votre code d&apos;activation</p>
+          <p className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Votre code d&apos;activation</p>
           <p className="font-mono text-2xl font-bold tracking-[0.3em] text-brand-white select-all">{code}</p>
           <button
             onClick={() => { navigator.clipboard.writeText(code); }}
-            className="font-ui text-xs text-brand-gray/40 tracking-[0.15em] uppercase border border-brand-gray/20 px-4 py-1.5 rounded-[2px] hover:border-brand-gray/40 hover:text-brand-gray/70 transition-colors"
+            className="font-ui text-xs text-brand-gray/50 tracking-[0.15em] uppercase border border-brand-gray/20 px-4 py-1.5 rounded-[2px] hover:border-brand-gray/40 hover:text-brand-white/80 transition-colors"
           >
             Copier le code
           </button>
@@ -99,7 +99,7 @@ function SuccessContent() {
           Créer mon profil {code ? '→' : '(vérifiez votre email)'}
         </button>
         <Link href="/shop"
-          className="w-full py-3 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.15em] uppercase text-brand-gray/35 hover:border-brand-gray/30 transition-colors"
+          className="w-full py-3 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.15em] uppercase text-brand-gray/60 hover:border-brand-gray/30 transition-colors"
           style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >
           Retour à la boutique
