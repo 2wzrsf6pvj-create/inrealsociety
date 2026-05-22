@@ -5,14 +5,20 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
+// Le « code » d'invitation est le memberId (UUID) — même identifiant que le lien
+// dashboard /shop?ref=<id> et que ShopClient (qui n'accepte que des UUID).
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export default function JoinPage() {
   const { code } = useParams<{ code: string }>();
   const [referrer, setReferrer] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!code) return;
-    localStorage.setItem('referral_code', code.toUpperCase());
-    supabase.from('members').select('name').eq('referral_code', code.toUpperCase()).single()
+    if (!code || !UUID_RE.test(code)) return;
+    // Stocké tel quel (UUID) → ShopClient le relira et l'acceptera (avant, on
+    // stockait un referral_code non-UUID jamais consommé : funnel mort).
+    localStorage.setItem('referral_code', code);
+    supabase.from('members').select('name').eq('id', code).single()
       .then(({ data }) => { if (data) setReferrer(data.name); });
   }, [code]);
 
@@ -47,7 +53,7 @@ export default function JoinPage() {
         <div className="w-full h-px bg-brand-gray/10 animate-line-draw" />
 
         <div className="w-full flex flex-col gap-3 animate-stagger-2">
-          <Link href="/shop"
+          <Link href={code ? `/shop?ref=${code}` : '/shop'}
             className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.3em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 block text-center"
             style={{ minHeight: '44px' }}
           >

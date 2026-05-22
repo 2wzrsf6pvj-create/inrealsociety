@@ -89,8 +89,10 @@ function ReferralBlock({ memberId }: { memberId: string }) {
   const [count,     setCount]     = useState<number | null>(null);
   const [converted, setConverted] = useState<number>(0);
   const [copied,    setCopied]    = useState(false);
+  // Lien vers la page d'invitation brandée /join/<id> (qui pose le ref puis
+  // envoie au shop). memberId = UUID, l'identifiant de parrainage unifié.
   const referralUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/shop?ref=${memberId}`
+    ? `${window.location.origin}/join/${memberId}`
     : '';
 
   React.useEffect(() => {

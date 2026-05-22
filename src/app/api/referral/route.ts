@@ -103,22 +103,21 @@ export async function GET(req: NextRequest) {
     const own = await requireOwnership(auth.user.id, memberId);
     if (isHttpError(own)) return own;
 
-    // Compte les parrainages
-    const { count, error: countError } = await supabaseAdmin
-      .from('referrals')
+    // Source de vérité = orders.referrer_id (posé au checkout). La table
+    // `referrals` n'est jamais alimentée (POST non câblé) → la compter donnait
+    // toujours 0. count = filleuls ayant commandé, converted = commandes payées.
+    const { count: referredCount } = await supabaseAdmin
+      .from('orders')
       .select('*', { count: 'exact', head: true })
       .eq('referrer_id', memberId);
 
-    if (countError) throw countError;
-
-    // Compte les commandes liées (parrainages convertis)
-    const { count: ordersCount } = await supabaseAdmin
+    const { count: paidCount } = await supabaseAdmin
       .from('orders')
       .select('*', { count: 'exact', head: true })
       .eq('referrer_id', memberId)
       .eq('status', 'paid');
 
-    return NextResponse.json({ count: count ?? 0, converted: ordersCount ?? 0 });
+    return NextResponse.json({ count: referredCount ?? 0, converted: paidCount ?? 0 });
   } catch (err) {
     console.error('[referral GET]', err);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
