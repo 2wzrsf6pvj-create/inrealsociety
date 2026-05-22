@@ -155,9 +155,12 @@ export default function CGVPage() {
             Article 7 — Livraison
           </h2>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
-            Les commandes sont produites et expédiées via Printful sous 2 à 7 jours ouvrés après
-            validation du paiement. Le délai de livraison estimé est de 5 à 10 jours ouvrés selon
-            la destination. Ces délais sont indicatifs et ne constituent pas un engagement contractuel.
+            Chaque article étant fabriqué à la demande via Printful, le délai se décompose en deux
+            temps : <span className="text-brand-white/80">production sous 2 à 5 jours ouvrés</span> après
+            validation du paiement, puis <span className="text-brand-white/80">expédition de 5 à 10 jours
+            ouvrés</span> (ou 2 à 4 jours en livraison express) selon la destination. Comptez donc
+            généralement 1 à 3 semaines au total. Ces délais sont indicatifs et ne constituent pas
+            un engagement contractuel.
           </p>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
             Le Vendeur ne peut être tenu responsable des retards imputables au transporteur ou à

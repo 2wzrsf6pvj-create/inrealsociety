@@ -319,18 +319,23 @@ export default function ShopClient() {
                 ))}
               </div>
 
-              {/* Livraison & délais — affichés AVANT le CTA pour ne pas surprendre au checkout */}
+              {/* Livraison & délais — affichés AVANT le CTA pour ne pas surprendre au checkout.
+                  Chronologie honnête : production à la demande PUIS expédition. */}
               <div className="flex flex-col gap-1.5 py-3 px-4 bg-[#0a0a0a] border border-brand-gray/10 rounded-[2px]">
                 <div className="flex items-center justify-between">
-                  <span className="font-ui text-xxs text-brand-gray/40 tracking-[0.15em] uppercase">Livraison</span>
-                  <span className="font-ui text-xs text-brand-gray/60">5€ standard · 12€ express</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="font-ui text-xxs text-brand-gray/40 tracking-[0.15em] uppercase">Délai</span>
-                  <span className="font-ui text-xs text-brand-gray/60">5-10 j. ouvrés · 2-4 j. en express</span>
+                  <span className="font-ui text-xxs text-brand-gray/40 tracking-[0.15em] uppercase">Production</span>
+                  <span className="font-ui text-xs text-brand-gray/60">2-5 j. (à la demande)</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-ui text-xxs text-brand-gray/40 tracking-[0.15em] uppercase">Expédition</span>
+                  <span className="font-ui text-xs text-brand-gray/60">5-10 j. · 2-4 j. en express</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="font-ui text-xxs text-brand-gray/40 tracking-[0.15em] uppercase">Frais</span>
+                  <span className="font-ui text-xs text-brand-gray/60">5€ standard · 12€ express</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="font-ui text-xxs text-brand-gray/40 tracking-[0.15em] uppercase">Zones</span>
                   <span className="font-ui text-xs text-brand-gray/60">UE · UK · USA · Canada</span>
                 </div>
               </div>
