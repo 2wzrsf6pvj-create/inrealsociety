@@ -52,16 +52,13 @@ SQL
 fonctions existantes (types d'arguments), sinon la migration échoue.
 
 ### Post-application — sanity checks
-```sql
--- 033 : anon ne doit plus pouvoir lire les vues
-SELECT has_table_privilege('anon', 'member_inbox', 'SELECT');  -- attendu: false
-SELECT has_table_privilege('anon', 'first_scans',  'SELECT');  -- attendu: false
--- 035 : anon ne doit plus pouvoir exécuter la RPC
-SELECT has_function_privilege('anon',
-  'create_member_with_code(uuid,text,text,text,text,text,text)', 'EXECUTE'); -- false
--- 034 : la fonction existe
-SELECT proname FROM pg_proc WHERE proname = 'record_scan';
+Script turnkey (aucun auth/Stripe requis, juste une connexion DB) :
+```bash
+psql "$DATABASE_URL" -f scripts/verify-migrations.sql
 ```
+Il vérifie : anon/authenticated ne lisent plus `member_inbox`/`first_scans`,
+les vues sont en `security_invoker=on`, `record_scan` existe, et anon ne peut
+plus exécuter `create_member_with_code` (service_role oui).
 
 ---
 
@@ -112,6 +109,11 @@ supabase db reset           # ou le dry-run §1 puis apply
 npm run dev
 stripe listen --forward-to localhost:3000/api/webhook/stripe   # note le whsec_… → STRIPE_WEBHOOK_SECRET
 ```
+
+> ⚠️ **Seed** : `members.auth_user_id` a une FK vers `auth.users` → on ne peut pas
+> insérer un membre en SQL brut. Créer d'abord un user (dashboard Supabase Auth ou
+> `supabase` admin), puis dérouler le vrai flux signup → `/register`. Les checks
+> RLS (`scripts/verify-migrations.sql`) ne nécessitent eux aucun seed.
 
 Puis dérouler les flux critiques (ceux corrigés ce lot) :
 
