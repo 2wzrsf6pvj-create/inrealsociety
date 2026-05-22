@@ -52,7 +52,7 @@ export async function GET(req: NextRequest) {
     ] = await Promise.all([
       supabaseAdmin.from('messages').select('*').eq('member_id', member.id).order('created_at', { ascending: true }),
       supabaseAdmin.from('scans').select('*').eq('member_id', member.id).order('scanned_at', { ascending: true }),
-      supabaseAdmin.from('silent_views').select('*').eq('member_id', member.id).order('viewed_at', { ascending: true }),
+      supabaseAdmin.from('silent_views').select('*').eq('member_id', member.id).order('created_at', { ascending: true }),
       supabaseAdmin.from('push_subscriptions').select('endpoint, message_id, created_at').eq('member_id', member.id),
       supabaseAdmin.from('audit_logs').select('*').eq('member_id', member.id).order('created_at', { ascending: false }).limit(1000),
       supabaseAdmin.from('orders').select('*').eq('email', member.email).order('created_at', { ascending: true }),
