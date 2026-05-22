@@ -51,6 +51,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Configuration serveur manquante.' }, { status: 500 });
     }
 
+    // ─── Valide le parrainage avant d'accorder la remise ──────────────────
+    // referrerId est un UUID public (visible sur /profil/[id]) → on exige que le
+    // membre existe vraiment et qu'il ne soit pas l'acheteur (anti auto-parrainage
+    // par email). Sinon on ignore (pas de remise, pas d'attribution).
+    let validReferrerId: string | null = null;
+    if (referrerId) {
+      const { data: ref } = await supabaseAdmin
+        .from('members').select('id, email').eq('id', referrerId).maybeSingle();
+      if (ref && ref.email !== email) validReferrerId = ref.id;
+    }
+
     // ─── Crée une commande en BDD (statut pending) ────────────────────────
     const { data: order, error: orderError } = await supabaseAdmin
       .from('orders')
@@ -60,7 +71,7 @@ export async function POST(req: NextRequest) {
         tshirt_size:   tshirtSize,
         status:        'pending',
         amount:        4900,
-        referrer_id:   referrerId || null,
+        referrer_id:   validReferrerId,
       })
       .select('id')
       .single();
@@ -84,8 +95,8 @@ export async function POST(req: NextRequest) {
         allowed_countries: ['FR', 'BE', 'CH', 'LU', 'DE', 'GB', 'US', 'CA'],
       },
 
-      // Discount automatique si le visiteur vient d'un lien de parrainage
-      ...(referrerId && process.env.STRIPE_REFERRAL_COUPON_ID
+      // Discount automatique uniquement si le parrainage est validé
+      ...(validReferrerId && process.env.STRIPE_REFERRAL_COUPON_ID
         ? { discounts: [{ coupon: process.env.STRIPE_REFERRAL_COUPON_ID }] }
         : {}),
 
