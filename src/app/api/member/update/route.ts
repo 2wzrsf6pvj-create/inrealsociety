@@ -5,7 +5,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { requireAuth, isHttpError } from '@/lib/require-auth';
-import { checkAuthRateLimit, rateLimitHeaders } from '@/lib/ratelimit';
+import { checkAuthRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
+import { audit } from '@/lib/audit';
 
 const schema = z.object({
   name:              z.string().min(1).max(50).trim().optional(),
@@ -61,6 +62,16 @@ export async function PATCH(req: NextRequest) {
     if (updateError) {
       console.error('[api/member/update]', updateError);
       return NextResponse.json({ error: 'Erreur de mise à jour.' }, { status: 500 });
+    }
+
+    // RGPD : trace les changements de consentement marketing (preuve art. 7)
+    if (body.data.marketing_consent !== undefined) {
+      audit({
+        action:   'member.marketing_consent_changed',
+        memberId: member.id,
+        ip:       getIp(req),
+        metadata: { consent: body.data.marketing_consent },
+      });
     }
 
     return NextResponse.json({ ok: true });

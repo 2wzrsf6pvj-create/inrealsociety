@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
+import { MAX_THREAD_MESSAGES as MAX_THREAD } from '@/lib/constants';
 
 interface ConversationMessage {
   id: string; member_id: string; content: string; sender_contact: string | null;
@@ -51,8 +52,6 @@ async function subscribePush(messageId: string): Promise<void> {
     });
   } catch (err) { console.error('[push] Échec inscription push:', err); }
 }
-
-const MAX_THREAD = 5;
 
 // ─── Push prompt avec iOS-awareness ─────────────────────────────────────────
 // Sur iOS Safari, le Web Push exige que le site soit installé comme PWA

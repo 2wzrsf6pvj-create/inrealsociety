@@ -37,7 +37,7 @@ export default function ConfidentialitePage() {
           </h2>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
             In Real Society — [À COMPLÉTER : forme juridique, SIRET, adresse postale].
-            Contact pour toute question relative à vos données : <span className="text-brand-white/70">contact@inrealsociety.com</span>.
+            Contact pour toute question relative à vos données : <span className="text-brand-white/70">hello@inrealsociety.com</span>.
           </p>
         </section>
 
@@ -119,7 +119,7 @@ export default function ConfidentialitePage() {
             <li><strong>Retrait du consentement</strong> à tout moment (cookies analytics).</li>
           </ul>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
-            Pour exercer ces droits : <span className="text-brand-white/70">contact@inrealsociety.com</span>.
+            Pour exercer ces droits : <span className="text-brand-white/70">hello@inrealsociety.com</span>.
             Vous pouvez aussi adresser une réclamation à la <a href="https://www.cnil.fr/fr/plaintes" target="_blank" rel="noopener" className="underline underline-offset-4 hover:text-brand-white">CNIL</a>.
           </p>
         </section>

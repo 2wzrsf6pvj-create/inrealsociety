@@ -10,20 +10,13 @@ import { sendEmail, emailReponse } from '@/lib/email-templates';
 import { notifyThreadSubscribers } from '@/lib/push-notify';
 import { audit } from '@/lib/audit';
 import { getIp, checkAuthRateLimit, rateLimitHeaders } from '@/lib/ratelimit';
+import { isValidEmail, isInstagramHandle } from '@/lib/validators';
 
 const schema = z.object({
   messageId: z.string().uuid(),
   memberId:  z.string().uuid(),
   reply:     z.string().min(1).max(2000),
 });
-
-function isValidEmail(str: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(str);
-}
-
-function isInstagramHandle(str: string): boolean {
-  return /^@[a-zA-Z0-9._]{1,30}$/.test(str);
-}
 
 export async function POST(req: NextRequest) {
   try {

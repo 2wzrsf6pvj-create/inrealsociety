@@ -23,3 +23,12 @@ export const MAX_CONVERSATIONS = {
   free:    3,
   premium: Infinity,
 } as const;
+
+// ─── Conversation thread ───────────────────────────────────────────────────────
+
+/** Nombre max de messages dans un thread (message racine inclus). Garde le côté
+ *  éphémère — au-delà, la suite se passe ailleurs. */
+export const MAX_THREAD_MESSAGES = 5;
+
+/** Réponses rapides qui bypassent la modération (envoi en 1 tap). */
+export const QUICK_REPLIES = ["Belle audace.", "J'aime la démarche.", "👁"] as const;

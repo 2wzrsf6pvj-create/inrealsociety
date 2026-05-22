@@ -24,6 +24,7 @@ export type AuditAction =
   | 'subscription.payment_failed'
   | 'member.deleted'
   | 'member.data_exported'
+  | 'member.marketing_consent_changed'
   | 'order.fulfillment_failed'
   | 'order.fulfilled'
   | 'push.subscribed'

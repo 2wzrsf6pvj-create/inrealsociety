@@ -8,10 +8,10 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { sendEmail, emailNouveauMessage } from '@/lib/email-templates';
 import { checkMessageRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
 import { audit } from '@/lib/audit';
-import { SCAN_WINDOW_MS, MAX_CONVERSATIONS } from '@/lib/constants';
+import { SCAN_WINDOW_MS, MAX_CONVERSATIONS, QUICK_REPLIES as QUICK_REPLIES_LIST } from '@/lib/constants';
 import { moderateContent } from '@/lib/moderation';
 
-const QUICK_REPLIES = new Set(["Belle audace.", "J'aime la démarche.", "👁"]);
+const QUICK_REPLIES = new Set<string>(QUICK_REPLIES_LIST);
 
 const schema = z.object({
   memberId:      z.string().uuid('memberId doit être un UUID valide'),

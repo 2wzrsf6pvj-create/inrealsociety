@@ -9,19 +9,14 @@ import { checkPublicRateLimit, checkAuthRateLimit, getIp, rateLimitHeaders } fro
 import { requireAuth, requireOwnership, isHttpError } from '@/lib/require-auth';
 import { sendEmail, emailNouveauMessage, emailReponse } from '@/lib/email-templates';
 import { notifyThreadSubscribers } from '@/lib/push-notify';
-import { APP_URL } from '@/lib/constants';
-
-const MAX_MESSAGES_PER_THREAD = 5;
+import { APP_URL, MAX_THREAD_MESSAGES } from '@/lib/constants';
+import { isValidEmail } from '@/lib/validators';
 
 const schema = z.object({
   messageId: z.string().uuid(),      // ID du message racine (le premier)
   content:   z.string().min(1).max(2000),
   author:    z.enum(['scanner', 'member']),
 });
-
-function isValidEmail(s: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(s);
-}
 
 export async function POST(req: NextRequest) {
   try {
@@ -72,7 +67,7 @@ export async function POST(req: NextRequest) {
       .select('*', { count: 'exact', head: true })
       .or(`id.eq.${messageId},parent_id.eq.${messageId}`);
 
-    if ((count ?? 0) >= MAX_MESSAGES_PER_THREAD) {
+    if ((count ?? 0) >= MAX_THREAD_MESSAGES) {
       return NextResponse.json({ error: 'Cette conversation a atteint sa limite.' }, { status: 403 });
     }
 
