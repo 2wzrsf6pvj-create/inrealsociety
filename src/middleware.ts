@@ -96,14 +96,22 @@ export async function middleware(req: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   const isPublic = isPublicRoute(pathname);
 
+  // getUser() peut rafraîchir la session → cookies écrits sur `res`. Les
+  // redirections doivent les recopier, sinon une rotation de token est perdue.
+  const redirectWithSession = (url: URL) => {
+    const r = NextResponse.redirect(url);
+    res.cookies.getAll().forEach((c) => r.cookies.set(c));
+    return r;
+  };
+
   if (!isPublic && !user) {
     const loginUrl = new URL('/auth/login', req.url);
     loginUrl.searchParams.set('redirect', pathname);
-    return NextResponse.redirect(loginUrl);
+    return redirectWithSession(loginUrl);
   }
 
   if (user && (pathname === '/auth/login' || pathname === '/')) {
-    return NextResponse.redirect(new URL('/dashboard', req.url));
+    return redirectWithSession(new URL('/dashboard', req.url));
   }
 
   return res;

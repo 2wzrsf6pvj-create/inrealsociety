@@ -33,14 +33,10 @@ export function createClient() {
   );
 }
 
-// Helper : récupère la session utilisateur côté serveur
-export async function getSession() {
-  const supabase = createClient();
-  const { data: { session } } = await supabase.auth.getSession();
-  return session;
-}
-
-// Helper : récupère l'utilisateur authentifié (plus sécurisé que getSession)
+// Helper : récupère l'utilisateur authentifié (validé côté serveur).
+// NB : on n'expose volontairement PAS de helper getSession() — getSession lit le
+// cookie sans le valider (spoofable) ; toute décision d'autorisation doit passer
+// par getUser() (vérifié auprès de Supabase).
 export async function getUser() {
   const supabase = createClient();
   const { data: { user } } = await supabase.auth.getUser();

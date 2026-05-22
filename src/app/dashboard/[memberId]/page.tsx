@@ -19,22 +19,20 @@ export default async function DashboardByIdPage({ params }: Props) {
   const member = await getMemberById(memberId);
   if (!member) notFound();
 
-  // ─── Si le membre a un compte Auth → vérification obligatoire ────────────
-  if (member.auth_user_id) {
-    const supabase = createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    // Non authentifié → login (avec redirect de retour)
-    if (!user) {
-      redirect(`/auth/login?redirect=/dashboard/${memberId}`);
-    }
-
-    // Authentifié mais mauvais compte → son propre dashboard
-    if (user.id !== member.auth_user_id) {
-      redirect('/dashboard');
-    }
+  // ─── Auth + ownership OBLIGATOIRES (pas de bypass legacy) ─────────────────
+  // getMemberById renvoie le record complet (email, stripe_*) via le client
+  // admin. Sans ce check, un membre sans auth_user_id (legacy / auth supprimé)
+  // était lisible par N'IMPORTE QUEL user connecté en devinant l'UUID public
+  // (/profil/<uuid>) → IDOR. Un membre sans auth_user_id n'a pas de
+  // propriétaire → personne ne peut ouvrir ce dashboard.
+  const supabase = createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    redirect(`/auth/login?redirect=/dashboard/${memberId}`);
   }
-  // Si auth_user_id est null → membre legacy, accès par UUID conservé
+  if (member.auth_user_id !== user.id) {
+    redirect('/dashboard');
+  }
 
   const [recentScans, messages, unreadCount, activeConversations] = await Promise.all([
     getRecentScans(memberId, 5),
