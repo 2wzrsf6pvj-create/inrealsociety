@@ -31,7 +31,6 @@ const PUBLIC_PAGE_PREFIXES = [
 const PUBLIC_API_EXACT = new Set([
   '/api/message',        // envoi message scanner anonyme
   '/api/scan',
-  '/api/silent-view',
   '/api/order-code',
   '/api/activate',
   '/api/feedback',       // feedback conversation accessible aux scanners anonymes

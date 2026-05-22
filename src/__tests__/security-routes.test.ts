@@ -26,7 +26,6 @@ function getAllRouteFiles(dir: string): string[] {
 const PUBLIC_ROUTES = [
   'api/message',
   'api/scan',
-  'api/silent-view',
   'api/activate',
   'api/order-code',
   'api/order/resend-code',
