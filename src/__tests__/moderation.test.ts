@@ -44,6 +44,48 @@ describe('moderateContent', () => {
       const result = await moderateContent('SALOPE EN MAJUSCULES');
       expect(result.flagged).toBe(true);
     });
+
+    // ─── Régression : matching par frontière de mot (\b…s?\b) ───────────────
+    // Avant, le matching en substring bloquait des mots parfaitement légitimes.
+    describe('frontière de mot — ne bloque PAS les mots légitimes', () => {
+      const legit = [
+        "j'aime ta technique",     // 'nique'
+        'la culture française',    // 'cul'
+        'une robe violette',       // 'viol'
+        'du fromage râpé',         // 'rape' (après dé-accentuation)
+        'on va se retrouver',      // 'retrouver' (cœur du produit) — volontairement retiré
+        'donne-moi ton adresse',   // 'adresse' — retiré
+        'je vais te suivre sur insta', // 'suivre' — retiré
+        "c'est unique",            // 'nique'
+        'mort de rire',            // 'mort' — retiré
+        'un baiser sur la joue',   // 'baiser' — retiré
+        'situer le lieu',          // 'tuer'
+        'poursuivre la discussion',// 'suivre'
+        'la statue',               // 'tue'
+      ];
+      for (const phrase of legit) {
+        it(`laisse passer « ${phrase} »`, async () => {
+          expect((await moderateContent(phrase)).flagged).toBe(false);
+        });
+      }
+    });
+
+    describe('frontière de mot — bloque bien les abus (mots entiers + pluriels)', () => {
+      const abuse = [
+        'va te faire niquer',  // niquer
+        'je vais te tuer',     // tuer
+        'espèce de connard',   // connard
+        'fdp',                 // abréviation
+        'ta gueule tg',        // abréviation
+        'sale viol',           // viol entier
+        'des salopes',         // pluriel
+      ];
+      for (const phrase of abuse) {
+        it(`bloque « ${phrase} »`, async () => {
+          expect((await moderateContent(phrase)).flagged).toBe(true);
+        });
+      }
+    });
   });
 
   describe('Avec OPENAI_API_KEY', () => {

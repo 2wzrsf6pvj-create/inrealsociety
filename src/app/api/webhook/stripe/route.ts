@@ -19,6 +19,7 @@ import { APP_URL } from '@/lib/constants';
 import { captureServerEvent } from '@/lib/posthog-server';
 import { audit } from '@/lib/audit';
 import { fulfillOrder } from '@/lib/fulfillment';
+import { subscriptionMemberUpdate } from '@/lib/subscription';
 
 type TshirtColor = 'dark' | 'light';
 
@@ -383,23 +384,15 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription): Prom
     return;
   }
 
-  const isActive = subscription.status === 'active' || subscription.status === 'trialing';
+  // Helper pur (cf. lib/subscription.ts) : NE lit PAS current_period_end.
+  const update = subscriptionMemberUpdate(subscription);
 
-  // NB : on NE lit PAS subscription.current_period_end — ce champ a disparu de
-  // l'objet Subscription (API 2025-03+, déplacé sur les items). Y accéder donnait
-  // undefined → new Date(NaN).toISOString() throw → le downgrade n'avait jamais
-  // lieu (membre premium à vie). Stripe émet `deleted` à la fin de période, donc
-  // passer `free` ici est au bon moment ; plan_expires_at reste null (non lu).
   await supabaseAdmin
     .from('members')
-    .update({
-      plan:                    isActive ? 'premium' : 'free',
-      stripe_subscription_id:  isActive ? subscription.id : null,
-      plan_expires_at:         null,
-    })
+    .update(update)
     .eq('id', member.id);
 
-  if (!isActive) {
+  if (update.plan === 'free') {
     await captureServerEvent({
       distinctId: member.id,
       event:      'subscription_cancelled',
@@ -407,5 +400,5 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription): Prom
     });
   }
 
-  console.log('[webhook] Membre', member.id, isActive ? 'premium actif' : 'repassé en free');
+  console.log('[webhook] Membre', member.id, update.plan === 'premium' ? 'premium actif' : 'repassé en free');
 }
