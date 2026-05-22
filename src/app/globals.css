@@ -24,6 +24,12 @@ html {
   border-radius: 2px;
 }
 
+/* Cible tactile minimum 44px (WCAG 2.5.5 / Apple HIG). Remplace les
+   style={{ minHeight: '44px' }} inline. */
+.min-h-touch {
+  min-height: 44px;
+}
+
 /* Skip link — saute la navigation pour les utilisateurs clavier / lecteur d'écran */
 .skip-link {
   position: absolute;

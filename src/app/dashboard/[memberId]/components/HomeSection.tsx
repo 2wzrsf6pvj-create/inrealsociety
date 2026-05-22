@@ -6,6 +6,7 @@ import Image from 'next/image';
 import type { Member, Scan } from '@/lib/types';
 import { daysActive, formatDate, getInitials, getWaitingPhrase, recentScansCount } from './utils';
 import { useCountUp } from './hooks';
+import SectionDivider from '@/app/components/ui/SectionDivider';
 
 // ─── Stats Block ──────────────────────────────────────────────────────────────
 
@@ -109,11 +110,7 @@ export default function HomeSection({ member, recentScans, scansByDay = [] }: {
 
       {/* Profil card */}
       <div className="w-full bg-[#080808] border border-brand-gray/10 rounded-[2px] p-4 flex flex-col gap-4">
-        <div className="flex items-center gap-3 w-full">
-          <div className="flex-1 h-px bg-brand-gray/10" />
-          <span className="font-ui text-xs text-brand-gray/30 tracking-[0.18em] uppercase">votre profil</span>
-          <div className="flex-1 h-px bg-brand-gray/10" />
-        </div>
+        <SectionDivider label="votre profil" />
         <div className="flex items-center gap-3">
           <div className="relative w-10 h-10 flex-shrink-0">
             <div className="absolute inset-[-4px] rounded-full border border-brand-white/5" />

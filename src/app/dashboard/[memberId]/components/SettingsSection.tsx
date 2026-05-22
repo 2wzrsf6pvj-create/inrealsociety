@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase-browser';
 import { captureEvent } from '@/lib/posthog-client';
 import type { Member } from '@/lib/types';
+import SectionDivider from '@/app/components/ui/SectionDivider';
 
 // ─── Premium Block ────────────────────────────────────────────────────────────
 
@@ -107,11 +108,7 @@ function ReferralBlock({ memberId }: { memberId: string }) {
 
   return (
     <div className="w-full bg-[#080808] border border-brand-gray/10 rounded-[2px] p-4 flex flex-col gap-3">
-      <div className="flex items-center gap-3 w-full">
-        <div className="flex-1 h-px bg-brand-gray/10" />
-        <span className="font-ui text-xs text-brand-gray/30 tracking-[0.18em] uppercase">parrainage</span>
-        <div className="flex-1 h-px bg-brand-gray/10" />
-      </div>
+      <SectionDivider label="parrainage" />
       <p className="font-ui text-xs md:text-sm text-brand-gray/50 leading-relaxed">
         Partagez votre lien. Chaque personne qui commande via ce lien bénéficie d&apos;une remise — vous, vous suivez vos parrainages ici.
       </p>
@@ -183,11 +180,7 @@ function FeedbackBlock({ memberId }: { memberId: string }) {
 
   return (
     <div className="w-full bg-[#080808] border border-brand-gray/10 rounded-[2px] p-4 flex flex-col gap-3">
-      <div className="flex items-center gap-3 w-full">
-        <div className="flex-1 h-px bg-brand-gray/10" />
-        <span className="font-ui text-xs text-brand-gray/30 tracking-[0.18em] uppercase">votre avis</span>
-        <div className="flex-1 h-px bg-brand-gray/10" />
-      </div>
+      <SectionDivider label="votre avis" />
 
       {sent ? (
         <p className="font-ui text-xs text-green-400/60 text-center py-2">
@@ -364,11 +357,7 @@ export default function SettingsSection({ member }: { member: Member }) {
     <div className="w-full flex flex-col gap-6">
       {/* Pause profil */}
       <div className="w-full bg-[#080808] border border-brand-gray/10 rounded-[2px] p-4 flex flex-col gap-3">
-        <div className="flex items-center gap-3 w-full">
-          <div className="flex-1 h-px bg-brand-gray/10" />
-          <span className="font-ui text-xs text-brand-gray/30 tracking-[0.18em] uppercase">visibilité</span>
-          <div className="flex-1 h-px bg-brand-gray/10" />
-        </div>
+        <SectionDivider label="visibilité" />
 
         <div className="flex items-center justify-between">
           <div className="flex flex-col gap-0.5">
@@ -392,11 +381,7 @@ export default function SettingsSection({ member }: { member: Member }) {
 
       {/* Communications email (consent marketing — distinct du consent analytics) */}
       <div className="w-full bg-[#080808] border border-brand-gray/10 rounded-[2px] p-4 flex flex-col gap-3">
-        <div className="flex items-center gap-3 w-full">
-          <div className="flex-1 h-px bg-brand-gray/10" />
-          <span className="font-ui text-xs text-brand-gray/30 tracking-[0.18em] uppercase">communications</span>
-          <div className="flex-1 h-px bg-brand-gray/10" />
-        </div>
+        <SectionDivider label="communications" />
         <div className="flex items-center justify-between">
           <div className="flex flex-col gap-0.5">
             <p className="font-ui text-sm text-brand-white/80">Newsletter et actualités</p>

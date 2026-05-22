@@ -354,7 +354,7 @@ export default function ShopClient() {
                     className="w-full bg-transparent border-b border-brand-gray/20 focus:border-brand-white/50 text-brand-white font-ui font-light text-base py-3 outline-none transition-colors placeholder:text-brand-gray/20"
                     style={{ minHeight: '44px' }}
                   />
-                  {error && <p className="font-ui text-sm text-red-900">{error}</p>}
+                  {error && <p className="font-ui text-sm text-red-400">{error}</p>}
                 </div>
 
                 <button

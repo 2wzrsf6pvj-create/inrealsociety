@@ -240,7 +240,7 @@ function MessageForm() {
             <span className="font-ui text-xxs text-brand-gray/20 tabular-nums">{1000 - message.length}</span>
           </div>
         </div>
-        {error && <p className="font-ui text-sm text-red-900 text-center">{error}</p>}
+        {error && <p className="font-ui text-sm text-red-400 text-center">{error}</p>}
         <button onClick={() => sendMessage(message)} disabled={!message.trim() || sending}
           className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.3em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
           style={{ minHeight: '44px' }}
