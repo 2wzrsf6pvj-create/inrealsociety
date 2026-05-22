@@ -104,7 +104,7 @@ export default function UnlockPage() {
             <input ref={inputRef} type="text" placeholder="votre prénom..." value={firstName}
               maxLength={30} autoComplete="given-name" autoFocus
               onChange={(e) => { setFirstName(e.target.value); if (error) setError(''); }}
-              className={`w-full bg-transparent border-b text-brand-white font-ui font-light text-base py-3 outline-none transition-colors placeholder:text-brand-gray/20 ${error ? 'border-red-900' : 'border-brand-gray/20 focus:border-brand-white'}`}
+              className={`w-full bg-transparent border-b text-brand-white font-ui font-light text-base py-3 outline-none transition-colors placeholder:text-brand-gray/20 ${error ? 'border-red-500' : 'border-brand-gray/20 focus:border-brand-white'}`}
               style={{ minHeight: '44px' }}
             />
             <div className={`font-ui text-sm text-red-400 tracking-wide transition-all duration-200 overflow-hidden ${error ? 'max-h-8 opacity-100' : 'max-h-0 opacity-0'}`}>

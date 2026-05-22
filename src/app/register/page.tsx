@@ -85,7 +85,7 @@ function CodeField({ code, codeOk, codeErr, checking, onChange }: {
       <div className="flex items-end gap-2">
         <input id="activation-code" type="text" placeholder="XXXXXXXX" value={code} maxLength={12}
           onChange={e => onChange(e.target.value)}
-          className={`flex-1 bg-transparent border-b font-mono text-lg text-brand-white py-3 outline-none tracking-[0.3em] transition-colors ${codeErr ? 'border-red-900' : codeOk ? 'border-brand-white/60' : 'border-brand-gray/20 focus:border-brand-white/50'}`}
+          className={`flex-1 bg-transparent border-b font-mono text-lg text-brand-white py-3 outline-none tracking-[0.3em] transition-colors ${codeErr ? 'border-red-500' : codeOk ? 'border-brand-white/60' : 'border-brand-gray/20 focus:border-brand-white/50'}`}
           style={{ minHeight: '44px' }} />
         <span className="font-ui text-xs text-brand-gray/30 pb-3">{checking ? '...' : codeOk ? 'Valide' : ''}</span>
       </div>
@@ -164,7 +164,9 @@ function StepAccount({ onNext, codeState }: {
     const supabase = createClient();
     const { data, error: authError } = await supabase.auth.signUp({
       email: email.trim(), password,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=/register` },
+      // Propage le code dans le redirect : sinon, après confirmation email,
+      // l'utilisateur revient sur /register sans code et doit le re-saisir.
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent('/register?code=' + codeState.code)}` },
     });
     setLoading(false);
     if (authError) { setError(friendlyAuthError(authError.code)); return; }
@@ -440,7 +442,14 @@ function RegisterContent() {
         if (!res.ok) throw new Error(data.error || 'Erreur de création.');
       }
       if (form.photo) {
-        await uploadPhoto(form.photo);
+        const photoUrl = await uploadPhoto(form.photo);
+        if (!photoUrl) {
+          // Le profil est créé/à jour ; seule la photo a échoué. On le dit au
+          // lieu de rediriger en laissant croire que tout a réussi.
+          setError("Votre profil est enregistré, mais la photo n'a pas pu être ajoutée. Réessayez, ou ajoutez-la plus tard depuis votre profil.");
+          setLoading(false);
+          return;
+        }
       }
       if (isEditing) sessionStorage.setItem('profile_updated', '1');
       router.push('/dashboard');
