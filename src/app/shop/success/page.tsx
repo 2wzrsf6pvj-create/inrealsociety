@@ -13,6 +13,9 @@ function SuccessContent() {
 
   useEffect(() => {
     if (!sessionId) { setStatus('error'); return; }
+    // L'achat est fait → le parrainage est consommé. On purge le ref pour qu'il
+    // ne crédite/remise pas des commandes futures sans rapport (single-use).
+    localStorage.removeItem('referral_code');
     let cancelled = false;
 
     const timer = setTimeout(async () => {

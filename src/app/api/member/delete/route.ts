@@ -24,7 +24,7 @@ export async function DELETE(req: NextRequest) {
     // Récupère le membre
     const { data: member } = await supabaseAdmin
       .from('members')
-      .select('id, stripe_customer_id, stripe_subscription_id')
+      .select('id, email, stripe_customer_id, stripe_subscription_id')
       .eq('auth_user_id', auth.user.id)
       .single();
 
@@ -67,6 +67,8 @@ export async function DELETE(req: NextRequest) {
       supabaseAdmin.from('audit_logs').delete().eq('member_id', member.id),
       supabaseAdmin.from('referrals').delete().eq('referrer_id', member.id),
       supabaseAdmin.from('activation_codes').update({ member_id: null }).eq('member_id', member.id),
+      // Newsletter (keyée par email) — pas d'obligation de rétention → erasure art. 17.
+      ...(member.email ? [supabaseAdmin.from('newsletter_subscribers').delete().eq('email', member.email)] : []),
     ];
 
     const results = await Promise.all(deletes);

@@ -49,6 +49,7 @@ export async function GET(req: NextRequest) {
       { data: auditLogs },
       { data: orders },
       { data: referrals },
+      { data: newsletter },
     ] = await Promise.all([
       supabaseAdmin.from('messages').select('*').eq('member_id', member.id).order('created_at', { ascending: true }),
       supabaseAdmin.from('scans').select('*').eq('member_id', member.id).order('scanned_at', { ascending: true }),
@@ -57,6 +58,7 @@ export async function GET(req: NextRequest) {
       supabaseAdmin.from('audit_logs').select('*').eq('member_id', member.id).order('created_at', { ascending: false }).limit(1000),
       supabaseAdmin.from('orders').select('*').eq('email', member.email).order('created_at', { ascending: true }),
       supabaseAdmin.from('referrals').select('*').eq('referrer_id', member.id),
+      supabaseAdmin.from('newsletter_subscribers').select('*').eq('email', member.email),
     ]);
 
     audit({
@@ -78,6 +80,7 @@ export async function GET(req: NextRequest) {
       audit_logs:    auditLogs ?? [],
       orders:        orders ?? [],
       referrals_sent: referrals ?? [],
+      newsletter_subscriptions: newsletter ?? [],
     };
 
     const filename = `irs-export-${member.id}-${new Date().toISOString().slice(0, 10)}.json`;

@@ -74,7 +74,7 @@ plus exécuter `create_member_with_code` (service_role oui).
 ### 🟠 Paiement / commerce (sinon shop & premium cassés)
 - `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PREMIUM_PRICE_ID`
 - `STRIPE_REFERRAL_COUPON_ID` (sinon la remise parrainage ne s'applique jamais)
-- **Dashboard Stripe** : activer **Stripe Tax** (sinon `automatic_tax` applique 0 %), créer le **coupon parrainage**, configurer le **webhook** vers `/api/webhook/stripe` (events : `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `charge.refunded`, `invoice.payment_failed`).
+- **Dashboard Stripe** : activer **Stripe Tax** (sinon `automatic_tax` applique 0 %), créer le **coupon parrainage** — ⚠️ y mettre une limite (`max_redemptions` et/ou durée) car l'UUID parrain est public : sans plafond, la remise est cumulable à l'infini par n'importe qui (coût marketing non borné) —, configurer le **webhook** vers `/api/webhook/stripe` (events : `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `charge.refunded`, `invoice.payment_failed`).
 
 ### 🟠 Fulfillment (sinon t-shirt payé jamais expédié — alerté via Sentry)
 - `PRINTFUL_API_TOKEN`, `PRINTFUL_VARIANT_ID_DARK`, `PRINTFUL_VARIANT_ID_LIGHT`
