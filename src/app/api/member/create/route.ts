@@ -56,17 +56,27 @@ export async function POST(req: NextRequest) {
       error_message: string | null;
     }
 
-    const { data, error: rpcError } = await supabaseAdmin
-      .rpc('create_member_with_code', {
+    const callCreate = (sc: string | null) =>
+      supabaseAdmin.rpc('create_member_with_code', {
         p_auth_user_id: auth.user.id,
         p_code:         activationCode,
         p_name:         name,
         p_pitch:        pitch,
         p_email:        auth.user.email || null,
         p_instagram:    instagram?.trim().replace(/^@/, '') || null,
-        p_short_code:   shortCode,
-      })
-      .single();
+        p_short_code:   sc,
+      }).single();
+
+    let { data, error: rpcError } = await callCreate(shortCode);
+
+    // Collision short_code (TOCTOU SELECT-puis-INSERT sur l'index unique) →
+    // régénère un code et réessaie une fois, plutôt que de renvoyer un 500.
+    const isUniqueViolation = (e: typeof rpcError) =>
+      !!e && (e.code === '23505' || /duplicate key|unique/i.test(e.message ?? ''));
+    if (isUniqueViolation(rpcError)) {
+      try { shortCode = await generateUniqueShortCode(); } catch { shortCode = null; }
+      ({ data, error: rpcError } = await callCreate(shortCode));
+    }
 
     const result = data as unknown as CreateMemberResult;
 
