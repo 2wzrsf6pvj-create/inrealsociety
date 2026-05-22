@@ -6,7 +6,72 @@ import Image from 'next/image';
 import type { Member, Scan } from '@/lib/types';
 import { daysActive, formatDate, getInitials, getWaitingPhrase, recentScansCount } from './utils';
 import { useCountUp } from './hooks';
+import { captureEvent } from '@/lib/posthog-client';
 import SectionDivider from '@/app/components/ui/SectionDivider';
+
+// ─── Guide d'activation (cold-start) ───────────────────────────────────────────
+// Affiché tant qu'il n'y a aucun scan : transforme l'attente passive en parcours
+// concret (profil, aperçu « vis ton premier scan », passage à l'acte IRL).
+
+function StepDot({ done }: { done: boolean }) {
+  return done ? (
+    <span className="w-5 h-5 rounded-full border border-green-400/40 flex items-center justify-center text-green-400/70 text-[10px] flex-shrink-0">✓</span>
+  ) : (
+    <span className="w-5 h-5 rounded-full border border-brand-gray/25 flex-shrink-0" />
+  );
+}
+
+function ActivationGuide({ member }: { member: Member }) {
+  // Photo = vrai signal de complétude côté scanneur. Instagram est optionnel à
+  // l'inscription → on ne le rend pas bloquant (sinon nag permanent).
+  const profileComplete = !!member.photo_url;
+
+  React.useEffect(() => {
+    captureEvent('activation_guide_viewed', { member_id: member.id });
+  }, [member.id]);
+
+  return (
+    <div className="w-full bg-[#080808] border border-brand-gray/10 rounded-[2px] p-4 flex flex-col gap-4">
+      <SectionDivider label="préparez votre arrivée" />
+      <p className="font-ui text-xs text-brand-gray/40 leading-relaxed">
+        Le premier scan est le plus dur. Trois étapes pour y être prêt·e.
+      </p>
+
+      {/* 1 — Profil complet */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <StepDot done={profileComplete} />
+          <span className="font-ui text-sm text-brand-white/70">Complétez votre profil</span>
+        </div>
+        {!profileComplete && (
+          <Link href="/register?edit=1" className="font-ui text-xs text-brand-white/60 hover:text-brand-white transition-colors flex-shrink-0">
+            Compléter
+          </Link>
+        )}
+      </div>
+
+      {/* 2 — Aperçu */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="w-5 h-5 rounded-full border border-[#C5A059]/40 flex items-center justify-center text-[#C5A059]/70 text-[10px] flex-shrink-0">✦</span>
+          <span className="font-ui text-sm text-brand-white/70">Vivez votre premier scan</span>
+        </div>
+        <Link href={`/profil/${member.id}?preview=1`} className="font-ui text-xs text-brand-white/60 hover:text-brand-white transition-colors flex-shrink-0">
+          Aperçu →
+        </Link>
+      </div>
+
+      {/* 3 — IRL */}
+      <div className="flex items-center gap-3">
+        <StepDot done={false} />
+        <div className="flex flex-col gap-0.5">
+          <span className="font-ui text-sm text-brand-white/70">Portez-le. Sortez.</span>
+          <span className="font-ui text-xxs text-brand-gray/30">C&apos;est là que tout se joue.</span>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ─── Stats Block ──────────────────────────────────────────────────────────────
 
@@ -105,6 +170,9 @@ export default function HomeSection({ member, recentScans, scansByDay = [] }: {
       {member.plan === 'premium' && scansByDay.length > 0 && (
         <ScanChart data={scansByDay} />
       )}
+
+      {/* Guide d'activation tant qu'aucun scan (cold-start) */}
+      {member.scan_count === 0 && <ActivationGuide member={member} />}
 
       <div className="w-full h-px bg-brand-gray/10" />
 

@@ -113,6 +113,11 @@ export default function InboxSection({ messages: initialMessages, memberId, plan
         <p className="animate-stagger-4 font-ui text-xxs text-brand-gray/20 leading-relaxed">
           Portez votre t-shirt. Sortez. Le reste suivra.
         </p>
+        <Link href={`/profil/${memberId}?preview=1`}
+          className="animate-stagger-4 font-ui text-xs text-brand-white/50 tracking-[0.1em] uppercase underline underline-offset-4 hover:text-brand-white/80 transition-colors py-2"
+          style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}>
+          Vivez votre premier scan →
+        </Link>
       </div>
     );
   }

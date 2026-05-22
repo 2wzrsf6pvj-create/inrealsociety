@@ -49,10 +49,12 @@ export default function ProfilClient({
   member,
   firstScanAt,
   isOwner = false,
+  preview = false,
 }: {
   member: Member;
   firstScanAt: string | null;
   isOwner?: boolean;
+  preview?: boolean;
 }) {
   const [scannerName, setScannerName] = useState('');
   const [convUrl, setConvUrl]         = useState<string | null>(null);
@@ -60,6 +62,9 @@ export default function ProfilClient({
   // Expiré = temps réel écoulé (pas le `percent` arrondi, qui tombe à 0 ~7 min
   // avant la vraie fin et masquerait le CTA alors que le serveur accepte encore).
   const isExpired = countdown.active && countdown.hours === 0 && countdown.minutes === 0 && countdown.seconds === 0;
+  // En aperçu, le porteur voit la vue SCANNEUR de son propre profil (pas la vue
+  // propriétaire) — pour « vivre son premier scan ».
+  const showOwnerView = isOwner && !preview;
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -119,8 +124,14 @@ export default function ProfilClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [member.id, isOwner]);
 
-  // Profil en pause
-  if (member.is_paused) {
+  // Mesure l'engagement « vis ton premier scan » (cold-start).
+  useEffect(() => {
+    if (preview) captureEvent('activation_preview_viewed', { member_id: member.id });
+  }, [preview, member.id]);
+
+  // Profil en pause — sauf en aperçu (le porteur veut voir l'expérience réelle
+  // pour se motiver à reprendre/porter ; un scanneur réel verrait l'indispo).
+  if (member.is_paused && !preview) {
     return (
       <main className="relative flex min-h-screen flex-col items-center justify-center bg-brand-black text-brand-white px-6 py-12 overflow-hidden">
         <div className="z-10 flex flex-col items-center text-center gap-6 w-full max-w-xs md:max-w-sm">
@@ -151,6 +162,16 @@ export default function ProfilClient({
         style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%)' }} />
 
       <div className="z-10 flex flex-col items-center w-full max-w-xs md:max-w-sm gap-6">
+
+        {/* Bannière aperçu (porteur en mode « vis ton premier scan ») */}
+        {preview && (
+          <div className="w-full bg-[#0a0a08] border border-[#C5A059]/25 rounded-[2px] px-4 py-3 flex flex-col gap-1 text-center">
+            <p className="font-ui text-xxs text-[#C5A059]/80 tracking-[0.18em] uppercase">✦ Aperçu</p>
+            <p className="font-ui text-xs text-brand-gray/50 leading-relaxed">
+              Voici ce qu&apos;un scanneur voit en vous scannant. Portez votre t-shirt pour que ça arrive en vrai.
+            </p>
+          </div>
+        )}
 
         {/* Tag */}
         <div className="flex items-center gap-3 w-full animate-stagger-1">
@@ -193,7 +214,7 @@ export default function ProfilClient({
         </div>
 
         {/* Corps */}
-        {isOwner ? (
+        {showOwnerView ? (
           /* ─── Vue propriétaire ─────────────────────────────────────────── */
           <div className="flex flex-col items-center gap-4 animate-stagger-3">
             <p className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">Votre profil public</p>
@@ -235,7 +256,7 @@ export default function ProfilClient({
         <div className="w-full h-px bg-brand-gray/10 animate-line-draw animate-stagger-4" />
 
         {/* CTAs */}
-        {isOwner ? (
+        {showOwnerView ? (
           /* ─── Actions propriétaire ─────────────────────────────────────── */
           <div className="w-full flex flex-col gap-3 animate-stagger-4">
             <p className="font-ui text-xxs text-brand-gray/25 text-center leading-relaxed">
@@ -266,7 +287,7 @@ export default function ProfilClient({
             )}
 
             <Link
-              href={`/message?to=${member.id}&name=${encodeURIComponent(member.name)}${member.require_contact ? '&rc=1' : ''}`}
+              href={`/message?to=${member.id}&name=${encodeURIComponent(member.name)}${member.require_contact ? '&rc=1' : ''}${preview ? '&preview=1' : ''}`}
               className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 text-center block"
               style={{ minHeight: '44px' }}
             >
@@ -289,8 +310,8 @@ export default function ProfilClient({
           </div>
         )}
 
-        {/* Countdown — visible seulement pour les scanners */}
-        {!isOwner && (
+        {/* Countdown — visible pour les scanners (et en aperçu porteur) */}
+        {!showOwnerView && (
           <div className="w-full flex flex-col gap-2 animate-stagger-5 mt-2">
             <div className="flex items-center justify-between">
               <span className="font-ui text-xxs md:text-xs text-brand-gray/20 tracking-[0.2em] uppercase">
@@ -307,11 +328,11 @@ export default function ProfilClient({
           </div>
         )}
 
-        <Link href={isOwner ? '/dashboard' : '/'}
+        <Link href={preview ? `/profil/${member.id}` : isOwner ? '/dashboard' : '/'}
           className="font-ui text-xs text-brand-gray/20 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray/50 transition-colors py-2"
           style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}
         >
-          {isOwner ? '← retour au dashboard' : '← retour'}
+          {preview ? '← quitter l’aperçu' : isOwner ? '← retour au dashboard' : '← retour'}
         </Link>
       </div>
     </main>

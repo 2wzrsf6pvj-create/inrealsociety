@@ -18,7 +18,10 @@ export type AnalyticsEvent =
   // Boucle virale (scanner → porteur) : le scanneur est le lead le plus chaud,
   // on mesure s'il bascule vers la boutique depuis le flow message.
   | 'wearer_cta_viewed'
-  | 'wearer_cta_clicked';
+  | 'wearer_cta_clicked'
+  // Activation / cold-start : engager le porteur entre l'achat et son 1er scan.
+  | 'activation_guide_viewed'
+  | 'activation_preview_viewed';
 
 export interface AnalyticsProperties {
   member_id?:    string;

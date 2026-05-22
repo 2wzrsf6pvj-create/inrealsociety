@@ -45,6 +45,9 @@ function MessageForm() {
   // rc=1 → ce membre exige un contact (surfacé en amont par le profil). La
   // source de vérité reste le serveur (code contact_required).
   const [contactRequired, setContactRequired] = useState(searchParams.get('rc') === '1');
+  // preview=1 → le porteur découvre le flow depuis l'aperçu : envoi désactivé
+  // (pas de message à soi-même, pas de fausse donnée).
+  const isPreview = searchParams.get('preview') === '1';
 
   const [message, setMessage]     = useState('');
   const [contact, setContact]     = useState('');
@@ -59,6 +62,11 @@ function MessageForm() {
 
   const sendMessage = async (content: string, isQuickReply = false) => {
     if (!content.trim() || !memberId) return;
+    // Aperçu (porteur) : on ne poste rien.
+    if (isPreview) {
+      setError('Aperçu — l’envoi est désactivé. C’est ici qu’un scanneur vous écrirait.');
+      return;
+    }
     // Garde client : si un contact est exigé et absent, on évite le roundtrip.
     if (contactRequired && !contact.trim()) {
       setError('Ce membre demande un @instagram ou un email pour pouvoir vous répondre.');
@@ -235,6 +243,15 @@ function MessageForm() {
         <p className="font-ui text-sm font-light text-brand-gray/40 leading-relaxed">À {memberName}. Il pourra vous répondre directement.</p>
       </div>
 
+      {isPreview && (
+        <div className="w-full bg-[#0a0a08] border border-[#C5A059]/25 rounded-[2px] px-4 py-3 flex flex-col gap-1 text-center">
+          <p className="font-ui text-xxs text-[#C5A059]/80 tracking-[0.18em] uppercase">✦ Aperçu</p>
+          <p className="font-ui text-xs text-brand-gray/50 leading-relaxed">
+            Voici le formulaire qu&apos;un scanneur remplit pour vous écrire. L&apos;envoi est désactivé ici.
+          </p>
+        </div>
+      )}
+
       {/* Contact remonté */}
       <div className="flex flex-col gap-1 animate-stagger-2">
         <label className="font-ui text-xs text-brand-gray/30 tracking-[0.2em] uppercase">
@@ -266,7 +283,7 @@ function MessageForm() {
             { label: "J'aime la démarche.", symbol: '◈' },
             { label: "Envoyer un clin d'œil 👁", symbol: '', value: '👁' },
           ].map((r) => (
-            <button key={r.label} disabled={sending}
+            <button key={r.label} disabled={sending || isPreview}
               onClick={() => sendMessage(r.value || r.label, true)}
               className="w-full py-3 px-4 border border-brand-gray/15 text-left font-ui text-sm font-light tracking-[0.1em] flex items-center gap-3 transition-all rounded-[1px] hover:border-brand-gray/40 hover:bg-brand-white/5 disabled:opacity-40"
               style={{ minHeight: '44px' }}
@@ -297,7 +314,7 @@ function MessageForm() {
           </div>
         </div>
         {error && <p className="font-ui text-sm text-red-400 text-center">{error}</p>}
-        <button onClick={() => sendMessage(message)} disabled={!message.trim() || sending}
+        <button onClick={() => sendMessage(message)} disabled={!message.trim() || sending || isPreview}
           className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.3em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
           style={{ minHeight: '44px' }}
         >

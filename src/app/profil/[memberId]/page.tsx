@@ -5,7 +5,7 @@ import { getFirstScanAt, isProfileOwner } from '@/lib/queries-server';
 import { createClient } from '@/lib/supabase-server';
 import ProfilClient from './ProfilClient';
 
-interface Props { params: { memberId: string } }
+interface Props { params: { memberId: string }; searchParams: { preview?: string } }
 
 export async function generateMetadata({ params }: Props) {
   const member = await getPublicMember(params.memberId);
@@ -39,7 +39,7 @@ export async function generateMetadata({ params }: Props) {
   };
 }
 
-export default async function ProfilPage({ params }: Props) {
+export default async function ProfilPage({ params, searchParams }: Props) {
   const [member, firstScanAt] = await Promise.all([
     getPublicMember(params.memberId),
     getFirstScanAt(params.memberId),
@@ -58,5 +58,9 @@ export default async function ProfilPage({ params }: Props) {
     }
   } catch {}
 
-  return <ProfilClient member={member} firstScanAt={firstScanAt} isOwner={isOwner} />;
+  // Aperçu « vis ton premier scan » : le porteur voit son profil tel qu'un
+  // scanneur le voit. Réservé au propriétaire (sinon ignoré → vue scanneur).
+  const preview = isOwner && searchParams?.preview === '1';
+
+  return <ProfilClient member={member} firstScanAt={firstScanAt} isOwner={isOwner} preview={preview} />;
 }
