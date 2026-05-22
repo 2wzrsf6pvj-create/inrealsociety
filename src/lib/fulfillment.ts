@@ -12,7 +12,7 @@
 import Stripe from 'stripe';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { generatePremiumQRCode } from '@/lib/generate-qr-svg';
-import { buildShortUrl } from '@/lib/short-code';
+import { buildShortUrl, generateUniqueShortCode } from '@/lib/short-code';
 import type { PrintfulOrderPayload, PrintfulOrderResponse, PrintfulAddress } from '@/lib/printful.types';
 
 type TshirtColor = 'dark' | 'light';
@@ -38,7 +38,14 @@ function getVariantId(color: TshirtColor): number {
 }
 
 function getShippingDetails(session: Stripe.Checkout.Session): PrintfulAddress | null {
-  const shipping = (session as unknown as { shipping_details?: Stripe.Checkout.Session['customer_details'] }).shipping_details ?? session.customer_details;
+  // API 2026+ : l'adresse de livraison est sous collected_information.shipping_details.
+  // Fallbacks : ancien champ top-level (API < 2025), puis customer_details
+  // (facturation) en dernier recours. Lire directement session.shipping_details
+  // renvoyait undefined → on imprimait/expédiait vers l'adresse de facturation.
+  type ShipLike = Stripe.Checkout.Session['customer_details'];
+  const ci = (session as unknown as { collected_information?: { shipping_details?: ShipLike } }).collected_information;
+  const legacy = (session as unknown as { shipping_details?: ShipLike }).shipping_details;
+  const shipping = ci?.shipping_details ?? legacy ?? session.customer_details;
   if (!shipping?.address || !shipping.name) return null;
   return {
     name:         shipping.name,
@@ -83,8 +90,25 @@ export async function fulfillOrder({ orderId, memberId, tshirtColor }: Fulfillme
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
   if (!appUrl) return { ok: false, reason: 'no_app_url' };
 
-  const qrDataUrl = member.short_code
-    ? buildShortUrl(member.short_code)
+  // H3 : garantir un short_code AVANT d'imprimer le QR. Sinon, si la génération
+  // a échoué à la création du membre, le QR figerait l'URL longue (/profil/UUID)
+  // sur le t-shirt physique → QR plus dense, risque de mauvais scan. On en
+  // génère + persiste un à la volée (cohérent avec /r/[code]).
+  let shortCode = member.short_code as string | null;
+  if (!shortCode) {
+    try {
+      const candidate = await generateUniqueShortCode();
+      const { error: scErr } = await supabaseAdmin
+        .from('members').update({ short_code: candidate }).eq('id', memberId);
+      if (!scErr) shortCode = candidate;
+      else console.error('[fulfillment] short_code persist failed:', scErr.message);
+    } catch (e) {
+      console.error('[fulfillment] short_code generation failed:', e);
+    }
+  }
+
+  const qrDataUrl = shortCode
+    ? buildShortUrl(shortCode)
     : `${appUrl}/profil/${memberId}`;
 
   // ─── 4. Génère + upload le QR SVG premium ──────────────────────────────────

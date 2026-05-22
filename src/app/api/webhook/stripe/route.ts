@@ -77,7 +77,11 @@ export async function POST(req: NextRequest) {
     }
   } catch (err) {
     console.error('[webhook] Erreur traitement:', err);
-    return NextResponse.json({ received: true, warning: 'Erreur traitement interne.' });
+    // 5xx → Stripe RÉESSAIE. Les handlers sont idempotents (flip de statut
+    // optimiste, fulfillOrder idempotent, rollback du code) donc un retry est
+    // sûr. Renvoyer 200 ici laissait des commandes payées coincées en 'pending'
+    // sans code, sans nouvelle tentative.
+    return NextResponse.json({ error: 'Erreur traitement interne.' }, { status: 500 });
   }
 
   return NextResponse.json({ received: true });
@@ -129,6 +133,9 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
       activation_code:   code,
       stripe_payment_id: session.payment_intent,
       tshirt_color:      tshirtColor,
+      // Montant réellement encaissé (produit + livraison + TVA − remise), pas le
+      // 4900 figé du checkout — source fiable pour la compta/les remboursements.
+      amount:            session.amount_total ?? undefined,
     })
     .eq('stripe_session_id', sessionId)
     .neq('status', 'paid')
@@ -164,23 +171,33 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
     // L'order reste en 'paid' avec le code — support peut renvoyer manuellement.
   }
 
-  // ─── 2. Fulfillment (membre existant uniquement) ─────────────────────
-  // Pour les nouveaux acheteurs, le fulfillment est déclenché depuis
-  // /api/member/create après création du profil (le member_id n'existe pas
-  // encore au moment du webhook).
-  if (userId) {
-    const result = await fulfillOrder({ orderId: existingOrder.id, memberId: userId, tshirtColor });
+  // ─── 2. Fulfillment (membre existant) ────────────────────────────────
+  // Résout le membre par userId (achat connecté) OU, à défaut, par email
+  // (rachat d'un membre existant — shop/checkout ne met pas de userId). Pour un
+  // NOUVEAU client, aucun membre ne matche encore (il n'a pas de profil) → le
+  // fulfillment sera déclenché par /api/member/create après création du profil.
+  // L'email du checkout est celui de l'acheteur (il en a besoin pour le code),
+  // donc le match email→membre n'attribue pas à tort.
+  let fulfillMemberId: string | null = userId ?? null;
+  if (!fulfillMemberId && email) {
+    const { data: m } = await supabaseAdmin
+      .from('members').select('id').eq('email', email).maybeSingle();
+    fulfillMemberId = m?.id ?? null;
+  }
+
+  if (fulfillMemberId) {
+    const result = await fulfillOrder({ orderId: existingOrder.id, memberId: fulfillMemberId, tshirtColor });
     if (result.ok) {
       audit({
         action:   'order.fulfilled',
-        memberId: userId,
-        metadata: { orderId: existingOrder.id, printfulOrderId: result.printfulOrderId, alreadyFulfilled: result.alreadyFulfilled },
+        memberId: fulfillMemberId,
+        metadata: { orderId: existingOrder.id, printfulOrderId: result.printfulOrderId, alreadyFulfilled: result.alreadyFulfilled, trigger: 'webhook' },
       });
     } else {
       audit({
         action:   'order.fulfillment_failed',
-        memberId: userId,
-        metadata: { orderId: existingOrder.id, reason: result.reason },
+        memberId: fulfillMemberId,
+        metadata: { orderId: existingOrder.id, reason: result.reason, trigger: 'webhook' },
       });
       console.error('[webhook] Fulfillment failed:', result.reason);
     }
@@ -368,12 +385,17 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription): Prom
 
   const isActive = subscription.status === 'active' || subscription.status === 'trialing';
 
+  // NB : on NE lit PAS subscription.current_period_end — ce champ a disparu de
+  // l'objet Subscription (API 2025-03+, déplacé sur les items). Y accéder donnait
+  // undefined → new Date(NaN).toISOString() throw → le downgrade n'avait jamais
+  // lieu (membre premium à vie). Stripe émet `deleted` à la fin de période, donc
+  // passer `free` ici est au bon moment ; plan_expires_at reste null (non lu).
   await supabaseAdmin
     .from('members')
     .update({
       plan:                    isActive ? 'premium' : 'free',
       stripe_subscription_id:  isActive ? subscription.id : null,
-      plan_expires_at:         isActive ? null : new Date((subscription as unknown as { current_period_end: number }).current_period_end * 1000).toISOString(),
+      plan_expires_at:         null,
     })
     .eq('id', member.id);
 
