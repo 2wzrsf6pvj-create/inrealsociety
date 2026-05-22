@@ -317,13 +317,17 @@ function DeleteAccountButton() {
 export default function SettingsSection({ member }: { member: Member }) {
   const [isPaused,    setIsPaused]    = useState(member.is_paused);
   const [marketingConsent, setMarketingConsent] = useState(member.marketing_consent ?? false);
+  // saved/error sont PAR CHAMP : un succès sur un toggle ne doit pas effacer
+  // l'erreur live de l'autre (ni afficher "Sauvegardé" sous le toggle qui a
+  // échoué).
+  type Field = 'pause' | 'marketing';
   const [saving,      setSaving]      = useState(false);
-  const [saved,       setSaved]       = useState(false);
-  const [pauseError, setPauseError]   = useState('');
+  const [savedField,  setSavedField]  = useState<Field | null>(null);
+  const [errorField,  setErrorField]  = useState<{ field: Field; msg: string } | null>(null);
 
-  const updateField = async (patch: Record<string, unknown>) => {
+  const updateField = async (field: Field, patch: Record<string, unknown>): Promise<boolean> => {
     setSaving(true);
-    setPauseError('');
+    setErrorField(e => (e?.field === field ? null : e)); // ne touche que ce champ
     try {
       const res = await fetch('/api/member/update', {
         method: 'PATCH',
@@ -331,28 +335,33 @@ export default function SettingsSection({ member }: { member: Member }) {
         body: JSON.stringify(patch),
       });
       if (res.ok) {
-        setSaved(true);
-        setTimeout(() => setSaved(false), 2000);
-      } else {
-        const data = await res.json().catch(() => ({}));
-        setPauseError(data.error || `Erreur ${res.status}`);
+        setSavedField(field);
+        setTimeout(() => setSavedField(f => (f === field ? null : f)), 2000);
+        return true;
       }
+      const data = await res.json().catch(() => ({}));
+      setErrorField({ field, msg: data.error || `Erreur ${res.status}` });
+      return false;
     } catch {
-      setPauseError('Erreur réseau.');
+      setErrorField({ field, msg: 'Erreur réseau.' });
+      return false;
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
   };
 
-  const togglePause = () => {
+  // Toggles optimistes AVEC rollback : si l'update échoue, on remet l'état
+  // précédent (sinon l'interrupteur restait basculé alors que rien n'a changé).
+  const togglePause = async () => {
     const next = !isPaused;
     setIsPaused(next);
-    updateField({ is_paused: next });
+    if (!(await updateField('pause', { is_paused: next }))) setIsPaused(!next);
   };
 
-  const toggleMarketing = () => {
+  const toggleMarketing = async () => {
     const next = !marketingConsent;
     setMarketingConsent(next);
-    updateField({ marketing_consent: next });
+    if (!(await updateField('marketing', { marketing_consent: next }))) setMarketingConsent(!next);
   };
 
   return (
@@ -377,8 +386,8 @@ export default function SettingsSection({ member }: { member: Member }) {
             <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${isPaused ? 'left-5' : 'left-0.5'}`} />
           </button>
         </div>
-        {saved && <p className="font-ui text-xs text-green-400/60">Sauvegardé.</p>}
-        {pauseError && <p className="font-ui text-xs text-red-400">{pauseError}</p>}
+        {savedField === 'pause' && <p className="font-ui text-xs text-green-400/60">Sauvegardé.</p>}
+        {errorField?.field === 'pause' && <p className="font-ui text-xs text-red-400">{errorField.msg}</p>}
       </div>
 
       {/* Communications email (consent marketing — distinct du consent analytics) */}
@@ -400,6 +409,8 @@ export default function SettingsSection({ member }: { member: Member }) {
             <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${marketingConsent ? 'left-5' : 'left-0.5'}`} />
           </button>
         </div>
+        {savedField === 'marketing' && <p className="font-ui text-xs text-green-400/60">Sauvegardé.</p>}
+        {errorField?.field === 'marketing' && <p className="font-ui text-xs text-red-400">{errorField.msg}</p>}
       </div>
 
       {/* Premium */}

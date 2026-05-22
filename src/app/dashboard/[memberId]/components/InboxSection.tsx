@@ -65,19 +65,17 @@ export default function InboxSection({ messages: initialMessages, memberId, plan
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [reported,     setReported]     = useState<Set<string>>(new Set());
   const [loadingMore, setLoadingMore]   = useState(false);
-  const [hasMore, setHasMore]           = useState(initialMessages.length >= 10);
+  // Dérivé de la vraie source (activeConversations = nb total de messages
+  // racine) plutôt que length>=10, qui affichait "Voir plus" à tort quand le
+  // total est un multiple exact de 10.
+  const hasMore = messages.length < activeConversations;
 
   const loadMore = async () => {
     setLoadingMore(true);
     try {
       const res = await fetch(`/api/messages?memberId=${memberId}&offset=${messages.length}&limit=10`);
       const data = await res.json();
-      if (data.messages?.length) {
-        setMessages(prev => [...prev, ...data.messages]);
-        if (data.messages.length < 10) setHasMore(false);
-      } else {
-        setHasMore(false);
-      }
+      if (data.messages?.length) setMessages(prev => [...prev, ...data.messages]);
     } catch {}
     setLoadingMore(false);
   };
