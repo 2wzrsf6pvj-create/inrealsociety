@@ -50,6 +50,7 @@ export async function GET(req: NextRequest) {
       { data: orders },
       { data: referrals },
       { data: newsletter },
+      { data: feedback },
     ] = await Promise.all([
       supabaseAdmin.from('messages').select('*').eq('member_id', member.id).order('created_at', { ascending: true }),
       supabaseAdmin.from('scans').select('*').eq('member_id', member.id).order('scanned_at', { ascending: true }),
@@ -59,6 +60,7 @@ export async function GET(req: NextRequest) {
       supabaseAdmin.from('orders').select('*').eq('email', member.email).order('created_at', { ascending: true }),
       supabaseAdmin.from('referrals').select('*').eq('referrer_id', member.id),
       supabaseAdmin.from('newsletter_subscribers').select('*').eq('email', member.email),
+      supabaseAdmin.from('feedback').select('*').eq('member_id', member.id).order('created_at', { ascending: true }),
     ]);
 
     audit({
@@ -80,6 +82,7 @@ export async function GET(req: NextRequest) {
       audit_logs:    auditLogs ?? [],
       orders:        orders ?? [],
       referrals_sent: referrals ?? [],
+      feedback:       feedback ?? [],
       newsletter_subscriptions: newsletter ?? [],
     };
 

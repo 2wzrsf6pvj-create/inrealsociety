@@ -10,19 +10,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { sendEmail, emailScanReminder } from '@/lib/email-templates';
 import { APP_URL } from '@/lib/constants';
+import { isAuthorizedCron } from '@/lib/cron-auth';
 
 const BATCH_SIZE = 50; // garde-fou contre un run qui partirait en vrille
 
-function authorized(req: NextRequest): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false;
-  const provided = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
-                 ?? req.headers.get('x-cron-secret');
-  return provided === secret;
-}
-
 export async function GET(req: NextRequest) {
-  if (!authorized(req)) {
+  if (!isAuthorizedCron(req)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
 

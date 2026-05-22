@@ -12,19 +12,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { subscriptionMemberUpdate } from '@/lib/subscription';
+import { isAuthorizedCron } from '@/lib/cron-auth';
 
 const BATCH_SIZE = 100;
 
-function authorized(req: NextRequest): boolean {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) return false;
-  const provided = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
-                 ?? req.headers.get('x-cron-secret');
-  return provided === secret;
-}
-
 export async function GET(req: NextRequest) {
-  if (!authorized(req)) {
+  if (!isAuthorizedCron(req)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
   if (!process.env.STRIPE_SECRET_KEY) {

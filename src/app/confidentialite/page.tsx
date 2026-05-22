@@ -97,7 +97,7 @@ export default function ConfidentialitePage() {
           </h2>
           <ul className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed list-disc pl-5 flex flex-col gap-2">
             <li>Compte et profil : tant que le compte est actif. Suppression sur demande.</li>
-            <li>Messages et scans : 24 mois après le dernier scan.</li>
+            <li>Scans et vues : 24 mois. Messages : conservés tant que le compte est actif (supprimés avec le compte).</li>
             <li>Données de commande et facturation : 10 ans (obligation comptable).</li>
             <li>Logs techniques (audit, rate limiting) : 12 mois.</li>
             <li>Analytics (PostHog) : 13 mois (recommandation CNIL).</li>
