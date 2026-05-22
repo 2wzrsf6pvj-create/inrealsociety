@@ -29,7 +29,11 @@ const nextConfig = {
 
     const csp = [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' https://js.stripe.com https://*.posthog.com https://*.sentry.io",
+      // 'unsafe-eval' UNIQUEMENT en dev : Next.js (webpack HMR + React Fast
+      // Refresh) évalue du code via eval() en dev. Sans ça, le bundle dev throw
+      // (violation CSP) → aucune hydratation → tout le JS client est mort en
+      // local. La prod ne l'utilise pas → on ne l'expose jamais en prod.
+      `script-src 'self' 'unsafe-inline' ${isProd ? '' : "'unsafe-eval' "}https://js.stripe.com https://*.posthog.com https://*.sentry.io`,
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com data:",
       "img-src 'self' data: blob: https://*.supabase.co https://*.stripe.com",
