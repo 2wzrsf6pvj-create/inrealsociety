@@ -34,6 +34,7 @@ const PUBLIC_ROUTES = [
   'api/shop/checkout',
   'api/health',
   'api/newsletter',
+  'api/feedback',   // feedback conversation — accessible aux scanners anonymes
 ];
 
 /** Routes protégées par un secret header (pas par session) */
@@ -121,8 +122,11 @@ describe('Sécurité des routes API', () => {
       if (isWebhookRoute(routeKey)) continue;
       // Skip cron routes (pas de body utilisateur — protégées par secret header)
       if (routeKey.startsWith('cron/')) continue;
-      // Skip GET-only readonly endpoints (pas de body à valider)
-      if (['health', 'member/export'].includes(routeKey)) continue;
+      // Skip les routes sans body utilisateur à valider :
+      //   * GET en lecture seule (health, messages, member/export)
+      //   * DELETE/POST dérivant tout de la session (member/delete, subscription/*)
+      if (['health', 'member/export', 'messages', 'member/delete',
+           'subscription/checkout', 'subscription/portal'].includes(routeKey)) continue;
 
       it(`${routeKey} — devrait avoir une validation Zod ou équivalente`, () => {
         const hasZod = content.includes('z.object') || content.includes('z.string');
@@ -140,8 +144,10 @@ describe('Sécurité des routes API', () => {
 
       // Skip routes qui n'ont pas besoin de rate limiting
       if (isWebhookRoute(routeKey)) continue;
-      if (isSecretRoute(routeKey)) continue; // push/notify, member/migrate — protégés par secret
-      if (['activate', 'order-code', 'member/avatar'].includes(routeKey)) continue;
+      if (isSecretRoute(routeKey)) continue; // push/notify, crons — protégés par secret
+      // messages : GET lecture seule, auth + ownership (un membre lit sa propre
+      // inbox) ; le limiteur auth casserait la pagination « charger plus ».
+      if (routeKey === 'messages') continue;
       // Health : endpoint readonly idempotent, monitoring uptime ping fréquemment
       if (routeKey === 'health') continue;
 
