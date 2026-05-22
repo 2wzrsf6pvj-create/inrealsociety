@@ -38,13 +38,17 @@ function TabBar({ active, onChange, unreadCount }: {
             active === tab.key ? 'text-brand-white border-b border-brand-white' : 'text-brand-gray/55 hover:text-brand-white/80'
           }`}
         >
-          {tab.label}
-          {tab.badge && tab.badge > 0 ? (
-            <span className="animate-ping-badge absolute top-2 right-[calc(50%-16px)] w-4 h-4 bg-red-500 text-red-500 rounded-full flex items-center justify-center text-xxs text-white font-bold z-10"
-                  aria-label={`${tab.badge} messages non lus`}>
-              <span className="relative z-10 text-white">{tab.badge > 9 ? '9+' : tab.badge}</span>
-            </span>
-          ) : null}
+          {/* Le badge est ancré au LABEL (span relatif) et non au bouton, sinon
+              il se centrait sur l'onglet et débordait visuellement sur Accueil. */}
+          <span className="relative inline-block">
+            {tab.label}
+            {tab.badge && tab.badge > 0 ? (
+              <span className="animate-ping-badge absolute -top-1.5 -right-4 w-4 h-4 bg-red-500 text-red-500 rounded-full flex items-center justify-center text-xxs text-white font-bold z-10"
+                    aria-label={`${tab.badge} messages non lus`}>
+                <span className="relative z-10 text-white">{tab.badge > 9 ? '9+' : tab.badge}</span>
+              </span>
+            ) : null}
+          </span>
         </button>
       ))}
     </div>

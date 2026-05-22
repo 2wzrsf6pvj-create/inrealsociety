@@ -230,9 +230,10 @@ button, a {
   70%  { transform: scale(2.2); opacity: 0;   }
   100% { transform: scale(2.2); opacity: 0;   }
 }
-.animate-ping-badge {
-  position: relative;
-}
+/* Ne PAS forcer position ici : l'élément porte l'utilitaire `absolute` (ancré au
+   label de l'onglet). Forcer position:relative écrasait .absolute (même
+   spécificité, déclaré après @tailwind) → badge mal placé. Le ::before en
+   position:absolute s'ancre sur le badge (lui-même positionné). */
 .animate-ping-badge::before {
   content: '';
   position: absolute;
