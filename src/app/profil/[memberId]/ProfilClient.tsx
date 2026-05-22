@@ -57,13 +57,16 @@ export default function ProfilClient({
   const [scannerName, setScannerName] = useState('');
   const [convUrl, setConvUrl]         = useState<string | null>(null);
   const countdown = useCountdown(firstScanAt, member.plan);
-  const isExpired = countdown.active && countdown.percent === 0;
+  // Expiré = temps réel écoulé (pas le `percent` arrondi, qui tombe à 0 ~7 min
+  // avant la vraie fin et masquerait le CTA alors que le serveur accepte encore).
+  const isExpired = countdown.active && countdown.hours === 0 && countdown.minutes === 0 && countdown.seconds === 0;
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // Le propriétaire n'a pas besoin du contexte scanner
-    if (isOwner) return;
+    // Le propriétaire n'a pas besoin du contexte scanner. Un profil en pause non
+    // plus : on évite le prompt de géoloc + l'appel /api/scan inutiles.
+    if (isOwner || member.is_paused) return;
 
     captureEvent('profile_viewed', { member_id: member.id, plan: member.plan });
 
@@ -111,6 +114,9 @@ export default function ProfilClient({
     } else {
       sendScan();
     }
+    // Effet « une fois par membre » : seuls member.id / isOwner doivent le
+    // re-déclencher (les autres champs member.* sont stables pour un id donné).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [member.id, isOwner]);
 
   // Profil en pause

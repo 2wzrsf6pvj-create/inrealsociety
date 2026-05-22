@@ -74,5 +74,11 @@ export default async function ConversationPage({ params }: Props) {
     await supabaseAdmin.from('messages').update({ read_at: now }).eq('id', params.messageId);
   }
 
+  // Ne pas exposer l'auth_user_id du membre au navigateur : isOwner est déjà
+  // calculé côté serveur, le client n'en a pas besoin.
+  if (message.members && typeof message.members === 'object') {
+    (message.members as { auth_user_id?: string | null }).auth_user_id = null;
+  }
+
   return <ConversationClient message={message} isOwner={isOwner} thread={threadReplies || []} />;
 }
