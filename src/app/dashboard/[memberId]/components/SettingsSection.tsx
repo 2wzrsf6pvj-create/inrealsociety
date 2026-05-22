@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase-browser';
-import { captureEvent } from '@/lib/posthog-client';
+import { captureEvent, resetIdentity } from '@/lib/posthog-client';
 import type { Member } from '@/lib/types';
 import SectionDivider from '@/app/components/ui/SectionDivider';
 
@@ -220,6 +220,9 @@ function LogoutButton() {
   const handleLogout = async () => {
     const supabase = createClient();
     await supabase.auth.signOut();
+    // Réinitialise l'identité PostHog : sinon, sur un device partagé, les events
+    // du prochain visiteur seraient attribués à ce membre (distinct_id persisté).
+    resetIdentity();
     sessionStorage.removeItem('just_logged_in');
     window.location.href = '/auth/login';
   };

@@ -25,9 +25,15 @@ export default function PostHogProvider({ children }: { children: React.ReactNod
       capture_pageleave:  true,
       autocapture:        true,
       disable_session_recording: true,
-      // RGPD : pas de capture tant que l'utilisateur n'a pas consenti.
+      // RGPD : AVANT consentement, ne rien envoyer NI stocker. opt_out_capturing
+      // ne bloque que capture() ; il faut aussi :
+      //  - couper le fetch de remote-config/flags (on n'en utilise pas) qui
+      //    sinon contacte PostHog dès l'init,
+      //  - couper la persistance (cookie + distinct_id) tant qu'on est opted-out.
       // Le ConsentBanner appelle posthog.opt_in_capturing() au clic 'Accepter'.
-      opt_out_capturing_by_default: true,
+      opt_out_capturing_by_default:    true,
+      opt_out_persistence_by_default:  true,
+      advanced_disable_flags:          true,
     });
   }, []);
 
