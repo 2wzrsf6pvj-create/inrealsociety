@@ -224,24 +224,35 @@ export default function ConversationClient({
 
   // ─── Realtime : écoute les nouveaux messages du thread ─────────────────
   useEffect(() => {
+    const appendReply = (newReply: ThreadReply) => {
+      if (!newReply?.id) return;
+      setThread(prev => {
+        if (prev.some(r => r.id === newReply.id)) return prev;
+        return [...prev, newReply];
+      });
+      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        new Notification('Nouveau message', {
+          body: newReply.content.slice(0, 80),
+          icon: '/icon.svg',
+        });
+      }
+    };
+
     const channel = supabase.channel(`thread-${message.id}`)
+      // Broadcast (canal public) — source principale : fonctionne pour le
+      // scanner anon, car émis par les routes reply sans lecture DB.
+      .on('broadcast', { event: 'new_message' }, (msg) => {
+        appendReply(msg.payload as ThreadReply);
+      })
+      // postgres_changes — redondance pour le membre authentifié (no-op pour
+      // l'anon sous RLS, mais inoffensif : la dédup par id couvre le doublon).
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
         table: 'messages',
         filter: `parent_id=eq.${message.id}`,
       }, (payload) => {
-        const newReply = payload.new as ThreadReply;
-        setThread(prev => {
-          if (prev.some(r => r.id === newReply.id)) return prev;
-          return [...prev, newReply];
-        });
-        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-          new Notification('Nouveau message', {
-            body: newReply.content.slice(0, 80),
-            icon: '/icon.svg',
-          });
-        }
+        appendReply(payload.new as ThreadReply);
       })
       .subscribe();
 

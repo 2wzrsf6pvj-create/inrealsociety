@@ -10,7 +10,9 @@ export const metadata: Metadata = {
   description: 'Gérez votre profil, consultez vos scans et vos messages sur In Real Society.',
 };
 import { createClient } from '@/lib/supabase-server';
-import { getMemberByAuthUserId, getRecentScans, getMessages, getMessagesCount, getUnreadMessagesCount, getScansByDay } from '@/lib/supabase';
+import { getMemberByAuthUserId } from '@/lib/supabase';
+import { getRecentScans, getScansByDay } from '@/lib/queries-server';
+import { getMessages, getMessagesCount, getUnreadMessagesCount } from '@/lib/inbox';
 import DashboardClient from './[memberId]/DashboardClient';
 
 export default async function DashboardPage() {
@@ -22,8 +24,9 @@ export default async function DashboardPage() {
     redirect('/auth/login?redirect=/dashboard');
   }
 
-  // Cherche le profil lié à ce compte
-  const member = await getMemberByAuthUserId(user.id);
+  // Cherche le profil lié à ce compte. On passe le client AUTHENTIFIÉ (porteur
+  // du cookie) car la RPC get_own_member() s'appuie sur auth.uid().
+  const member = await getMemberByAuthUserId(supabase);
 
   // Pas encore de profil → onboarding
   if (!member) {

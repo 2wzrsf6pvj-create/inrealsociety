@@ -2,7 +2,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { supabase } from '@/lib/supabase';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { sendEmail, emailNouveauScan } from '@/lib/email-templates';
 import { checkScanRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
@@ -65,7 +64,8 @@ export async function POST(req: NextRequest) {
     }
 
     // ─── Vérification membre ──────────────────────────────────────────────
-    const { data: member } = await supabase
+    // admin : lit email (revoke pour anon en 026) pour la notification.
+    const { data: member } = await supabaseAdmin
       .from('members')
       .select('id, name, email, is_paused')
       .eq('id', memberId)

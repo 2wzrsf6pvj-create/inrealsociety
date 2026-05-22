@@ -3,7 +3,7 @@
 // Génère une image OG dynamique pour chaque profil
 
 import { ImageResponse } from 'next/og';
-import { getMemberById } from '@/lib/supabase';
+import { getPublicMember } from '@/lib/supabase';
 
 export const runtime = 'edge';
 export const alt = 'InRealSociety — Profil';
@@ -22,7 +22,7 @@ export default async function OGImage({
 }: {
   params: { memberId: string };
 }) {
-  const member = await getMemberById(params.memberId);
+  const member = await getPublicMember(params.memberId);
 
   const name    = member?.name  ?? 'InRealSociety';
   const pitch   = member?.pitch ?? 'The IRL Social Club';

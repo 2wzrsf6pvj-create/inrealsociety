@@ -5,7 +5,7 @@ export const dynamic = 'force-dynamic';
 
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, requireOwnership, isHttpError } from '@/lib/require-auth';
-import { getMessages } from '@/lib/supabase';
+import { getMessages } from '@/lib/inbox';
 
 export async function GET(req: NextRequest) {
   try {

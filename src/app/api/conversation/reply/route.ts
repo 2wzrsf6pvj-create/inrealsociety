@@ -9,6 +9,7 @@ import { checkPublicRateLimit, checkAuthRateLimit, getIp, rateLimitHeaders } fro
 import { requireAuth, requireOwnership, isHttpError } from '@/lib/require-auth';
 import { sendEmail, emailNouveauMessage, emailReponse } from '@/lib/email-templates';
 import { notifyThreadSubscribers } from '@/lib/push-notify';
+import { broadcastThreadMessage } from '@/lib/realtime-broadcast';
 import { APP_URL, MAX_THREAD_MESSAGES } from '@/lib/constants';
 import { isValidEmail } from '@/lib/validators';
 
@@ -87,6 +88,17 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (insertErr) throw insertErr;
+
+    // Realtime fire-and-forget — diffuse le message aux clients abonnés au
+    // canal du thread (scanner anon inclus, via broadcast public).
+    if (newMsg?.id) {
+      broadcastThreadMessage(messageId, {
+        id:         newMsg.id,
+        content:    content.trim(),
+        author,
+        created_at: new Date().toISOString(),
+      }).catch(() => {});
+    }
 
     // Notification email :
     //   * scanner → notifie le membre sur son email (alerte dashboard)

@@ -3,7 +3,6 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { supabase } from '@/lib/supabase';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { sendEmail, emailNouveauMessage } from '@/lib/email-templates';
 import { checkMessageRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
@@ -46,7 +45,8 @@ export async function POST(req: NextRequest) {
     }
 
     // ─── Vérification membre ──────────────────────────────────────────────
-    const { data: member } = await supabase
+    // admin : lit email (revoke pour anon en 026) pour la notification.
+    const { data: member } = await supabaseAdmin
       .from('members').select('id, name, email, is_paused, plan').eq('id', memberId).single();
 
     if (!member) {
@@ -61,7 +61,9 @@ export async function POST(req: NextRequest) {
     const plan = (member.plan === 'premium' ? 'premium' : 'free') as keyof typeof SCAN_WINDOW_MS;
     const windowMs = SCAN_WINDOW_MS[plan];
 
-    const { data: firstScan } = await supabase
+    // admin : first_scans hérite la RLS owner-only de scans → anon renverrait
+    // null et la fenêtre ne serait jamais appliquée (fail-open).
+    const { data: firstScan } = await supabaseAdmin
       .from('first_scans').select('first_scan_at').eq('member_id', memberId).single();
 
     if (firstScan?.first_scan_at) {
@@ -76,7 +78,9 @@ export async function POST(req: NextRequest) {
     // Compte les messages RACINE uniquement — les replies dans le thread
     // ne multiplient pas les conversations.
     if (MAX_CONVERSATIONS[plan] !== Infinity) {
-      const { count: activeConvs } = await supabase
+      // admin : messages est owner-only → anon renverrait 0 et le plafond ne
+      // serait jamais appliqué (fail-open).
+      const { count: activeConvs } = await supabaseAdmin
         .from('messages')
         .select('*', { count: 'exact', head: true })
         .eq('member_id', memberId)

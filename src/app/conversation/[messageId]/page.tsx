@@ -3,14 +3,17 @@
 
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
+// Lectures via supabaseAdmin : le scanner n'est jamais authentifié et la RLS
+// messages est owner-only. L'accès est protégé par le messageId non-devinable
+// (modèle lien-capability, comme les liens envoyés par email).
+import { supabaseAdmin } from '@/lib/supabase-admin';
 import { createClient } from '@/lib/supabase-server';
 import ConversationClient from './ConversationClient';
 
 interface Props { params: { messageId: string } }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { data: message } = await supabase
+  const { data: message } = await supabaseAdmin
     .from('messages')
     .select('members(name)')
     .eq('id', params.messageId)
@@ -25,7 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ConversationPage({ params }: Props) {
-  const { data: message } = await supabase
+  const { data: message } = await supabaseAdmin
     .from('messages')
     .select('*, members(name, photo_url, instagram, auth_user_id)')
     .eq('id', params.messageId)
@@ -34,7 +37,7 @@ export default async function ConversationPage({ params }: Props) {
   if (!message || message.moderated) notFound();
 
   // Charge les réponses du thread (avec read_at pour décider quoi marquer)
-  const { data: threadReplies } = await supabase
+  const { data: threadReplies } = await supabaseAdmin
     .from('messages')
     .select('id, content, author, created_at, read_at')
     .eq('parent_id', params.messageId)
@@ -58,7 +61,7 @@ export default async function ConversationPage({ params }: Props) {
   const unreadFromOther = (threadReplies ?? []).filter(r => r.author === otherAuthor && !r.read_at);
 
   if (unreadFromOther.length > 0) {
-    await supabase
+    await supabaseAdmin
       .from('messages')
       .update({ read_at: now })
       .in('id', unreadFromOther.map(r => r.id));
@@ -67,7 +70,7 @@ export default async function ConversationPage({ params }: Props) {
   // Le message racine est toujours écrit par le scanner. Si c'est le membre qui
   // visite et que c'est non lu, on le marque.
   if (isOwner && !message.read_at) {
-    await supabase.from('messages').update({ read_at: now }).eq('id', params.messageId);
+    await supabaseAdmin.from('messages').update({ read_at: now }).eq('id', params.messageId);
   }
 
   return <ConversationClient message={message} isOwner={isOwner} thread={threadReplies || []} />;

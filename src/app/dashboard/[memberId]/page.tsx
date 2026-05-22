@@ -5,7 +5,8 @@
 
 import { redirect, notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase-server';
-import { getMemberById, getRecentScans, getMessages, getMessagesCount, getUnreadMessagesCount } from '@/lib/supabase';
+import { getMemberById, getRecentScans } from '@/lib/queries-server';
+import { getMessages, getMessagesCount, getUnreadMessagesCount } from '@/lib/inbox';
 import DashboardClient from './DashboardClient';
 
 interface Props {

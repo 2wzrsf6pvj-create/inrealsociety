@@ -399,8 +399,10 @@ function RegisterContent() {
       if (!user) return;
       setIsLoggedIn(true);
 
+      // Colonnes non-revoke uniquement : select('*') échouerait pour le rôle
+      // authenticated (030 revoke email/stripe_*/plan_expires_at).
       const { data: member } = await supabase
-        .from('members').select('*').eq('auth_user_id', user.id).single();
+        .from('members').select('id, name, pitch, instagram').eq('auth_user_id', user.id).single();
 
       if (member) {
         setIsEditing(true);

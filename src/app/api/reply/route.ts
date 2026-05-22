@@ -8,6 +8,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { requireAuth, requireOwnership, isHttpError } from '@/lib/require-auth';
 import { sendEmail, emailReponse } from '@/lib/email-templates';
 import { notifyThreadSubscribers } from '@/lib/push-notify';
+import { broadcastThreadMessage } from '@/lib/realtime-broadcast';
 import { audit } from '@/lib/audit';
 import { getIp, checkAuthRateLimit, rateLimitHeaders } from '@/lib/ratelimit';
 import { isValidEmail, isInstagramHandle } from '@/lib/validators';
@@ -54,7 +55,7 @@ export async function POST(req: NextRequest) {
     // Insère la réponse comme message thread (author='member'). Anciennement
     // un UPDATE de messages.reply — désormais unifié avec /api/conversation/reply.
     // La vue member_inbox expose toujours .reply pour la dashboard inbox.
-    const { error: insertErr } = await supabaseAdmin
+    const { data: newMsg, error: insertErr } = await supabaseAdmin
       .from('messages')
       .insert({
         member_id:      memberId,
@@ -63,9 +64,22 @@ export async function POST(req: NextRequest) {
         content:        reply.trim(),
         is_quick_reply: false,
         moderated:      false,
-      });
+      })
+      .select('id')
+      .single();
 
     if (insertErr) throw insertErr;
+
+    // Realtime fire-and-forget — diffuse au canal du thread (le scanner anon
+    // reçoit la réponse en direct sans lecture DB, donc sans blocage RLS).
+    if (newMsg?.id) {
+      broadcastThreadMessage(messageId, {
+        id:         newMsg.id,
+        content:    reply.trim(),
+        author:     'member',
+        created_at: new Date().toISOString(),
+      }).catch(() => {});
+    }
 
     audit({
       action:   'reply.sent',
