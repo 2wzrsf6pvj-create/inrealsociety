@@ -4,6 +4,7 @@
 // Fire-and-forget : ne bloque jamais la réponse principale.
 
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import * as Sentry from '@sentry/nextjs';
 
 export type AuditAction =
   | 'message.sent'
@@ -42,6 +43,17 @@ interface AuditParams {
  * Toujours appelé en fire-and-forget — ne throw jamais.
  */
 export function audit(params: AuditParams): void {
+  // Alerte Sentry sur les échecs ops critiques (ex. order.fulfillment_failed =
+  // t-shirt payé non expédié, jusqu'ici invisible hors lecture de la table audit).
+  // No-op si Sentry n'est pas configuré (pas de DSN).
+  if (params.action.endsWith('_failed')) {
+    const level = params.action.includes('payment_failed') ? 'warning' : 'error';
+    Sentry.captureMessage(`audit: ${params.action}`, {
+      level,
+      extra: { memberId: params.memberId, ip: params.ip, ...params.metadata },
+    });
+  }
+
   supabaseAdmin.from('audit_logs').insert({
     action:    params.action,
     member_id: params.memberId ?? null,

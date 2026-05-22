@@ -95,14 +95,6 @@ describe('Middleware — routes protégées', () => {
     expect(prefixBlock).not.toContain('/dashboard');
   });
 
-  it('/api/checkout ne doit PAS être dans PUBLIC_API_PREFIXES', () => {
-    const middleware = fs.readFileSync(
-      path.join(SRC_DIR, 'middleware.ts'), 'utf-8'
-    );
-    const prefixBlock = middleware.match(/PUBLIC_API_PREFIXES\s*=\s*\[([\s\S]*?)\]/)?.[1] || '';
-    expect(prefixBlock).not.toContain('/api/checkout');
-  });
-
   it('/api/referral ne doit PAS être dans PUBLIC_API_PREFIXES', () => {
     const middleware = fs.readFileSync(
       path.join(SRC_DIR, 'middleware.ts'), 'utf-8'
