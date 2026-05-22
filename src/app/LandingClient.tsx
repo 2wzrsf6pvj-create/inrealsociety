@@ -42,19 +42,22 @@ function LandingContent() {
   }, [searchParams, router]);
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center bg-brand-black text-brand-white px-6 overflow-hidden">
+    <main className="relative flex min-h-screen flex-col items-center bg-brand-black text-brand-white px-6 py-10 overflow-hidden">
 
-      <div className="absolute top-[-15%] left-[-15%] w-[28rem] h-[28rem] rounded-full pointer-events-none"
+      <div className="absolute top-[-15%] left-[-15%] w-[28rem] h-[28rem] lg:w-[40rem] lg:h-[40rem] rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%)' }} />
-      <div className="absolute bottom-[-10%] right-[-10%] w-64 h-64 rounded-full pointer-events-none"
+      <div className="absolute bottom-[-10%] right-[-10%] w-64 h-64 lg:w-96 lg:h-96 rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 70%)' }} />
 
-      <div className="z-10 flex flex-col items-center text-center gap-10 w-full max-w-xs md:max-w-sm">
+      {/* Zone héros : occupe l'espace disponible et centre le contenu, quel que
+          soit le viewport (mobile court → desktop haut). Le footer reste en flux. */}
+      <div className="z-10 flex-1 flex flex-col items-center justify-center w-full">
+      <div className="flex flex-col items-center text-center gap-10 md:gap-12 w-full max-w-xs md:max-w-sm lg:max-w-md">
 
         <div className="relative flex items-center justify-center animate-stagger-1">
-          <div className="absolute w-24 h-24 rounded-full border border-brand-white/10 animate-ring-pulse" />
-          <div className="w-[72px] h-[72px] rounded-full border border-brand-white/40 flex items-center justify-center">
-            <span className="font-display text-3xl md:text-4xl font-light tracking-[0.05em]">)(</span>
+          <div className="absolute w-24 h-24 lg:w-28 lg:h-28 rounded-full border border-brand-white/10 animate-ring-pulse" />
+          <div className="w-[72px] h-[72px] lg:w-[88px] lg:h-[88px] rounded-full border border-brand-white/40 flex items-center justify-center">
+            <span className="font-display text-3xl md:text-4xl lg:text-5xl font-light tracking-[0.05em]">)(</span>
           </div>
         </div>
 
@@ -89,11 +92,11 @@ function LandingContent() {
             </div>
           ) : (
             <div className="flex flex-col gap-4">
-              <p className="font-display text-2xl md:text-3xl font-light leading-snug tracking-[0.02em]">
+              <p className="font-display text-2xl md:text-3xl lg:text-4xl font-light leading-snug tracking-[0.02em]">
                 Le vêtement qui<br />
                 <span className="text-brand-gray/50">dit oui.</span>
               </p>
-              <p className="font-ui text-sm font-light text-brand-gray/50 leading-relaxed">
+              <p className="font-ui text-sm lg:text-base font-light text-brand-gray/50 leading-relaxed">
                 Portez le consentement social.<br />
                 Donnez le contrôle à ceux qui osent.
               </p>
@@ -132,9 +135,11 @@ function LandingContent() {
           The IRL Social Club
         </p>
       </div>
+      </div>
 
-      {/* Liens discrets en bas */}
-      <div className="absolute bottom-6 flex items-center justify-center gap-6 w-full px-6">
+      {/* Liens discrets en bas — en flux (mt-auto via flex-1 du héros) plutôt
+          qu'en absolute : footer ancré au bas sans vide asymétrique sur desktop. */}
+      <div className="z-10 flex items-center justify-center gap-6 w-full pt-10 animate-stagger-4">
         <Link href="/manifeste"
           className="font-ui text-xxs md:text-xs text-brand-gray/50 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white/80 transition-colors py-3"
           style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}
