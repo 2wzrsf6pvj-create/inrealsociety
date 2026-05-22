@@ -1,9 +1,41 @@
 'use client';
 
-import React, { useState, Suspense } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { captureEvent } from '@/lib/posthog-client';
+
+// Conversion scanneur → porteur. Le scanneur vient de vivre le moment fort
+// (signal envoyé / profil très demandé / fenêtre ratée) : c'est l'instant idéal
+// pour retourner la perspective (« et si c'était toi qu'on scannait ? ») et le
+// pousser vers la boutique. Vue + clic sont trackés pour mesurer la boucle.
+function BecomeWearerCTA({ source, hook }: { source: string; hook: React.ReactNode }) {
+  const router = useRouter();
+
+  // Note : en dev, React StrictMode double-invoque cet effet → 2 events. Sans
+  // effet en prod (mount unique, `source` stable par état terminal). Dédup côté
+  // PostHog si besoin.
+  useEffect(() => {
+    captureEvent('wearer_cta_viewed', { source });
+  }, [source]);
+
+  const goShop = () => {
+    captureEvent('wearer_cta_clicked', { source });
+    router.push('/shop');
+  };
+
+  return (
+    <div className="w-full flex flex-col items-center gap-3">
+      <p className="font-ui text-xxs text-brand-gray/25 tracking-[0.25em] uppercase">Et toi ?</p>
+      <p className="font-display text-xl font-light leading-snug text-center tracking-[0.02em]">{hook}</p>
+      <button onClick={goShop}
+        className="w-full py-3 border border-brand-white/30 font-ui text-sm font-light tracking-[0.2em] uppercase hover:border-brand-white/60 hover:bg-brand-white/5 active:scale-[0.98] transition-all rounded-[1px]"
+        style={{ minHeight: '44px' }}>
+        Découvrir le t-shirt →
+      </button>
+    </div>
+  );
+}
 
 function MessageForm() {
   const router = useRouter();
@@ -88,6 +120,7 @@ function MessageForm() {
           La prochaine occasion sera la bonne.
         </p>
         <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
+        <BecomeWearerCTA source="window_expired" hook={<>La prochaine fois,<br />sois de l&apos;autre côté.</>} />
         <button onClick={() => memberId ? router.push(`/profil/${memberId}`) : router.push('/')}
           className="font-ui text-sm text-brand-gray/30 tracking-[0.15em] uppercase underline underline-offset-4 py-3"
           style={{ minHeight: '44px' }}>
@@ -110,6 +143,7 @@ function MessageForm() {
           Revenez plus tard, ou croisez-la à nouveau.
         </p>
         <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
+        <BecomeWearerCTA source="conversation_limit" hook={<>Toi aussi,<br />fais tourner les têtes.</>} />
         <button onClick={() => memberId ? router.push(`/profil/${memberId}`) : router.push('/')}
           className="font-ui text-sm text-brand-gray/30 tracking-[0.15em] uppercase underline underline-offset-4 py-3"
           style={{ minHeight: '44px' }}>
@@ -171,6 +205,7 @@ function MessageForm() {
           </p>
         </div>
         <div className="w-full h-px bg-brand-gray/10" />
+        <BecomeWearerCTA source="message_sent" hook={<>Et si c&apos;était toi<br />qu&apos;on scannait ?</>} />
         <button onClick={() => memberId ? router.push(`/profil/${memberId}`) : router.push('/')}
           className="font-ui text-xs text-brand-gray/25 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray transition-colors py-2"
           style={{ minHeight: '44px' }}>

@@ -14,7 +14,11 @@ export type AnalyticsEvent =
   | 'upgrade_cta_viewed'
   | 'upgrade_clicked'
   | 'subscription_active'
-  | 'subscription_cancelled';
+  | 'subscription_cancelled'
+  // Boucle virale (scanner → porteur) : le scanneur est le lead le plus chaud,
+  // on mesure s'il bascule vers la boutique depuis le flow message.
+  | 'wearer_cta_viewed'
+  | 'wearer_cta_clicked';
 
 export interface AnalyticsProperties {
   member_id?:    string;
