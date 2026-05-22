@@ -11,6 +11,8 @@ import { SCAN_WINDOW_MS, MAX_CONVERSATIONS, QUICK_REPLIES as QUICK_REPLIES_LIST 
 import { moderateContent } from '@/lib/moderation';
 import { getSenderToken, createSenderToken, setSenderTokenCookie } from '@/lib/sender-token';
 import { isBlocked } from '@/lib/blocks';
+import { notifyMemberSubscribers } from '@/lib/push-notify';
+import { APP_URL } from '@/lib/constants';
 
 const QUICK_REPLIES = new Set<string>(QUICK_REPLIES_LIST);
 
@@ -167,6 +169,17 @@ export async function POST(req: NextRequest) {
         dashboardUrl,
       });
       sendEmail({ to: member.email, subject, html }).catch((err) => console.error('[api/message] Échec envoi email:', err));
+    }
+
+    // ─── Notification push (porteur abonné au niveau membre depuis le dashboard) ──
+    if (!moderated && message?.id) {
+      notifyMemberSubscribers({
+        memberId,
+        messageId: message.id, // tag par message → les notifs s'empilent
+        title: 'Nouveau signal',
+        body:  content.trim().slice(0, 80),
+        url:   `${APP_URL}/conversation/${message.id}`,
+      }).catch((err) => console.error('[api/message] Échec push membre:', err));
     }
 
     // Pose/rafraîchit le cookie de jeton device (httpOnly) — permet au porteur

@@ -5,7 +5,7 @@
 
 import { redirect, notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase-server';
-import { getMemberById, getRecentScans } from '@/lib/queries-server';
+import { getMemberById, getRecentScans, getScansByDay } from '@/lib/queries-server';
 import { getMessages, getMessagesCount, getConversationsTotal, getUnreadMessagesCount } from '@/lib/inbox';
 import DashboardClient from './DashboardClient';
 
@@ -34,13 +34,14 @@ export default async function DashboardByIdPage({ params }: Props) {
     redirect('/dashboard');
   }
 
-  const [recentScans, messages, unreadCount, activeConversations, totalConversations] = await Promise.all([
+  const [recentScans, messages, unreadCount, activeConversations, totalConversations, scansByDay] = await Promise.all([
     getRecentScans(memberId, 5),
     getMessages(memberId, 10),
     getUnreadMessagesCount(memberId),
     getMessagesCount(memberId),
     getConversationsTotal(memberId),
+    member.plan === 'premium' ? getScansByDay(memberId, 7) : Promise.resolve([]),
   ]);
 
-  return <DashboardClient member={member} recentScans={recentScans} messages={messages} unreadCount={unreadCount} activeConversations={activeConversations} totalConversations={totalConversations} />;
+  return <DashboardClient member={member} recentScans={recentScans} messages={messages} unreadCount={unreadCount} activeConversations={activeConversations} totalConversations={totalConversations} scansByDay={scansByDay} />;
 }

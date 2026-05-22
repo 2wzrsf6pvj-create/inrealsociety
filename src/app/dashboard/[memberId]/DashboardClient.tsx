@@ -127,11 +127,12 @@ export default function DashboardClient({
       return showToast('✦ Bienvenue dans le cercle premium.', 4000);
     }
 
-    // Toast connexion réussie
+    // Toast connexion réussie — message neutre (l'en-tête salue déjà par le nom,
+    // un toast « Bienvenue {nom} » ferait doublon).
     const justLoggedIn = sessionStorage.getItem('just_logged_in');
     if (!justLoggedIn) {
       sessionStorage.setItem('just_logged_in', '1');
-      return showToast(`Bienvenue, ${member.name}.`, 3000);
+      return showToast('Connexion réussie.', 2500);
     }
   }, [member.name, showToast]);
 
@@ -169,7 +170,7 @@ export default function DashboardClient({
         {/* Tab content with transition */}
         <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="w-full animate-stagger-1" key={tab}>
           {tab === 'home' && (
-            <HomeSection member={member} recentScans={recentScans} scansByDay={scansByDay} />
+            <HomeSection member={member} recentScans={recentScans} scansByDay={scansByDay} messages={messages} activeConversations={activeConversations} />
           )}
 
           {tab === 'inbox' && (

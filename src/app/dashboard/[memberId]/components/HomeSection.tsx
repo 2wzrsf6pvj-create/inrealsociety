@@ -3,15 +3,118 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import type { Member, Scan } from '@/lib/types';
-import { daysActive, formatDate, getInitials, getWaitingPhrase, recentScansCount } from './utils';
+import type { Member, Scan, Message } from '@/lib/types';
+import { daysActive, formatDate, getInitials, getWaitingPhrase, recentScansCount, timeAgo } from './utils';
 import { useCountUp } from './hooks';
 import { captureEvent } from '@/lib/posthog-client';
 import SectionDivider from '@/app/components/ui/SectionDivider';
 
+// ─── #1 Conversations en attente — la VRAIE valeur, remontée tout en haut ──────
+// Messages reçus auxquels le porteur n'a pas encore répondu (pas de reply, pas
+// bloqués). Triés du plus ancien au plus récent (qui attend depuis le plus
+// longtemps en premier). C'est l'action prioritaire du dashboard.
+
+function PendingConversations({ messages }: { messages: Message[] }) {
+  const pending = messages
+    .filter(m => !m.reply && !m.blocked_at)
+    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+
+  if (pending.length === 0) return null;
+  const shown = pending.slice(0, 3);
+  const extra = pending.length - shown.length;
+
+  return (
+    <div className="w-full bg-[#0c0c0c] border border-brand-white/15 rounded-[2px] p-4 flex flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <p className="font-ui text-xs text-brand-white/80 tracking-[0.18em] uppercase">En attente de toi</p>
+        <span className="font-ui text-xxs text-brand-gray/50 tabular-nums">{pending.length}</span>
+      </div>
+      {shown.map(m => (
+        <Link key={m.id} href={`/conversation/${m.id}`} className="flex items-center gap-3 group">
+          <span className="w-1.5 h-1.5 rounded-full bg-brand-white flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="font-ui text-sm text-brand-white/80 truncate group-hover:text-brand-white transition-colors">{m.content}</p>
+            <p className="font-ui text-xxs text-brand-gray/50">{m.sender_contact || 'Anonyme'} · {timeAgo(m.created_at)}</p>
+          </div>
+          <span className="font-ui text-xs text-brand-gray/50 group-hover:text-brand-white transition-colors flex-shrink-0">Répondre →</span>
+        </Link>
+      ))}
+      {extra > 0 && (
+        <p className="font-ui text-xxs text-brand-gray/50">+{extra} autre{extra > 1 ? 's' : ''} dans Messages</p>
+      )}
+    </div>
+  );
+}
+
+// ─── #2 Nudge photo persistant ────────────────────────────────────────────────
+// La photo est ce que voient les scanneurs. Au cold-start le guide la couvre ;
+// ici on rappelle le porteur ACTIF sans photo (sinon le manque persiste pour
+// toujours sans incitation).
+
+function PhotoNudge() {
+  return (
+    <Link href="/register?edit=1"
+      className="w-full bg-[#0a0a08] border border-[#C5A059]/25 rounded-[2px] p-3 flex items-center gap-3 hover:border-[#C5A059]/50 transition-colors">
+      <span className="font-ui text-base text-[#C5A059]/70 leading-none">◎</span>
+      <div className="flex-1 flex flex-col gap-0.5">
+        <span className="font-ui text-xs tracking-[0.12em] uppercase text-[#C5A059]/80">Ajoutez une photo</span>
+        <span className="font-ui text-xxs text-brand-gray/50">C&apos;est la première chose que voient les scanneurs.</span>
+      </div>
+      <span className="font-ui text-xxs text-[#C5A059]/60 tracking-[0.15em] uppercase flex-shrink-0">Ajouter →</span>
+    </Link>
+  );
+}
+
+// ─── #6 Activer les notifications (niveau membre) ──────────────────────────────
+// La réactivité du porteur fait la qualité du produit. Se masque si déjà
+// accordées / refusées / non supportées (pas de nag). No-op silencieux sans
+// VAPID (dev) ou service worker.
+
+function NotificationsPrompt({ memberId }: { memberId: string }) {
+  const [state, setState] = React.useState<'hidden' | 'idle' | 'loading'>('hidden');
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined' || !('Notification' in window) || !('serviceWorker' in navigator)) return;
+    if (Notification.permission === 'default') setState('idle');
+  }, []);
+
+  const enable = async () => {
+    setState('loading');
+    try {
+      const perm = await Notification.requestPermission();
+      if (perm !== 'granted') { setState('hidden'); return; }
+      const reg = await navigator.serviceWorker.register('/sw.js');
+      const vapid = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      if (!vapid) { setState('hidden'); return; }
+      const pad = '='.repeat((4 - vapid.length % 4) % 4);
+      const b64 = (vapid + pad).replace(/-/g, '+').replace(/_/g, '/');
+      const raw = window.atob(b64);
+      const key = Uint8Array.from(Array.from(raw), c => c.charCodeAt(0));
+      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+      const j = sub.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } };
+      await fetch('/api/push/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subscription: { endpoint: j.endpoint, keys: { p256dh: j.keys.p256dh, auth: j.keys.auth } }, memberId }),
+      });
+    } catch (err) {
+      console.warn('[notifs] activation échouée:', err);
+    }
+    setState('hidden');
+  };
+
+  if (state === 'hidden') return null;
+
+  return (
+    <button onClick={enable} disabled={state === 'loading'}
+      className="w-full py-3 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.1em] text-brand-gray/60 hover:border-brand-gray/35 hover:text-brand-white/80 transition-colors rounded-[2px] disabled:opacity-40"
+      style={{ minHeight: '44px' }}>
+      {state === 'loading' ? 'Activation...' : 'Être prévenu·e quand on m’écrit'}
+    </button>
+  );
+}
+
 // ─── Guide d'activation (cold-start) ───────────────────────────────────────────
-// Affiché tant qu'il n'y a aucun scan : transforme l'attente passive en parcours
-// concret (profil, aperçu « vis ton premier scan », passage à l'acte IRL).
 
 function StepDot({ done }: { done: boolean }) {
   return done ? (
@@ -80,12 +183,12 @@ function StatNumber({ value, label }: { value: number; label: string }) {
   return (
     <div className="flex flex-col items-center gap-1">
       <span className="font-display text-3xl md:text-4xl font-light tabular-nums">{display}</span>
-      <span className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">{label}</span>
+      <span className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase text-center leading-tight">{label}</span>
     </div>
   );
 }
 
-function StatsBlock({ member, recentScans }: { member: Member; recentScans: Scan[] }) {
+function StatsBlock({ member, recentScans, conversations }: { member: Member; recentScans: Scan[]; conversations: number }) {
   const days   = daysActive(member.created_at);
   const noScan = member.scan_count === 0;
 
@@ -104,17 +207,19 @@ function StatsBlock({ member, recentScans }: { member: Member; recentScans: Scan
     );
   }
 
+  // Valeur d'abord (conversations = rencontres réelles, hors bloquées), scans
+  // ensuite (portée).
   const stats = [
+    { value: conversations,                 label: 'Conversations' },
     { value: member.scan_count,             label: 'Scans' },
-    { value: recentScansCount(recentScans), label: '7 jours' },
-    { value: days,                          label: 'Jours' },
+    { value: recentScansCount(recentScans), label: 'Semaine' },
   ];
 
   return (
-    <div className="flex items-center gap-6 w-full justify-center">
+    <div className="flex items-stretch gap-6 w-full justify-center">
       {stats.map((s, i) => (
         <React.Fragment key={s.label}>
-          {i > 0 && <div className="w-px h-8 bg-brand-gray/10" />}
+          {i > 0 && <div className="w-px self-center h-8 bg-brand-gray/10" />}
           <StatNumber value={s.value} label={s.label} />
         </React.Fragment>
       ))}
@@ -125,7 +230,14 @@ function StatsBlock({ member, recentScans }: { member: Member; recentScans: Scan
 // ─── Scan chart (premium only) ────────────────────────────────────────────────
 
 function ScanChart({ data }: { data: { date: string; count: number }[] }) {
-  const max = Math.max(1, ...data.map(d => d.count));
+  const max   = Math.max(1, ...data.map(d => d.count));
+  const total = data.reduce((s, d) => s + d.count, 0);
+  // #3 insight IRL : le jour où le porteur est le plus remarqué → quand sortir.
+  const peak  = data.reduce((best, d) => (d.count > best.count ? d : best), data[0]);
+  const peakDay = peak && peak.count > 0
+    ? new Date(peak.date).toLocaleDateString('fr-FR', { weekday: 'long' })
+    : null;
+
   return (
     <div className="w-full bg-[#080808] border border-[#C5A059]/15 rounded-[2px] p-4 flex flex-col gap-3">
       <div className="flex items-center gap-3 w-full">
@@ -149,7 +261,7 @@ function ScanChart({ data }: { data: { date: string; count: number }[] }) {
         ))}
       </div>
       <p className="font-ui text-xxs text-brand-gray/55 text-center">
-        {data.reduce((s, d) => s + d.count, 0)} scans cette semaine
+        {total} scans cette semaine{peakDay ? ` · pic le ${peakDay}` : ''}
       </p>
     </div>
   );
@@ -157,14 +269,22 @@ function ScanChart({ data }: { data: { date: string; count: number }[] }) {
 
 // ─── Home Section (orchestrator du tab Accueil) ──────────────────────────────
 
-export default function HomeSection({ member, recentScans, scansByDay = [] }: {
+export default function HomeSection({ member, recentScans, scansByDay = [], messages = [], activeConversations = 0 }: {
   member: Member;
   recentScans: Scan[];
   scansByDay?: { date: string; count: number }[];
+  messages?: Message[];
+  activeConversations?: number;
 }) {
   return (
     <>
-      <StatsBlock member={member} recentScans={recentScans} />
+      {/* #1 — Conversations en attente : action prioritaire, tout en haut */}
+      <PendingConversations messages={messages} />
+
+      {/* #2 — Nudge photo pour membre actif sans photo (cold-start couvert par le guide) */}
+      {!member.photo_url && member.scan_count > 0 && <PhotoNudge />}
+
+      <StatsBlock member={member} recentScans={recentScans} conversations={activeConversations} />
 
       {/* Stats premium */}
       {member.plan === 'premium' && scansByDay.length > 0 && (
@@ -173,6 +293,9 @@ export default function HomeSection({ member, recentScans, scansByDay = [] }: {
 
       {/* Guide d'activation tant qu'aucun scan (cold-start) */}
       {member.scan_count === 0 && <ActivationGuide member={member} />}
+
+      {/* #6 — Activer les notifications (se masque si déjà répondu) */}
+      <NotificationsPrompt memberId={member.id} />
 
       <div className="w-full h-px bg-brand-gray/10" />
 

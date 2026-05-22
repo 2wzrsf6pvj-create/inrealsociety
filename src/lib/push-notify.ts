@@ -1,6 +1,8 @@
-// Envoie une notification push à tous les abonnés d'un thread (push_subscriptions
-// rows ayant message_id = <messageId>). Utilisé par /api/push/notify (endpoint
-// externe) ET par /api/conversation/reply (appel direct interne).
+// Notifications push. Deux portées :
+//   * notifyThreadSubscribers — abonnés d'un thread (message_id) : réponses dans
+//     une conversation. Appelé par /api/push/notify et /api/conversation/reply.
+//   * notifyMemberSubscribers — abonnés au niveau membre (member_id) : alerte le
+//     porteur de tout nouveau message reçu. Appelé par /api/message.
 //
 // No-op silencieux si VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY ne sont pas définis
 // (permet de dev/test sans configurer le push).
@@ -37,19 +39,12 @@ export interface PushNotifyResult {
   expired: number;
 }
 
-export async function notifyThreadSubscribers({ messageId, title, body, url }: PushNotifyParams): Promise<PushNotifyResult> {
-  if (!initVapid()) {
-    return { sent: 0, failed: 0, expired: 0 };
-  }
-
-  const { data: subs } = await supabaseAdmin
-    .from('push_subscriptions')
-    .select('endpoint, p256dh, auth')
-    .eq('message_id', messageId);
-
-  if (!subs?.length) return { sent: 0, failed: 0, expired: 0 };
-
-  const payload  = JSON.stringify({ title, body, url, tag: messageId });
+// Envoi commun à une liste d'abonnements + purge des endpoints expirés.
+async function sendToSubs(
+  subs: { endpoint: string; p256dh: string; auth: string }[],
+  payload: string,
+): Promise<PushNotifyResult> {
+  if (!subs.length) return { sent: 0, failed: 0, expired: 0 };
   const expired: string[] = [];
   let sent = 0, failed = 0;
 
@@ -62,9 +57,7 @@ export async function notifyThreadSubscribers({ messageId, title, body, url }: P
       sent++;
     } catch (err) {
       const status = (err as { statusCode?: number }).statusCode;
-      if (status === 410 || status === 404) {
-        expired.push(s.endpoint);
-      }
+      if (status === 410 || status === 404) expired.push(s.endpoint);
       failed++;
     }
   }));
@@ -73,6 +66,31 @@ export async function notifyThreadSubscribers({ messageId, title, body, url }: P
   if (expired.length) {
     await supabaseAdmin.from('push_subscriptions').delete().in('endpoint', expired);
   }
-
   return { sent, failed, expired: expired.length };
+}
+
+// Abonnés d'un thread (message_id) — réponses dans une conversation.
+export async function notifyThreadSubscribers({ messageId, title, body, url }: PushNotifyParams): Promise<PushNotifyResult> {
+  if (!initVapid()) return { sent: 0, failed: 0, expired: 0 };
+  const { data: subs } = await supabaseAdmin
+    .from('push_subscriptions')
+    .select('endpoint, p256dh, auth')
+    .eq('message_id', messageId);
+  return sendToSubs(subs ?? [], JSON.stringify({ title, body, url, tag: messageId }));
+}
+
+// Abonnés au niveau MEMBRE (member_id) — alerte le porteur de tout nouveau
+// message reçu (abonnement posé depuis le dashboard). Le tag est par MESSAGE
+// (pas par membre) : sinon l'OS remplace la notif précédente et plusieurs
+// signaux reçus en absence se réduisent à un seul.
+export async function notifyMemberSubscribers(
+  { memberId, messageId, title, body, url }: { memberId: string; messageId?: string; title: string; body?: string; url?: string },
+): Promise<PushNotifyResult> {
+  if (!initVapid()) return { sent: 0, failed: 0, expired: 0 };
+  const { data: subs } = await supabaseAdmin
+    .from('push_subscriptions')
+    .select('endpoint, p256dh, auth')
+    .eq('member_id', memberId);
+  const tag = messageId ? `member-${memberId}-${messageId}` : `member-${memberId}`;
+  return sendToSubs(subs ?? [], JSON.stringify({ title, body, url, tag }));
 }

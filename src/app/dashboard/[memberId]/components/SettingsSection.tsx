@@ -450,32 +450,27 @@ export default function SettingsSection({ member }: { member: Member }) {
       {/* Parrainage */}
       <ReferralBlock memberId={member.id} />
 
-      {/* Modifier profil */}
-      <Link href="/register?edit=1"
-        className="w-full py-3 border border-brand-gray/20 text-center font-ui text-sm font-light tracking-[0.2em] uppercase hover:border-brand-gray/50 transition-colors rounded-[2px]">
-        Modifier mon profil
-      </Link>
-
-      {/* Infos */}
-      <div className="flex flex-col gap-2">
-        <p className="font-ui text-xs text-brand-gray/55 tracking-[0.18em] uppercase">Compte</p>
-        <p className="font-ui text-xs md:text-sm text-brand-gray/50">{member.email || 'Pas d\'email associé'}</p>
-        <p className="font-ui text-xs text-brand-gray/55">
-          Membre depuis le {new Date(member.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
-        </p>
+      {/* Compte — profil, identité, mot de passe regroupés */}
+      <div className="w-full bg-[#080808] border border-brand-gray/10 rounded-[2px] p-4 flex flex-col gap-3">
+        <SectionDivider label="compte" />
+        <div className="flex flex-col gap-0.5">
+          <p className="font-ui text-xs md:text-sm text-brand-gray/50">{member.email || 'Pas d\'email associé'}</p>
+          <p className="font-ui text-xxs text-brand-gray/55">
+            Membre depuis le {new Date(member.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
+          </p>
+        </div>
+        <Link href="/register?edit=1"
+          className="w-full py-3 border border-brand-gray/20 text-center font-ui text-sm font-light tracking-[0.2em] uppercase hover:border-brand-gray/50 transition-colors rounded-[2px]">
+          Modifier mon profil
+        </Link>
+        <Link href="/auth/forgot-password"
+          className="w-full py-3 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.15em] uppercase text-brand-gray/50 hover:border-brand-gray/30 hover:text-brand-white/80 transition-colors rounded-[2px]">
+          Changer mon mot de passe
+        </Link>
       </div>
 
-      {/* Changer mot de passe */}
-      <Link href="/auth/forgot-password"
-        className="w-full py-3 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.15em] uppercase text-brand-gray/50 hover:border-brand-gray/30 hover:text-brand-white/80 transition-colors rounded-[2px]"
-      >
-        Changer mon mot de passe
-      </Link>
-
-      {/* Feedback app */}
+      {/* Aide & légal */}
       <FeedbackBlock memberId={member.id} />
-
-      {/* Liens légaux */}
       <div className="flex flex-col gap-2 border-t border-brand-gray/10 pt-4">
         <Link href="/cgv" className="font-ui text-xs text-brand-gray/55 hover:text-brand-white/80 transition-colors">
           Conditions Générales de Vente
