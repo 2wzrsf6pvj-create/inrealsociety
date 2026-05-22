@@ -1,6 +1,6 @@
 // src/lib/generate-qr-svg.ts
 // Génère un QR code SVG premium avec modules arrondis, yeux stylisés
-// et logo central (deux cercles entrecroisés). Adapte les couleurs au thème du t-shirt.
+// et logo central (un « X » en deux lignes croisées). Adapte les couleurs au thème du t-shirt.
 //
 // Dark (t-shirt noir)  → QR Gold #C5A059, fond transparent
 // Light (t-shirt blanc) → QR Navy #0A192F, logo Gold #C5A059
@@ -102,29 +102,28 @@ function renderFinderEye(
   return outer + inner;
 }
 
-// ─── Logo central — deux cercles entrecroisés (connexion) ────────────────────
+// ─── Logo central — un « X » (deux lignes croisées) ──────────────────────────
 
-/** Génère le logo en SVG — deux cercles qui se chevauchent (Venn diagram) */
+/** Génère le logo en SVG — deux lignes croisées formant un X, extrémités arrondies. */
 function renderLogo(
   cx: number,
   cy: number,
   logoSize: number,
   color: string,
 ): string {
-  const half    = logoSize / 2;
-  const gap     = logoSize * 0.12;
-  const r       = half * 0.55;          // rayon de chaque cercle
-  const offset  = half * 0.32;          // décalage horizontal
-  const stroke  = logoSize * 0.12;
+  const half   = logoSize / 2;
+  const gap    = logoSize * 0.12;
+  const arm    = half * 0.45;           // demi-longueur des branches du X
+  const stroke = logoSize * 0.14;
 
-  // Fond blanc circulaire derrière le logo pour la lisibilité
+  // Fond blanc circulaire derrière le logo pour la lisibilité du scan
   const bgRadius = half + gap;
   const bg = `<circle cx="${cx}" cy="${cy}" r="${bgRadius}" fill="white"/>`;
 
-  const c1 = `<circle cx="${cx - offset}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}"/>`;
-  const c2 = `<circle cx="${cx + offset}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="${stroke}"/>`;
+  const l1 = `<line x1="${cx - arm}" y1="${cy - arm}" x2="${cx + arm}" y2="${cy + arm}" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round"/>`;
+  const l2 = `<line x1="${cx + arm}" y1="${cy - arm}" x2="${cx - arm}" y2="${cy + arm}" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round"/>`;
 
-  return bg + c1 + c2;
+  return bg + l1 + l2;
 }
 
 // ─── Fonction principale ──────────────────────────────────────────────────────
