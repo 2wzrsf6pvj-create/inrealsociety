@@ -17,6 +17,7 @@ function MessageForm() {
   const [error, setError]         = useState('');
   const [moderated, setModerated] = useState(false);
   const [expired, setExpired]     = useState(false);
+  const [windowHours, setWindowHours] = useState(24);
   const [limitReached, setLimitReached] = useState(false);
   const [conversationUrl, setConversationUrl] = useState<string | null>(null);
   const [copied, setCopied]       = useState(false);
@@ -39,11 +40,13 @@ function MessageForm() {
       const data = await res.json();
       if (!res.ok) {
         const errorMsg = typeof data.error === 'string' ? data.error : 'Erreur lors de l\'envoi.';
-        if (res.status === 403 && (errorMsg.includes('expirée') || errorMsg.includes('fenêtre'))) {
+        // Détection par code structuré (pas par string-matching de la copie FR).
+        if (data.code === 'window_expired') {
           captureEvent('message_blocked_window_expired', { member_id: memberId });
+          if (typeof data.windowHours === 'number') setWindowHours(data.windowHours);
           setExpired(true); setSending(false); return;
         }
-        if (res.status === 403 && errorMsg.includes('Nombre maximum de conversations')) {
+        if (data.code === 'conversation_limit') {
           captureEvent('message_blocked_conversation_limit', { member_id: memberId });
           setLimitReached(true); setSending(false); return;
         }
@@ -81,7 +84,7 @@ function MessageForm() {
         <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
         <p className="font-display text-2xl font-light">Ce moment est passé.</p>
         <p className="font-ui text-sm text-brand-gray/40 leading-relaxed">
-          La fenêtre de 24 heures est terminée.<br />
+          La fenêtre de {windowHours} heures est terminée.<br />
           La prochaine occasion sera la bonne.
         </p>
         <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />

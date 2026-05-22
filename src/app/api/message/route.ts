@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (member.is_paused) {
-      return NextResponse.json({ error: 'Ce membre est indisponible.' }, { status: 403 });
+      return NextResponse.json({ error: 'Ce membre est indisponible.', code: 'paused' }, { status: 403 });
     }
 
     // ─── Vérification fenêtre temporelle (24h free / 48h premium) ──────
@@ -70,7 +70,10 @@ export async function POST(req: NextRequest) {
       const elapsed = Date.now() - new Date(firstScan.first_scan_at).getTime();
       if (elapsed > windowMs) {
         const windowLabel = windowMs / 3_600_000;
-        return NextResponse.json({ error: `La fenêtre de ${windowLabel}h est expirée.` }, { status: 403 });
+        return NextResponse.json(
+          { error: `La fenêtre de ${windowLabel}h est expirée.`, code: 'window_expired', windowHours: windowLabel },
+          { status: 403 },
+        );
       }
     }
 
@@ -88,7 +91,10 @@ export async function POST(req: NextRequest) {
         .is('parent_id', null);
 
       if ((activeConvs ?? 0) >= MAX_CONVERSATIONS[plan]) {
-        return NextResponse.json({ error: 'Nombre maximum de conversations atteint pour ce profil.' }, { status: 403 });
+        return NextResponse.json(
+          { error: 'Nombre maximum de conversations atteint pour ce profil.', code: 'conversation_limit' },
+          { status: 403 },
+        );
       }
     }
 
