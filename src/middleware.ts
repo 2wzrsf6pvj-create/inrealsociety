@@ -7,6 +7,7 @@ const PUBLIC_PAGES = new Set([
   '/',
   '/unlock',
   '/manifeste',
+  '/faq',
   '/cgv',
   '/message',
   '/shop',

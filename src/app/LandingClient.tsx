@@ -139,12 +139,19 @@ function LandingContent() {
 
       {/* Liens discrets en bas — en flux (mt-auto via flex-1 du héros) plutôt
           qu'en absolute : footer ancré au bas sans vide asymétrique sur desktop. */}
-      <div className="z-10 flex items-center justify-center gap-6 w-full pt-10 animate-stagger-4">
+      <div className="z-10 flex flex-wrap items-center justify-center gap-x-5 gap-y-1 w-full pt-10 animate-stagger-4">
         <Link href="/manifeste"
           className="font-ui text-xxs md:text-xs text-brand-gray/50 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white/80 transition-colors py-3"
           style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}
         >
           Manifeste
+        </Link>
+        <span className="text-brand-gray/15">·</span>
+        <Link href="/faq"
+          className="font-ui text-xxs md:text-xs text-brand-gray/50 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white/80 transition-colors py-3"
+          style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}
+        >
+          FAQ
         </Link>
         <span className="text-brand-gray/15">·</span>
         <Link href="/shop"

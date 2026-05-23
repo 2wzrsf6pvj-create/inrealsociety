@@ -369,6 +369,9 @@ export default function ShopClient() {
                 <p className="font-ui text-xxs md:text-xs text-brand-gray/50 text-center leading-relaxed">
                   Paiement sécurisé par Stripe · Livraison choisie à l&apos;étape suivante
                 </p>
+                <Link href="/faq" className="font-ui text-xxs text-brand-gray/50 text-center underline underline-offset-4 hover:text-brand-white/80 transition-colors">
+                  Comment ça marche ?
+                </Link>
                 <p className="font-ui text-xxs text-brand-gray/50 text-center leading-relaxed">
                   En commandant, vous acceptez les{' '}
                   <Link href="/cgv" className="underline underline-offset-2 hover:text-brand-white/80 transition-colors">
