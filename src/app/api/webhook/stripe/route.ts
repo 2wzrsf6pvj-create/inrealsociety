@@ -109,8 +109,12 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
     return;
   }
 
-  if (existingOrder.status === 'paid') {
-    console.log('[webhook] Événement déjà traité pour session:', sessionId);
+  // Idempotence + sûreté remboursement : on ne (re)traite QUE depuis 'pending'.
+  // 'paid' = déjà finalisé. 'refunded' = remboursé → un checkout.session.completed
+  // rejoué après un refund (ordre de livraison Stripe) ne doit PAS ré-activer la
+  // commande ni émettre un nouveau code valide.
+  if (existingOrder.status !== 'pending') {
+    console.log('[webhook] Order déjà en statut', existingOrder.status, '— ignoré pour session:', sessionId);
     return;
   }
 
@@ -123,10 +127,10 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
 
   const code = await generateUniqueActivationCode();
 
-  // UPDATE optimiste : si une autre invocation a déjà flippé l'order en 'paid'
-  // entre la lecture ci-dessus et maintenant, .neq('status', 'paid') retourne 0
-  // lignes. On rollback alors le code qu'on vient d'insérer pour éviter le bloat,
-  // et on return sans envoyer l'email (l'autre invocation s'en est chargée).
+  // UPDATE optimiste verrouillé sur 'pending' : si une autre invocation a déjà
+  // finalisé l'order (paid) OU s'il a été remboursé entre-temps, .eq('status',
+  // 'pending') retourne 0 ligne. On rollback alors le code qu'on vient d'insérer
+  // pour éviter le bloat, et on return sans envoyer l'email.
   const { data: updated, error: orderError } = await supabaseAdmin
     .from('orders')
     .update({
@@ -139,7 +143,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
       amount:            session.amount_total ?? undefined,
     })
     .eq('stripe_session_id', sessionId)
-    .neq('status', 'paid')
+    .eq('status', 'pending')
     .select('id');
 
   if (orderError) {
@@ -161,15 +165,20 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
     registerUrl: `${appUrl}/register?code=${code}`,
   });
 
-  try {
-    await sendEmail({ to: email, subject, html });
-  } catch (err) {
+  // sendEmail renvoie false (sans throw) en cas d'échec → on DOIT tester le
+  // retour, pas un catch (qui ne se déclencherait jamais). Sans ça, une panne
+  // Resend laissait la commande payée + code généré mais SANS email, SANS trace,
+  // SANS retry → client qui paie et ne reçoit rien.
+  const activationSent = await sendEmail({ to: email, subject, html });
+  if (!activationSent) {
     audit({
       action:   'order.email_failed',
-      metadata: { orderId: existingOrder.id, email, error: err instanceof Error ? err.message : String(err) },
+      metadata: { orderId: existingOrder.id, email },
     });
-    console.error('[webhook] Échec envoi email activation:', err);
-    // L'order reste en 'paid' avec le code — support peut renvoyer manuellement.
+    console.error('[webhook] Échec envoi email activation pour', email,
+      '— order reste paid avec code, renvoi possible via /api/order/resend-code');
+    // L'order reste en 'paid' avec le code — l'acheteur peut le récupérer via la
+    // page /commande ou le self-service resend ; le support a la trace d'audit.
   }
 
   // ─── 2. Fulfillment (membre existant) ────────────────────────────────
@@ -315,11 +324,8 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<void
   const dashboardUrl = `${APP_URL}/dashboard`;
   const { subject, html } = emailPaymentFailed({ name: member.name, dashboardUrl, attemptNumber });
 
-  try {
-    await sendEmail({ to: member.email, subject, html });
-  } catch (err) {
-    console.error('[webhook] Échec envoi email payment_failed:', err);
-  }
+  const sent = await sendEmail({ to: member.email, subject, html });
+  if (!sent) console.error('[webhook] Échec envoi email payment_failed pour', member.email);
 }
 
 // ─── Handlers abonnement premium ─────────────────────────────────────────────
@@ -331,6 +337,19 @@ async function handleSubscriptionCheckout(session: Stripe.Checkout.Session): Pro
 
   if (!memberId) {
     console.warn('[webhook] Subscription checkout sans memberId dans metadata');
+    return;
+  }
+
+  // Idempotence : sur un retry Stripe, ce membre a déjà CET abonnement → on ne
+  // ré-update pas, on ne ré-envoie pas l'email de bienvenue et on n'émet pas un
+  // 2e event analytics.
+  const { data: current } = await supabaseAdmin
+    .from('members')
+    .select('stripe_subscription_id')
+    .eq('id', memberId)
+    .maybeSingle();
+  if (current?.stripe_subscription_id === subscriptionId) {
+    console.log('[webhook] Subscription checkout déjà traité pour', memberId);
     return;
   }
 

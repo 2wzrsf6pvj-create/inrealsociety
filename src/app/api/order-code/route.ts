@@ -59,5 +59,18 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ code: null });
   }
 
+  // Ne ré-affiche pas un code déjà consommé : un acheteur qui revient sur la page
+  // succès après avoir activé son profil verrait sinon un code « actionnable »
+  // (bouton « Créer mon profil ») qui ne sert plus à rien. La page bascule alors
+  // sur le message « code envoyé par email » (neutre).
+  const { data: codeRow } = await supabaseAdmin
+    .from('activation_codes')
+    .select('used')
+    .eq('code', data.activation_code)
+    .maybeSingle();
+  if (codeRow?.used) {
+    return NextResponse.json({ code: null });
+  }
+
   return NextResponse.json({ code: data.activation_code });
 }

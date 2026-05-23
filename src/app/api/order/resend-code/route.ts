@@ -65,19 +65,14 @@ export async function POST(req: NextRequest) {
       registerUrl: `${APP_URL}/register?code=${order.activation_code}`,
     });
 
-    try {
-      await sendEmail({ to: email, subject, html });
-      audit({
-        action:   'order.email_resent',
-        metadata: { orderId: order.id, email, ip },
-      });
-    } catch (err) {
-      audit({
-        action:   'order.email_failed',
-        metadata: { orderId: order.id, email, kind: 'resend', error: err instanceof Error ? err.message : String(err) },
-      });
-      console.error('[api/order/resend-code] sendEmail failed:', err);
-    }
+    // sendEmail renvoie false (sans throw) → on teste le retour, pas un catch
+    // (qui ne se déclencherait jamais → resend silencieusement inopérant).
+    const sent = await sendEmail({ to: email, subject, html });
+    audit({
+      action:   sent ? 'order.email_resent' : 'order.email_failed',
+      metadata: { orderId: order.id, email, ip, ...(sent ? {} : { kind: 'resend' }) },
+    });
+    if (!sent) console.error('[api/order/resend-code] sendEmail failed for', email);
 
     return NextResponse.json({ ok: true });
 

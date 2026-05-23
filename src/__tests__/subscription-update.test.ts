@@ -23,9 +23,17 @@ describe('subscriptionMemberUpdate', () => {
     });
   });
 
-  it('unpaid / past_due → free', () => {
+  it('unpaid → free (relances Stripe épuisées)', () => {
     expect(subscriptionMemberUpdate({ status: 'unpaid', id: 'sub_1' }).plan).toBe('free');
-    expect(subscriptionMemberUpdate({ status: 'past_due', id: 'sub_1' }).plan).toBe('free');
+  });
+
+  // Délai de grâce dunning : un échec de renouvellement ne doit pas couper le
+  // premium sur-le-champ (l'email de relance promet l'inverse), et l'abo doit
+  // rester en base pour que le cron de réconciliation le surveille encore.
+  it('past_due → premium + garde le subscription id (délai de grâce)', () => {
+    expect(subscriptionMemberUpdate({ status: 'past_due', id: 'sub_1' })).toEqual({
+      plan: 'premium', stripe_subscription_id: 'sub_1', plan_expires_at: null,
+    });
   });
 
   it('NE THROW PAS sur un objet sans current_period_end (cœur du bug C1)', () => {

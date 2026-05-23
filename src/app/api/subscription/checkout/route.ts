@@ -8,6 +8,7 @@ import Stripe from 'stripe';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { requireAuth, isHttpError } from '@/lib/require-auth';
 import { checkAuthRateLimit, rateLimitHeaders } from '@/lib/ratelimit';
+import { isActiveSubscriptionStatus } from '@/lib/subscription';
 
 export async function POST(req: NextRequest) {
   try {
@@ -48,6 +49,24 @@ export async function POST(req: NextRequest) {
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
       apiVersion: '2026-03-25.dahlia',
     });
+
+    // Garde anti-double-abonnement : le webhook qui pose plan='premium' peut être
+    // en retard (double-clic, 2e onglet, retry réseau). Le seul check `plan` local
+    // laisse alors créer une 2e session → 2e abonnement actif + double prélèvement,
+    // et le 1er devient orphelin (plus référencé → ni portail ni cron ne le voient).
+    // On vérifie donc directement chez Stripe qu'aucun abonnement actif n'existe.
+    if (member.stripe_customer_id) {
+      const subs = await stripe.subscriptions.list({ customer: member.stripe_customer_id, status: 'all', limit: 10 });
+      const active = subs.data.find((s) => isActiveSubscriptionStatus(s.status));
+      if (active) {
+        // Self-heal : le webhook a vraisemblablement été manqué → recale en premium.
+        await supabaseAdmin
+          .from('members')
+          .update({ plan: 'premium', stripe_subscription_id: active.id })
+          .eq('id', member.id);
+        return NextResponse.json({ error: 'Vous êtes déjà abonné.' }, { status: 400 });
+      }
+    }
 
     // Réutilise ou crée le customer Stripe
     let customerId = member.stripe_customer_id;

@@ -14,8 +14,19 @@ export interface MemberPlanUpdate {
   plan_expires_at: null;
 }
 
+// Statut Stripe ⇒ accès premium maintenu ?
+// `past_due` = le paiement de renouvellement a échoué et Stripe est en train de
+// le relancer (dunning). On GARDE le premium pendant ce délai de grâce : sinon
+// on coupe un client payant à la première relance — ce que l'email de relance
+// promet justement d'éviter. On garde aussi l'abo en base pour que le cron de
+// réconciliation puisse continuer à le surveiller et le rétablir/couper.
+// `unpaid`, `canceled`, `incomplete*`, `paused` ⇒ plus d'accès.
+export function isActiveSubscriptionStatus(status: string): boolean {
+  return status === 'active' || status === 'trialing' || status === 'past_due';
+}
+
 export function subscriptionMemberUpdate(sub: { status: string; id: string }): MemberPlanUpdate {
-  const isActive = sub.status === 'active' || sub.status === 'trialing';
+  const isActive = isActiveSubscriptionStatus(sub.status);
   return {
     plan:                   isActive ? 'premium' : 'free',
     stripe_subscription_id: isActive ? sub.id : null,

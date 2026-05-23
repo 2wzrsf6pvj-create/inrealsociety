@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { subscriptionMemberUpdate } from '@/lib/subscription';
+import { subscriptionMemberUpdate, isActiveSubscriptionStatus } from '@/lib/subscription';
 import { isAuthorizedCron } from '@/lib/cron-auth';
 
 const BATCH_SIZE = 100;
@@ -44,8 +44,9 @@ export async function GET(req: NextRequest) {
     checked++;
     try {
       const sub = await stripe.subscriptions.retrieve(m.stripe_subscription_id);
-      const isActive = sub.status === 'active' || sub.status === 'trialing';
-      if (!isActive) {
+      // Même règle que le webhook (past_due = délai de grâce → reste premium),
+      // sinon le cron downgraderait un membre que le webhook vient de garder.
+      if (!isActiveSubscriptionStatus(sub.status)) {
         await supabaseAdmin
           .from('members')
           .update(subscriptionMemberUpdate({ status: sub.status, id: sub.id }))

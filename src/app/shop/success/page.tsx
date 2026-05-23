@@ -17,23 +17,40 @@ function SuccessContent() {
     // ne crédite/remise pas des commandes futures sans rapport (single-use).
     localStorage.removeItem('referral_code');
     let cancelled = false;
+    let timer: ReturnType<typeof setTimeout>;
 
-    const timer = setTimeout(async () => {
+    // Le code d'activation est écrit par le webhook Stripe, qui prend souvent
+    // plus de 2 s. Un fetch unique manquait alors le code → écran « par email »
+    // alors qu'il était sur le point d'arriver. On poll avec backoff jusqu'à
+    // ~30 s, puis on bascule sur le message email (filet : le code part aussi
+    // par email, et /commande permet de le retrouver).
+    const delays = [1500, 2000, 2500, 3000, 4000, 5000, 6000, 6000]; // ~30 s
+    let attempt = 0;
+
+    const poll = async () => {
       try {
         const res  = await fetch(`/api/order-code?session=${sessionId}`);
         if (cancelled) return;
         const data = await res.json();
+        if (cancelled) return;
         if (data.code && typeof data.code === 'string' && data.code.length >= 6) {
           setCode(data.code);
           localStorage.setItem('pending_activation_code', data.code);
+          setStatus('ok');
+          return;
         }
       } catch {
-        // Email de secours — le code arrivera par email
-      } finally {
-        if (!cancelled) setStatus('ok');
+        // réseau KO → on retente (ou on bascule email si quota épuisé)
       }
-    }, 2000);
+      if (cancelled) return;
+      if (attempt >= delays.length) {
+        setStatus('ok'); // pas de code après ~30 s → message « envoyé par email »
+        return;
+      }
+      timer = setTimeout(poll, delays[attempt++]);
+    };
 
+    timer = setTimeout(poll, delays[attempt++]);
     return () => { cancelled = true; clearTimeout(timer); };
   }, [sessionId]);
 
