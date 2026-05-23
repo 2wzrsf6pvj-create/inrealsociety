@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 };
 import { createClient } from '@/lib/supabase-server';
 import { getMemberByAuthUserId } from '@/lib/supabase';
-import { getRecentScans, getScansByDay } from '@/lib/queries-server';
+import { getRecentScans, getScansByDay, claimOrphanedMember } from '@/lib/queries-server';
 import { getMessages, getMessagesCount, getConversationsTotal, getUnreadMessagesCount } from '@/lib/inbox';
 import DashboardClient from './[memberId]/DashboardClient';
 
@@ -26,7 +26,16 @@ export default async function DashboardPage() {
 
   // Cherche le profil lié à ce compte. On passe le client AUTHENTIFIÉ (porteur
   // du cookie) car la RPC get_own_member() s'appuie sur auth.uid().
-  const member = await getMemberByAuthUserId(supabase);
+  let member = await getMemberByAuthUserId(supabase);
+
+  // Self-heal (M4) : aucun profil lié, mais peut-être un profil ORPHELIN (compte
+  // auth supprimé → auth_user_id nullé) récupérable via l'email VÉRIFIÉ. Évite le
+  // lockout (le code d'activation est consommé, /register ne sauverait pas). Gate
+  // sur email_confirmed_at : sans email vérifié, revendiquer un profil serait
+  // usurpable.
+  if (!member && user.email && user.email_confirmed_at) {
+    member = await claimOrphanedMember(user.id, user.email);
+  }
 
   // Pas encore de profil → onboarding
   if (!member) {

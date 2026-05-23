@@ -26,6 +26,7 @@ export type AuditAction =
   | 'member.deleted'
   | 'member.data_exported'
   | 'member.marketing_consent_changed'
+  | 'member.reclaimed'
   | 'order.fulfillment_failed'
   | 'order.fulfilled'
   | 'push.subscribed'
