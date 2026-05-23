@@ -6,10 +6,11 @@
 // anti-FOUC du layout applique la classe au boot. Bouton fixe en haut à gauche
 // (l'AuthIndicator occupe le coin droit).
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export default function SunToggle() {
   const [sun, setSun] = useState(false);
+  const themeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     setSun(document.documentElement.classList.contains('sun'));
@@ -18,7 +19,14 @@ export default function SunToggle() {
   const toggle = () => {
     const next = !sun;
     setSun(next);
-    document.documentElement.classList.toggle('sun', next);
+    const root = document.documentElement;
+    // Fondu de couleurs le temps du switch (classe retirée juste après), pour ne
+    // pas alourdir les hovers en permanence. On annule le timer précédent : un
+    // double-tap rapide ne coupe pas le fondu en cours.
+    root.classList.add('theme-transition');
+    root.classList.toggle('sun', next);
+    if (themeTimer.current) clearTimeout(themeTimer.current);
+    themeTimer.current = setTimeout(() => root.classList.remove('theme-transition'), 320);
     try { localStorage.setItem('irs_sun', next ? '1' : '0'); } catch { /* stockage indispo */ }
   };
 

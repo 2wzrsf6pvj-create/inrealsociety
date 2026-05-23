@@ -7,6 +7,7 @@ import PostHogProvider from './components/PostHogProvider';
 import ConsentBanner from './components/ConsentBanner';
 import ServiceWorkerRegistration from './components/ServiceWorkerRegistration';
 import SunScope from './components/ui/SunScope';
+import PageTransition from './components/ui/PageTransition';
 import './globals.css';
 
 const cormorant = Cormorant_Garamond({
@@ -76,7 +77,7 @@ export default function RootLayout({
         <Suspense fallback={null}>
           <PostHogProvider>
             <AuthIndicator />
-            <div id="main">{children}</div>
+            <div id="main"><PageTransition>{children}</PageTransition></div>
             <ConsentBanner />
           </PostHogProvider>
         </Suspense>

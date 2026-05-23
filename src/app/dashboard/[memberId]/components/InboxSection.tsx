@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import { captureEvent } from '@/lib/posthog-client';
 import { MAX_CONVERSATIONS } from '@/lib/constants';
@@ -66,6 +66,11 @@ export default function InboxSection({ messages: initialMessages, memberId, plan
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [reported,     setReported]     = useState<Set<string>>(new Set());
   const [loadingMore, setLoadingMore]   = useState(false);
+  // Nombre de cartes au 1er rendu : celles AU-DELÀ (chargées via « Voir plus »)
+  // s'animent à l'arrivée (slide-in), les initiales non (elles ont déjà joué).
+  // Suppose initialMessages stable par montage (rendu serveur, pas de refresh
+  // dans ce sous-arbre) — vrai aujourd'hui.
+  const initialCount = useRef(initialMessages.length).current;
   // Pagination basée sur le total AFFICHÉ (totalConversations = racine, bloquées
   // incluses) — pas sur activeConversations (hors bloquées, qui pilote le plafond
   // premium). Sinon les conv bloquées masqueraient "Voir plus".
@@ -136,10 +141,11 @@ export default function InboxSection({ messages: initialMessages, memberId, plan
           sublabel={atLimit ? 'Plus aucun message ne peut t’atteindre. Passe premium pour débloquer.' : 'Passe premium pour des conversations illimitées.'}
         />
       )}
-      {messages.map(msg => {
+      {messages.map((msg, i) => {
         const isReported = reported.has(msg.id);
+        const isNew = i >= initialCount; // chargé via « Voir plus » → slide-in
         return (
-          <div key={msg.id} className={`w-full bg-[#080808] border rounded-[2px] p-3 flex flex-col gap-2 ${msg.blocked_at ? 'border-red-500/20 opacity-60' : !msg.read_at ? 'border-brand-white/20' : 'border-brand-gray/10'}`}>
+          <div key={msg.id} className={`w-full bg-[#080808] border rounded-[2px] p-3 flex flex-col gap-2 transition-opacity duration-500 ${isNew ? 'animate-slide-right' : ''} ${isReported ? 'opacity-30' : ''} ${msg.blocked_at ? 'border-red-500/20 opacity-60' : !msg.read_at ? 'border-brand-white/20' : 'border-brand-gray/10'}`}>
             <div className="flex items-start justify-between gap-2">
               <div className="flex-1 min-w-0">
                 <p className={`font-ui text-sm leading-relaxed ${!msg.read_at ? 'text-brand-white/90' : 'text-brand-gray/60'}`}>
@@ -147,7 +153,7 @@ export default function InboxSection({ messages: initialMessages, memberId, plan
                 </p>
               </div>
               {!msg.read_at && (
-                <span className="w-2 h-2 rounded-full bg-brand-white flex-shrink-0 mt-1" />
+                <span className="animate-unread w-2 h-2 rounded-full bg-brand-white flex-shrink-0 mt-1" />
               )}
             </div>
 

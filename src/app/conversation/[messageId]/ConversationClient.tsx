@@ -159,7 +159,7 @@ function ThreadReplyForm({ messageId, author, onSent }: {
         placeholder={author === 'member' ? 'Votre réponse...' : 'Répondre...'}
         className="w-full bg-transparent border border-brand-gray/20 focus:border-brand-white/50 text-brand-white font-ui font-light text-base p-3 outline-none transition-colors placeholder:text-brand-gray/50 rounded-[2px] resize-none"
       />
-      {error && <p className="font-ui text-sm text-red-400">{error}</p>}
+      {error && <p className="animate-fade-in font-ui text-sm text-red-400">{error}</p>}
       <button
         type="submit"
         disabled={loading || !text.trim()}
@@ -399,7 +399,7 @@ export default function ConversationClient({
                   </button>
                 </>
               )}
-              {blockError && <p className="font-ui text-xs text-red-400">{blockError}</p>}
+              {blockError && <p className="animate-fade-in font-ui text-xs text-red-400">{blockError}</p>}
             </div>
           ) : !canReply ? (
             /* Conversation terminée */
@@ -507,7 +507,7 @@ export default function ConversationClient({
             </button>
           )}
           {isOwner && !isBlocked && blockError && (
-            <p className="font-ui text-xxs text-red-400 text-center">{blockError}</p>
+            <p className="animate-fade-in font-ui text-xxs text-red-400 text-center">{blockError}</p>
           )}
         </div>
       </div>

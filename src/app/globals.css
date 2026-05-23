@@ -186,6 +186,33 @@ html.sun [class*="placeholder:text-brand-gray/"]::placeholder { color: rgba(0, 0
 }
 
 /* ─────────────────────────────────────────
+   TRANSITION DE PAGE — fondu d'entrée à chaque changement de route.
+   Appliqué par PageTransition (wrapper keyé par pathname). Opacité seule pour
+   ne pas décaler les pages (qui ont leurs propres transforms via stagger).
+   (Les ::view-transition ci-dessus sont prêts pour un vrai crossfade le jour
+   d'un passage à l'API View Transitions / Next 15.)
+   ───────────────────────────────────────── */
+@keyframes pageIn { from { opacity: 0; } to { opacity: 1; } }
+.animate-page-in { animation: pageIn 0.35s ease-out both; }
+
+/* Fade-in générique (messages d'erreur de formulaire, etc.) */
+.animate-fade-in { animation: fadeIn2 0.3s ease-out both; }
+
+/* Pastille non-lu : respiration douce — « on t'a écrit » se sent vivant. */
+@keyframes unreadPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+.animate-unread { animation: unreadPulse 2s ease-in-out infinite; }
+
+/* Bascule de thème (sombre ↔ plein soleil) : transition de couleurs UNIQUEMENT
+   pendant le switch (classe posée ~300ms par SunToggle) — sinon ça ralentirait
+   tous les hovers en permanence. */
+html.theme-transition,
+html.theme-transition *,
+html.theme-transition *::before,
+html.theme-transition *::after {
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease !important;
+}
+
+/* ─────────────────────────────────────────
    TOUCH TARGETS — supprime le flash bleu iOS au tap
    ───────────────────────────────────────── */
 button, a {

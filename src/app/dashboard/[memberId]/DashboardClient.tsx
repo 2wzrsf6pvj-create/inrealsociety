@@ -23,9 +23,10 @@ function TabBar({ active, onChange, unreadCount }: {
     { key: 'inbox',    label: 'Messages', badge: unreadCount },
     { key: 'settings', label: 'Réglages' },
   ];
+  const activeIndex = tabs.findIndex(t => t.key === active);
 
   return (
-    <div role="tablist" aria-label="Sections du dashboard" className="w-full flex border-b border-brand-gray/10 mb-2">
+    <div role="tablist" aria-label="Sections du dashboard" className="relative w-full flex border-b border-brand-gray/10 mb-2">
       {tabs.map(tab => (
         <button
           key={tab.key}
@@ -35,7 +36,7 @@ function TabBar({ active, onChange, unreadCount }: {
           aria-controls={`panel-${tab.key}`}
           onClick={() => onChange(tab.key)}
           className={`flex-1 py-3 font-ui text-xs tracking-[0.2em] uppercase transition-colors relative ${
-            active === tab.key ? 'text-brand-white border-b border-brand-white' : 'text-brand-gray/55 hover:text-brand-white/80'
+            active === tab.key ? 'text-brand-white' : 'text-brand-gray/55 hover:text-brand-white/80'
           }`}
         >
           {/* Le badge est ancré au LABEL (span relatif) et non au bouton, sinon
@@ -51,6 +52,12 @@ function TabBar({ active, onChange, unreadCount }: {
           </span>
         </button>
       ))}
+      {/* Soulignement actif qui GLISSE d'un onglet à l'autre (au lieu de sauter) */}
+      <span
+        aria-hidden
+        className="absolute bottom-0 left-0 h-px bg-brand-white transition-transform duration-300 ease-out"
+        style={{ width: `${100 / tabs.length}%`, transform: `translateX(${activeIndex * 100}%)` }}
+      />
     </div>
   );
 }
@@ -131,6 +138,17 @@ export default function DashboardClient({
       return showToast('✦ Bienvenue dans le cercle premium.', 4000);
     }
 
+    // Célébration du TOUT PREMIER scan (une seule fois, persistée). Gardé à
+    // scan_count === 1 pour ne pas se déclencher chez les membres déjà actifs.
+    if (member.scan_count === 1) {
+      try {
+        if (!localStorage.getItem('irs_first_scan_seen')) {
+          localStorage.setItem('irs_first_scan_seen', '1');
+          return showToast('✦ Premier scan reçu. On vous a remarqué·e.', 4500);
+        }
+      } catch { /* stockage indispo */ }
+    }
+
     // Toast connexion réussie — message neutre (l'en-tête salue déjà par le nom,
     // un toast « Bienvenue {nom} » ferait doublon).
     const justLoggedIn = sessionStorage.getItem('just_logged_in');
@@ -138,7 +156,7 @@ export default function DashboardClient({
       sessionStorage.setItem('just_logged_in', '1');
       return showToast('Connexion réussie.', 2500);
     }
-  }, [member.name, showToast]);
+  }, [member.name, member.scan_count, showToast]);
 
   return (
     <main className="relative flex min-h-screen flex-col items-center bg-brand-black text-brand-white px-6 py-8 overflow-hidden">

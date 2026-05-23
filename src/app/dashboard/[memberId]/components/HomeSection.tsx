@@ -118,7 +118,7 @@ function NotificationsPrompt({ memberId }: { memberId: string }) {
 
 function StepDot({ done }: { done: boolean }) {
   return done ? (
-    <span className="w-5 h-5 rounded-full border border-green-400/40 flex items-center justify-center text-green-400/70 text-[10px] flex-shrink-0">✓</span>
+    <span className="animate-success w-5 h-5 rounded-full border border-green-400/40 flex items-center justify-center text-green-400/70 text-[10px] flex-shrink-0">✓</span>
   ) : (
     <span className="w-5 h-5 rounded-full border border-brand-gray/25 flex-shrink-0" />
   );
