@@ -20,6 +20,7 @@ const schema = z.object({
   memberId:      z.string().uuid('memberId doit être un UUID valide'),
   content:       z.string().min(1, 'Message vide').max(1000, 'Message trop long (max 1000 caractères)'),
   senderContact: z.string().max(200).optional(),
+  senderName:    z.string().max(50).optional(),
   isQuickReply:  z.boolean().optional(),
 });
 
@@ -30,7 +31,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Données invalides.' }, { status: 400 });
     }
 
-    const { memberId, content, senderContact, isQuickReply } = body.data;
+    const { memberId, content, senderContact, senderName, isQuickReply } = body.data;
     const ip = getIp(req);
 
     // Jeton device du scanneur (cookie httpOnly). `existingToken` n'existe que
@@ -125,11 +126,19 @@ export async function POST(req: NextRequest) {
     }
 
     // ─── Modération ───────────────────────────────────────────────────────
+    // Le prénom est du texte libre affiché au porteur → on le modère aussi
+    // (même quand le message est une quick-reply non modérée). Un prénom abusif
+    // est simplement droppé : le message part en « Anonyme » plutôt que de tout
+    // bloquer. Les deux modérations tournent en parallèle (pas de double latence).
     const isKnownQuickReply = QUICK_REPLIES.has(content.trim());
-    const moderation = (!isQuickReply && !isKnownQuickReply)
-      ? await moderateContent(content)
-      : { flagged: false, source: 'regex' as const, categories: [] };
+    const trimmedName = senderName?.trim() || '';
+    const passthrough = { flagged: false, source: 'regex' as const, categories: [] };
+    const [moderation, nameModeration] = await Promise.all([
+      (!isQuickReply && !isKnownQuickReply) ? moderateContent(content) : Promise.resolve(passthrough),
+      trimmedName ? moderateContent(trimmedName) : Promise.resolve(passthrough),
+    ]);
     const moderated = moderation.flagged;
+    const cleanName: string | null = (trimmedName && !nameModeration.flagged) ? trimmedName : null;
 
     // ─── Insertion BDD ────────────────────────────────────────────────────
     const { data: message, error: msgError } = await supabaseAdmin
@@ -138,6 +147,7 @@ export async function POST(req: NextRequest) {
         member_id:      memberId,
         content:        content.trim(),
         sender_contact: senderContact?.trim() || null,
+        sender_name:    cleanName,
         is_quick_reply: isQuickReply || isKnownQuickReply,
         moderated,
         sender_token:   senderToken,
@@ -166,6 +176,7 @@ export async function POST(req: NextRequest) {
         memberName:    member.name,
         content:       content.trim(),
         senderContact: senderContact?.trim(),
+        senderName:    cleanName ?? undefined,
         dashboardUrl,
       });
       sendEmail({ to: member.email, subject, html }).catch((err) => console.error('[api/message] Échec envoi email:', err));

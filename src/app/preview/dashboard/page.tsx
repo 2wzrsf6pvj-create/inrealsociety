@@ -52,9 +52,9 @@ export default function PreviewDashboardPage({ searchParams }: { searchParams: {
   ];
 
   const messages: Message[] = empty ? [] : [
-    { id: 'm1', member_id: member.id, content: 'Belle audace.', sender_contact: '@lea', is_quick_reply: true, moderated: false, read_at: null, created_at: ago(40 * 60_000) },
-    { id: 'm2', member_id: member.id, content: "On s'est croisés au café ce matin — j'ai trouvé ça gonflé, ton t-shirt.", sender_contact: 'lea@example.com', is_quick_reply: false, moderated: false, read_at: ago(3 * H), reply: "Merci ! Ça arrive plus souvent qu'on croit.", replied_at: ago(2 * H), reply_read_at: ago(1 * H), created_at: ago(6 * H) },
-    { id: 'm3', member_id: member.id, content: 'Message d’une personne bloquée.', sender_contact: null, is_quick_reply: false, moderated: false, read_at: ago(30 * H), blocked_at: ago(29 * H), created_at: ago(30 * H) },
+    { id: 'm1', member_id: member.id, content: 'Belle audace.', sender_contact: '@lea', sender_name: 'Léa', is_quick_reply: true, moderated: false, read_at: null, created_at: ago(40 * 60_000) },
+    { id: 'm2', member_id: member.id, content: "On s'est croisés au café ce matin — j'ai trouvé ça gonflé, ton t-shirt.", sender_contact: 'lea@example.com', sender_name: 'Léa', is_quick_reply: false, moderated: false, read_at: ago(3 * H), reply: "Merci ! Ça arrive plus souvent qu'on croit.", replied_at: ago(2 * H), reply_read_at: ago(1 * H), created_at: ago(6 * H) },
+    { id: 'm3', member_id: member.id, content: 'Message d’une personne bloquée.', sender_contact: null, sender_name: null, is_quick_reply: false, moderated: false, read_at: ago(30 * H), blocked_at: ago(29 * H), created_at: ago(30 * H) },
   ];
 
   const scansByDay = empty ? [] : [1, 0, 3, 2, 5, 4, 12].map((count, i) => ({

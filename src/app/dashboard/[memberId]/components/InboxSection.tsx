@@ -160,7 +160,9 @@ export default function InboxSection({ messages: initialMessages, memberId, plan
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="font-ui text-xs text-brand-gray/55">
-                  {msg.sender_contact || 'Anonyme'}
+                  {msg.sender_name
+                    ? <><span className="text-brand-white/75">{msg.sender_name}</span>{msg.sender_contact ? ` · ${msg.sender_contact}` : ''}</>
+                    : (msg.sender_contact || 'Anonyme')}
                 </span>
                 <span className="text-brand-gray/15">·</span>
                 <span className="font-ui text-xs text-brand-gray/55">

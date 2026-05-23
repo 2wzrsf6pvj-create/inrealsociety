@@ -52,6 +52,10 @@ function MessageForm() {
 
   const [message, setMessage]     = useState('');
   const [contact, setContact]     = useState('');
+  // Prénom optionnel — humanise le signal côté porteur. Pré-rempli depuis le
+  // nom déjà connu (saisi sur /unlock ou lors d'un précédent message), persisté
+  // à l'envoi pour personnaliser le profil au retour.
+  const [senderName, setSenderName] = useState('');
   const [sending, setSending]     = useState(false);
   const [error, setError]         = useState('');
   const [moderated, setModerated] = useState(false);
@@ -63,6 +67,12 @@ function MessageForm() {
   // Membre en pause OU device bloqué : le serveur renvoie le même code 'paused'
   // (volontaire — ne pas révéler le blocage). Écran terminal neutre.
   const [unavailable, setUnavailable] = useState(false);
+
+  // Pré-remplit le prénom depuis un nom déjà connu (scan précédent / /unlock).
+  useEffect(() => {
+    const saved = localStorage.getItem('scannerName');
+    if (saved) setSenderName(saved);
+  }, []);
 
   const sendMessage = async (content: string, isQuickReply = false) => {
     if (!content.trim() || !memberId) return;
@@ -86,6 +96,7 @@ function MessageForm() {
           memberId,
           content:       content.trim(),
           senderContact: contact.trim() || null,
+          senderName:    senderName.trim() || null,
           isQuickReply,
         }),
       });
@@ -119,7 +130,16 @@ function MessageForm() {
         member_id:     memberId,
         is_quick_reply: isQuickReply,
         has_contact:    !!contact.trim(),
+        has_name:       !!senderName.trim(),
       });
+
+      // Persiste le prénom (formaté) → personnalise le profil au retour et
+      // pré-remplit un prochain message.
+      const cleanName = senderName.trim();
+      if (cleanName) {
+        const formatted = cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
+        localStorage.setItem('scannerName', formatted);
+      }
 
       const url = `${window.location.origin}/conversation/${data.messageId}`;
       localStorage.setItem(`conversation_${memberId}`, url);
@@ -279,6 +299,23 @@ function MessageForm() {
           </p>
         </div>
       )}
+
+      {/* Prénom — humanise le signal côté porteur (optionnel) */}
+      <div className="flex flex-col gap-1 animate-stagger-2">
+        <label className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">
+          Votre prénom{' '}
+          <span className="normal-case tracking-normal ml-1 text-brand-white/55">(optionnel)</span>
+        </label>
+        <p className="font-ui text-xxs md:text-xs text-brand-gray/50 leading-relaxed mb-1">
+          Pour qu&apos;il sache qui l&apos;a remarqué. Sinon, vous restez anonyme.
+        </p>
+        <input type="text" placeholder="Anonyme par défaut" value={senderName} maxLength={50}
+          autoComplete="given-name"
+          onChange={(e) => setSenderName(e.target.value)}
+          className="w-full bg-transparent border-b border-brand-gray/15 focus:border-brand-white/40 text-brand-white font-ui font-light text-base py-3 outline-none transition-colors placeholder:text-brand-gray/50"
+          style={{ minHeight: '44px' }}
+        />
+      </div>
 
       {/* Contact remonté */}
       <div className="flex flex-col gap-1 animate-stagger-2">

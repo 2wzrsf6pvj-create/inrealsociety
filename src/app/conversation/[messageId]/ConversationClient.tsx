@@ -9,6 +9,7 @@ import { MAX_THREAD_MESSAGES as MAX_THREAD } from '@/lib/constants';
 
 interface ConversationMessage {
   id: string; member_id: string; content: string; sender_contact: string | null;
+  sender_name: string | null;
   read_at: string | null; created_at: string;
   members: { name: string; photo_url: string | null; instagram: string | null; auth_user_id?: string | null; };
 }
@@ -345,7 +346,9 @@ export default function ConversationClient({
           <div>
             <p className="font-ui text-sm font-medium tracking-[0.2em]">{memberName.toUpperCase()}</p>
             <p className="font-ui text-xs text-brand-gray/55 tracking-[0.05em]">
-              {isOwner ? 'Message reçu' : 'Votre conversation'}
+              {isOwner
+                ? (message.sender_name ? `Message de ${message.sender_name}` : 'Message reçu')
+                : 'Votre conversation'}
             </p>
           </div>
         </div>

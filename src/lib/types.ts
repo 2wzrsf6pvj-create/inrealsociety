@@ -39,6 +39,9 @@ export interface Message {
   member_id:      string;
   content:        string;
   sender_contact: string | null;
+  // Prénom optionnel du scanneur (migration 039) — humanise le signal côté
+  // porteur. null = scanneur anonyme.
+  sender_name:    string | null;
   is_quick_reply: boolean;
   moderated:      boolean;
   read_at:        string | null;

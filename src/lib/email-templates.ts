@@ -54,15 +54,23 @@ export function emailNouveauMessage(params: {
   memberName:    string;
   content:       string;
   senderContact?: string;
+  senderName?:   string;
   dashboardUrl:  string;
 }): { subject: string; html: string } {
   const safeName = escapeHtml(params.memberName);
+  // Étiquette expéditeur : prénom + contact si les deux, sinon l'un ou l'autre.
+  // quoteBlock affiche « Message anonyme » si vide.
+  const name    = params.senderName?.trim();
+  const contact = params.senderContact?.trim();
+  const sender  = name
+    ? (contact ? `${name} (${contact})` : name)
+    : contact;
   return {
     subject: `${safeName}, quelqu'un vous a envoyé un signal.`,
     html: layout(`
       <h1 style="font-size:26px;font-weight:300;letter-spacing:0.04em;margin:0 0 8px;text-align:center;">Un signal pour vous,</h1>
       <h2 style="font-size:26px;font-weight:600;letter-spacing:0.04em;margin:0 0 32px;text-align:center;">${safeName}.</h2>
-      ${quoteBlock(params.content, params.senderContact)}
+      ${quoteBlock(params.content, sender)}
       ${cta('Voir mes messages', params.dashboardUrl)}
     `),
   };
