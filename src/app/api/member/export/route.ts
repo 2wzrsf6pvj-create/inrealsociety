@@ -5,9 +5,16 @@
 // Le fichier inclut : profil, messages reçus (+ thread replies), scans,
 // silent_views, push subscriptions, audit logs, orders, referrals envoyés.
 //
+// Ce qui est inclus côté « tiers » : les contacts (@insta/email), prénoms et
+// noms de scanneurs que ces personnes ont CHOISI de partager AVEC le membre
+// (sender_contact, sender_name, scanner_name) — ce sont des données reçues par
+// le membre, légitimement portables.
+//
 // Données exclues volontairement :
-//   - IDs internes des autres utilisateurs (référentiel obfusqué)
-//   - Hash de password (jamais stocké en clair anyway, géré par Supabase Auth)
+//   - sender_token : identifiant technique pseudonyme du device d'un tiers (sert
+//     uniquement au blocage côté serveur, n'est pas une donnée du membre).
+//   - IDs internes des autres utilisateurs.
+//   - Hash de password (jamais stocké en clair anyway, géré par Supabase Auth).
 //
 // Format : application/json avec Content-Disposition attachment.
 
@@ -53,9 +60,11 @@ export async function GET(req: NextRequest) {
       { data: feedback },
     ] = await Promise.all([
       // Colonnes explicites : on EXCLUT sender_token (jeton device d'un tiers, le
-      // scanneur — ne fait pas partie des données personnelles du porteur).
+      // scanneur — identifiant technique, pas une donnée du porteur). On INCLUT
+      // sender_name (prénom partagé par le scanneur, affiché au porteur dans son
+      // inbox/conversation → donnée reçue, portable).
       supabaseAdmin.from('messages')
-        .select('id, member_id, content, sender_contact, is_quick_reply, moderated, starred, read_at, created_at, parent_id, author, blocked_at')
+        .select('id, member_id, content, sender_contact, sender_name, is_quick_reply, moderated, starred, read_at, created_at, parent_id, author, blocked_at')
         .eq('member_id', member.id).order('created_at', { ascending: true }),
       supabaseAdmin.from('scans').select('*').eq('member_id', member.id).order('scanned_at', { ascending: true }),
       supabaseAdmin.from('silent_views').select('*').eq('member_id', member.id).order('created_at', { ascending: true }),
@@ -77,7 +86,7 @@ export async function GET(req: NextRequest) {
       $schema:       'inrealsociety/member-export-v1',
       exported_at:   new Date().toISOString(),
       exported_for:  auth.user.email,
-      gdpr_notice:   'Ce fichier contient toutes vos données personnelles stockées par In Real Society, conformément à votre droit à la portabilité (RGPD art. 20). Pour demander la suppression de votre compte, utilisez le bouton "Supprimer mon compte" du dashboard.',
+      gdpr_notice:   'Ce fichier contient vos données personnelles stockées par In Real Society, conformément à votre droit à la portabilité (RGPD art. 20). Il inclut les contacts, prénoms et noms que des tiers (scanneurs) ont choisi de partager avec vous. Il exclut les identifiants techniques internes (jetons d\'appareil tiers, IDs internes). Pour demander la suppression de votre compte, utilisez le bouton "Supprimer mon compte" du dashboard.',
       profile:       member,
       messages:      messages ?? [],
       scans:         scans ?? [],

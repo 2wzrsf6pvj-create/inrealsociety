@@ -35,7 +35,7 @@ export async function PATCH(req: NextRequest) {
     // ─── Vérifie ownership : récupère le membre lié à ce user ────────────
     const { data: member } = await supabaseAdmin
       .from('members')
-      .select('id')
+      .select('id, email')
       .eq('auth_user_id', auth.user.id)
       .single();
 
@@ -73,6 +73,22 @@ export async function PATCH(req: NextRequest) {
         ip:       getIp(req),
         metadata: { consent: body.data.marketing_consent },
       });
+
+      // Réconciliation members → newsletter : si ce membre est aussi inscrit à
+      // la newsletter (même email), on propage son choix pour qu'un opt-out ne
+      // laisse aucun canal ouvert (et qu'un ré-opt-in le réactive). No-op s'il
+      // n'a pas de ligne newsletter. email mis en minuscules (la table newsletter
+      // stocke en lowercase). Ré-opt-in : on ré-horodate consented_at pour ne pas
+      // laisser une preuve de consentement périmée sur la ligne ressuscitée.
+      if (member.email) {
+        const now = new Date().toISOString();
+        await supabaseAdmin
+          .from('newsletter_subscribers')
+          .update(body.data.marketing_consent
+            ? { unsubscribed_at: null, consented_at: now }
+            : { unsubscribed_at: now })
+          .eq('email', member.email.toLowerCase());
+      }
     }
 
     return NextResponse.json({ ok: true });

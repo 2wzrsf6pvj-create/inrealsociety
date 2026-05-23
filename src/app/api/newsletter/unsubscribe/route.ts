@@ -2,9 +2,16 @@
 // Désinscription newsletter via lien signé (List-Unsubscribe + lien footer).
 // Public (lien cliqué depuis un email). Idempotent.
 //
-// NB : l'ENVOI de newsletter n'est pas encore implémenté ; cet endpoint + le
-// helper signUnsubscribe sont l'infra prête à l'emploi (le futur envoi devra
-// filtrer unsubscribed_at IS NULL et poser le lien signé dans chaque email).
+// Deux surfaces de consentement marketing existent pour un même email :
+//   1. newsletter_subscribers.unsubscribed_at (capture publique)
+//   2. members.marketing_consent              (toggle dashboard membre)
+// Une désinscription DOIT couper les deux, sinon le membre reste mailable via
+// l'autre canal. Ce endpoint coupe (1) ET propage à (2). Réciproquement, le
+// toggle dashboard (/api/member/update) propage vers (1).
+//
+// NB : l'ENVOI de newsletter n'est pas encore implémenté. Le futur envoi devra
+// cibler : newsletter_subscribers (unsubscribed_at IS NULL) ∪ members
+// (marketing_consent = true), en posant le lien signé dans chaque email.
 
 export const dynamic = 'force-dynamic';
 
@@ -12,6 +19,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { verifyUnsubscribe } from '@/lib/unsubscribe-token';
 import { checkPublicRateLimit, getIp } from '@/lib/ratelimit';
+import { audit } from '@/lib/audit';
 
 function page(title: string, msg: string): NextResponse {
   const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8">
@@ -24,7 +32,8 @@ function page(title: string, msg: string): NextResponse {
 }
 
 export async function GET(req: NextRequest) {
-  const rl = await checkPublicRateLimit(getIp(req));
+  const ip = getIp(req);
+  const rl = await checkPublicRateLimit(ip);
   if (!rl.success) {
     return page('Trop de requêtes', 'Réessayez dans quelques instants.');
   }
@@ -40,6 +49,32 @@ export async function GET(req: NextRequest) {
     .from('newsletter_subscribers')
     .update({ unsubscribed_at: new Date().toISOString() })
     .eq('email', email);
+
+  // Réconciliation : si cet email est aussi un membre, on retire son
+  // marketing_consent — sinon il resterait mailable via members malgré le clic
+  // « se désinscrire ». members.email n'est pas UNIQUE → on gère N lignes. On
+  // trace chaque retrait (preuve RGPD art. 7).
+  const { data: members } = await supabaseAdmin
+    .from('members')
+    .select('id')
+    .eq('email', email)
+    .eq('marketing_consent', true);
+
+  if (members && members.length > 0) {
+    await supabaseAdmin
+      .from('members')
+      .update({ marketing_consent: false, marketing_consent_at: null })
+      .eq('email', email)
+      .eq('marketing_consent', true);
+    for (const m of members) {
+      audit({
+        action:   'member.marketing_consent_changed',
+        memberId: m.id,
+        ip,
+        metadata: { consent: false, via: 'newsletter_unsubscribe' },
+      });
+    }
+  }
 
   return page('Désinscription confirmée', 'Vous ne recevrez plus la newsletter. Vous pouvez vous réinscrire à tout moment.');
 }
