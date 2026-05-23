@@ -97,8 +97,8 @@ function LandingContent() {
                 <span className="text-brand-gray/50">dit oui.</span>
               </p>
               <p className="font-ui text-sm lg:text-base font-light text-brand-gray/50 leading-relaxed">
-                Portez le consentement social.<br />
-                Donnez le contrôle à ceux qui osent.
+                Un t-shirt. Un QR code.<br />
+                On vous remarque dans la vraie vie — et on vous écrit, une seule fois.
               </p>
               <div className="flex items-center justify-center gap-4">
                 <span className="font-ui text-xs text-brand-gray/55 tracking-[0.15em] uppercase">Anonyme</span>
