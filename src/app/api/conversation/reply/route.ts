@@ -8,7 +8,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { checkPublicRateLimit, checkAuthRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
 import { requireAuth, requireOwnership, isHttpError } from '@/lib/require-auth';
 import { sendEmail, emailNouveauMessage, emailReponse } from '@/lib/email-templates';
-import { notifyThreadSubscribers } from '@/lib/push-notify';
+import { notifyThreadSubscribers, notifyMemberSubscribers } from '@/lib/push-notify';
 import { broadcastThreadMessage } from '@/lib/realtime-broadcast';
 import { APP_URL, MAX_THREAD_MESSAGES } from '@/lib/constants';
 import { isValidEmail } from '@/lib/validators';
@@ -75,14 +75,18 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Compte les messages dans ce thread
+    // Compte les messages VISIBLES du thread. moderated=false : un message modéré
+    // occupe sinon un créneau côté serveur invisible côté client (le client et la
+    // vue member_inbox excluent les modérés) → conversation bloquée avec erreur
+    // brute alors que le formulaire est encore affiché.
     const { count } = await supabaseAdmin
       .from('messages')
       .select('*', { count: 'exact', head: true })
-      .or(`id.eq.${messageId},parent_id.eq.${messageId}`);
+      .or(`id.eq.${messageId},parent_id.eq.${messageId}`)
+      .eq('moderated', false);
 
     if ((count ?? 0) >= MAX_THREAD_MESSAGES) {
-      return NextResponse.json({ error: 'Cette conversation a atteint sa limite.' }, { status: 403 });
+      return NextResponse.json({ error: 'Cette conversation a atteint sa limite.', code: 'thread_limit' }, { status: 403 });
     }
 
     // Modération (scanner anonyme inclus) — comme le message racine.
@@ -157,14 +161,22 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Push notification fire-and-forget — abonnés au thread. Notifie l'autre côté.
-      const otherSide = author === 'member' ? 'scanner' : 'membre';
-      notifyThreadSubscribers({
-        messageId,
-        title: `Nouveau message — réponse du ${otherSide}`,
-        body:  content.trim().slice(0, 80),
-        url:   `${APP_URL}/conversation/${messageId}`,
-      }).catch((err) => console.error('[conversation/reply] Échec push notif:', err));
+      // Push fire-and-forget — notifie l'AUTRE côté, sur le bon scope :
+      //   * member répond  → le scanneur (abonné au thread via messageId).
+      //   * scanner répond → le PORTEUR (abonné au niveau membre depuis le
+      //     dashboard — il n'est PAS abonné au thread ; sans ça il ne recevait
+      //     que l'email, jamais de push, sur l'événement le plus important).
+      const pushBody = content.trim().slice(0, 80);
+      const pushUrl  = `${APP_URL}/conversation/${messageId}`;
+      if (author === 'member') {
+        notifyThreadSubscribers({
+          messageId, title: 'Nouveau message — réponse du membre', body: pushBody, url: pushUrl,
+        }).catch((err) => console.error('[conversation/reply] Échec push thread:', err));
+      } else {
+        notifyMemberSubscribers({
+          memberId: rootMsg.member_id, messageId, title: 'Nouveau message', body: pushBody, url: pushUrl,
+        }).catch((err) => console.error('[conversation/reply] Échec push membre:', err));
+      }
     }
 
     return NextResponse.json({ ok: true, moderated: moderation.flagged, replyId: newMsg?.id });

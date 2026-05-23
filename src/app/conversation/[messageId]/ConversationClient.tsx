@@ -29,7 +29,14 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
 }
 
-async function subscribePush(messageId: string): Promise<void> {
+// Un device n'a qu'UN scope à la fois (push_subscriptions.onConflict:'endpoint').
+// On choisit donc le bon scope selon le viewer :
+//   * scanner → thread (messageId) : abonné à CETTE conversation.
+//   * porteur → membre (memberId)  : abonné à TOUS ses messages, comme depuis le
+//     dashboard. Indispensable car la réponse du scanner notifie le porteur via
+//     notifyMemberSubscribers (member_id) ; s'abonner ici en thread scope
+//     écraserait l'abonnement membre et il ne recevrait plus rien.
+async function subscribePush(scope: { messageId: string } | { memberId: string }): Promise<void> {
   if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
   try {
     const perm = await Notification.requestPermission();
@@ -48,7 +55,7 @@ async function subscribePush(messageId: string): Promise<void> {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         subscription: { endpoint: j.endpoint, keys: { p256dh: j.keys.p256dh, auth: j.keys.auth } },
-        messageId,
+        ...scope,
       }),
     });
   } catch (err) { console.error('[push] Échec inscription push:', err); }
@@ -295,7 +302,7 @@ export default function ConversationClient({
   const handleSubscribePush = async () => {
     setPushLoading(true);
     try {
-      await subscribePush(message.id);
+      await subscribePush(isOwner ? { memberId: message.member_id } : { messageId: message.id });
       setPushGranted(typeof Notification !== 'undefined' && Notification.permission === 'granted');
     } catch { setPushGranted(false); }
     setPushAsked(true);

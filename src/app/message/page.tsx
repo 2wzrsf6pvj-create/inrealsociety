@@ -60,6 +60,9 @@ function MessageForm() {
   const [limitReached, setLimitReached] = useState(false);
   const [conversationUrl, setConversationUrl] = useState<string | null>(null);
   const [copied, setCopied]       = useState(false);
+  // Membre en pause OU device bloqué : le serveur renvoie le même code 'paused'
+  // (volontaire — ne pas révéler le blocage). Écran terminal neutre.
+  const [unavailable, setUnavailable] = useState(false);
 
   const sendMessage = async (content: string, isQuickReply = false) => {
     if (!content.trim() || !memberId) return;
@@ -103,6 +106,10 @@ function MessageForm() {
           setContactRequired(true);
           setError('Ce membre demande un @instagram ou un email pour pouvoir vous répondre.');
           setSending(false); return;
+        }
+        if (data.code === 'paused') {
+          captureEvent('message_blocked_paused', { member_id: memberId });
+          setUnavailable(true); setSending(false); return;
         }
         throw new Error(errorMsg);
       }
@@ -166,6 +173,26 @@ function MessageForm() {
         </p>
         <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
         <BecomeWearerCTA source="conversation_limit" hook={<>Toi aussi,<br />fais tourner les têtes.</>} />
+        <button onClick={() => memberId ? router.push(`/profil/${memberId}`) : router.push('/')}
+          className="font-ui text-sm text-brand-gray/55 tracking-[0.15em] uppercase underline underline-offset-4 py-3"
+          style={{ minHeight: '44px' }}>
+          ← retour au profil
+        </button>
+      </div>
+    );
+  }
+
+  if (unavailable) {
+    return (
+      <div className="flex flex-col items-center gap-6 text-center animate-stagger-1">
+        <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
+        <p className="font-display text-2xl font-light">{memberName} est indisponible.</p>
+        <p className="font-ui text-sm text-brand-gray/50 leading-relaxed">
+          Cette personne ne reçoit pas de message pour le moment.<br />
+          Peut-être une prochaine fois.
+        </p>
+        <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
+        <BecomeWearerCTA source="paused" hook={<>Et toi,<br />tu te montrerais ?</>} />
         <button onClick={() => memberId ? router.push(`/profil/${memberId}`) : router.push('/')}
           className="font-ui text-sm text-brand-gray/55 tracking-[0.15em] uppercase underline underline-offset-4 py-3"
           style={{ minHeight: '44px' }}>
@@ -266,7 +293,7 @@ function MessageForm() {
             ? 'Ce membre n’accepte que les messages avec un contact.'
             : 'Sans contact, il ne pourra pas vous répondre.'}
         </p>
-        <input type="text" placeholder={contactRequired ? '@instagram ou email' : 'Anonyme par défaut'} value={contact} maxLength={50}
+        <input type="text" placeholder={contactRequired ? '@instagram ou email' : 'Anonyme par défaut'} value={contact} maxLength={200}
           onChange={(e) => setContact(e.target.value)}
           className={`w-full bg-transparent border-b text-brand-white font-ui font-light text-base py-3 outline-none transition-colors placeholder:text-brand-gray/50 ${contactRequired && !contact.trim() ? 'border-[#C5A059]/40 focus:border-[#C5A059]/70' : 'border-brand-gray/15 focus:border-brand-white/40'}`}
           style={{ minHeight: '44px' }}

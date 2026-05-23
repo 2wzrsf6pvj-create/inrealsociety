@@ -8,6 +8,7 @@ export type AnalyticsEvent =
   | 'message_submitted'
   | 'message_blocked_conversation_limit'
   | 'message_blocked_window_expired'
+  | 'message_blocked_paused'
   // Activation (côté membre)
   | 'member_dashboard_viewed'
   // Conversion premium
