@@ -1,14 +1,19 @@
 // app/api/push/subscribe/route.ts
 // POST { subscription, messageId? , memberId? } — au moins un des deux ids.
-// onConflict:'endpoint' (unique) → un device n'a qu'UN scope à la fois : se
-// réabonner au niveau membre écrase un abonnement thread du même device (et
-// vice-versa). Bénin en pratique : un porteur abonné au niveau membre est
-// notifié de toutes ses conversations ; le scanner n'utilise que le thread.
+//   * messageId (thread)  → PUBLIC : un scanneur anonyme, qui possède déjà le
+//     messageId non-devinable (modèle lien-capability), s'abonne à SA conv.
+//   * memberId  (membre)  → AUTHENTIFIÉ + OWNERSHIP OBLIGATOIRES : s'abonner au
+//     niveau membre = recevoir l'aperçu de TOUS les messages reçus + leurs
+//     messageId (qui ouvrent les threads). Sans ce contrôle, n'importe qui
+//     pourrait s'abonner au flux d'un porteur via son memberId public
+//     (/profil/<uuid>) → fuite de confidentialité.
+// onConflict:'endpoint' (unique) → un device n'a qu'UN scope à la fois.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { checkPublicRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
+import { requireAuth, requireOwnership, isHttpError } from '@/lib/require-auth';
 
 // Abonnement soit au niveau thread (messageId — scanner anonyme dans une
 // conversation), soit au niveau membre (memberId — porteur depuis le dashboard,
@@ -38,6 +43,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Données invalides.' }, { status: 400 });
     }
     const { subscription, messageId, memberId } = body.data;
+
+    // Abonnement niveau membre → réservé au porteur authentifié (anti-fuite).
+    if (memberId) {
+      const auth = await requireAuth(req);
+      if (isHttpError(auth)) return auth;
+      const own = await requireOwnership(auth.user.id, memberId);
+      if (isHttpError(own)) return own;
+    }
 
     const { error } = await supabaseAdmin.from('push_subscriptions').upsert({
       endpoint:   subscription.endpoint,
