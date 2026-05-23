@@ -11,6 +11,19 @@ export default function LoginPage() {
   const searchParams = useSearchParams();
   const redirect     = safeInternalPath(searchParams.get('redirect'));
 
+  // Messages portés par d'autres flux qui retombent sur /auth/login :
+  //   * reset-password   → ?reset=success
+  //   * callback échoué   → ?error=missing_code | auth_failed
+  // Sans ça, l'utilisateur atterrissait sur un formulaire muet (lien expiré =
+  // aucune explication, mot de passe changé = aucune confirmation).
+  const resetOk     = searchParams.get('reset') === 'success';
+  const urlError    = searchParams.get('error');
+  const urlErrorMsg = urlError === 'auth_failed'
+    ? 'Ce lien a expiré ou a déjà été utilisé. Réessayez.'
+    : urlError === 'missing_code'
+    ? 'Lien de connexion incomplet. Réessayez.'
+    : '';
+
   const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
   const [error,    setError]    = useState('');
@@ -58,6 +71,17 @@ export default function LoginPage() {
             Accédez à votre espace membre.
           </p>
         </div>
+
+        {resetOk && (
+          <div className="w-full px-4 py-3 border border-green-500/25 rounded-[2px] animate-fade-in">
+            <p className="font-ui text-sm text-green-400/80 text-center">Mot de passe mis à jour. Connectez-vous.</p>
+          </div>
+        )}
+        {urlErrorMsg && (
+          <div className="w-full px-4 py-3 border border-red-500/20 rounded-[2px] animate-fade-in">
+            <p className="font-ui text-sm text-red-400/80 text-center">{urlErrorMsg}</p>
+          </div>
+        )}
 
         <form onSubmit={handleLogin} noValidate className="w-full flex flex-col gap-5 animate-stagger-2">
 

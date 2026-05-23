@@ -17,19 +17,27 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     const supabase = createClient();
     let recovered = false;
+    const markRecovered = () => { recovered = true; setReady(true); };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        recovered = true;
-        setReady(true);
-      }
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      // PASSWORD_RECOVERY = lien de récup traité pendant qu'on écoute. `|| session`
+      // couvre INITIAL_SESSION (rejoué aux abonnés tardifs, contrairement au
+      // one-shot PASSWORD_RECOVERY que seul le getSession() ci-dessous rattrape).
+      if (event === 'PASSWORD_RECOVERY' || session) markRecovered();
     });
 
-    // Si l'event PASSWORD_RECOVERY ne fire pas dans les 30s, on considère le
-    // lien invalide ou expiré. Avant : 10s — trop court sur 3G ou connexion
-    // lente, l'utilisateur voyait "expiré" puis le formulaire apparaissait.
-    // Closure flag (`recovered`) au lieu de l'état React pour ne pas déclencher
-    // setExpired après que setReady soit passé (closure stale).
+    // Filet anti-race : le client est un SINGLETON, initialisé par AuthIndicator
+    // (layout) potentiellement AVANT qu'on s'abonne ici. L'event one-shot
+    // PASSWORD_RECOVERY peut donc être émis sans auditeur → perdu, et le lien
+    // valide s'affichait « expiré ». getSession() voit la session de récupération
+    // déjà créée par l'échange du code et nous fait passer ready malgré la course.
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) markRecovered();
+    });
+
+    // Si rien dans les 30s, on considère le lien invalide ou expiré (30s : assez
+    // pour une 3G/connexion lente, sinon « expiré » clignotait puis le form
+    // apparaissait). Flag closure `recovered` pour éviter un setExpired tardif.
     const timeout = setTimeout(() => {
       if (!recovered) setExpired(true);
     }, 30_000);
