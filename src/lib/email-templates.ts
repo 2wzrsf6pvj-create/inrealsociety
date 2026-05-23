@@ -3,7 +3,7 @@
 // Modifier le design ici = modifier tous les emails d'un coup.
 
 import { escapeHtml } from '@/lib/escape-html';
-import { EMAIL_FROM, RESEND_API_URL } from '@/lib/constants';
+import { EMAIL_FROM, RESEND_API_URL, APP_URL } from '@/lib/constants';
 
 // ─── Wrapper HTML commun ──────────────────────────────────────────────────────
 
@@ -250,6 +250,9 @@ export function emailActivation(params: {
         <p style="font-family:monospace;font-size:32px;font-weight:700;letter-spacing:0.3em;color:#fff;margin:0;">${safeCode}</p>
       </div>
       ${cta('Créer mon profil maintenant', params.registerUrl)}
+      <p style="font-family:system-ui,sans-serif;font-size:12px;color:rgba(255,255,255,0.4);text-align:center;margin:20px 0 0;">
+        <a href="${APP_URL}/commande?code=${encodeURIComponent(params.code)}" style="color:rgba(255,255,255,0.6);text-decoration:underline;">Suivre ma commande</a>
+      </p>
     `),
   };
 }

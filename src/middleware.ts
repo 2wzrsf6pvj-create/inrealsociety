@@ -10,6 +10,7 @@ const PUBLIC_PAGES = new Set([
   '/cgv',
   '/message',
   '/shop',
+  '/commande',          // suivi de commande (acheteur invité, lookup par code)
   '/confirmation',
   '/register',
   '/auth/login',
@@ -32,6 +33,7 @@ const PUBLIC_API_EXACT = new Set([
   '/api/message',        // envoi message scanner anonyme
   '/api/scan',
   '/api/order-code',
+  '/api/order/status',   // suivi de commande public (lookup par code d'activation)
   '/api/activate',
   '/api/feedback',       // feedback conversation accessible aux scanners anonymes
   '/api/health',         // healthcheck pour monitoring uptime

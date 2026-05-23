@@ -29,6 +29,7 @@ const PUBLIC_ROUTES = [
   'api/activate',
   'api/order-code',
   'api/order/resend-code',
+  'api/order/status',  // suivi de commande — lookup par code d'activation (capability)
   'api/push/subscribe',
   'api/shop/checkout',
   'api/health',

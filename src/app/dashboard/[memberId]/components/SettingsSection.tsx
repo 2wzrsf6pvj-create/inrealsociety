@@ -463,6 +463,10 @@ export default function SettingsSection({ member }: { member: Member }) {
           className="w-full py-3 border border-brand-gray/20 text-center font-ui text-sm font-light tracking-[0.2em] uppercase hover:border-brand-gray/50 transition-colors rounded-[2px]">
           Modifier mon profil
         </Link>
+        <Link href="/commande"
+          className="w-full py-3 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.15em] uppercase text-brand-gray/50 hover:border-brand-gray/30 hover:text-brand-white/80 transition-colors rounded-[2px]">
+          Suivre ma commande
+        </Link>
         <Link href="/auth/forgot-password"
           className="w-full py-3 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.15em] uppercase text-brand-gray/50 hover:border-brand-gray/30 hover:text-brand-white/80 transition-colors rounded-[2px]">
           Changer mon mot de passe

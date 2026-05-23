@@ -98,8 +98,14 @@ function SuccessContent() {
         >
           Créer mon profil {code ? '→' : '(vérifiez votre email)'}
         </button>
+        <Link href={code ? `/commande?code=${encodeURIComponent(code)}` : '/commande'}
+          className="w-full py-3 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.15em] uppercase text-brand-gray/60 hover:border-brand-gray/30 hover:text-brand-white/80 transition-colors"
+          style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+        >
+          Suivre ma commande
+        </Link>
         <Link href="/shop"
-          className="w-full py-3 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.15em] uppercase text-brand-gray/60 hover:border-brand-gray/30 transition-colors"
+          className="font-ui text-xs text-brand-gray/50 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white/80 transition-colors text-center py-2"
           style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
         >
           Retour à la boutique
