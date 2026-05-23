@@ -16,6 +16,7 @@ const PUBLIC_PAGES = new Set([
   '/register',
   '/auth/login',
   '/auth/callback',
+  '/auth/confirm',      // confirmation OTP token_hash (reset cross-device, signup)
   '/auth/forgot-password',
   '/auth/reset-password',
 ]);

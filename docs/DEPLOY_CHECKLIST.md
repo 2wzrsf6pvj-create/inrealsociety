@@ -72,6 +72,16 @@ plus exécuter `create_member_with_code` (service_role oui).
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `NEXT_PUBLIC_APP_URL`
 
+### 🟠 Dashboard Supabase — Auth (reset mot de passe cross-device)
+- **Email templates** → modèle **« Reset Password »** : remplacer le lien par
+  `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/auth/reset-password`.
+  Sans ça, le lien par défaut est un `?code=` PKCE lié à l'appareil d'origine :
+  « demande sur PC, ouvre sur mobile » échoue (lien affiché « expiré »). La route
+  `/auth/confirm` (verifyOtp serveur) gère le token cross-device. Idem modèle
+  **« Confirm signup »** si besoin : `…&type=signup&next=/dashboard`.
+- **URL Configuration** : ajouter `${APP_URL}/auth/confirm` et
+  `${APP_URL}/auth/callback` aux **Redirect URLs** autorisées.
+
 ### 🟠 Paiement / commerce (sinon shop & premium cassés)
 - `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PREMIUM_PRICE_ID`
 - `STRIPE_REFERRAL_COUPON_ID` (sinon la remise parrainage ne s'applique jamais)
