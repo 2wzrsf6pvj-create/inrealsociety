@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
+import SunToggle from '@/app/components/ui/SunToggle';
 import { MAX_THREAD_MESSAGES as MAX_THREAD } from '@/lib/constants';
 
 interface ConversationMessage {
@@ -320,6 +321,7 @@ export default function ConversationClient({
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center bg-brand-black text-brand-white px-6 py-12 overflow-hidden">
+      <SunToggle />
       <div className="absolute top-[-15%] right-[-15%] w-[28rem] h-[28rem] rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%)' }} />
 

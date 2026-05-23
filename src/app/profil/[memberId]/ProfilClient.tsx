@@ -4,6 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { captureEvent } from '@/lib/posthog-client';
+import SunToggle from '@/app/components/ui/SunToggle';
 import type { Member } from '@/lib/types';
 
 function getInitials(name: string): string {
@@ -156,6 +157,7 @@ export default function ProfilClient({
 
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center bg-brand-black text-brand-white px-6 py-12 overflow-hidden">
+      <SunToggle />
       <div className="absolute top-[-15%] right-[-15%] w-[28rem] h-[28rem] rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%)' }} />
       <div className="absolute bottom-[-10%] left-[-10%] w-52 h-52 rounded-full pointer-events-none"

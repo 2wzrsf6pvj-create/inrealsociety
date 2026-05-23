@@ -67,18 +67,46 @@ html {
 }
 
 /* ─────────────────────────────────────────
-   A11y — prefers-contrast: more
-   UI monochrome (blanc sur noir) : le texte secondaire utilise des blancs à
-   opacité réduite. Quand l'utilisateur demande plus de contraste (réglage
-   système, ou usage en plein soleil sur mobile), on remonte tout le texte vers
-   le blanc plein. Cible les utilitaires de COULEUR DE TEXTE uniquement
-   (text-brand-*) — jamais les bordures/fonds (border-/bg-/via-…), qui restent
-   décoratifs. Les couleurs sémantiques (rouge/vert/or) ne sont pas concernées.
+   MODE PLEIN SOLEIL (clair) — lisibilité extérieure du parcours scanneur
+   Le thème est monochrome (blanc à opacité variable sur noir). En extérieur au
+   soleil, un écran noir est le pire cas (peu de lumière émise, reflets). Ce mode
+   bascule la palette en CLAIR haute lisibilité (fond papier, texte quasi-noir).
+   Activé par SunToggle (localStorage irs_sun) + script anti-FOUC + SunScope
+   (limité au parcours scanneur). On cible la petite palette de marque ; les
+   photos ne sont PAS inversées.
+   ───────────────────────────────────────── */
+html.sun { color-scheme: light; }
+html.sun, html.sun body { background-color: #f4f1ea; }
+html.sun .bg-brand-black            { background-color: #f4f1ea !important; }
+html.sun [class*="bg-brand-black/"] { background-color: rgba(244, 241, 234, 0.95) !important; } /* bandeaux (consent…) */
+html.sun [class*="bg-[#0"]          { background-color: #ece7db !important; } /* cartes sombres → surface claire */
+html.sun .bg-brand-white            { background-color: #0f0f0f !important; } /* boutons primaires */
+html.sun .bg-brand-white:hover      { background-color: #1a1a1a !important; } /* hover : gray-100 non flippé → texte invisible sinon */
+html.sun .bg-brand-white.text-brand-black { color: #f4f1ea !important; }      /* texte des boutons primaires (et eux seuls) */
+html.sun .text-brand-white          { color: #0f0f0f !important; }
+html.sun [class*="text-brand-white/"] { color: rgba(0, 0, 0, 0.88) !important; }
+html.sun [class*="text-brand-gray/"]  { color: rgba(0, 0, 0, 0.70) !important; }
+html.sun [class*="text-[#C5A059]"]    { color: #7a5e1f !important; }          /* or illisible sur clair (badge ✦, « requis ») */
+html.sun [class*="text-red-"]         { color: #b91c1c !important; }          /* erreurs : red-400 ≈ 2.4:1 sur papier */
+html.sun [class*="text-green-"]       { color: #15803d !important; }
+html.sun [class*="border-brand-gray/"]  { border-color: rgba(0, 0, 0, 0.18) !important; }
+html.sun [class*="border-brand-white/"] { border-color: rgba(0, 0, 0, 0.30) !important; }
+html.sun [class*="bg-brand-white/"]     { background-color: rgba(0, 0, 0, 0.05) !important; }
+html.sun [class*="placeholder:text-brand-gray/"]::placeholder { color: rgba(0, 0, 0, 0.45) !important; }
+
+/* ─────────────────────────────────────────
+   A11y — prefers-contrast: more  (APRÈS le bloc sun : l'ordre fait gagner la
+   variante .sun à .95 sous prefers-contrast). Cible la COULEUR DE TEXTE
+   uniquement ; jamais bordures/fonds. Sémantiques (rouge/vert/or) non touchées.
    ───────────────────────────────────────── */
 @media (prefers-contrast: more) {
-  [class*="text-brand-gray/"],
-  [class*="text-brand-white/"] {
+  html:not(.sun) [class*="text-brand-gray/"],
+  html:not(.sun) [class*="text-brand-white/"] {
     color: rgba(255, 255, 255, 0.95) !important;
+  }
+  html.sun [class*="text-brand-gray/"],
+  html.sun [class*="text-brand-white/"] {
+    color: rgba(0, 0, 0, 0.95) !important;
   }
 }
 

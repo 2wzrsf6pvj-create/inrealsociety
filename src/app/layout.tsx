@@ -6,6 +6,7 @@ import AuthIndicator from './components/ui/AuthIndicator';
 import PostHogProvider from './components/PostHogProvider';
 import ConsentBanner from './components/ConsentBanner';
 import ServiceWorkerRegistration from './components/ServiceWorkerRegistration';
+import SunScope from './components/ui/SunScope';
 import './globals.css';
 
 const cormorant = Cormorant_Garamond({
@@ -60,11 +61,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="fr" className={`${cormorant.variable} ${montserrat.variable}`}>
-      <head />
+    <html lang="fr" className={`${cormorant.variable} ${montserrat.variable}`} suppressHydrationWarning>
+      <head>
+        {/* Mode plein soleil : applique la classe avant le paint (anti-FOUC),
+            UNIQUEMENT sur le parcours scanneur (profil/message/conversation).
+            'unsafe-inline' est déjà autorisé par la CSP. SunScope gère ensuite
+            les navigations client. */}
+        <script dangerouslySetInnerHTML={{ __html: "try{if(localStorage.getItem('irs_sun')==='1'&&/^\\/(profil|message|conversation)(\\/|$)/.test(location.pathname))document.documentElement.classList.add('sun')}catch(e){}" }} />
+      </head>
       <body className="antialiased bg-brand-black">
         <a href="#main" className="skip-link">Aller au contenu principal</a>
         <ServiceWorkerRegistration />
+        <SunScope />
         <Suspense fallback={null}>
           <PostHogProvider>
             <AuthIndicator />

@@ -4,6 +4,7 @@ import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { captureEvent } from '@/lib/posthog-client';
+import SunToggle from '@/app/components/ui/SunToggle';
 
 // Conversion scanneur → porteur. Le scanneur vient de vivre le moment fort
 // (signal envoyé / profil très demandé / fenêtre ratée) : c'est l'instant idéal
@@ -328,6 +329,7 @@ function MessageForm() {
 export default function MessagePage() {
   return (
     <main className="relative flex min-h-screen flex-col items-center justify-center bg-brand-black text-brand-white px-6 py-12 overflow-hidden">
+      <SunToggle />
       <div className="absolute top-[-15%] left-[-15%] w-[28rem] h-[28rem] rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%)' }} />
       <div className="z-10 flex flex-col items-center w-full max-w-xs md:max-w-sm gap-6">
