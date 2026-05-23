@@ -56,9 +56,15 @@ export async function DELETE(req: NextRequest) {
     }
 
     // ─── Supprime les données liées ────────────────────────────────────
-    // Note RGPD : on garde `orders` (obligation comptable 10 ans, art. L123-22
-    // du Code de commerce). L'email reste dans orders mais le member_id n'a
-    // plus de lien actif vers un profil.
+    // Note RGPD : on GARDE les lignes `orders` (obligation comptable 10 ans,
+    // art. L123-22 Code de commerce) mais on MINIMISE (art. 17) en anonymisant la
+    // seule PII qu'elles contiennent — `email` — par un placeholder. La facture
+    // identifiante complète (nom + adresse) est conservée par Stripe ; la
+    // réconciliation comptable reste possible via amount/created_at/stripe_*_id.
+    // Le filtre `eq('email', member.email)` ne touche QUE les achats du membre :
+    // les commandes où il est referrer_id (= achats de tiers) gardent l'email du
+    // tiers (referrer_id est nullé par la FK ON DELETE SET NULL).
+    const ANONYMIZED_EMAIL = 'deleted@anonymized.invalid';
     const deletes = [
       supabaseAdmin.from('messages').delete().eq('member_id', member.id),
       supabaseAdmin.from('scans').delete().eq('member_id', member.id),
@@ -70,7 +76,11 @@ export async function DELETE(req: NextRequest) {
       supabaseAdmin.from('blocks').delete().eq('member_id', member.id),
       supabaseAdmin.from('activation_codes').update({ member_id: null }).eq('member_id', member.id),
       // Newsletter (keyée par email) — pas d'obligation de rétention → erasure art. 17.
-      ...(member.email ? [supabaseAdmin.from('newsletter_subscribers').delete().eq('email', member.email)] : []),
+      // Orders : conservés mais email anonymisé (minimisation, cf. note ci-dessus).
+      ...(member.email ? [
+        supabaseAdmin.from('newsletter_subscribers').delete().eq('email', member.email),
+        supabaseAdmin.from('orders').update({ email: ANONYMIZED_EMAIL }).eq('email', member.email),
+      ] : []),
     ];
 
     const results = await Promise.all(deletes);
