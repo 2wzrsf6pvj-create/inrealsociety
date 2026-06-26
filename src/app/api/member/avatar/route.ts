@@ -49,7 +49,15 @@ export async function POST(req: NextRequest) {
     }
 
     // ─── Upload dans Supabase Storage ─────────────────────────────────────
-    const ext      = file.name.split('.').pop() || 'jpg';
+    // Extension dérivée du content-type (déjà validé contre ALLOWED_TYPES), JAMAIS
+    // du nom de fichier client : évite tout path-traversal via `file.name` et garde
+    // l'extension cohérente avec le type réel servi.
+    const EXT_BY_TYPE: Record<string, string> = {
+      'image/jpeg': 'jpg',
+      'image/png':  'png',
+      'image/webp': 'webp',
+    };
+    const ext      = EXT_BY_TYPE[file.type] ?? 'jpg';
     const filePath = `${member.id}/avatar.${ext}`;
     const buffer   = Buffer.from(await file.arrayBuffer());
 

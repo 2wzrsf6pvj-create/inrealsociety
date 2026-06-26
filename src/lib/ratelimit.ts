@@ -211,11 +211,18 @@ export async function isNewScan(memberId: string, ip: string): Promise<boolean> 
   }
 }
 
-/** Extrait l'IP réelle depuis les headers Next.js / Vercel */
+/** Extrait l'IP réelle depuis les headers Next.js / Vercel.
+ *
+ * ⚠️ Sécurité : `x-real-ip` D'ABORD. Sur Vercel c'est l'IP réelle du pair, posée
+ * par la plateforme et non-spoofable. `x-forwarded-for` est APPENDÉ par Vercel
+ * (vraie IP à DROITE) → son segment de GAUCHE est fourni par le client : le lire
+ * en premier laissait un attaquant varier l'IP à chaque requête et contourner
+ * TOUT le rate limiting par IP. On ne retombe sur x-forwarded-for (segment gauche)
+ * qu'en dev/local où x-real-ip est absent. */
 export function getIp(req: Request): string {
   return (
-    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
-    req.headers.get('x-real-ip') ??
+    req.headers.get('x-real-ip')?.trim() ||
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
     'anonymous'
   );
 }

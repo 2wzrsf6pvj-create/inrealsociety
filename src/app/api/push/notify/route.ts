@@ -6,7 +6,14 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import crypto from 'crypto';
 import { notifyThreadSubscribers } from '@/lib/push-notify';
+
+/** Compare deux secrets en temps constant (fail-closed si l'un est absent). */
+function secretMatches(provided: string | null, expected: string | undefined): boolean {
+  if (!provided || !expected || provided.length !== expected.length) return false;
+  return crypto.timingSafeEqual(Buffer.from(provided), Buffer.from(expected));
+}
 
 const schema = z.object({
   messageId: z.string().uuid(),
@@ -17,8 +24,7 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const secret = req.headers.get('x-internal-secret');
-    if (!secret || secret !== process.env.INTERNAL_SECRET) {
+    if (!secretMatches(req.headers.get('x-internal-secret'), process.env.INTERNAL_SECRET)) {
       return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
     }
 

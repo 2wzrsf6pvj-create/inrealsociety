@@ -76,9 +76,15 @@ export async function POST(req: NextRequest) {
     if (error && error.code !== '23505') throw error;
 
     if (orderId && !error) {
+      // Anti-hijack : ne pose le parrain QUE si la commande n'en a pas déjà un.
+      // `referrer_id` est posé de façon autoritaire au checkout (shop/checkout
+      // valide non-auto-parrainage) ; sans le garde `IS NULL`, cet endpoint
+      // authentifié permettait de s'attribuer / voler l'attribution de n'importe
+      // quelle commande via son seul orderId.
       await supabaseAdmin.from('orders')
         .update({ referrer_id: referrerId })
-        .eq('id', orderId);
+        .eq('id', orderId)
+        .is('referrer_id', null);
     }
 
     return NextResponse.json({ ok: true });

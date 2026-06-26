@@ -130,11 +130,15 @@ export async function POST(req: NextRequest) {
     // (même quand le message est une quick-reply non modérée). Un prénom abusif
     // est simplement droppé : le message part en « Anonyme » plutôt que de tout
     // bloquer. Les deux modérations tournent en parallèle (pas de double latence).
+    // On ne saute la modération QUE pour une quick-reply VÉRIFIÉE SERVEUR
+    // (`isKnownQuickReply` = contenu ∈ liste figée). Le flag client `isQuickReply`
+    // ne doit JAMAIS conditionner la modération : sinon `{content:"<abus>",
+    // isQuickReply:true}` la contournait entièrement (message livré non modéré).
     const isKnownQuickReply = QUICK_REPLIES.has(content.trim());
     const trimmedName = senderName?.trim() || '';
     const passthrough = { flagged: false, source: 'regex' as const, categories: [] };
     const [moderation, nameModeration] = await Promise.all([
-      (!isQuickReply && !isKnownQuickReply) ? moderateContent(content) : Promise.resolve(passthrough),
+      isKnownQuickReply ? Promise.resolve(passthrough) : moderateContent(content),
       trimmedName ? moderateContent(trimmedName) : Promise.resolve(passthrough),
     ]);
     const moderated = moderation.flagged;
