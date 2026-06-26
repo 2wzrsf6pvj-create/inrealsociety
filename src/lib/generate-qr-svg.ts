@@ -1,6 +1,6 @@
 // src/lib/generate-qr-svg.ts
-// Génère un QR code SVG premium avec modules arrondis, yeux stylisés
-// et logo central (un « X » en deux lignes croisées). Adapte les couleurs au thème du t-shirt.
+// Génère un QR code SVG premium avec modules en carrés arrondis, yeux stylisés
+// et logo central « )( » (deux arcs de parenthèses). Adapte les couleurs au thème du t-shirt.
 //
 // Dark (t-shirt noir)  → QR Gold #C5A059, fond transparent
 // Light (t-shirt blanc) → QR Navy #0A192F, logo Gold #C5A059
@@ -70,12 +70,16 @@ function isInLogoZone(row: number, col: number, size: number, logoModules: numbe
 
 // ─── Rendu SVG des modules ────────────────────────────────────────────────────
 
-/** Module arrondi (style "dot") — cercle au lieu de carré */
-function renderDot(x: number, y: number, size: number, color: string): string {
-  const cx = x + size / 2;
-  const cy = y + size / 2;
-  const r  = size * 0.42; // léger gap entre les dots
-  return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${color}"/>`;
+/** Module en carré arrondi. Remplit plus de surface que les ronds → meilleur
+ *  contraste/scan, look « grille » plus premium. `CORNER` = 0 → carré net,
+ *  0.5 → cercle ; 0.28 = compromis doux. `INSET` = léger gap entre modules. */
+const MODULE_CORNER = 0.28;
+const MODULE_INSET  = 0.08;
+function renderModule(x: number, y: number, size: number, color: string): string {
+  const inset = size * MODULE_INSET;
+  const s     = size - inset * 2;
+  const r     = s * MODULE_CORNER;
+  return `<rect x="${x + inset}" y="${y + inset}" width="${s}" height="${s}" rx="${r}" ry="${r}" fill="${color}"/>`;
 }
 
 /** Œil de positionnement — carré extérieur arrondi + carré intérieur arrondi */
@@ -102,9 +106,10 @@ function renderFinderEye(
   return outer + inner;
 }
 
-// ─── Logo central — un « X » (deux lignes croisées) ──────────────────────────
+// ─── Logo central — « )( » (deux arcs de parenthèses) ────────────────────────
 
-/** Génère le logo en SVG — deux lignes croisées formant un X, extrémités arrondies. */
+/** Génère le logo en SVG — deux arcs « )( » : à gauche un « ) » bombé vers le
+ *  centre, à droite un « ( » bombé vers le centre. Extrémités arrondies. */
 function renderLogo(
   cx: number,
   cy: number,
@@ -113,17 +118,23 @@ function renderLogo(
 ): string {
   const half   = logoSize / 2;
   const gap    = logoSize * 0.12;
-  const arm    = half * 0.45;           // demi-longueur des branches du X
-  const stroke = logoSize * 0.14;
+  const arm    = half * 0.5;            // demi-hauteur des arcs
+  const spread = logoSize * 0.15;       // écart horizontal entre les 2 arcs
+  const bow    = logoSize * 0.16;       // profondeur de courbure (vers le centre)
+  const stroke = logoSize * 0.13;
 
   // Fond blanc circulaire derrière le logo pour la lisibilité du scan
   const bgRadius = half + gap;
   const bg = `<circle cx="${cx}" cy="${cy}" r="${bgRadius}" fill="white"/>`;
 
-  const l1 = `<line x1="${cx - arm}" y1="${cy - arm}" x2="${cx + arm}" y2="${cy + arm}" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round"/>`;
-  const l2 = `<line x1="${cx + arm}" y1="${cy - arm}" x2="${cx - arm}" y2="${cy + arm}" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round"/>`;
+  // « ) » à gauche : courbe quadratique bombée vers la droite (le centre).
+  const lx = cx - spread;
+  const rParen = `<path d="M ${lx} ${cy - arm} Q ${lx + bow} ${cy} ${lx} ${cy + arm}" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round"/>`;
+  // « ( » à droite : courbe bombée vers la gauche (le centre).
+  const rx = cx + spread;
+  const lParen = `<path d="M ${rx} ${cy - arm} Q ${rx - bow} ${cy} ${rx} ${cy + arm}" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round"/>`;
 
-  return bg + l1 + l2;
+  return bg + rParen + lParen;
 }
 
 // ─── Fonction principale ──────────────────────────────────────────────────────
@@ -201,7 +212,7 @@ export function generatePremiumQRCode(
       const x = padding + col * moduleSize;
       const y = padding + row * moduleSize;
 
-      parts.push(renderDot(x, y, moduleSize, colors.module));
+      parts.push(renderModule(x, y, moduleSize, colors.module));
     }
   }
 
