@@ -62,6 +62,15 @@ const limitPublicByIp = () => new Ratelimit({
   prefix:  'rl:public:ip',
 });
 
+/** 3 renvois de code par EMAIL cible par heure (anti email-bombing).
+ *  Le rate-limit par IP seul ne protège pas la victime : un attaquant peut
+ *  spammer le renvoi de code vers un email tiers. On plafonne aussi par email. */
+const limitResendByEmail = () => new Ratelimit({
+  redis:   getRedis(),
+  limiter: Ratelimit.slidingWindow(3, '1 h'),
+  prefix:  'rl:resend:email',
+});
+
 /** Déduplication des scans : 1 comptage par (membre, IP) toutes les 30 min.
  *  Distinct du rate-limit (anti-abus) : ici on évite juste de gonfler
  *  scan_count + de spammer l'email du membre quand un scanneur recharge /profil. */
@@ -170,13 +179,38 @@ export async function checkScanRateLimit(
  * Limite par userId Supabase Auth.
  */
 export async function checkAuthRateLimit(userId: string): Promise<RateLimitResult> {
-  const result = await limitAuthByUser().limit(userId);
-  return {
-    success:   result.success,
-    limit:     result.limit,
-    remaining: result.remaining,
-    reset:     result.reset,
-  };
+  try {
+    const result = await limitAuthByUser().limit(userId);
+    return {
+      success:   result.success,
+      limit:     result.limit,
+      remaining: result.remaining,
+      reset:     result.reset,
+    };
+  } catch (err) {
+    // Fail-open CENTRALISÉ : une panne Redis ne doit pas casser les actions d'un
+    // utilisateur DÉJÀ authentifié (identité connue, risque d'abus faible). Évite
+    // que chaque route ait à wrapper l'appel — comportement uniforme. Les routes
+    // PUBLIQUES gardent au contraire le fail-closed (throw → 500) anti-abus.
+    console.warn('[ratelimit] auth limiter indisponible, fail-open:', err);
+    return { success: true, limit: 0, remaining: 0, reset: Date.now() };
+  }
+}
+
+/** Rate limit du renvoi de code d'activation, par EMAIL cible (anti email-bombing).
+ *  Fail-open si Redis tombe (le renvoi de code n'est pas un vecteur d'abus majeur). */
+export async function checkResendEmailRateLimit(email: string): Promise<RateLimitResult> {
+  try {
+    const result = await limitResendByEmail().limit(email);
+    return {
+      success:   result.success,
+      limit:     result.limit,
+      remaining: result.remaining,
+      reset:     result.reset,
+    };
+  } catch {
+    return { success: true, limit: 0, remaining: 0, reset: Date.now() };
+  }
 }
 
 /**

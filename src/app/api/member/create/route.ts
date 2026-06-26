@@ -24,14 +24,11 @@ export async function POST(req: NextRequest) {
     const auth = await requireAuth(req);
     if (isHttpError(auth)) return auth;
 
-    try {
-      const rl = await checkAuthRateLimit(auth.user.id);
-      if (!rl.success) {
-        return NextResponse.json({ error: 'Trop de requêtes.' }, { status: 429, headers: rateLimitHeaders(rl) });
-      }
-    } catch (rlErr) {
-      // Rate limiting indisponible (Redis down) — on laisse passer
-      console.warn('[api/member/create] Rate limit unavailable:', rlErr);
+    // checkAuthRateLimit fail-open en interne si Redis tombe (centralisé) — plus
+    // besoin du try/catch local : comportement uniforme avec les autres routes auth.
+    const rl = await checkAuthRateLimit(auth.user.id);
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Trop de requêtes.' }, { status: 429, headers: rateLimitHeaders(rl) });
     }
 
     const body = schema.safeParse(await req.json());

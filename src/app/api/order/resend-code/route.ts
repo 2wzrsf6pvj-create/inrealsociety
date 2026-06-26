@@ -12,7 +12,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { sendEmail, emailActivation } from '@/lib/email-templates';
-import { checkPublicRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
+import { checkPublicRateLimit, checkResendEmailRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
 import { audit } from '@/lib/audit';
 import { APP_URL } from '@/lib/constants';
 
@@ -35,6 +35,12 @@ export async function POST(req: NextRequest) {
     if (!body.success) return NextResponse.json({ ok: true });
 
     const { email } = body.data;
+
+    // Plafond par email cible (anti email-bombing) — le throttle IP ci-dessus ne
+    // protège pas la victime d'un attaquant qui spamme le renvoi vers son email.
+    // Réponse {ok:true} (anti-énumération) : on ne révèle pas qu'on a throttlé.
+    const emailRl = await checkResendEmailRateLimit(email.toLowerCase());
+    if (!emailRl.success) return NextResponse.json({ ok: true });
 
     const { data: order } = await supabaseAdmin
       .from('orders')
