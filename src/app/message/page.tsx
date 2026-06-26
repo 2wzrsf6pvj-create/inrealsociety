@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { captureEvent } from '@/lib/posthog-client';
+import { isValidEmail, isInstagramHandle } from '@/lib/validators';
 import SunToggle from '@/app/components/ui/SunToggle';
 
 // Conversion scanneur → porteur. Le scanneur vient de vivre le moment fort
@@ -292,6 +293,11 @@ function MessageForm() {
     );
   }
 
+  // Le contact "ressemble" à un email OU un @handle (avec ou sans @ tapé) — vide =
+  // ok (champ optionnel sauf si requis, géré par le garde de sendMessage).
+  const _c = contact.trim();
+  const contactLooksValid = _c === '' || isValidEmail(_c) || isInstagramHandle(_c) || isInstagramHandle('@' + _c);
+
   // Champs définis une fois — placés selon que le contact est requis (blocker en
   // tête) ou seulement recommandé (personnalisation en bas).
   const nameField = (
@@ -325,11 +331,19 @@ function MessageForm() {
           ? 'Ce membre n’accepte que les messages avec un contact.'
           : 'Sans contact, il ne pourra pas vous répondre.'}
       </p>
-      <input ref={contactRef} type="text" placeholder={contactRequired ? '@instagram ou email' : 'Anonyme par défaut'} value={contact} maxLength={200}
+      <input ref={contactRef} type="text" inputMode="email" autoCapitalize="none" autoCorrect="off"
+        placeholder={contactRequired ? '@instagram ou email' : 'Anonyme par défaut'} value={contact} maxLength={200}
         onChange={(e) => setContact(e.target.value)}
         className={`w-full bg-transparent border-b text-brand-white font-ui font-light text-base py-3 outline-none transition-colors placeholder:text-brand-gray/45 ${contactRequired && !contact.trim() ? 'border-[#C5A059]/50 focus:border-[#C5A059]' : 'border-brand-gray/20 focus:border-brand-white/50'}`}
         style={{ minHeight: '44px' }}
       />
+      {/* Validation douce (non bloquante) : alerte si ça ne ressemble ni à un email
+          ni à un @handle — un contact mal tapé = le porteur ne peut pas répondre. */}
+      {!contactLooksValid && (
+        <p className="font-ui text-xs text-[#C5A059]/85 leading-relaxed mt-1 animate-fade-in">
+          Cela ne ressemble pas à un @instagram ou un email — il ne pourra peut-être pas vous répondre.
+        </p>
+      )}
     </div>
   );
 
@@ -421,7 +435,14 @@ export default function MessagePage() {
       <div className="absolute top-[-15%] left-[-15%] w-[28rem] h-[28rem] rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%)' }} />
       <div className="z-10 flex flex-col items-center w-full max-w-xs md:max-w-sm gap-6">
-        <Suspense fallback={null}><MessageForm /></Suspense>
+        <Suspense fallback={
+          <div className="flex flex-col items-center gap-3 py-12 animate-pulse">
+            <div className="w-12 h-12 rounded-full border border-brand-white/15 flex items-center justify-center">
+              <span style={{ fontSize: '16px', opacity: 0.5 }}>✦</span>
+            </div>
+            <p className="font-ui text-xxs text-brand-gray/55 tracking-[0.25em] uppercase">Un instant</p>
+          </div>
+        }><MessageForm /></Suspense>
         <Link href="/"
           className="font-ui text-xs text-brand-gray/50 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white/80 transition-colors py-3"
           style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}>
