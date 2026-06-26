@@ -31,12 +31,14 @@ export async function generateUniqueShortCode(): Promise<string> {
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       const code = randomCode(length);
 
-      // Vérifie l'unicité dans la BDD
+      // Vérifie l'unicité dans la BDD. maybeSingle (pas single) : 0 ligne = code
+      // libre, le cas NORMAL — single y émet une erreur PGRST116 qui polluait les
+      // logs à chaque code unique.
       const { data } = await supabaseAdmin
         .from('members')
         .select('id')
         .eq('short_code', code)
-        .single();
+        .maybeSingle();
 
       // Pas de collision → le code est disponible
       if (!data) return code;

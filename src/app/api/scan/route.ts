@@ -17,9 +17,12 @@ const schema = z.object({
 /** Reverse geocoding via Nominatim (OpenStreetMap) — gratuit, pas de clé API */
 async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
   try {
+    // Timeout dur : Nominatim est dans le chemin de la requête de scan. Sans ça,
+    // un service externe lent/bloqué fait traîner (voire timeout plateforme) la
+    // réponse de scan. 2,5 s suffisent ; au-delà on renonce à la géoloc (non-bloquant).
     const res = await fetch(
       `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14&addressdetails=1`,
-      { headers: { 'User-Agent': 'InRealSociety/1.0' } }
+      { headers: { 'User-Agent': 'InRealSociety/1.0' }, signal: AbortSignal.timeout(2500) }
     );
     if (!res.ok) return null;
     const data = await res.json();
