@@ -148,6 +148,41 @@ Puis dérouler les flux critiques (ceux corrigés ce lot) :
 | **Fulfillment short_code** | membre sans `short_code` qui se fait fulfiller | `members.short_code` rempli + QR encode `/r/<code>` (pas `/profil/`) |
 | **RLS clé publique** | `curl "$SUPABASE_URL/rest/v1/member_inbox" -H "apikey: $ANON_KEY"` | refus / vide (pas les messages de tous) |
 
+### 3bis. Validation du lot AUDIT 2026-06 (branche `hardening/audit-2026-06`)
+
+**Migrations 040 + 041 — dry-run puis vérif post-apply**
+```bash
+# Dry-run syntaxe (transaction annulée)
+psql "$STAGING_URL" -v ON_ERROR_STOP=1 <<'SQL'
+BEGIN;
+\i supabase/migrations/040_audit_retain_consent.sql
+\i supabase/migrations/041_security_scan_count_and_consent.sql
+ROLLBACK;
+SQL
+```
+Après apply réel, vérifier les 2 trous fermés :
+```sql
+-- F1 : la fonction ne doit plus exister
+SELECT count(*) FROM pg_proc WHERE proname = 'increment_scan_count';   -- attendu : 0
+```
+```bash
+# F2 : la clé ANON ne doit plus lire marketing_consent (erreur colonne / 403)
+curl -s "$SUPABASE_URL/rest/v1/members?select=marketing_consent" -H "apikey: $ANON_KEY"
+#   attendu : erreur "permission denied for column marketing_consent" (PAS une liste)
+```
+
+**Flux applicatifs corrigés ce lot**
+| Fix | Action | Attendu |
+|---|---|---|
+| **Modération — bypass flag client** | `POST /api/message {memberId, content:"<insulte modérée>", isQuickReply:true}` | `{moderated:true}` (le flag client ne saute plus la modération) ; une quick-reply RÉELLE de la liste reste `moderated:false` |
+| **Rate-limit XFF** | 21× `POST /api/scan` même IP réelle mais header `X-Forwarded-For` différent à chaque fois | 429 atteint (sur Vercel : la clé = `x-real-ip`, plus contournable) |
+| **Referral — anti-hijack** | `POST /api/referral {referrerId:<self>, orderId:<order déjà parrainée par X>}` | `orders.referrer_id` INCHANGÉ (reste X) |
+| **RGPD delete — preuve consentement** | membre toggle consent puis supprime son compte | ligne `audit_logs.action='member.marketing_consent_changed'` SURVIT (member_id → NULL) ; activity logs effacés |
+| **RGPD delete/export — orders par code** | order au checkout sous un email ≠ email d'auth, puis delete / export | delete : `orders.email` anonymisé ; export : la commande APPARAÎT (matchée par activation_code) |
+| **Webhook — filet money-path** | order avec `stripe_session_id` NULL mais `metadata.orderId` posé → `stripe trigger checkout.session.completed` | order finalisée (paid + code), `stripe_session_id` back-fillé |
+| **Cron fulfillment-reconcile** | order `paid` + membre + `printful_order_id` NULL → `curl -H "Authorization: Bearer $CRON_SECRET" $URL/api/cron/fulfillment-reconcile` ; puis sans header | 1er : `{fulfilled:≥1}` + commande Printful créée ; sans header : `403` |
+| **Cron premium-reconcile** | sans `Authorization` | `403` (et avec : balaie TOUS les premium, pas 100) |
+
 ```bash
 # Webhook : rejouer un event spécifique
 stripe trigger customer.subscription.deleted
