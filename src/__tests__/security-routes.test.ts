@@ -44,6 +44,7 @@ const SECRET_PROTECTED_ROUTES = [
   'api/cron/cleanup',           // CRON_SECRET (Vercel Cron)
   'api/cron/scan-reminders',    // CRON_SECRET (Vercel Cron)
   'api/cron/premium-reconcile', // CRON_SECRET (Vercel Cron)
+  'api/cron/fulfillment-reconcile', // CRON_SECRET (Vercel Cron)
 ];
 
 /** Routes webhook (protégées par signature) */

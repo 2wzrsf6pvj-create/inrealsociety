@@ -15,6 +15,10 @@ import { subscriptionMemberUpdate, isActiveSubscriptionStatus } from '@/lib/subs
 import { isAuthorizedCron } from '@/lib/cron-auth';
 
 const BATCH_SIZE = 100;
+// Garde-fou anti-boucle infinie : BATCH_SIZE × MAX_BATCHES = 100k membres premium.
+const MAX_BATCHES = 1000;
+// Sentinelle keyset : UUID nul, < à tout UUID réel (et valide pour le cast Postgres).
+const ZERO_UUID = '00000000-0000-0000-0000-000000000000';
 
 export async function GET(req: NextRequest) {
   if (!isAuthorizedCron(req)) {
@@ -24,48 +28,62 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Stripe non configuré.' }, { status: 500 });
   }
 
-  const { data: members, error } = await supabaseAdmin
-    .from('members')
-    .select('id, stripe_subscription_id')
-    .eq('plan', 'premium')
-    .not('stripe_subscription_id', 'is', null)
-    .limit(BATCH_SIZE);
-
-  if (error) {
-    console.error('[cron/premium-reconcile]', error);
-    return NextResponse.json({ error: 'Erreur SQL.' }, { status: 500 });
-  }
-
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2026-03-25.dahlia' });
   let checked = 0, downgraded = 0, errors = 0;
 
-  for (const m of members ?? []) {
-    if (!m.stripe_subscription_id) continue;
-    checked++;
-    try {
-      const sub = await stripe.subscriptions.retrieve(m.stripe_subscription_id);
-      // Même règle que le webhook (past_due = délai de grâce → reste premium),
-      // sinon le cron downgraderait un membre que le webhook vient de garder.
-      if (!isActiveSubscriptionStatus(sub.status)) {
-        await supabaseAdmin
-          .from('members')
-          .update(subscriptionMemberUpdate({ status: sub.status, id: sub.id }))
-          .eq('id', m.id);
-        downgraded++;
-      }
-    } catch (err) {
-      // resource_missing = abonnement supprimé côté Stripe → downgrade.
-      if ((err as { code?: string }).code === 'resource_missing') {
-        await supabaseAdmin
-          .from('members')
-          .update({ plan: 'free', stripe_subscription_id: null, plan_expires_at: null })
-          .eq('id', m.id);
-        downgraded++;
-      } else {
-        errors++;
-        console.error('[cron/premium-reconcile] failed for', m.id, err);
+  // Pagination KEYSET par id (pas .limit() seul ni offset) : couvre TOUS les
+  // membres premium, pas seulement les 100 premiers — sinon un webhook
+  // subscription.deleted manqué pour le membre #101+ = premium à vie. Keyset (et
+  // non offset) car les downgradés sortent du filtre `plan=premium` en cours de
+  // route ; avancer par id est monotone → ni saut ni reprise.
+  let lastId = ZERO_UUID;
+  for (let batch = 0; batch < MAX_BATCHES; batch++) {
+    const { data: members, error } = await supabaseAdmin
+      .from('members')
+      .select('id, stripe_subscription_id')
+      .eq('plan', 'premium')
+      .not('stripe_subscription_id', 'is', null)
+      .gt('id', lastId)
+      .order('id', { ascending: true })
+      .limit(BATCH_SIZE);
+
+    if (error) {
+      console.error('[cron/premium-reconcile]', error);
+      return NextResponse.json({ error: 'Erreur SQL.', checked, downgraded, errors }, { status: 500 });
+    }
+    if (!members || members.length === 0) break;
+
+    for (const m of members) {
+      lastId = m.id;
+      if (!m.stripe_subscription_id) continue;
+      checked++;
+      try {
+        const sub = await stripe.subscriptions.retrieve(m.stripe_subscription_id);
+        // Même règle que le webhook (past_due = délai de grâce → reste premium),
+        // sinon le cron downgraderait un membre que le webhook vient de garder.
+        if (!isActiveSubscriptionStatus(sub.status)) {
+          await supabaseAdmin
+            .from('members')
+            .update(subscriptionMemberUpdate({ status: sub.status, id: sub.id }))
+            .eq('id', m.id);
+          downgraded++;
+        }
+      } catch (err) {
+        // resource_missing = abonnement supprimé côté Stripe → downgrade.
+        if ((err as { code?: string }).code === 'resource_missing') {
+          await supabaseAdmin
+            .from('members')
+            .update({ plan: 'free', stripe_subscription_id: null, plan_expires_at: null })
+            .eq('id', m.id);
+          downgraded++;
+        } else {
+          errors++;
+          console.error('[cron/premium-reconcile] failed for', m.id, err);
+        }
       }
     }
+
+    if (members.length < BATCH_SIZE) break;
   }
 
   console.log('[cron/premium-reconcile] checked:', checked, 'downgraded:', downgraded, 'errors:', errors);
