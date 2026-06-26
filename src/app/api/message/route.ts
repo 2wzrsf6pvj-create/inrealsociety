@@ -12,6 +12,7 @@ import { moderateContent } from '@/lib/moderation';
 import { getSenderToken, createSenderToken, setSenderTokenCookie } from '@/lib/sender-token';
 import { isBlocked } from '@/lib/blocks';
 import { notifyMemberSubscribers } from '@/lib/push-notify';
+import { captureServerEvent } from '@/lib/posthog-server';
 import { APP_URL } from '@/lib/constants';
 
 const QUICK_REPLIES = new Set<string>(QUICK_REPLIES_LIST);
@@ -172,6 +173,16 @@ export async function POST(req: NextRequest) {
         ...(moderated ? { moderationSource: moderation.source, categories: moderation.categories } : {}),
       },
     });
+
+    // ─── Rétention (P0) : signal reçu par le PORTEUR (distinctId = member_id) ──
+    // Seulement si non modéré (un message masqué n'est pas une valeur reçue).
+    if (!moderated) {
+      captureServerEvent({
+        distinctId: memberId,
+        event:      'member_signal_received',
+        properties: { member_id: memberId, is_quick_reply: isKnownQuickReply, has_contact: !!senderContact?.trim() },
+      }).catch(() => {});
+    }
 
     // ─── Notification email ───────────────────────────────────────────────
     if (!moderated && member.email) {

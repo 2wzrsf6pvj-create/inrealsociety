@@ -6,6 +6,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { sendEmail, emailNouveauScan } from '@/lib/email-templates';
 import { checkScanRateLimit, isNewScan, getIp, rateLimitHeaders } from '@/lib/ratelimit';
 import { audit } from '@/lib/audit';
+import { captureServerEvent } from '@/lib/posthog-server';
 
 const schema = z.object({
   memberId:    z.string().uuid(),
@@ -114,6 +115,15 @@ export async function POST(req: NextRequest) {
       ip,
       metadata: { scannerName },
     });
+
+    // ─── Rétention (P0) : event keyé sur le PORTEUR (distinctId = member_id) ──
+    // Mesure « le porteur est-il encore scanné N semaines après ? » dans PostHog.
+    // Fire-and-forget, seulement sur un scan NEUF (les doublons sont déjà filtrés).
+    captureServerEvent({
+      distinctId: memberId,
+      event:      'member_scanned',
+      properties: { member_id: memberId, has_location: latitude != null && longitude != null },
+    }).catch(() => {});
 
     // ─── Notification email ───────────────────────────────────────────────
     if (member.email) {
