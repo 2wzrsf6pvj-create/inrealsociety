@@ -230,7 +230,7 @@ export default function ProfilClient({
           /* ─── Vue propriétaire ─────────────────────────────────────────── */
           <div className="flex flex-col items-center gap-4 animate-stagger-3">
             <p className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Votre profil public</p>
-            <p className="font-display text-lg md:text-xl font-light italic text-brand-gray/60 text-center leading-relaxed">
+            <p className="font-display text-lg md:text-xl font-light italic text-brand-gray/75 text-center leading-relaxed">
               &ldquo;{member.pitch}&rdquo;
             </p>
             {instagramHandle && (
@@ -242,14 +242,14 @@ export default function ProfilClient({
             <h1 className="font-display text-2xl md:text-3xl font-light tracking-[0.04em] text-center leading-snug">
               {scannerName
                 ? <>Nos chemins se sont croisés,<br /><span className="font-semibold italic">{scannerName}</span>.</>
-                : <>Quelque chose vous a arrêté.<br /><span className="text-brand-gray/50">C&apos;est rare.</span></>
+                : <>Quelque chose vous a arrêté.<br /><span className="text-brand-gray/65">C&apos;est rare.</span></>
               }
             </h1>
-            <p className="font-display text-lg md:text-xl font-light italic text-brand-gray/60 text-center leading-relaxed">
+            <p className="font-display text-lg md:text-xl font-light italic text-brand-gray/75 text-center leading-relaxed">
               &ldquo;{member.pitch}&rdquo;
             </p>
             {!scannerName && (
-              <p className="font-ui text-xs md:text-sm font-light text-brand-gray/60 text-center leading-relaxed tracking-wide">
+              <p className="font-ui text-sm font-light text-brand-gray/75 text-center leading-relaxed tracking-wide">
                 Ce vêtement signifie que son porteur est ouvert<br />à une conversation. Vous avez le contrôle.
               </p>
             )}
@@ -335,9 +335,9 @@ export default function ProfilClient({
             Visible uniquement pour un vrai scanneur, tant qu'il n'a pas décidé. */}
         {askLocation && !isExpired && (
           <div className="w-full bg-[#080808] border border-brand-gray/15 rounded-[2px] px-4 py-3 flex flex-col gap-2.5 animate-fade-in">
-            <p className="font-ui text-xs text-brand-gray/60 leading-relaxed text-center">
-              Partager ta ville approximative à <span className="text-brand-white/70">{member.name}</span> ?
-              <br /><span className="text-brand-gray/50">Jamais ta position exacte.</span>
+            <p className="font-ui text-sm text-brand-gray/75 leading-relaxed text-center">
+              Partager ta ville approximative à <span className="text-brand-white/85">{member.name}</span> ?
+              <br /><span className="text-brand-gray/60">Jamais ta position exacte.</span>
             </p>
             <div className="flex items-center gap-2">
               <button onClick={shareLocation}

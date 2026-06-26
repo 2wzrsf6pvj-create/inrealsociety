@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { captureEvent } from '@/lib/posthog-client';
@@ -67,6 +67,9 @@ function MessageForm() {
   // Membre en pause OU device bloqué : le serveur renvoie le même code 'paused'
   // (volontaire — ne pas révéler le blocage). Écran terminal neutre.
   const [unavailable, setUnavailable] = useState(false);
+  // Ref pour guider (focus) vers le champ contact quand il est requis mais vide —
+  // évite le dead-end quand on tape une quick-reply sans contact obligatoire.
+  const contactRef = useRef<HTMLInputElement>(null);
 
   // Pré-remplit le prénom depuis un nom déjà connu (scan précédent / /unlock).
   useEffect(() => {
@@ -81,9 +84,12 @@ function MessageForm() {
       setError('Aperçu — l’envoi est désactivé. C’est ici qu’un scanneur vous écrirait.');
       return;
     }
-    // Garde client : si un contact est exigé et absent, on évite le roundtrip.
+    // Garde client : si un contact est exigé et absent, on évite le roundtrip ET
+    // on guide vers le champ (focus + scroll) au lieu d'un message d'erreur sec.
     if (contactRequired && !contact.trim()) {
       setError('Ce membre demande un @instagram ou un email pour pouvoir vous répondre.');
+      contactRef.current?.focus();
+      contactRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
     setSending(true);
@@ -116,6 +122,8 @@ function MessageForm() {
         if (data.code === 'contact_required') {
           setContactRequired(true);
           setError('Ce membre demande un @instagram ou un email pour pouvoir vous répondre.');
+          contactRef.current?.focus();
+          contactRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
           setSending(false); return;
         }
         if (data.code === 'paused') {
@@ -164,7 +172,7 @@ function MessageForm() {
       <div className="flex flex-col items-center gap-6 text-center animate-stagger-1">
         <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
         <p className="font-display text-2xl font-light">Ce moment est passé.</p>
-        <p className="font-ui text-sm text-brand-gray/50 leading-relaxed">
+        <p className="font-ui text-sm text-brand-gray/65 leading-relaxed">
           La fenêtre de {windowHours} heures est terminée.<br />
           La prochaine occasion sera la bonne.
         </p>
@@ -184,7 +192,7 @@ function MessageForm() {
       <div className="flex flex-col items-center gap-6 text-center animate-stagger-1">
         <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
         <p className="font-display text-2xl font-light">{memberName} a déjà du monde autour.</p>
-        <p className="font-ui text-sm text-brand-gray/50 leading-relaxed">
+        <p className="font-ui text-sm text-brand-gray/65 leading-relaxed">
           Cette personne attire l&apos;attention.<br />
           Ses conversations en cours sont au complet.
         </p>
@@ -207,7 +215,7 @@ function MessageForm() {
       <div className="flex flex-col items-center gap-6 text-center animate-stagger-1">
         <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
         <p className="font-display text-2xl font-light">{memberName} est indisponible.</p>
-        <p className="font-ui text-sm text-brand-gray/50 leading-relaxed">
+        <p className="font-ui text-sm text-brand-gray/65 leading-relaxed">
           Cette personne ne reçoit pas de message pour le moment.<br />
           Peut-être une prochaine fois.
         </p>
@@ -229,7 +237,7 @@ function MessageForm() {
           <span className="font-display text-xl text-red-400/60">!</span>
         </div>
         <p className="font-display text-2xl font-light">Ce message ne peut pas être envoyé.</p>
-        <p className="font-ui text-sm text-brand-gray/50 leading-relaxed">
+        <p className="font-ui text-sm text-brand-gray/65 leading-relaxed">
           Votre message contient des termes qui ne respectent pas<br />
           les règles de notre espace. Évitez le langage offensant,<br />
           les menaces ou les contenus inappropriés.
@@ -251,7 +259,7 @@ function MessageForm() {
         </div>
         <div className="flex flex-col gap-3">
           <p className="font-display text-2xl md:text-3xl font-light tracking-[0.04em]">Signal envoyé.</p>
-          <p className="font-ui text-sm font-light text-brand-gray/50 leading-relaxed">
+          <p className="font-ui text-sm font-light text-brand-gray/65 leading-relaxed">
             {memberName} peut vous répondre directement ici.
           </p>
         </div>
@@ -269,7 +277,7 @@ function MessageForm() {
           >
             {copied ? '✓ Lien copié' : 'Copier le lien'}
           </button>
-          <p className="font-ui text-xxs md:text-xs text-brand-gray/50 leading-relaxed">
+          <p className="font-ui text-xxs md:text-xs text-brand-gray/65 leading-relaxed">
             Ce lien est sauvegardé automatiquement.<br />Vous le retrouverez sur le profil de {memberName}.
           </p>
         </div>
@@ -284,64 +292,72 @@ function MessageForm() {
     );
   }
 
+  // Champs définis une fois — placés selon que le contact est requis (blocker en
+  // tête) ou seulement recommandé (personnalisation en bas).
+  const nameField = (
+    <div className="flex flex-col gap-1">
+      <label className="font-ui text-xs text-brand-gray/60 tracking-[0.2em] uppercase">
+        Votre prénom{' '}
+        <span className="normal-case tracking-normal ml-1 text-brand-white/60">(optionnel)</span>
+      </label>
+      <p className="font-ui text-xs text-brand-gray/65 leading-relaxed mb-1">
+        Pour qu&apos;il sache qui l&apos;a remarqué. Sinon, vous restez anonyme.
+      </p>
+      <input type="text" placeholder="Anonyme par défaut" value={senderName} maxLength={50}
+        autoComplete="given-name"
+        onChange={(e) => setSenderName(e.target.value)}
+        className="w-full bg-transparent border-b border-brand-gray/20 focus:border-brand-white/50 text-brand-white font-ui font-light text-base py-3 outline-none transition-colors placeholder:text-brand-gray/45"
+        style={{ minHeight: '44px' }}
+      />
+    </div>
+  );
+
+  const contactField = (
+    <div className="flex flex-col gap-1">
+      <label className="font-ui text-xs text-brand-gray/60 tracking-[0.2em] uppercase">
+        Votre @instagram ou email{' '}
+        <span className={`normal-case tracking-normal ml-1 ${contactRequired ? 'text-[#C5A059]' : 'text-brand-white/60'}`}>
+          ({contactRequired ? 'requis' : 'recommandé'})
+        </span>
+      </label>
+      <p className="font-ui text-xs text-brand-gray/65 leading-relaxed mb-1">
+        {contactRequired
+          ? 'Ce membre n’accepte que les messages avec un contact.'
+          : 'Sans contact, il ne pourra pas vous répondre.'}
+      </p>
+      <input ref={contactRef} type="text" placeholder={contactRequired ? '@instagram ou email' : 'Anonyme par défaut'} value={contact} maxLength={200}
+        onChange={(e) => setContact(e.target.value)}
+        className={`w-full bg-transparent border-b text-brand-white font-ui font-light text-base py-3 outline-none transition-colors placeholder:text-brand-gray/45 ${contactRequired && !contact.trim() ? 'border-[#C5A059]/50 focus:border-[#C5A059]' : 'border-brand-gray/20 focus:border-brand-white/50'}`}
+        style={{ minHeight: '44px' }}
+      />
+    </div>
+  );
+
   return (
     <div className="flex flex-col gap-6 w-full">
       <div className="text-center flex flex-col gap-2 animate-stagger-1">
         <h2 className="font-display text-2xl md:text-3xl font-light tracking-[0.04em]">Un signal discret.</h2>
-        <p className="font-ui text-sm font-light text-brand-gray/50 leading-relaxed">À {memberName}. Il pourra vous répondre directement.</p>
+        <p className="font-ui text-sm font-light text-brand-gray/65 leading-relaxed">À {memberName}. Il pourra vous répondre directement.</p>
       </div>
 
       {isPreview && (
         <div className="w-full bg-[#0a0a08] border border-[#C5A059]/25 rounded-[2px] px-4 py-3 flex flex-col gap-1 text-center">
-          <p className="font-ui text-xxs text-[#C5A059]/80 tracking-[0.18em] uppercase">✦ Aperçu</p>
-          <p className="font-ui text-xs text-brand-gray/50 leading-relaxed">
+          <p className="font-ui text-xxs text-[#C5A059]/85 tracking-[0.18em] uppercase">✦ Aperçu</p>
+          <p className="font-ui text-xs text-brand-gray/65 leading-relaxed">
             Voici le formulaire qu&apos;un scanneur remplit pour vous écrire. L&apos;envoi est désactivé ici.
           </p>
         </div>
       )}
 
-      {/* Prénom — humanise le signal côté porteur (optionnel) */}
-      <div className="flex flex-col gap-1 animate-stagger-2">
-        <label className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">
-          Votre prénom{' '}
-          <span className="normal-case tracking-normal ml-1 text-brand-white/55">(optionnel)</span>
-        </label>
-        <p className="font-ui text-xxs md:text-xs text-brand-gray/50 leading-relaxed mb-1">
-          Pour qu&apos;il sache qui l&apos;a remarqué. Sinon, vous restez anonyme.
-        </p>
-        <input type="text" placeholder="Anonyme par défaut" value={senderName} maxLength={50}
-          autoComplete="given-name"
-          onChange={(e) => setSenderName(e.target.value)}
-          className="w-full bg-transparent border-b border-brand-gray/15 focus:border-brand-white/40 text-brand-white font-ui font-light text-base py-3 outline-none transition-colors placeholder:text-brand-gray/50"
-          style={{ minHeight: '44px' }}
-        />
-      </div>
+      {/* Contact REQUIS = blocker → en tête, qu'on le remplisse avant de taper. */}
+      {contactRequired && <div className="animate-stagger-2">{contactField}</div>}
 
-      {/* Contact remonté */}
-      <div className="flex flex-col gap-1 animate-stagger-2">
-        <label className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">
-          Votre @instagram ou email{' '}
-          <span className={`normal-case tracking-normal ml-1 ${contactRequired ? 'text-[#C5A059]/80' : 'text-brand-white/55'}`}>
-            ({contactRequired ? 'requis' : 'recommandé'})
-          </span>
-        </label>
-        <p className="font-ui text-xxs md:text-xs text-brand-gray/50 leading-relaxed mb-1">
-          {contactRequired
-            ? 'Ce membre n’accepte que les messages avec un contact.'
-            : 'Sans contact, il ne pourra pas vous répondre.'}
-        </p>
-        <input type="text" placeholder={contactRequired ? '@instagram ou email' : 'Anonyme par défaut'} value={contact} maxLength={200}
-          onChange={(e) => setContact(e.target.value)}
-          className={`w-full bg-transparent border-b text-brand-white font-ui font-light text-base py-3 outline-none transition-colors placeholder:text-brand-gray/50 ${contactRequired && !contact.trim() ? 'border-[#C5A059]/40 focus:border-[#C5A059]/70' : 'border-brand-gray/15 focus:border-brand-white/40'}`}
-          style={{ minHeight: '44px' }}
-        />
-      </div>
-
-      <div className="w-full h-px bg-brand-gray/10" />
-
-      {/* Quick replies */}
-      <div className="flex flex-col gap-2 animate-stagger-3">
-        <p className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Réponse rapide</p>
+      {/* Réponse rapide — chemin 1-tap, mis en avant EN PREMIER (friction minimale). */}
+      <div className="flex flex-col gap-2 animate-stagger-2">
+        <p className="font-ui text-xs text-brand-gray/60 tracking-[0.2em] uppercase">Réponse rapide</p>
+        {contactRequired && !contact.trim() && (
+          <p className="font-ui text-xs text-[#C5A059]/85 leading-relaxed">Renseignez d&apos;abord un contact ci-dessus.</p>
+        )}
         <div className="flex flex-col gap-2">
           {[
             { label: 'Belle audace.',       symbol: '✦' },
@@ -350,11 +366,11 @@ function MessageForm() {
           ].map((r) => (
             <button key={r.label} disabled={sending || isPreview}
               onClick={() => sendMessage(r.value || r.label, true)}
-              className="w-full py-3 px-4 border border-brand-gray/15 text-left font-ui text-sm font-light tracking-[0.1em] flex items-center gap-3 transition-all rounded-[1px] hover:border-brand-gray/40 hover:bg-brand-white/5 disabled:opacity-40"
+              className="w-full py-3 px-4 border border-brand-gray/20 text-left font-ui text-sm font-light tracking-[0.1em] flex items-center gap-3 transition-all rounded-[1px] hover:border-brand-gray/45 hover:bg-brand-white/5 disabled:opacity-40"
               style={{ minHeight: '44px' }}
             >
-              {r.symbol && <span style={{ fontSize: '14px', opacity: 0.4 }}>{r.symbol}</span>}
-              <span className="text-brand-gray/70">{r.label}</span>
+              {r.symbol && <span style={{ fontSize: '14px', opacity: 0.5 }}>{r.symbol}</span>}
+              <span className="text-brand-white/80">{r.label}</span>
             </button>
           ))}
         </div>
@@ -362,20 +378,20 @@ function MessageForm() {
 
       <div className="flex items-center gap-3">
         <div className="flex-1 h-px bg-brand-gray/10" />
-        <span className="font-ui text-xxs text-brand-gray/50 tracking-[0.15em] uppercase">ou</span>
+        <span className="font-ui text-xxs text-brand-gray/55 tracking-[0.15em] uppercase">ou un mot à vous</span>
         <div className="flex-1 h-px bg-brand-gray/10" />
       </div>
 
       {/* Message libre */}
-      <div className="flex flex-col gap-3 animate-stagger-4">
+      <div className="flex flex-col gap-3 animate-stagger-3">
         <div className="flex flex-col gap-1">
-          <label className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Message libre</label>
+          <label className="font-ui text-xs text-brand-gray/60 tracking-[0.2em] uppercase">Message libre</label>
           <textarea rows={4} placeholder="Quelque chose vous a traversé l'esprit..." value={message}
             maxLength={1000} onChange={(e) => setMessage(e.target.value)}
-            className="w-full bg-transparent border-b border-brand-gray/15 focus:border-brand-white/40 text-brand-white font-ui font-light text-base py-3 outline-none transition-colors resize-none placeholder:text-brand-gray/50 leading-relaxed"
+            className="w-full bg-transparent border-b border-brand-gray/20 focus:border-brand-white/50 text-brand-white font-ui font-light text-base py-3 outline-none transition-colors resize-none placeholder:text-brand-gray/45 leading-relaxed"
           />
           <div className="flex justify-end">
-            <span className="font-ui text-xxs text-brand-gray/50 tabular-nums">{1000 - message.length}</span>
+            <span className="font-ui text-xxs text-brand-gray/55 tabular-nums">{1000 - message.length}</span>
           </div>
         </div>
         {error && <p className="animate-fade-in font-ui text-sm text-red-400 text-center">{error}</p>}
@@ -385,6 +401,14 @@ function MessageForm() {
         >
           {sending ? 'Envoi...' : 'Envoyer'}
         </button>
+      </div>
+
+      {/* Personnalisation — prénom (toujours) + contact (s'il n'est pas déjà requis en tête). */}
+      <div className="w-full h-px bg-brand-gray/10" />
+      <div className="flex flex-col gap-5 animate-stagger-4">
+        <p className="font-ui text-xxs text-brand-gray/55 tracking-[0.2em] uppercase text-center">Personnaliser</p>
+        {nameField}
+        {!contactRequired && contactField}
       </div>
     </div>
   );
