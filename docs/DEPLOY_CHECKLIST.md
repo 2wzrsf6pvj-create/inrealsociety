@@ -19,6 +19,8 @@ Les migrations sont numérotées et **doivent s'appliquer dans l'ordre** (`supab
 | `034` | RPC `record_scan` (insert scan + incrément atomiques) | corrige la dérive de `scan_count` |
 | `035` | `REVOKE EXECUTE create_member_with_code FROM anon, public` + grant service_role | 🔴 ferme un bypass d'auth (création de membre arbitraire) |
 | `036` | `cleanup_old_data()` purge aussi les `push_subscriptions` > 90j | hygiène (subs scanner orphelines retenues sinon indéfiniment) |
+| `040` | `cleanup_old_data()` EXEMPTE les preuves de consentement / d'opérations RGPD de la purge 12 mois | 🔴 conformité (art. 7 — ne pas détruire la preuve de consentement) |
+| `041` | DROP `increment_scan_count` (DEFINER exposé à anon) + REVOKE `marketing_consent` sur members | 🔴 ferme 2 trous exploitables à la clé anon (intégrité scan_count + fuite RGPD cross-membre) |
 
 ### Base NEUVE (staging / nouveau projet)
 ```bash
@@ -31,7 +33,8 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -1 -f <(cat supabase/migrations/0*.sql s
 ### Base EXISTANTE (prod déjà à 032)
 Appliquer **uniquement les nouvelles** dans l'ordre :
 ```bash
-for f in 033_rls_hardening_views 034_record_scan 035_secure_create_member_rpc 036_cleanup_push_subscriptions; do
+for f in 033_rls_hardening_views 034_record_scan 035_secure_create_member_rpc 036_cleanup_push_subscriptions \
+         040_audit_retain_consent 041_security_scan_count_and_consent; do
   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -1 -f "supabase/migrations/$f.sql"
 done
 # 021 a été édité (guard idempotent) : sûr à ré-exécuter si tu veux l'aligner.
@@ -81,6 +84,14 @@ plus exécuter `create_member_with_code` (service_role oui).
   **« Confirm signup »** si besoin : `…&type=signup&next=/dashboard`.
 - **URL Configuration** : ajouter `${APP_URL}/auth/confirm` et
   `${APP_URL}/auth/callback` aux **Redirect URLs** autorisées.
+- 🔴 **« Confirm email » DOIT rester ACTIVÉ** (Auth → Providers → Email →
+  *Confirm email*). La récupération de profil orphelin (`claimOrphanedMember`,
+  dashboard) n'autorise la reprise d'un profil que si `email_confirmed_at` est
+  posé — c'est la **preuve de propriété**. Si la confirmation email est désactivée,
+  Supabase pose `email_confirmed_at` dès le signup **sans vérification réelle** →
+  n'importe qui peut s'inscrire avec l'email d'une victime et **récupérer son
+  profil orphelin**. L'invariant est dans le code (gate sur `email_confirmed_at`)
+  mais ne vaut que si la config Supabase le rend vrai.
 
 ### 🟠 Paiement / commerce (sinon shop & premium cassés)
 - `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PREMIUM_PRICE_ID`
@@ -148,7 +159,7 @@ stripe trigger charge.refunded
 ## 4. Merge / déploiement code
 - Brancher le lot de durcissement sur `main` (voir PR), déployer **après** §1 (migrations) et §2 (config).
 - Surveiller Sentry les premières heures : le webhook renvoie désormais **5xx sur erreur** (Stripe réessaie) — un pic de retries signale un handler défaillant.
-- 3 crons Vercel actifs : cleanup (dim 3h), scan-reminders (quotidien 9h), premium-reconcile (lun 4h).
+- 4 crons Vercel actifs : cleanup (dim 3h), scan-reminders (quotidien 9h), premium-reconcile (quotidien 4h), fulfillment-reconcile (toutes les 6h — rejoue les t-shirts payés non expédiés). ⚠️ Vérifier que le plan Vercel autorise ce nombre/cette fréquence de crons (Hobby = limité) ; sinon réduire fulfillment-reconcile à quotidien.
 
 ## 5. À COMPLÉTER avant prod — légal (données entreprise, hors code)
 Placeholders `[À COMPLÉTER]` à remplir (ne peuvent pas être devinés) :
