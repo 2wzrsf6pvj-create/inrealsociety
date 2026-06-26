@@ -47,6 +47,16 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Profil introuvable.' }, { status: 404 });
     }
 
+    // Lien fiable membre → orders : l'order est rattachée par `activation_code`,
+    // pas par email — le checkout Stripe peut avoir utilisé un email différent de
+    // l'email d'auth. On récupère donc les codes du membre pour exporter TOUTES ses
+    // commandes (art. 20), même celles payées sous un autre email. Cf. member/delete.
+    const { data: memberCodes } = await supabaseAdmin
+      .from('activation_codes')
+      .select('code')
+      .eq('member_id', member.id);
+    const activationCodes = (memberCodes ?? []).map(c => c.code);
+
     // ─── Fetch en parallèle toutes les données liées ─────────────────────
     const [
       { data: messages },
@@ -54,7 +64,8 @@ export async function GET(req: NextRequest) {
       { data: silentViews },
       { data: pushSubs },
       { data: auditLogs },
-      { data: orders },
+      { data: ordersByEmail },
+      { data: ordersByCode },
       { data: referrals },
       { data: newsletter },
       { data: feedback },
@@ -71,10 +82,21 @@ export async function GET(req: NextRequest) {
       supabaseAdmin.from('push_subscriptions').select('endpoint, message_id, created_at').eq('member_id', member.id),
       supabaseAdmin.from('audit_logs').select('*').eq('member_id', member.id).order('created_at', { ascending: false }).limit(1000),
       supabaseAdmin.from('orders').select('*').eq('email', member.email).order('created_at', { ascending: true }),
+      supabaseAdmin.from('orders').select('*').in('activation_code', activationCodes).order('created_at', { ascending: true }),
       supabaseAdmin.from('referrals').select('*').eq('referrer_id', member.id),
       supabaseAdmin.from('newsletter_subscribers').select('*').eq('email', member.email),
       supabaseAdmin.from('feedback').select('*').eq('member_id', member.id).order('created_at', { ascending: true }),
     ]);
+
+    // Fusion email + activation_code, dédoublonnée par id (une order peut matcher
+    // les deux), triée par date pour un export stable.
+    const ordersMap = new Map<string, Record<string, unknown>>();
+    for (const o of [...(ordersByEmail ?? []), ...(ordersByCode ?? [])]) {
+      ordersMap.set((o as { id: string }).id, o);
+    }
+    const orders = Array.from(ordersMap.values()).sort((a, b) =>
+      String(a.created_at).localeCompare(String(b.created_at)),
+    );
 
     audit({
       action:   'member.data_exported',

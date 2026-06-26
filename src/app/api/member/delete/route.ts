@@ -61,22 +61,55 @@ export async function DELETE(req: NextRequest) {
     // seule PII qu'elles contiennent — `email` — par un placeholder. La facture
     // identifiante complète (nom + adresse) est conservée par Stripe ; la
     // réconciliation comptable reste possible via amount/created_at/stripe_*_id.
-    // Le filtre `eq('email', member.email)` ne touche QUE les achats du membre :
-    // les commandes où il est referrer_id (= achats de tiers) gardent l'email du
+    // Les commandes où il est referrer_id (= achats de tiers) gardent l'email du
     // tiers (referrer_id est nullé par la FK ON DELETE SET NULL).
     const ANONYMIZED_EMAIL = 'deleted@anonymized.invalid';
+
+    // Lien fiable membre → orders : l'email de checkout Stripe (orders.email) peut
+    // différer de l'email d'auth (member.email) — l'order est rattachée au membre
+    // par son `activation_code`, pas par email. On récupère donc ses codes AVANT de
+    // les détacher (plus bas) pour anonymiser TOUTES ses commandes, y compris celles
+    // payées sous un autre email.
+    const { data: memberCodes } = await supabaseAdmin
+      .from('activation_codes')
+      .select('code')
+      .eq('member_id', member.id);
+    const activationCodes = (memberCodes ?? []).map(c => c.code);
+
+    // audit_logs : on efface l'activité du membre (art. 17) MAIS on CONSERVE les
+    // preuves de consentement / d'opérations RGPD — exactement les actions que la
+    // migration 040 exempte de la purge temporelle (art. 7 + traçabilité des droits
+    // exercés). Sans cette exclusion, la suppression du compte détruirait la preuve
+    // que 040 cherche à garder. La FK `audit_logs.member_id … ON DELETE SET NULL`
+    // détache ces lignes à la suppression du membre (plus bas) : preuve conservée
+    // mais pseudonymisée, cohérent avec l'anonymisation des orders.
+    // ⚠️ Garder synchronisé avec la liste NOT IN de migration 040.
+    const RGPD_PROOF_ACTIONS = [
+      'member.marketing_consent_changed',
+      'member.data_exported',
+      'member.deleted',
+      'member.reclaimed',
+    ];
+
     const deletes = [
       supabaseAdmin.from('messages').delete().eq('member_id', member.id),
       supabaseAdmin.from('scans').delete().eq('member_id', member.id),
       supabaseAdmin.from('silent_views').delete().eq('member_id', member.id),
       supabaseAdmin.from('push_subscriptions').delete().eq('member_id', member.id),
-      supabaseAdmin.from('audit_logs').delete().eq('member_id', member.id),
+      supabaseAdmin.from('audit_logs').delete()
+        .eq('member_id', member.id)
+        .not('action', 'in', `(${RGPD_PROOF_ACTIONS.join(',')})`),
       supabaseAdmin.from('referrals').delete().eq('referrer_id', member.id),
       supabaseAdmin.from('feedback').delete().eq('member_id', member.id),
       supabaseAdmin.from('blocks').delete().eq('member_id', member.id),
       supabaseAdmin.from('activation_codes').update({ member_id: null }).eq('member_id', member.id),
+      // Orders : conservées mais email anonymisé (minimisation). On couvre les deux
+      // liens — codes d'activation ET email d'auth — pour ne laisser aucune commande
+      // identifiante derrière, même si le checkout a utilisé un autre email.
+      ...(activationCodes.length
+        ? [supabaseAdmin.from('orders').update({ email: ANONYMIZED_EMAIL }).in('activation_code', activationCodes)]
+        : []),
       // Newsletter (keyée par email) — pas d'obligation de rétention → erasure art. 17.
-      // Orders : conservés mais email anonymisé (minimisation, cf. note ci-dessus).
       ...(member.email ? [
         supabaseAdmin.from('newsletter_subscribers').delete().eq('email', member.email),
         supabaseAdmin.from('orders').update({ email: ANONYMIZED_EMAIL }).eq('email', member.email),
