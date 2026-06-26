@@ -22,6 +22,7 @@ Les migrations sont numérotées et **doivent s'appliquer dans l'ordre** (`supab
 | `040` | `cleanup_old_data()` EXEMPTE les preuves de consentement / d'opérations RGPD de la purge 12 mois | 🔴 conformité (art. 7 — ne pas détruire la preuve de consentement) |
 | `041` | DROP `increment_scan_count` (DEFINER exposé à anon) + REVOKE `marketing_consent` sur members | 🔴 ferme 2 trous exploitables à la clé anon (intégrité scan_count + fuite RGPD cross-membre) |
 | `042` | `members` : lecture BLOCKLIST → ALLOWLIST (REVOKE SELECT + GRANT colonnes publiques uniquement) | 🟠 fail-safe : toute nouvelle colonne sensible n'est plus exposée par défaut (cause racine de la fuite 041) |
+| `043` | table `newsletter_campaigns` (idempotence/audit des envois) | feature : active l'envoi de newsletter (service_role only) |
 
 ### Base NEUVE (staging / nouveau projet)
 ```bash
@@ -35,7 +36,8 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -1 -f <(cat supabase/migrations/0*.sql s
 Appliquer **uniquement les nouvelles** dans l'ordre :
 ```bash
 for f in 033_rls_hardening_views 034_record_scan 035_secure_create_member_rpc 036_cleanup_push_subscriptions \
-         040_audit_retain_consent 041_security_scan_count_and_consent 042_members_select_allowlist; do
+         040_audit_retain_consent 041_security_scan_count_and_consent 042_members_select_allowlist \
+         043_newsletter_campaigns; do
   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -1 -f "supabase/migrations/$f.sql"
 done
 # 021 a été édité (guard idempotent) : sûr à ré-exécuter si tu veux l'aligner.
@@ -115,7 +117,7 @@ plus exécuter `create_member_with_code` (service_role oui).
 - `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY` → push no-op
 - `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST` → analytics off
 - `CRON_SECRET` → crons (cleanup, scan-reminders) non protégés/non déclenchés
-- `INTERNAL_SECRET` → `/api/push/notify` (endpoint externe) fail-closed
+- `INTERNAL_SECRET` → `/api/push/notify` + `/api/newsletter/send` (endpoints externes) fail-closed
 - `SHORT_DOMAIN` (optionnel) → sinon les QR utilisent `${APP_URL}/r/<code>`
 
 ---
@@ -209,6 +211,6 @@ Placeholders `[À COMPLÉTER]` à remplir (ne peuvent pas être devinés) :
 
 ## 6. Différés assumés (notés, non bloquants)
 - **Consentement analytics serveur** : les events `subscription_*` partent à PostHog via le webhook sans connaître le choix du membre (pseudonyme = memberId). À traiter en *intérêt légitime opérationnel* documenté, OU stocker le consentement analytics en DB et le vérifier serveur.
-- **Newsletter** : capture + **désinscription** signée (`/api/newsletter/unsubscribe`) prêtes, mais l'**envoi** n'est pas implémenté. Le futur envoi doit filtrer `unsubscribed_at IS NULL` + poser `signUnsubscribe(email)` + header `List-Unsubscribe`.
+- **Newsletter** : ✅ envoi IMPLÉMENTÉ (`POST /api/newsletter/send`, protégé `INTERNAL_SECRET`). Audience = consentis (newsletter `unsubscribed_at IS NULL` ∪ `members.marketing_consent=true`) moins tout opt-out ; lien `signUnsubscribe` + headers `List-Unsubscribe`/`-Post` (one-click) par destinataire ; idempotence via `newsletter_campaigns.key` ; `dryRun` pour prévisualiser l'audience. Usage : `curl -X POST $URL/api/newsletter/send -H "x-internal-secret: $INTERNAL_SECRET" -H 'content-type: application/json' -d '{"key":"2026-07-drop","subject":"…","html":"…","dryRun":true}'` (retirer `dryRun` pour envoyer). ⚠️ Toujours faire un `dryRun` d'abord pour vérifier la taille d'audience.
 - **`marketing_consent`** : collecté/audité mais jamais lu (aucun envoi marketing aujourd'hui). À filtrer (`= true`) quand un envoi existera. (scan-reminder = transactionnel, lié à l'achat.)
 - **RLS `members` allowlist** : `members_select_public USING(true)` expose encore les colonnes *non sensibles* de tous les membres (les sensibles sont revoke en 026/030). Refonte allowlist reportée.

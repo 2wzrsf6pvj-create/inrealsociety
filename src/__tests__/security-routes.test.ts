@@ -41,6 +41,7 @@ const PUBLIC_ROUTES = [
 /** Routes protégées par un secret header (pas par session) */
 const SECRET_PROTECTED_ROUTES = [
   'api/push/notify',            // INTERNAL_SECRET
+  'api/newsletter/send',        // INTERNAL_SECRET (broadcast)
   'api/cron/cleanup',           // CRON_SECRET (Vercel Cron)
   'api/cron/scan-reminders',    // CRON_SECRET (Vercel Cron)
   'api/cron/premium-reconcile', // CRON_SECRET (Vercel Cron)

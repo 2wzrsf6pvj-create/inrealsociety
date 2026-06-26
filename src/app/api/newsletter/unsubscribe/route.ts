@@ -31,20 +31,9 @@ function page(title: string, msg: string): NextResponse {
   return new NextResponse(html, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 }
 
-export async function GET(req: NextRequest) {
-  const ip = getIp(req);
-  const rl = await checkPublicRateLimit(ip);
-  if (!rl.success) {
-    return page('Trop de requêtes', 'Réessayez dans quelques instants.');
-  }
-
-  const email = (req.nextUrl.searchParams.get('e') ?? '').trim().toLowerCase();
-  const token = req.nextUrl.searchParams.get('t') ?? '';
-
-  if (!verifyUnsubscribe(email, token)) {
-    return page('Lien invalide', "Ce lien de désinscription n'est pas valide ou a expiré.");
-  }
-
+// Désinscription effective (newsletter + réconciliation members). Partagée entre
+// le GET (lien footer cliqué) et le POST (one-click RFC 8058 des clients mail).
+async function applyUnsubscribe(email: string, ip: string): Promise<void> {
   await supabaseAdmin
     .from('newsletter_subscribers')
     .update({ unsubscribed_at: new Date().toISOString() })
@@ -75,6 +64,42 @@ export async function GET(req: NextRequest) {
       });
     }
   }
+}
 
+export async function GET(req: NextRequest) {
+  const ip = getIp(req);
+  const rl = await checkPublicRateLimit(ip);
+  if (!rl.success) {
+    return page('Trop de requêtes', 'Réessayez dans quelques instants.');
+  }
+
+  const email = (req.nextUrl.searchParams.get('e') ?? '').trim().toLowerCase();
+  const token = req.nextUrl.searchParams.get('t') ?? '';
+
+  if (!verifyUnsubscribe(email, token)) {
+    return page('Lien invalide', "Ce lien de désinscription n'est pas valide ou a expiré.");
+  }
+
+  await applyUnsubscribe(email, ip);
   return page('Désinscription confirmée', 'Vous ne recevrez plus la newsletter. Vous pouvez vous réinscrire à tout moment.');
+}
+
+// One-click (RFC 8058) : le client mail POST `List-Unsubscribe=One-Click` sur la
+// même URL signée (header List-Unsubscribe). Idempotent, réponse 200 neutre.
+export async function POST(req: NextRequest) {
+  const ip = getIp(req);
+  const rl = await checkPublicRateLimit(ip);
+  if (!rl.success) {
+    return NextResponse.json({ ok: false }, { status: 429 });
+  }
+
+  const email = (req.nextUrl.searchParams.get('e') ?? '').trim().toLowerCase();
+  const token = req.nextUrl.searchParams.get('t') ?? '';
+
+  if (!verifyUnsubscribe(email, token)) {
+    return NextResponse.json({ ok: false }, { status: 400 });
+  }
+
+  await applyUnsubscribe(email, ip);
+  return NextResponse.json({ ok: true });
 }

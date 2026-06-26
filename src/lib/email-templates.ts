@@ -24,6 +24,18 @@ function layout(content: string): string {
   `.trim();
 }
 
+/** Newsletter : enveloppe le contenu (HTML fourni par l'opérateur, de confiance)
+ *  dans le layout commun + pied de désinscription avec lien signé PAR destinataire.
+ *  unsubscribeUrl est construite côté serveur (token HMAC) → sûre à interpoler. */
+export function emailNewsletter(params: { contentHtml: string; unsubscribeUrl: string }): string {
+  return layout(`
+    ${params.contentHtml}
+    <p style="font-family:system-ui,sans-serif;font-size:11px;color:rgba(255,255,255,0.3);text-align:center;margin-top:40px;">
+      <a href="${params.unsubscribeUrl}" style="color:rgba(255,255,255,0.4);text-decoration:underline;">Se désinscrire</a>
+    </p>
+  `);
+}
+
 function cta(label: string, url: string): string {
   return `
     <a href="${url}" style="display:block;background:#fff;color:#000;text-align:center;padding:16px;font-family:system-ui,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.25em;text-transform:uppercase;text-decoration:none;margin-top:32px;">
@@ -268,9 +280,10 @@ export function emailActivation(params: {
 // ─── Envoi générique Resend ───────────────────────────────────────────────────
 
 export async function sendEmail(params: {
-  to:      string;
-  subject: string;
-  html:    string;
+  to:       string;
+  subject:  string;
+  html:     string;
+  headers?: Record<string, string>;   // ex. List-Unsubscribe (newsletter)
 }): Promise<boolean> {
   try {
     const res = await fetch(RESEND_API_URL, {
@@ -284,6 +297,7 @@ export async function sendEmail(params: {
         to:   [params.to],
         subject: params.subject,
         html: params.html,
+        ...(params.headers ? { headers: params.headers } : {}),
       }),
     });
     return res.ok;
