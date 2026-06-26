@@ -21,6 +21,7 @@ Les migrations sont numérotées et **doivent s'appliquer dans l'ordre** (`supab
 | `036` | `cleanup_old_data()` purge aussi les `push_subscriptions` > 90j | hygiène (subs scanner orphelines retenues sinon indéfiniment) |
 | `040` | `cleanup_old_data()` EXEMPTE les preuves de consentement / d'opérations RGPD de la purge 12 mois | 🔴 conformité (art. 7 — ne pas détruire la preuve de consentement) |
 | `041` | DROP `increment_scan_count` (DEFINER exposé à anon) + REVOKE `marketing_consent` sur members | 🔴 ferme 2 trous exploitables à la clé anon (intégrité scan_count + fuite RGPD cross-membre) |
+| `042` | `members` : lecture BLOCKLIST → ALLOWLIST (REVOKE SELECT + GRANT colonnes publiques uniquement) | 🟠 fail-safe : toute nouvelle colonne sensible n'est plus exposée par défaut (cause racine de la fuite 041) |
 
 ### Base NEUVE (staging / nouveau projet)
 ```bash
@@ -34,7 +35,7 @@ psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -1 -f <(cat supabase/migrations/0*.sql s
 Appliquer **uniquement les nouvelles** dans l'ordre :
 ```bash
 for f in 033_rls_hardening_views 034_record_scan 035_secure_create_member_rpc 036_cleanup_push_subscriptions \
-         040_audit_retain_consent 041_security_scan_count_and_consent; do
+         040_audit_retain_consent 041_security_scan_count_and_consent 042_members_select_allowlist; do
   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -1 -f "supabase/migrations/$f.sql"
 done
 # 021 a été édité (guard idempotent) : sûr à ré-exécuter si tu veux l'aligner.
@@ -166,9 +167,12 @@ Après apply réel, vérifier les 2 trous fermés :
 SELECT count(*) FROM pg_proc WHERE proname = 'increment_scan_count';   -- attendu : 0
 ```
 ```bash
-# F2 : la clé ANON ne doit plus lire marketing_consent (erreur colonne / 403)
-curl -s "$SUPABASE_URL/rest/v1/members?select=marketing_consent" -H "apikey: $ANON_KEY"
-#   attendu : erreur "permission denied for column marketing_consent" (PAS une liste)
+# F2 + 042 allowlist : la clé ANON ne lit QUE les colonnes publiques
+curl -s "$SUPABASE_URL/rest/v1/members?select=marketing_consent" -H "apikey: $ANON_KEY"  # → permission denied
+curl -s "$SUPABASE_URL/rest/v1/members?select=email"             -H "apikey: $ANON_KEY"  # → permission denied
+curl -s "$SUPABASE_URL/rest/v1/members?select=id,name,plan"      -H "apikey: $ANON_KEY"  # → OK (liste)
+# Régression à NE PAS casser : login/register (filtre auth_user_id), profil public,
+# /join/[code], conversation. Dérouler un login réel + ouverture d'un profil public.
 ```
 
 **Flux applicatifs corrigés ce lot**
