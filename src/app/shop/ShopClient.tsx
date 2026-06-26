@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { captureEvent } from '@/lib/posthog-client';
 
@@ -10,6 +11,74 @@ type TshirtSize  = 'S' | 'M' | 'L' | 'XL' | 'XXL';
 
 const SIZES: TshirtSize[] = ['S', 'M', 'L', 'XL', 'XXL'];
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// ─── Galerie produit ──────────────────────────────────────────────────────────
+// Placeholder abstrait (logo )( ) — fallback tant qu'aucune vraie image n'est
+// présente dans /public/shop/.
+function AbstractTee({ color }: { color: TshirtColor }) {
+  const isDark = color === 'dark';
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+      <div className="relative flex items-center justify-center">
+        <div className={`absolute w-32 h-32 rounded-full border ${isDark ? 'border-brand-white/5' : 'border-brand-black/5'}`} />
+        <div className={`w-24 h-24 rounded-full border flex items-center justify-center ${isDark ? 'border-brand-white/20' : 'border-brand-black/20'}`}>
+          <span className={`font-display text-5xl font-light ${isDark ? 'text-[#C5A059]/60' : 'text-[#0A192F]/60'}`}>)(</span>
+        </div>
+      </div>
+      <p className={`font-ui text-xs tracking-[0.2em] uppercase ${isDark ? 'text-brand-gray/50' : 'text-brand-black/30'}`}>
+        T-shirt · Comfort Colors 1717 · {isDark ? 'Noir' : 'Blanc'}
+      </p>
+    </div>
+  );
+}
+
+// Galerie : affiche /public/shop/tee-{noir|blanc}-{dos|face}.webp (mockups Printful).
+// Le DOS (QR) est montré en premier — c'est l'argument de vente. Si un fichier
+// manque (404), on retombe sur AbstractTee → plug-and-play : dépose les images,
+// ça s'affiche, zéro changement de code. Cf. public/shop/README.txt.
+function ProductGallery({ color }: { color: TshirtColor }) {
+  const [view, setView]       = useState<'back' | 'front'>('back');
+  const [missing, setMissing] = useState<Record<string, boolean>>({});
+  const isDark   = color === 'dark';
+  const colorKey = isDark ? 'noir' : 'blanc';
+  const src      = `/shop/tee-${colorKey}-${view}.webp`;
+  const fallback = !!missing[src];
+
+  return (
+    <div className="flex flex-col gap-3">
+      <div className={`relative w-full aspect-square border rounded-[2px] overflow-hidden transition-colors ${isDark ? 'bg-[#0a0a0a] border-brand-gray/10' : 'bg-[#f0ede8] border-brand-gray/20'}`}>
+        {fallback ? (
+          <AbstractTee color={color} />
+        ) : (
+          <Image
+            src={src}
+            alt={`T-shirt In Real Society ${isDark ? 'Noir' : 'Blanc'} — ${view === 'back' ? 'dos avec QR code' : 'face'}`}
+            fill
+            sizes="(max-width: 768px) 100vw, 420px"
+            className="object-cover"
+            onError={() => setMissing(m => ({ ...m, [src]: true }))}
+            priority
+          />
+        )}
+        {view === 'back' && !fallback && (
+          <span className="absolute bottom-2 left-2 px-2 py-1 rounded-[2px] bg-black/50 backdrop-blur-sm font-ui text-xxs tracking-[0.15em] uppercase text-brand-white/80">
+            QR au dos
+          </span>
+        )}
+      </div>
+      <div className="flex gap-2">
+        {([['back', 'Dos (QR)'], ['front', 'Face']] as const).map(([v, label]) => (
+          <button key={v} type="button" onClick={() => setView(v)}
+            className={`flex-1 py-2 rounded-[2px] border font-ui text-xxs tracking-[0.15em] uppercase transition-all ${
+              view === v ? 'border-brand-white/60 bg-brand-white/5 text-brand-white' : 'border-brand-gray/15 text-brand-gray/55 hover:border-brand-gray/30'
+            }`}>
+            {label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function NewsletterCapture({ source }: { source: string }) {
   const [email, setEmail]     = useState('');
@@ -218,28 +287,9 @@ export default function ShopClient() {
         <section className="py-12 border-t border-brand-gray/10 animate-stagger-2">
           <div className="flex flex-col gap-8">
 
-            {/* Visuel produit — adapté à la couleur */}
-            <div className={`w-full aspect-square border rounded-[2px] flex flex-col items-center justify-center gap-4 transition-colors ${
-              tshirtColor === 'dark'
-                ? 'bg-[#0a0a0a] border-brand-gray/10'
-                : 'bg-[#f0ede8] border-brand-gray/20'
-            }`}>
-              <div className="relative flex items-center justify-center">
-                <div className={`absolute w-32 h-32 rounded-full border ${tshirtColor === 'dark' ? 'border-brand-white/5' : 'border-brand-black/5'}`} />
-                <div className={`w-24 h-24 rounded-full border flex items-center justify-center ${
-                  tshirtColor === 'dark' ? 'border-brand-white/20' : 'border-brand-black/20'
-                }`}>
-                  <span className={`font-display text-5xl font-light ${
-                    tshirtColor === 'dark' ? 'text-[#C5A059]/60' : 'text-[#0A192F]/60'
-                  }`}>)(</span>
-                </div>
-              </div>
-              <p className={`font-ui text-xs tracking-[0.2em] uppercase ${
-                tshirtColor === 'dark' ? 'text-brand-gray/50' : 'text-brand-black/30'
-              }`}>
-                T-shirt · Comfort Colors 1717 · {colorLabel}
-              </p>
-            </div>
+            {/* Visuel produit — galerie (mockups réels dans /public/shop si présents,
+                sinon fallback placeholder). Dos+QR montré en premier. */}
+            <ProductGallery color={tshirtColor} />
 
             {/* Sélecteur couleur */}
             <div className="flex flex-col gap-2">
