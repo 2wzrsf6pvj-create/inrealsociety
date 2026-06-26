@@ -24,6 +24,22 @@ function layout(content: string): string {
   `.trim();
 }
 
+/** Relance : compte créé mais profil non finalisé → t-shirt en attente. */
+export function emailProfileReminder(params: { registerUrl: string }): { subject: string; html: string } {
+  return {
+    subject: 'Votre t-shirt attend — finalisez votre profil',
+    html: layout(`
+      <h1 style="font-size:26px;font-weight:300;letter-spacing:0.04em;margin:0 0 8px;text-align:center;">Il vous reste une étape.</h1>
+      <p style="font-size:15px;font-weight:300;color:rgba(255,255,255,0.7);line-height:1.7;text-align:center;margin:0 0 8px;">
+        Votre compte est créé, mais votre profil ne l'est pas encore — et c'est lui
+        qui active votre t-shirt. Quelques secondes suffisent (gardez votre code
+        d'activation sous la main).
+      </p>
+      ${cta('Finaliser mon profil', params.registerUrl)}
+    `),
+  };
+}
+
 /** Newsletter : enveloppe le contenu (HTML fourni par l'opérateur, de confiance)
  *  dans le layout commun + pied de désinscription avec lien signé PAR destinataire.
  *  unsubscribeUrl est construite côté serveur (token HMAC) → sûre à interpoler. */

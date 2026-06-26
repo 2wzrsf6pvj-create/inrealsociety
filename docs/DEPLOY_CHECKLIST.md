@@ -23,6 +23,7 @@ Les migrations sont numérotées et **doivent s'appliquer dans l'ordre** (`supab
 | `041` | DROP `increment_scan_count` (DEFINER exposé à anon) + REVOKE `marketing_consent` sur members | 🔴 ferme 2 trous exploitables à la clé anon (intégrité scan_count + fuite RGPD cross-membre) |
 | `042` | `members` : lecture BLOCKLIST → ALLOWLIST (REVOKE SELECT + GRANT colonnes publiques uniquement) | 🟠 fail-safe : toute nouvelle colonne sensible n'est plus exposée par défaut (cause racine de la fuite 041) |
 | `043` | table `newsletter_campaigns` (idempotence/audit des envois) | feature : active l'envoi de newsletter (service_role only) |
+| `044` | table `profile_completion_reminders` + fonction `accounts_pending_profile()` (DEFINER) | feature : relance « payé mais profil non finalisé » (t-shirt en attente) |
 
 ### Base NEUVE (staging / nouveau projet)
 ```bash
@@ -37,7 +38,7 @@ Appliquer **uniquement les nouvelles** dans l'ordre :
 ```bash
 for f in 033_rls_hardening_views 034_record_scan 035_secure_create_member_rpc 036_cleanup_push_subscriptions \
          040_audit_retain_consent 041_security_scan_count_and_consent 042_members_select_allowlist \
-         043_newsletter_campaigns; do
+         043_newsletter_campaigns 044_profile_completion_reminders; do
   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -1 -f "supabase/migrations/$f.sql"
 done
 # 021 a été édité (guard idempotent) : sûr à ré-exécuter si tu veux l'aligner.
@@ -200,7 +201,7 @@ stripe trigger charge.refunded
 ## 4. Merge / déploiement code
 - Brancher le lot de durcissement sur `main` (voir PR), déployer **après** §1 (migrations) et §2 (config).
 - Surveiller Sentry les premières heures : le webhook renvoie désormais **5xx sur erreur** (Stripe réessaie) — un pic de retries signale un handler défaillant.
-- 4 crons Vercel actifs : cleanup (dim 3h), scan-reminders (quotidien 9h), premium-reconcile (quotidien 4h), fulfillment-reconcile (toutes les 6h — rejoue les t-shirts payés non expédiés). ⚠️ Vérifier que le plan Vercel autorise ce nombre/cette fréquence de crons (Hobby = limité) ; sinon réduire fulfillment-reconcile à quotidien.
+- 5 crons Vercel actifs : cleanup (dim 3h), scan-reminders (quotidien 9h), premium-reconcile (quotidien 4h), fulfillment-reconcile (toutes les 6h), activation-reminder (quotidien 10h — relance « payé mais profil non finalisé »). ⚠️ Vérifier que le plan Vercel autorise ce nombre/cette fréquence de crons (Hobby = limité) ; sinon réduire fulfillment-reconcile à quotidien.
 
 ## 5. À COMPLÉTER avant prod — légal (données entreprise, hors code)
 Placeholders `[À COMPLÉTER]` à remplir (ne peuvent pas être devinés) :
