@@ -98,11 +98,22 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
   const email     = session.customer_details?.email ?? session.customer_email;
 
   // ─── Idempotence : vérifie si cet événement a déjà été traité ──────────
-  const { data: existingOrder } = await supabaseAdmin
+  let { data: existingOrder } = await supabaseAdmin
     .from('orders')
     .select('id, status, activation_code')
     .eq('stripe_session_id', sessionId)
-    .single();
+    .maybeSingle();
+
+  // Filet money-path : si le lien `stripe_session_id` n'a pas pu être écrit au
+  // checkout (UPDATE post-création échoué), on retombe sur l'orderId porté par la
+  // metadata Stripe — toujours présent — pour ne pas perdre une commande payée.
+  if (!existingOrder && session.metadata?.orderId) {
+    ({ data: existingOrder } = await supabaseAdmin
+      .from('orders')
+      .select('id, status, activation_code')
+      .eq('id', session.metadata.orderId)
+      .maybeSingle());
+  }
 
   if (!existingOrder) {
     console.warn('[webhook] Order introuvable pour session:', sessionId);
@@ -136,13 +147,16 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
     .update({
       status:            'paid',
       activation_code:   code,
+      // Back-fill : si l'order a été retrouvée via metadata.orderId (lien manquant),
+      // on réécrit le `stripe_session_id` pour que refund/lookups futurs marchent.
+      stripe_session_id: sessionId,
       stripe_payment_id: session.payment_intent,
       tshirt_color:      tshirtColor,
       // Montant réellement encaissé (produit + livraison + TVA − remise), pas le
       // 4900 figé du checkout — source fiable pour la compta/les remboursements.
       amount:            session.amount_total ?? undefined,
     })
-    .eq('stripe_session_id', sessionId)
+    .eq('id', existingOrder.id)
     .eq('status', 'pending')
     .select('id');
 

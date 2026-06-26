@@ -59,7 +59,9 @@ export async function POST(req: NextRequest) {
     if (referrerId) {
       const { data: ref } = await supabaseAdmin
         .from('members').select('id, email').eq('id', referrerId).maybeSingle();
-      if (ref && ref.email !== email) validReferrerId = ref.id;
+      // Comparaison insensible à la casse : sinon Bob@x.com ≠ bob@x.com laisserait
+      // un membre se parrainer lui-même pour décrocher la remise.
+      if (ref && ref.email?.toLowerCase() !== email.toLowerCase()) validReferrerId = ref.id;
     }
 
     // ─── Crée une commande en BDD (statut pending) ────────────────────────
@@ -136,10 +138,15 @@ export async function POST(req: NextRequest) {
     });
 
     // ─── Lie la session Stripe à la commande ──────────────────────────────
-    await supabaseAdmin
+    // Si cet UPDATE échoue, le webhook retombe sur session.metadata.orderId pour
+    // ne pas perdre la commande — mais on logue pour garder une trace du cas.
+    const { error: linkErr } = await supabaseAdmin
       .from('orders')
       .update({ stripe_session_id: session.id })
       .eq('id', order.id);
+    if (linkErr) {
+      console.error('[api/shop/checkout] Lien stripe_session_id échoué (filet webhook actif):', linkErr.message);
+    }
 
     return NextResponse.json({ url: session.url });
 
