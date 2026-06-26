@@ -34,17 +34,19 @@ describe('generatePremiumQRCode', () => {
       expect(result.svg).not.toContain('#0A192F');
     });
 
-    it('devrait contenir des cercles (style dots)', () => {
-      expect(result.svg).toContain('<circle');
+    it('devrait rendre les modules en carrés arrondis (<rect rx)', () => {
+      expect(result.svg).toMatch(/<rect [^>]*rx="/);
     });
 
-    it('devrait contenir les yeux arrondis (rect avec rx)', () => {
-      expect(result.svg).toMatch(/rx="/);
+    it('devrait avoir des finder patterns PLEINS (anneau evenodd) — fiabilité scan', () => {
+      // Garde anti-régression : un finder CREUX (cadre stroke) casse la détection
+      // du pattern 1:1:3 → le QR ne se décode plus (vérifié au décodage jsqr).
+      expect(result.svg).toContain('fill-rule="evenodd"');
     });
 
-    it('devrait contenir le logo X (deux lignes croisées)', () => {
-      const lineCount = (result.svg.match(/<line /g) || []).length;
-      expect(lineCount).toBe(2); // deux barres du X
+    it('devrait contenir le logo )( (deux arcs stroke)', () => {
+      const arcCount = (result.svg.match(/<path[^>]*stroke=/g) || []).length;
+      expect(arcCount).toBe(2); // les deux arcs ) (
     });
 
     it('devrait avoir un fond blanc derrière le logo (lisibilité)', () => {
@@ -64,7 +66,7 @@ describe('generatePremiumQRCode', () => {
       expect(result.svg).toContain('#0A192F');
     });
 
-    it('devrait utiliser Gold #C5A059 pour le logo X', () => {
+    it('devrait utiliser Gold #C5A059 pour le logo )(', () => {
       // Le logo doit être gold même sur le thème light
       expect(result.svg).toContain('#C5A059');
     });

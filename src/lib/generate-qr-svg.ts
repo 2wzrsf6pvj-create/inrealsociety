@@ -73,8 +73,8 @@ function isInLogoZone(row: number, col: number, size: number, logoModules: numbe
 /** Module en carré arrondi. Remplit plus de surface que les ronds → meilleur
  *  contraste/scan, look « grille » plus premium. `CORNER` = 0 → carré net,
  *  0.5 → cercle ; 0.28 = compromis doux. `INSET` = léger gap entre modules. */
-const MODULE_CORNER = 0.28;
-const MODULE_INSET  = 0.08;
+const MODULE_CORNER = 0.25;
+const MODULE_INSET  = 0.04;  // resserré : un inset trop large casse le décodage (vérifié)
 function renderModule(x: number, y: number, size: number, color: string): string {
   const inset = size * MODULE_INSET;
   const s     = size - inset * 2;
@@ -82,28 +82,24 @@ function renderModule(x: number, y: number, size: number, color: string): string
   return `<rect x="${x + inset}" y="${y + inset}" width="${s}" height="${s}" rx="${r}" ry="${r}" fill="${color}"/>`;
 }
 
-/** Œil de positionnement — carré extérieur arrondi + carré intérieur arrondi */
-function renderFinderEye(
-  x: number,
-  y: number,
-  moduleSize: number,
-  color: string,
-): string {
-  const s  = moduleSize;
-  const rx = s * 0.8; // rayon d'arrondi
+/** Chemin SVG d'un rectangle arrondi (sous-chemin `d`, sans M/z englobants). */
+function roundedRectPath(x: number, y: number, w: number, h: number, r: number): string {
+  return `M${x + r},${y} h${w - 2 * r} a${r},${r} 0 0 1 ${r},${r} v${h - 2 * r} `
+       + `a${r},${r} 0 0 1 ${-r},${r} h${-(w - 2 * r)} a${r},${r} 0 0 1 ${-r},${-r} `
+       + `v${-(h - 2 * r)} a${r},${r} 0 0 1 ${r},${-r} z `;
+}
 
-  // Carré extérieur (7×7 modules) — bordure seulement
-  const outerSize = 7 * s;
-  const outer = `<rect x="${x}" y="${y}" width="${outerSize}" height="${outerSize}" rx="${rx}" ry="${rx}" fill="none" stroke="${color}" stroke-width="${s}"/>`;
-
-  // Carré intérieur (3×3 modules) — plein
-  const innerX    = x + 2 * s;
-  const innerY    = y + 2 * s;
-  const innerSize = 3 * s;
-  const innerRx   = s * 0.5;
-  const inner = `<rect x="${innerX}" y="${innerY}" width="${innerSize}" height="${innerSize}" rx="${innerRx}" ry="${innerRx}" fill="${color}"/>`;
-
-  return outer + inner;
+/** Œil de positionnement (finder pattern). PLEIN, géométrie 1:1:3 préservée :
+ *  anneau 7×7 (trou 5×5 transparent via fill-rule evenodd → marche sur les 2
+ *  thèmes) + centre 3×3 plein. Coins LÉGÈREMENT arrondis (style) sans distordre
+ *  la détection. ⚠️ Un cadre creux ou trop arrondi casse le scan (vérifié au décodage). */
+function renderFinderEye(x: number, y: number, s: number, color: string): string {
+  const ring = `<path fill="${color}" fill-rule="evenodd" d="`
+    + roundedRectPath(x, y, 7 * s, 7 * s, s * 0.55)
+    + roundedRectPath(x + s, y + s, 5 * s, 5 * s, s * 0.45)
+    + `"/>`;
+  const inner = `<rect x="${x + 2 * s}" y="${y + 2 * s}" width="${3 * s}" height="${3 * s}" rx="${s * 0.4}" ry="${s * 0.4}" fill="${color}"/>`;
+  return ring + inner;
 }
 
 // ─── Logo central — « )( » (deux arcs de parenthèses) ────────────────────────
