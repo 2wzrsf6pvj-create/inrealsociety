@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
+import { captureEvent } from '@/lib/posthog-client';
 
 type TshirtColor = 'dark' | 'light';
 type TshirtSize  = 'S' | 'M' | 'L' | 'XL' | 'XXL';
@@ -155,6 +156,7 @@ export default function ShopClient() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
+      captureEvent('checkout_started', { tshirt_color: tshirtColor, has_referrer: !!referrerId });
       window.location.href = data.url;
     } catch {
       setError('Une erreur est survenue. Réessayez.');

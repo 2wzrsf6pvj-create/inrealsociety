@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
+import { captureEvent, identifyMember } from '@/lib/posthog-client';
 
 const AI_PITCHES = [
   { who: "Je traverse les villes les yeux ouverts.", intent: "Provoquer la conversation qu'on n'aurait jamais eue.", closing: "Si vous êtes là, c'est que votre instinct vous a bien guidé." },
@@ -154,13 +155,16 @@ function StepAccount({ onNext, codeState }: {
   const [password, setPassword] = useState('');
   const [loading,  setLoading]  = useState(false);
   const [error,    setError]    = useState('');
+  // Notice POSITIVE (≠ erreur) : « confirmez votre email ». Affiché en doré, pas
+  // en rouge — c'est une étape de succès, pas un échec (évite la confusion).
+  const [notice,   setNotice]   = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!codeState.codeOk) { setError("Code d'activation invalide."); return; }
     if (!email.trim())     { setError('Email requis.'); return; }
     if (password.length < 8) { setError('Mot de passe trop court (8 caractères min).'); return; }
-    setLoading(true); setError('');
+    setLoading(true); setError(''); setNotice('');
     const supabase = createClient();
     const { data, error: authError } = await supabase.auth.signUp({
       email: email.trim(), password,
@@ -170,7 +174,11 @@ function StepAccount({ onNext, codeState }: {
     });
     setLoading(false);
     if (authError) { setError(friendlyAuthError(authError.code)); return; }
-    if (!data.session) { setError('Vérifiez votre email pour confirmer votre compte, puis revenez ici.'); return; }
+    captureEvent('account_created', { needs_confirmation: !data.session });
+    if (!data.session) {
+      setNotice('Compte créé. Confirmez votre email (vérifiez vos spams), puis revenez ici pour finaliser votre profil.');
+      return;
+    }
     onNext();
   };
 
@@ -203,6 +211,12 @@ function StepAccount({ onNext, codeState }: {
             style={{ minHeight: '44px' }} />
         </div>
         {error && <p className="font-ui text-sm text-red-400 text-center">{error}</p>}
+        {notice && (
+          <div className="w-full bg-[#0a0a08] border border-[#C5A059]/30 rounded-[2px] px-4 py-3 flex flex-col items-center gap-1 text-center animate-fade-in">
+            <p className="font-ui text-xxs text-[#C5A059]/85 tracking-[0.18em] uppercase">✦ Vérifiez votre email</p>
+            <p className="font-ui text-sm text-brand-gray/70 leading-relaxed">{notice}</p>
+          </div>
+        )}
         <button type="submit" disabled={loading || !codeState.codeOk}
           className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.3em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
           style={{ minHeight: '44px' }}>
@@ -395,6 +409,9 @@ function RegisterContent() {
   const initialCode = searchParams.get('code')?.toUpperCase() || '';
   const codeState   = useCodeValidation(initialCode);
 
+  // Funnel post-achat : ouverture de /register (avec ou sans code prérempli).
+  useEffect(() => { captureEvent('register_viewed', { has_code: !!initialCode }); }, [initialCode]);
+
   useEffect(() => {
     const supabase = createClient();
     supabase.auth.getUser().then(async ({ data: { user } }) => {
@@ -440,6 +457,13 @@ function RegisterContent() {
         const res  = await fetch('/api/member/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: form.name.trim(), pitch: pitch.trim(), instagram: form.instagram.trim() || undefined, activationCode: codeState.code }) });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Erreur de création.');
+        // Fin du funnel post-achat : profil créé → fulfillment déclenché. On lie
+        // le distinct_id anonyme (qui a parcouru shop→success→register) au membre.
+        if (data.memberId) {
+          identifyMember(data.memberId, {});
+          captureEvent('member_created', { member_id: data.memberId });
+          localStorage.removeItem('pending_activation_code');
+        }
       }
       if (form.photo) {
         const photoUrl = await uploadPhoto(form.photo);

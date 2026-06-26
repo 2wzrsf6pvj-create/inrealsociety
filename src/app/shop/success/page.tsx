@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { captureEvent } from '@/lib/posthog-client';
 
 function SuccessContent() {
   const searchParams = useSearchParams();
@@ -13,6 +14,7 @@ function SuccessContent() {
 
   useEffect(() => {
     if (!sessionId) { setStatus('error'); return; }
+    captureEvent('purchase_success_viewed');
     // L'achat est fait → le parrainage est consommé. On purge le ref pour qu'il
     // ne crédite/remise pas des commandes futures sans rapport (single-use).
     localStorage.removeItem('referral_code');
@@ -36,6 +38,7 @@ function SuccessContent() {
         if (data.code && typeof data.code === 'string' && data.code.length >= 6) {
           setCode(data.code);
           localStorage.setItem('pending_activation_code', data.code);
+          captureEvent('activation_code_revealed');
           setStatus('ok');
           return;
         }

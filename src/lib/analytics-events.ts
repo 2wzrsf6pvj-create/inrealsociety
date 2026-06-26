@@ -11,6 +11,15 @@ export type AnalyticsEvent =
   | 'message_blocked_paused'
   // Activation (côté membre)
   | 'member_dashboard_viewed'
+  // Funnel ACHAT → ACTIVATION (client, même distinct_id anonyme de /shop à
+  // /register, puis identify au member_created). Mesure la déperdition « payé mais
+  // jamais de profil » (→ t-shirt jamais fabriqué, le fulfillment attend l'inscription).
+  | 'checkout_started'          // CTA payer → redirection Stripe
+  | 'purchase_success_viewed'   // retour sur /shop/success (paiement OK)
+  | 'activation_code_revealed'  // code affiché sur la page succès
+  | 'register_viewed'           // ouverture de /register
+  | 'account_created'           // compte auth créé (signup)
+  | 'member_created'            // profil créé → fulfillment déclenché
   // Conversion premium
   | 'upgrade_cta_viewed'
   | 'upgrade_clicked'
