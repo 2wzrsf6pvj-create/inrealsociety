@@ -10,6 +10,7 @@ import type { Member, Scan, Message } from '@/lib/types';
 import HomeSection from './components/HomeSection';
 import InboxSection from './components/InboxSection';
 import SettingsSection from './components/SettingsSection';
+import OnboardingOverlay from './components/OnboardingOverlay';
 
 type Tab = 'home' | 'inbox' | 'settings';
 
@@ -160,6 +161,9 @@ export default function DashboardClient({
 
   return (
     <main className="relative flex min-h-screen flex-col items-center bg-brand-black text-brand-white px-6 py-8 overflow-hidden">
+      {/* Onboarding première ouverture (porteur) — vu une fois */}
+      <OnboardingOverlay name={member.name} />
+
       <div className="absolute top-[-15%] right-[-15%] w-[28rem] h-[28rem] rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.07) 0%, transparent 70%)' }} />
 
