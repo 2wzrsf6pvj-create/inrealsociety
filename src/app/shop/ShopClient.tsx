@@ -32,17 +32,21 @@ function AbstractTee({ color }: { color: TshirtColor }) {
   );
 }
 
+// ⚠️ Passe à `true` une fois les 4 mockups déposés dans public/shop/
+// (tee-{noir|blanc}-{dos|face}.webp). Tant que c'est false : on n'affiche QUE le
+// placeholder — AUCUNE requête image (donc pas de 404) et pas de toggle inutile.
+const SHOP_IMAGES_READY = false;
+
 // Galerie : affiche /public/shop/tee-{noir|blanc}-{dos|face}.webp (mockups Printful).
-// Le DOS (QR) est montré en premier — c'est l'argument de vente. Si un fichier
-// manque (404), on retombe sur AbstractTee → plug-and-play : dépose les images,
-// ça s'affiche, zéro changement de code. Cf. public/shop/README.txt.
+// Le DOS (QR) est montré en premier — c'est l'argument de vente. onError = filet
+// si un fichier manque malgré le flag. Cf. public/shop/README.txt.
 function ProductGallery({ color }: { color: TshirtColor }) {
   const [view, setView]       = useState<'back' | 'front'>('back');
   const [missing, setMissing] = useState<Record<string, boolean>>({});
   const isDark   = color === 'dark';
   const colorKey = isDark ? 'noir' : 'blanc';
   const src      = `/shop/tee-${colorKey}-${view}.webp`;
-  const fallback = !!missing[src];
+  const fallback = !SHOP_IMAGES_READY || !!missing[src];
 
   return (
     <div className="flex flex-col gap-3">
@@ -60,22 +64,25 @@ function ProductGallery({ color }: { color: TshirtColor }) {
             priority
           />
         )}
-        {view === 'back' && !fallback && (
+        {SHOP_IMAGES_READY && view === 'back' && !fallback && (
           <span className="absolute bottom-2 left-2 px-2 py-1 rounded-[2px] bg-black/50 backdrop-blur-sm font-ui text-xxs tracking-[0.15em] uppercase text-brand-white/80">
             QR au dos
           </span>
         )}
       </div>
-      <div className="flex gap-2">
-        {([['back', 'Dos (QR)'], ['front', 'Face']] as const).map(([v, label]) => (
-          <button key={v} type="button" onClick={() => setView(v)}
-            className={`flex-1 py-2 rounded-[2px] border font-ui text-xxs tracking-[0.15em] uppercase transition-all ${
-              view === v ? 'border-brand-white/60 bg-brand-white/5 text-brand-white' : 'border-brand-gray/15 text-brand-gray/55 hover:border-brand-gray/30'
-            }`}>
-            {label}
-          </button>
-        ))}
-      </div>
+      {/* Toggle face/dos UNIQUEMENT quand les images existent (sinon il ne change rien). */}
+      {SHOP_IMAGES_READY && (
+        <div className="flex gap-2">
+          {([['back', 'Dos (QR)'], ['front', 'Face']] as const).map(([v, label]) => (
+            <button key={v} type="button" onClick={() => setView(v)}
+              className={`flex-1 py-2 rounded-[2px] border font-ui text-xxs tracking-[0.15em] uppercase transition-all ${
+                view === v ? 'border-brand-white/60 bg-brand-white/5 text-brand-white' : 'border-brand-gray/15 text-brand-gray/55 hover:border-brand-gray/30'
+              }`}>
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
