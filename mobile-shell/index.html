@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>In Real Society</title>
+  <style>
+    html, body { height: 100%; margin: 0; }
+    body {
+      background: #000; color: #fff;
+      font-family: system-ui, -apple-system, sans-serif;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px;
+      -webkit-user-select: none; user-select: none;
+    }
+    .logo { font-size: 52px; font-weight: 300; letter-spacing: 0.05em; }
+    .msg  { font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase; color: rgba(255,255,255,0.4); }
+  </style>
+</head>
+<body>
+  <!-- Écran de repli LOCAL : affiché uniquement si le site déployé (server.url) est
+       injoignable. En usage normal, la coque charge directement le site. -->
+  <div class="logo">)(</div>
+  <div class="msg">Connexion…</div>
+</body>
+</html>
