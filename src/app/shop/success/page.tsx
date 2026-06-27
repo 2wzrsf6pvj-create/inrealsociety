@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { captureEvent } from '@/lib/posthog-client';
+import { haptic } from '@/lib/haptics';
 
 function SuccessContent() {
   const searchParams = useSearchParams();
@@ -100,7 +101,7 @@ function SuccessContent() {
           <p className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Votre code d&apos;activation</p>
           <p className="font-mono text-2xl font-bold tracking-[0.3em] text-brand-white select-all">{code}</p>
           <button
-            onClick={() => { navigator.clipboard.writeText(code); }}
+            onClick={() => { navigator.clipboard.writeText(code); haptic('light'); }}
             className="font-ui text-xs text-brand-gray/50 tracking-[0.15em] uppercase border border-brand-gray/20 px-4 py-1.5 rounded-[2px] hover:border-brand-gray/40 hover:text-brand-white/80 transition-colors"
           >
             Copier le code

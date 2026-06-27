@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { captureEvent } from '@/lib/posthog-client';
 import { isValidEmail, isInstagramHandle } from '@/lib/validators';
+import { haptic } from '@/lib/haptics';
 import SunToggle from '@/app/components/ui/SunToggle';
 
 // Conversion scanneur → porteur. Le scanneur vient de vivre le moment fort
@@ -95,6 +96,7 @@ function MessageForm() {
     }
     setSending(true);
     setError('');
+    haptic('light'); // accusé de réception tactile du tap d'envoi
     try {
       const res = await fetch('/api/message', {
         method: 'POST',
@@ -153,6 +155,8 @@ function MessageForm() {
       const url = `${window.location.origin}/conversation/${data.messageId}`;
       localStorage.setItem(`conversation_${memberId}`, url);
       setConversationUrl(url);
+      haptic('success'); // signal envoyé — confirmation tactile du moment clé
+
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Une erreur est survenue. Réessayez.');
     } finally {
@@ -164,6 +168,7 @@ function MessageForm() {
     if (!conversationUrl) return;
     navigator.clipboard.writeText(conversationUrl).then(() => {
       setCopied(true);
+      haptic('light');
       setTimeout(() => setCopied(false), 2000);
     });
   };

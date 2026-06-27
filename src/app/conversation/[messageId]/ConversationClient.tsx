@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import SunToggle from '@/app/components/ui/SunToggle';
 import { MAX_THREAD_MESSAGES as MAX_THREAD } from '@/lib/constants';
+import { haptic } from '@/lib/haptics';
 
 interface ConversationMessage {
   id: string; member_id: string; content: string; sender_contact: string | null;
@@ -136,6 +137,7 @@ function ThreadReplyForm({ messageId, author, onSent }: {
     if (!text.trim()) return;
     setLoading(true);
     setError('');
+    haptic('light');
     try {
       const res = await fetch('/api/conversation/reply', {
         method: 'POST',
@@ -150,6 +152,7 @@ function ThreadReplyForm({ messageId, author, onSent }: {
       }
       onSent({ id: data.replyId, content: text.trim(), author, created_at: new Date().toISOString() });
       setText('');
+      haptic('success');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur serveur.');
     } finally {
@@ -233,6 +236,8 @@ export default function ConversationClient({
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Erreur.');
       setIsBlocked(action === 'block');
+      if (action === 'block') haptic('warning'); // action lourde / irréversible
+
     } catch (err) {
       setBlockError(err instanceof Error ? err.message : 'Erreur serveur.');
     } finally {
