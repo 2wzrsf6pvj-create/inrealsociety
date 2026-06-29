@@ -20,8 +20,8 @@ const QUICK_REPLIES = new Set<string>(QUICK_REPLIES_LIST);
 const schema = z.object({
   memberId:      z.string().uuid('memberId doit être un UUID valide'),
   content:       z.string().min(1, 'Message vide').max(1000, 'Message trop long (max 1000 caractères)'),
-  senderContact: z.string().max(200).optional(),
-  senderName:    z.string().max(50).optional(),
+  senderContact: z.string().max(200).nullish(),  // le client envoie null si vide
+  senderName:    z.string().max(50).nullish(),    // (idem) — .optional() rejetterait null
   isQuickReply:  z.boolean().optional(),
 });
 
@@ -29,6 +29,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = schema.safeParse(await req.json());
     if (!body.success) {
+      console.warn('[api/message] validation échouée:', body.error.flatten().fieldErrors);
       return NextResponse.json({ error: 'Données invalides.' }, { status: 400 });
     }
 

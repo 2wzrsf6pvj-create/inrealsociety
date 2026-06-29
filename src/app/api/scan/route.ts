@@ -10,7 +10,7 @@ import { captureServerEvent } from '@/lib/posthog-server';
 
 const schema = z.object({
   memberId:    z.string().uuid(),
-  scannerName: z.string().max(100).optional(),
+  scannerName: z.string().max(100).nullish(),  // le client envoie null si absent (.optional() rejetterait null)
   latitude:    z.number().min(-90).max(90).optional(),
   longitude:   z.number().min(-180).max(180).optional(),
 });
@@ -46,6 +46,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = schema.safeParse(await req.json());
     if (!body.success) {
+      console.warn('[api/scan] validation échouée:', body.error.flatten().fieldErrors);
       return NextResponse.json({ error: 'Données invalides.' }, { status: 400 });
     }
 
@@ -130,7 +131,7 @@ export async function POST(req: NextRequest) {
       const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/${member.id}`;
       const { subject, html } = emailNouveauScan({
         memberName:   member.name,
-        scannerName,
+        scannerName:  scannerName ?? undefined,  // .nullish() → null possible, le template attend string|undefined
         dashboardUrl,
       });
       sendEmail({ to: member.email, subject, html }).catch((err) => console.error('[api/scan] Échec envoi email:', err));
