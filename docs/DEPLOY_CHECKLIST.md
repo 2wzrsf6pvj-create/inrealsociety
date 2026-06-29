@@ -25,6 +25,7 @@ Les migrations sont numérotées et **doivent s'appliquer dans l'ordre** (`supab
 | `043` | table `newsletter_campaigns` (idempotence/audit des envois) | feature : active l'envoi de newsletter (service_role only) |
 | `044` | table `profile_completion_reminders` + fonction `accounts_pending_profile()` (DEFINER) | feature : relance « payé mais profil non finalisé » (t-shirt en attente) |
 | `045` | `REVOKE UPDATE ON members` (anon/authenticated) + fix `cleanup_old_data()` (`silent_views.created_at`) | 🔴 ferme l'escalade premium par PATCH direct (clé anon) + répare la purge RGPD (cron cleanup en 500) |
+| `046` | `banned_devices` (ban global device) + `members.terms_accepted_at`/`service_waiver_at` (consentement activation) + `cleanup_old_data()` (rétention 24 mois des traces d'abus, exemption `member.activated`) | 🟠 anti-harcèlement en série + preuve de consentement bien/service + minimisation RGPD différenciée |
 
 ### Base NEUVE (staging / nouveau projet)
 ```bash
@@ -39,7 +40,8 @@ Appliquer **uniquement les nouvelles** dans l'ordre :
 ```bash
 for f in 033_rls_hardening_views 034_record_scan 035_secure_create_member_rpc 036_cleanup_push_subscriptions \
          040_audit_retain_consent 041_security_scan_count_and_consent 042_members_select_allowlist \
-         043_newsletter_campaigns 044_profile_completion_reminders 045_fix_members_update_and_cleanup; do
+         043_newsletter_campaigns 044_profile_completion_reminders 045_fix_members_update_and_cleanup \
+         046_abuse_controls_and_activation_consent; do
   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -1 -f "supabase/migrations/$f.sql"
 done
 # 021 a été édité (guard idempotent) : sûr à ré-exécuter si tu veux l'aligner.
