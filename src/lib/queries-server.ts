@@ -84,7 +84,7 @@ export async function getRecentScans(memberId: string, limit = 10): Promise<Scan
 
 export async function getFirstScanAt(memberId: string): Promise<string | null> {
   const { data } = await supabaseAdmin
-    .from('first_scans').select('first_scan_at').eq('member_id', memberId).single();
+    .from('first_scans').select('first_scan_at').eq('member_id', memberId).maybeSingle();
   return data?.first_scan_at ?? null;
 }
 

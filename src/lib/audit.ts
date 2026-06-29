@@ -64,5 +64,7 @@ export function audit(params: AuditParams): void {
     metadata:  params.metadata ?? null,
   }).then(({ error }) => {
     if (error) console.warn('[audit] Échec insertion log:', error.message);
-  });
+  // .catch : sans ça, un rejet (réseau coupé, client down) = unhandledRejection
+  // process-wide. audit() est fire-and-forget, jamais await → on avale le rejet.
+  }, (err) => console.warn('[audit] Insertion rejetée:', err));
 }

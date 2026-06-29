@@ -405,12 +405,14 @@ async function handleSubscriptionCheckout(session: Stripe.Checkout.Session): Pro
 async function handleSubscriptionChange(subscription: Stripe.Subscription): Promise<void> {
   const customerId = subscription.customer as string;
 
-  // Trouve le membre par customer ID
+  // Trouve le membre par customer ID. maybeSingle (PAS single) : 0 ligne = membre
+  // inconnu (course avec le checkout, customer supprimé) → single throw → 500 →
+  // Stripe réessaie en boucle. maybeSingle renvoie null proprement.
   const { data: member } = await supabaseAdmin
     .from('members')
     .select('id')
     .eq('stripe_customer_id', customerId)
-    .single();
+    .maybeSingle();
 
   if (!member) {
     console.warn('[webhook] Subscription change pour customer inconnu:', customerId);
