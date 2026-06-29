@@ -450,7 +450,9 @@ function RegisterContent() {
         const res = await fetch('/api/member/update', {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name: form.name.trim(), pitch: pitch.trim(), instagram: form.instagram.trim() || undefined }),
+          // instagram envoyé TOUJOURS (même ''), sinon vider le champ ne l'efface
+          // jamais (undefined = omis = colonne intacte).
+          body: JSON.stringify({ name: form.name.trim(), pitch: pitch.trim(), instagram: form.instagram.trim() }),
         });
         if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Erreur de mise à jour.'); }
       } else {

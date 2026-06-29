@@ -44,8 +44,9 @@ export async function PATCH(req: NextRequest) {
     }
 
     const updateData: Record<string, unknown> = { ...body.data };
-    if (updateData.instagram) {
-      updateData.instagram = (updateData.instagram as string).trim().replace(/^@/, '');
+    // typeof string (PAS truthy) : '' doit passer pour permettre d'EFFACER l'insta.
+    if (typeof updateData.instagram === 'string') {
+      updateData.instagram = updateData.instagram.trim().replace(/^@/, '');
     }
     // RGPD : horodate explicitement le consentement marketing à chaque flip true
     if (body.data.marketing_consent === true) {
