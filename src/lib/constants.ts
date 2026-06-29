@@ -32,3 +32,8 @@ export const MAX_THREAD_MESSAGES = 5;
 
 /** Réponses rapides qui bypassent la modération (envoi en 1 tap). */
 export const QUICK_REPLIES = ["Belle audace.", "J'aime la démarche.", "👁"] as const;
+
+/** Passe à `true` une fois les mockups produit déposés dans public/shop/
+ *  (tee-{noir|blanc}-{dos|face}.webp). Tant que false : la boutique ET l'accueil
+ *  affichent le placeholder, sans requête image (pas de 404). Source unique. */
+export const SHOP_IMAGES_READY = false;

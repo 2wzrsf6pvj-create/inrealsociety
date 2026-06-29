@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { captureEvent } from '@/lib/posthog-client';
+import { SHOP_IMAGES_READY } from '@/lib/constants';
 
 type TshirtColor = 'dark' | 'light';
 type TshirtSize  = 'S' | 'M' | 'L' | 'XL' | 'XXL';
@@ -31,11 +32,6 @@ function AbstractTee({ color }: { color: TshirtColor }) {
     </div>
   );
 }
-
-// ⚠️ Passe à `true` une fois les 4 mockups déposés dans public/shop/
-// (tee-{noir|blanc}-{dos|face}.webp). Tant que c'est false : on n'affiche QUE le
-// placeholder — AUCUNE requête image (donc pas de 404) et pas de toggle inutile.
-const SHOP_IMAGES_READY = false;
 
 // Galerie : affiche /public/shop/tee-{noir|blanc}-{dos|face}.webp (mockups Printful).
 // Le DOS (QR) est montré en premier — c'est l'argument de vente. onError = filet

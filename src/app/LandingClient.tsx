@@ -1,8 +1,49 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { SHOP_IMAGES_READY } from '@/lib/constants';
+
+// Visuel produit de la hero — affiché seulement quand un mockup existe (flag +
+// onError). Tant que false : rendu null → l'accueil reste exactement comme avant.
+function ProductHero() {
+  const [missing, setMissing] = useState(false);
+  if (!SHOP_IMAGES_READY || missing) return null;
+  return (
+    <div className="relative w-full max-w-[260px] aspect-square mx-auto rounded-[2px] overflow-hidden animate-stagger-2">
+      <Image
+        src="/shop/tee-noir-dos.webp"
+        alt="T-shirt In Real Society — dos avec QR code"
+        fill sizes="260px" className="object-cover"
+        onError={() => setMissing(true)} priority
+      />
+    </div>
+  );
+}
+
+// « Comment ça marche » — ancre le concept pour un visiteur froid (3 étapes).
+function HowItWorks() {
+  const steps = [
+    { n: '01', t: 'Portez-le',        d: 'Le t-shirt à QR code, dans la vraie vie.' },
+    { n: '02', t: 'On vous remarque', d: 'Quelqu’un scanne votre QR.' },
+    { n: '03', t: 'Un signal',        d: 'Vous recevez un message — une seule fois.' },
+  ];
+  return (
+    <div className="w-full flex flex-col gap-4 pt-2 animate-stagger-4">
+      {steps.map(s => (
+        <div key={s.n} className="flex items-baseline gap-4 text-left">
+          <span className="font-ui text-xxs text-brand-gray/40 tracking-[0.2em] tabular-nums">{s.n}</span>
+          <div className="flex flex-col gap-0.5">
+            <p className="font-ui text-sm text-brand-white/80 tracking-[0.05em]">{s.t}</p>
+            <p className="font-ui text-xs text-brand-gray/55 leading-relaxed">{s.d}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -100,6 +141,7 @@ function LandingContent() {
                 Un t-shirt. Un QR code.<br />
                 On vous remarque dans la vraie vie — et on vous écrit, une seule fois.
               </p>
+              <ProductHero />
               <div className="flex items-center justify-center gap-4">
                 <span className="font-ui text-xs text-brand-gray/55 tracking-[0.15em] uppercase">Anonyme</span>
                 <span className="text-brand-gray/15">·</span>
@@ -130,6 +172,8 @@ function LandingContent() {
             </Link>
           )}
         </div>
+
+        {!(scannerName && hasMemberId) && <HowItWorks />}
 
         <p className="font-ui text-xs text-brand-gray/50 tracking-[0.25em] uppercase animate-stagger-4">
           The IRL Social Club
