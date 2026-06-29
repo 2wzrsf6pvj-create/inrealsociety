@@ -124,6 +124,39 @@ plus exécuter `create_member_with_code` (service_role oui).
 
 ---
 
+## 2bis. CSP à nonce — bascule Report-Only → enforce (Phase 2)
+
+**État actuel (Phase 1, livré commit `a58d71d`)** : deux CSP coexistent —
+- `Content-Security-Policy` **enforçante** (posée par `next.config.mjs`, avec
+  `script-src 'unsafe-inline'`) → protection actuelle, inchangée.
+- `Content-Security-Policy-Report-Only` **stricte** (posée par `middleware.ts`,
+  `script-src 'self' 'nonce-…' 'strict-dynamic'`, **sans** `unsafe-inline`) →
+  signale les violations sans rien bloquer.
+
+**Avant de basculer**, observer les violations en conditions réelles :
+1. Déployer, naviguer tous les parcours (landing, profil, message, conversation,
+   shop + redirection Stripe, dashboard, login/signup/reset, bannière consentement
+   → chargement PostHog, déclenchement Sentry). 
+2. Collecter les rapports CSP. Sans endpoint de report configuré, ils n'apparaissent
+   **que dans la console navigateur** (`[Report Only] Refused to…`). Pour une
+   collecte centralisée, ajouter `report-uri`/`report-to` (ex. Sentry CSP ou un
+   endpoint maison) au header dans `middleware.ts` et lire les POST reçus.
+3. **Objectif : zéro violation `script-src`.** (Runtime vérifié : les 20 scripts du
+   HTML rendu sont déjà noncés.) Une violation `style-src` est attendue/tolérée —
+   on garde `'unsafe-inline'` sur les styles volontairement.
+
+**Bascule (Phase 2) — quand l'observation est propre :**
+1. `next.config.mjs` : **retirer** entièrement le bloc `Content-Security-Policy`
+   du tableau `headers` (garder X-Frame-Options, HSTS, etc.).
+2. `middleware.ts` : renommer le header réponse de
+   `Content-Security-Policy-Report-Only` → `Content-Security-Policy` (enforce).
+   Le header de **requête** `Content-Security-Policy` (lu par Next pour noncer)
+   reste tel quel.
+3. Redéployer, re-tester les mêmes parcours. Si un script casse → il n'était pas
+   noncé : repasser en Report-Only, corriger, recommencer.
+
+---
+
 ## 3. Validation staging (runbook — à exécuter, pas encore fait)
 
 Sur une **DB jetable** (nouveau projet Supabase ou `supabase start` local) :
