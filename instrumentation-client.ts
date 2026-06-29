@@ -11,6 +11,12 @@ Sentry.init({
   replaysSessionSampleRate:  0,        // session replay désactivé (vie privée + coût)
   replaysOnErrorSampleRate:  0,
   debug:                     false,
+  // RGPD : pas de PII auto-attachée ; l'IP n'est pas stockée côté ingestion.
+  sendDefaultPii:            false,
+  beforeSend(event) {
+    if (event.user) delete event.user.ip_address;
+    return event;
+  },
   ignoreErrors: [
     'ResizeObserver loop limit exceeded',
     'Network request failed',

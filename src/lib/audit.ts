@@ -51,9 +51,12 @@ export function audit(params: AuditParams): void {
   // No-op si Sentry n'est pas configuré (pas de DSN).
   if (params.action.endsWith('_failed')) {
     const level = params.action.includes('payment_failed') ? 'warning' : 'error';
+    // RGPD : on N'ENVOIE PAS l'IP à Sentry (processeur tiers, hors UE selon le
+    // plan). L'IP reste dans audit_logs (1re partie) pour la forensique ;
+    // l'alerte ops (member_id + metadata) n'en a pas besoin.
     Sentry.captureMessage(`audit: ${params.action}`, {
       level,
-      extra: { memberId: params.memberId, ip: params.ip, ...params.metadata },
+      extra: { memberId: params.memberId, ...params.metadata },
     });
   }
 
