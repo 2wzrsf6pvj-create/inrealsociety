@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
@@ -259,6 +259,31 @@ export default function ConversationClient({
   const myRole = isOwner ? 'member' : 'scanner';
   const isMyTurn = lastAuthor !== myRole && canReply;
 
+  // ─── Rattrapage : resynchronise le thread depuis le serveur ────────────
+  // Un message arrivé pendant une coupure realtime (onglet caché, reconnexion)
+  // est sinon perdu jusqu'à un refresh. Merge dédupliqué (le serveur fait foi sur
+  // les non-modérés ; on garde un éventuel optimiste local pas encore répliqué).
+  const refetchThread = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/conversation/${message.id}/thread`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const replies = (data.thread ?? []) as ThreadReply[];
+      setThread(prev => {
+        const byId = new Map(prev.map(r => [r.id, r] as const));
+        for (const r of replies) byId.set(r.id, r);
+        return Array.from(byId.values()).sort((a, b) => a.created_at.localeCompare(b.created_at));
+      });
+    } catch { /* hors-ligne : on retentera au prochain focus / reconnexion */ }
+  }, [message.id]);
+
+  // Resync au retour sur l'onglet.
+  useEffect(() => {
+    const onVisible = () => { if (!document.hidden) refetchThread(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [refetchThread]);
+
   // ─── Mark-read côté membre ─────────────────────────────────────────────
   useEffect(() => {
     if (!isOwner || message.read_at) return;
@@ -307,10 +332,12 @@ export default function ConversationClient({
         if (row.moderated) return;
         appendReply(row);
       })
-      .subscribe();
+      // À chaque (re)connexion du canal, on resync le thread → rattrape les
+      // messages broadcastés pendant une coupure (le broadcast n'est pas rejoué).
+      .subscribe((status) => { if (status === 'SUBSCRIBED') refetchThread(); });
 
     return () => { supabase.removeChannel(channel); };
-  }, [message.id, myRole]);
+  }, [message.id, myRole, refetchThread]);
 
   // ─── Push ──────────────────────────────────────────────────────────────
   const handleSubscribePush = async () => {
