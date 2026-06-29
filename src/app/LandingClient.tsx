@@ -23,27 +23,6 @@ function ProductHero() {
   );
 }
 
-// « Comment ça marche » — ancre le concept pour un visiteur froid (3 étapes).
-function HowItWorks() {
-  const steps = [
-    { n: '01', t: 'Portez-le',        d: 'Le t-shirt à QR code, dans la vraie vie.' },
-    { n: '02', t: 'On vous remarque', d: 'Quelqu’un scanne votre QR.' },
-    { n: '03', t: 'Un signal',        d: 'Vous recevez un message — une seule fois.' },
-  ];
-  return (
-    <div className="w-full flex flex-col gap-4 pt-2 animate-stagger-4">
-      {steps.map(s => (
-        <div key={s.n} className="flex items-baseline gap-4 text-left">
-          <span className="font-ui text-xxs text-brand-gray/40 tracking-[0.2em] tabular-nums">{s.n}</span>
-          <div className="flex flex-col gap-0.5">
-            <p className="font-ui text-sm text-brand-white/80 tracking-[0.05em]">{s.t}</p>
-            <p className="font-ui text-xs text-brand-gray/55 leading-relaxed">{s.d}</p>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -172,8 +151,6 @@ function LandingContent() {
             </Link>
           )}
         </div>
-
-        {!(scannerName && hasMemberId) && <HowItWorks />}
 
         <p className="font-ui text-xs text-brand-gray/50 tracking-[0.25em] uppercase animate-stagger-4">
           The IRL Social Club
