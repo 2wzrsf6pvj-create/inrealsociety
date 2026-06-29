@@ -274,8 +274,8 @@ export default function ShopClient() {
             </h1>
           </div>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/50 leading-relaxed max-w-xs">
-            Ce vêtement dit oui avant que vous parliez.<br />
-            Il donne le contrôle à celle qui ose scanner.
+            Vous affichez votre ouverture, sans un mot.<br />
+            Le contrôle reste à qui ose scanner.
           </p>
           <div className="flex items-center gap-4">
             <span className="font-ui text-xs text-brand-gray/50 tracking-[0.2em] uppercase">Anonyme</span>
