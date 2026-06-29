@@ -113,11 +113,11 @@ function LandingContent() {
           ) : (
             <div className="flex flex-col gap-4">
               <p className="font-display text-2xl md:text-3xl lg:text-4xl font-light leading-snug tracking-[0.02em]">
-                Le vêtement qui<br />
-                <span className="text-brand-gray/50">dit oui.</span>
+                Un QR.<br />
+                <span className="text-brand-gray/50">Une rencontre.</span>
               </p>
               <p className="font-ui text-sm lg:text-base font-light text-brand-gray/50 leading-relaxed">
-                Un t-shirt. Un QR code.<br />
+                Un t-shirt, un QR code au dos.<br />
                 On vous remarque dans la vraie vie — et on vous écrit, une seule fois.
               </p>
               <ProductHero />

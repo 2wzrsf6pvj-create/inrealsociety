@@ -45,7 +45,7 @@ export default function JoinPage() {
             }
           </h1>
           <p className="font-ui text-sm font-light text-brand-gray/50 leading-relaxed">
-            InRealSociety — le vêtement qui dit oui.<br />
+            InRealSociety — un QR, une rencontre.<br />
             Un t-shirt, un QR code, pour les rencontres dans la vraie vie.
           </p>
         </div>
