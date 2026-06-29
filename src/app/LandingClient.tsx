@@ -83,7 +83,7 @@ function LandingContent() {
   }, [searchParams, router]);
 
   return (
-    <main className="relative flex min-h-screen flex-col items-center bg-brand-black text-brand-white px-6 py-10 overflow-hidden">
+    <main className="relative flex min-h-screen flex-col items-center bg-brand-black text-brand-white px-6 py-10 overflow-x-hidden">
 
       <div className="absolute top-[-15%] left-[-15%] w-[28rem] h-[28rem] lg:w-[40rem] lg:h-[40rem] rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%)' }} />
@@ -92,8 +92,8 @@ function LandingContent() {
 
       {/* Zone héros : occupe l'espace disponible et centre le contenu, quel que
           soit le viewport (mobile court → desktop haut). Le footer reste en flux. */}
-      <div className="z-10 flex-1 flex flex-col items-center justify-center w-full">
-      <div className="flex flex-col items-center text-center gap-10 md:gap-12 w-full max-w-xs md:max-w-sm lg:max-w-md">
+      <div className="z-10 flex-1 flex flex-col items-center w-full">
+      <div className="flex flex-col items-center text-center gap-10 md:gap-12 w-full max-w-xs md:max-w-sm lg:max-w-md my-auto py-4">
 
         <div className="relative flex items-center justify-center animate-stagger-1">
           <div className="absolute w-24 h-24 lg:w-28 lg:h-28 rounded-full border border-brand-white/10 animate-ring-pulse" />
