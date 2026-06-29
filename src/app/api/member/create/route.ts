@@ -17,6 +17,9 @@ const schema = z.object({
   pitch:          z.string().min(1).max(500).trim(),
   instagram:      z.string().max(50).optional(),
   activationCode: z.string().min(6).max(12).toUpperCase(),
+  // §8/9 : consentement OBLIGATOIRE à l'activation. z.literal(true) → une requête
+  // sans acceptation explicite (false/absent) est rejetée (preuve juridique).
+  acceptedTerms:  z.literal(true),
 });
 
 export async function POST(req: NextRequest) {
@@ -88,6 +91,25 @@ export async function POST(req: NextRequest) {
 
     if (result.already_exists) {
       return NextResponse.json({ memberId: result.member_id, alreadyExists: true });
+    }
+
+    // ─── §8/9 : preuve de consentement d'activation (horodatée) ───────────
+    // CGV/CGU acceptées + demande d'exécution immédiate du SERVICE avec
+    // renonciation au droit de rétractation SUR LE SERVICE. Le bien (t-shirt)
+    // reste rétractable 14 j (cf. CGV). acceptedTerms est garanti true (schéma).
+    // member.activated est exempté de la purge audit (migration 046) = preuve durable.
+    if (result.member_id) {
+      const nowIso = new Date().toISOString();
+      const { error: consentErr } = await supabaseAdmin
+        .from('members')
+        .update({ terms_accepted_at: nowIso, service_waiver_at: nowIso })
+        .eq('id', result.member_id);
+      if (consentErr) console.error('[api/member/create] Consent timestamp failed:', consentErr.message);
+      audit({
+        action:   'member.activated',
+        memberId: result.member_id,
+        metadata: { activationCode, termsAcceptedAt: nowIso, serviceWaiverAt: nowIso },
+      });
     }
 
     // ─── Email de bienvenue (non-bloquant) ──────────────────────────────

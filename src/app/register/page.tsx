@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
 import { captureEvent, identifyMember } from '@/lib/posthog-client';
@@ -17,6 +18,7 @@ const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5 Mo
 
 interface FormData {
   name: string; who: string; intent: string; closing: string; instagram: string; photo: File | null;
+  acceptedTerms: boolean;   // §8/9 — consentement d'activation (CGV + service)
 }
 
 function composePitch(f: FormData): string {
@@ -278,6 +280,8 @@ function StepProfile({ form, onChange, onSubmit, onBack, loading, error, isEditi
     if (needsCode && !codeState.codeOk) { setLocalError("Code d'activation requis."); return; }
     if (!form.name.trim()) { setLocalError('Votre prénom est requis.'); return; }
     if (!composePitch(form).trim()) { setLocalError('Rédigez votre pitch ou générez-en un.'); return; }
+    // §8/9 — consentement requis à l'activation (pas en édition de profil).
+    if (!isEditing && !form.acceptedTerms) { setLocalError('Vous devez accepter les CGV pour activer votre vêtement.'); return; }
     setLocalError('');
     onSubmit();
   };
@@ -376,6 +380,23 @@ function StepProfile({ form, onChange, onSubmit, onBack, loading, error, isEditi
             style={{ minHeight: '44px' }} />
         </div>
 
+        {/* §8/9 — consentement bien/service à l'activation (pas en édition). */}
+        {!isEditing && (
+          <label className="flex items-start gap-3 cursor-pointer select-none">
+            <input type="checkbox" checked={form.acceptedTerms}
+              onChange={e => onChange({ ...form, acceptedTerms: e.target.checked })}
+              className="mt-0.5 h-4 w-4 flex-shrink-0 accent-brand-white cursor-pointer"
+              style={{ minWidth: '16px' }} />
+            <span className="font-ui text-xxs text-brand-gray/65 leading-relaxed">
+              J&apos;accepte les <Link href="/cgv" target="_blank" className="underline underline-offset-2 hover:text-brand-white">CGV/CGU</Link> et
+              je demande l&apos;activation immédiate du service de messagerie. Je reconnais
+              qu&apos;en commençant l&apos;exécution du service maintenant, je renonce à mon
+              droit de rétractation <span className="text-brand-gray/80">sur ce service</span>
+              (les conditions de retour du t-shirt sont précisées dans les CGV).
+            </span>
+          </label>
+        )}
+
         {displayedError && <p className="font-ui text-sm text-red-400 text-center">{displayedError}</p>}
 
         <button onClick={handleSubmit} disabled={loading}
@@ -404,7 +425,7 @@ function RegisterContent() {
   const [existingId,     setExistingId]     = useState<string | null>(null);
   const [loading,        setLoading]        = useState(false);
   const [error,          setError]          = useState('');
-  const [form, setForm] = useState<FormData>({ name: '', who: '', intent: '', closing: '', instagram: '', photo: null });
+  const [form, setForm] = useState<FormData>({ name: '', who: '', intent: '', closing: '', instagram: '', photo: null, acceptedTerms: false });
 
   const initialCode = searchParams.get('code')?.toUpperCase() || '';
   const codeState   = useCodeValidation(initialCode);
@@ -456,7 +477,7 @@ function RegisterContent() {
         });
         if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Erreur de mise à jour.'); }
       } else {
-        const res  = await fetch('/api/member/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: form.name.trim(), pitch: pitch.trim(), instagram: form.instagram.trim() || undefined, activationCode: codeState.code }) });
+        const res  = await fetch('/api/member/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: form.name.trim(), pitch: pitch.trim(), instagram: form.instagram.trim() || undefined, activationCode: codeState.code, acceptedTerms: form.acceptedTerms }) });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Erreur de création.');
         // Fin du funnel post-achat : profil créé → fulfillment déclenché. On lie
