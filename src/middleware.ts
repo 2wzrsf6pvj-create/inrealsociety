@@ -72,10 +72,48 @@ if (!SUPABASE_CONFIGURED && process.env.NODE_ENV !== 'production') {
   console.warn('[middleware] Supabase env vars absentes — auth check désactivé. Configure .env.local pour activer l\'auth.');
 }
 
+// CSP stricte à nonce — construite par requête. Phase 1 : émise en
+// Content-Security-Policy-Report-Only (n'enforce RIEN ; la CSP enforçante avec
+// 'unsafe-inline' reste posée par next.config en parallèle). On observe les
+// violations, puis Phase 2 = bascule en enforce + retrait de la CSP next.config.
+// 'strict-dynamic' : un script de confiance (noncé) peut en charger d'autres
+// (PostHog/Sentry init JS) → plus besoin d'allowlister chaque domaine de script.
+// 'unsafe-inline'/https: gardés en fallback : ignorés par les navigateurs qui
+// honorent le nonce (CSP3), tolérés par les anciens.
+function buildCsp(nonce: string): string {
+  const isProd = process.env.NODE_ENV === 'production';
+  return [
+    "default-src 'self'",
+    `script-src 'self' 'nonce-${nonce}' 'strict-dynamic' ${isProd ? '' : "'unsafe-eval' "}https: 'unsafe-inline'`,
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com data:",
+    "img-src 'self' data: blob: https://*.supabase.co https://*.stripe.com",
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.stripe.com https://*.posthog.com https://*.sentry.io https://api.openai.com",
+    "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://*.stripe.com",
+    "worker-src 'self' blob:",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self' https://checkout.stripe.com",
+    "frame-ancestors 'none'",
+    ...(isProd ? ["upgrade-insecure-requests"] : []),
+  ].join('; ');
+}
+
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
+  // Nonce unique par requête (Web Crypto, edge). On le pose sur les headers de
+  // REQUÊTE : x-nonce (lu par le root layout) + Content-Security-Policy (lue par
+  // Next pour noncer automatiquement ses propres scripts inline d'hydratation).
+  // Ces headers de requête ne sont PAS renvoyés au navigateur.
+  const nonce = btoa(crypto.randomUUID());
+  const csp = buildCsp(nonce);
+  req.headers.set('x-nonce', nonce);
+  req.headers.set('Content-Security-Policy', csp);
+
   const res = NextResponse.next({ request: { headers: req.headers } });
+  // Header RÉPONSE en Report-Only : le navigateur signale sans bloquer.
+  res.headers.set('Content-Security-Policy-Report-Only', csp);
 
   if (!SUPABASE_CONFIGURED) {
     return res;
@@ -107,6 +145,7 @@ export async function middleware(req: NextRequest) {
   const redirectWithSession = (url: URL) => {
     const r = NextResponse.redirect(url);
     res.cookies.getAll().forEach((c) => r.cookies.set(c));
+    r.headers.set('Content-Security-Policy-Report-Only', csp);
     return r;
   };
 

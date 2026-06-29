@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { headers } from 'next/headers';
 import FaqAccordion, { type FaqGroup } from './FaqAccordion';
 
 export const metadata = {
@@ -59,6 +60,7 @@ const FAQ_GROUPS: FaqGroup[] = [
 ];
 
 export default function FaqPage() {
+  const nonce = headers().get('x-nonce') ?? undefined;
   const faqJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
@@ -72,7 +74,7 @@ export default function FaqPage() {
   return (
     <main className="relative min-h-screen bg-brand-black text-brand-white px-6 py-16 overflow-hidden">
       {/* JSON-LD FAQPage — rich snippets Google */}
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
+      <script type="application/ld+json" nonce={nonce} dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }} />
 
       <div className="absolute top-[-15%] left-[-15%] w-[28rem] h-[28rem] rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%)' }} />

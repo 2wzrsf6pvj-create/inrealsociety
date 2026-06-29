@@ -1,6 +1,7 @@
 import '@/lib/env';
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
+import { headers } from 'next/headers';
 import { Cormorant_Garamond, Montserrat } from 'next/font/google';
 import AuthIndicator from './components/ui/AuthIndicator';
 import PostHogProvider from './components/PostHogProvider';
@@ -61,14 +62,16 @@ export default function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Nonce CSP posé par le middleware (header de requête x-nonce). Permet au
+  // script inline ci-dessous de passer la CSP stricte à nonce sans 'unsafe-inline'.
+  const nonce = headers().get('x-nonce') ?? undefined;
   return (
     <html lang="fr" className={`${cormorant.variable} ${montserrat.variable}`} suppressHydrationWarning>
       <head>
         {/* Mode plein soleil : applique la classe avant le paint (anti-FOUC),
             UNIQUEMENT sur le parcours scanneur (profil/message/conversation).
-            'unsafe-inline' est déjà autorisé par la CSP. SunScope gère ensuite
-            les navigations client. */}
-        <script dangerouslySetInnerHTML={{ __html: "try{if(localStorage.getItem('irs_sun')==='1'&&/^\\/(profil|message|conversation)(\\/|$)/.test(location.pathname))document.documentElement.classList.add('sun')}catch(e){}" }} />
+            Noncé pour la CSP stricte. SunScope gère ensuite les navigations client. */}
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: "try{if(localStorage.getItem('irs_sun')==='1'&&/^\\/(profil|message|conversation)(\\/|$)/.test(location.pathname))document.documentElement.classList.add('sun')}catch(e){}" }} />
       </head>
       <body className="antialiased bg-brand-black">
         <a href="#main" className="skip-link">Aller au contenu principal</a>
