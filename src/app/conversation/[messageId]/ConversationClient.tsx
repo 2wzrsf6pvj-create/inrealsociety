@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
@@ -217,6 +217,8 @@ export default function ConversationClient({
   const [pushAsked, setPushAsked]     = useState(false);
   const [pushGranted, setPushGranted] = useState(false);
   const [pushLoading, setPushLoading] = useState(false);
+  // IDs déjà notifiés (système) — évite la double notif (broadcast + postgres_changes).
+  const notifiedRef = useRef<Set<string>>(new Set());
 
   // ─── Blocage (porteur uniquement) ──────────────────────────────────────
   const [isBlocked, setIsBlocked]       = useState(initialBlocked);
@@ -271,38 +273,44 @@ export default function ConversationClient({
   useEffect(() => {
     const appendReply = (newReply: ThreadReply) => {
       if (!newReply?.id) return;
-      setThread(prev => {
-        if (prev.some(r => r.id === newReply.id)) return prev;
-        return [...prev, newReply];
-      });
-      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-        new Notification('Nouveau message', {
-          body: newReply.content.slice(0, 80),
-          icon: '/icon.svg',
-        });
+      setThread(prev => (prev.some(r => r.id === newReply.id) ? prev : [...prev, newReply]));
+      // Notif système : seulement si l'onglet est CACHÉ, que le message vient de
+      // l'AUTRE (jamais soi-même), et pas déjà notifié (broadcast + postgres_changes
+      // peuvent doubler pour le porteur).
+      if (
+        newReply.author !== myRole &&
+        typeof document !== 'undefined' && document.hidden &&
+        typeof Notification !== 'undefined' && Notification.permission === 'granted' &&
+        !notifiedRef.current.has(newReply.id)
+      ) {
+        notifiedRef.current.add(newReply.id);
+        new Notification('Nouveau message', { body: newReply.content.slice(0, 80), icon: '/icon.svg' });
       }
     };
 
     const channel = supabase.channel(`thread-${message.id}`)
       // Broadcast (canal public) — source principale : fonctionne pour le
-      // scanner anon, car émis par les routes reply sans lecture DB.
+      // scanner anon, car émis par les routes reply sans lecture DB (modérés exclus).
       .on('broadcast', { event: 'new_message' }, (msg) => {
         appendReply(msg.payload as ThreadReply);
       })
-      // postgres_changes — redondance pour le membre authentifié (no-op pour
-      // l'anon sous RLS, mais inoffensif : la dédup par id couvre le doublon).
+      // postgres_changes — redondance pour le membre authentifié. ⚠️ se déclenche
+      // sur TOUT insert (y compris modéré) → on filtre, sinon un message modéré
+      // (non broadcast) s'afficherait au porteur.
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
         table: 'messages',
         filter: `parent_id=eq.${message.id}`,
       }, (payload) => {
-        appendReply(payload.new as ThreadReply);
+        const row = payload.new as ThreadReply & { moderated?: boolean };
+        if (row.moderated) return;
+        appendReply(row);
       })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [message.id]);
+  }, [message.id, myRole]);
 
   // ─── Push ──────────────────────────────────────────────────────────────
   const handleSubscribePush = async () => {
@@ -316,7 +324,9 @@ export default function ConversationClient({
   };
 
   const handleThreadReply = (reply: ThreadReply) => {
-    setThread(prev => [...prev, reply]);
+    // Dédup : l'écho broadcast peut arriver AVANT la réponse du fetch (race) →
+    // sans ce garde, on verrait son propre message deux fois.
+    setThread(prev => (prev.some(r => r.id === reply.id) ? prev : [...prev, reply]));
   };
 
   // ─── Feedback ──────────────────────────────────────────────────────────
