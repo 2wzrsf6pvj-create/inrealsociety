@@ -19,6 +19,7 @@ import { APP_URL } from '@/lib/constants';
 import { captureServerEvent } from '@/lib/posthog-server';
 import { audit } from '@/lib/audit';
 import { fulfillOrder } from '@/lib/fulfillment';
+import { cancelPrintfulOrder } from '@/lib/printful-status';
 import { subscriptionMemberUpdate } from '@/lib/subscription';
 
 type TshirtColor = 'dark' | 'light';
@@ -255,7 +256,7 @@ async function handleChargeRefunded(charge: Stripe.Charge): Promise<void> {
 
   const { data: order } = await supabaseAdmin
     .from('orders')
-    .select('id, status, activation_code')
+    .select('id, status, activation_code, printful_order_id')
     .eq('stripe_payment_id', paymentIntent)
     .maybeSingle();
 
@@ -289,9 +290,31 @@ async function handleChargeRefunded(charge: Stripe.Charge): Promise<void> {
     }
   }
 
+  // Annulation Printful : un refund ne doit pas laisser partir le t-shirt en
+  // production. cancelPrintfulOrder ne tente l'annulation QUE si la commande
+  // n'est pas encore en prod/expédiée (lit le statut réel d'abord) — fenêtre
+  // paiement→expédition courte (~1 j), d'où l'intérêt d'agir dès le refund.
+  // Fail-soft : si déjà expédiée / API KO, on garde la trace en audit (le
+  // support traite le résiduel à la main) sans bloquer le marquage refunded.
+  let printfulCancel: Awaited<ReturnType<typeof cancelPrintfulOrder>> | null = null;
+  if (order.printful_order_id) {
+    printfulCancel = await cancelPrintfulOrder(order.printful_order_id);
+    if (!printfulCancel.canceled) {
+      console.warn('[webhook] refund : Printful non annulé', order.printful_order_id, printfulCancel.reason, printfulCancel.status);
+    }
+  }
+
   audit({
     action:   'order.refunded',
-    metadata: { orderId: order.id, paymentIntent, amountRefunded: charge.amount_refunded },
+    metadata: {
+      orderId:        order.id,
+      paymentIntent,
+      amountRefunded: charge.amount_refunded,
+      printfulOrderId: order.printful_order_id ?? null,
+      printfulCanceled: printfulCancel?.canceled ?? null,
+      printfulCancelReason: printfulCancel?.reason ?? null,
+      printfulStatus:  printfulCancel?.status ?? null,
+    },
   });
 
   console.log('[webhook] Order', order.id, 'refunded');
