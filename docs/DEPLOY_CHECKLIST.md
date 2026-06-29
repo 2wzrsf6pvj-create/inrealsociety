@@ -124,36 +124,32 @@ plus exécuter `create_member_with_code` (service_role oui).
 
 ---
 
-## 2bis. CSP à nonce — bascule Report-Only → enforce (Phase 2)
+## 2bis. CSP à nonce — ENFORCE (Phase 2 livrée)
 
-**État actuel (Phase 1, livré commit `a58d71d`)** : deux CSP coexistent —
-- `Content-Security-Policy` **enforçante** (posée par `next.config.mjs`, avec
-  `script-src 'unsafe-inline'`) → protection actuelle, inchangée.
-- `Content-Security-Policy-Report-Only` **stricte** (posée par `middleware.ts`,
-  `script-src 'self' 'nonce-…' 'strict-dynamic'`, **sans** `unsafe-inline`) →
-  signale les violations sans rien bloquer.
+**État actuel (enforçant, commits `a58d71d` Phase 1 + Phase 2)** : une seule CSP,
+posée par `src/middleware.ts`, **enforçante** : `script-src 'self' 'nonce-…'
+'strict-dynamic'` (sans `'unsafe-inline'` effectif — il reste en fallback legacy,
+ignoré par les navigateurs CSP3). `next.config.mjs` **ne pose plus** de CSP.
 
-**Avant de basculer**, observer les violations en conditions réelles :
-1. Déployer, naviguer tous les parcours (landing, profil, message, conversation,
-   shop + redirection Stripe, dashboard, login/signup/reset, bannière consentement
-   → chargement PostHog, déclenchement Sentry). 
-2. Collecter les rapports CSP. Sans endpoint de report configuré, ils n'apparaissent
-   **que dans la console navigateur** (`[Report Only] Refused to…`). Pour une
-   collecte centralisée, ajouter `report-uri`/`report-to` (ex. Sentry CSP ou un
-   endpoint maison) au header dans `middleware.ts` et lire les POST reçus.
-3. **Objectif : zéro violation `script-src`.** (Runtime vérifié : les 20 scripts du
-   HTML rendu sont déjà noncés.) Une violation `style-src` est attendue/tolérée —
-   on garde `'unsafe-inline'` sur les styles volontairement.
+**Vérification faite avant bascule** (dev + headless Playwright sur les 10 routes
+publiques, en Report-Only PUIS en enforce) : **0 violation `script-src`**, 0 style,
+0 autre ; hydratation OK. Balayage statique : seuls 2 scripts inline (thème + JSON-LD),
+tous deux noncés ; aucun `eval`/`new Function`/injection DOM.
 
-**Bascule (Phase 2) — quand l'observation est propre :**
-1. `next.config.mjs` : **retirer** entièrement le bloc `Content-Security-Policy`
-   du tableau `headers` (garder X-Frame-Options, HSTS, etc.).
-2. `middleware.ts` : renommer le header réponse de
-   `Content-Security-Policy-Report-Only` → `Content-Security-Policy` (enforce).
-   Le header de **requête** `Content-Security-Policy` (lu par Next pour noncer)
-   reste tel quel.
-3. Redéployer, re-tester les mêmes parcours. Si un script casse → il n'était pas
-   noncé : repasser en Report-Only, corriger, recommencer.
+**⚠️ Résidu à surveiller en prod réelle** : PostHog et Sentry ne se chargent pas en
+dev (pas de clés) → leur injection de scripts tiers n'a pas été exercée localement.
+`'strict-dynamic'` est censé les couvrir (scripts injectés par le bundle noncé =
+confiance transitive), et une violation y serait **non bloquante pour l'utilisateur**
+(analytics/erreurs only). Après déploiement, ouvrir la console sur une page авec
+consentement accepté et confirmer l'absence de `Refused to load the script ...posthog...`.
+
+**Revenir en observation si un script casse en prod** (rollback doux, sans tout
+annuler) :
+1. `middleware.ts` : header réponse `Content-Security-Policy` → `Content-Security-Policy-Report-Only`.
+   (Le header de requête `Content-Security-Policy`, lu par Next pour noncer, reste tel quel.)
+2. Optionnel : remettre une CSP enforçante permissive dans `next.config.mjs` le temps de corriger.
+3. Pour collecter les rapports en central plutôt qu'à la console : ajouter `report-to`/
+   `report-uri` au header CSP dans `middleware.ts` + un endpoint qui lit les POST.
 
 ---
 

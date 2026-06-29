@@ -72,14 +72,15 @@ if (!SUPABASE_CONFIGURED && process.env.NODE_ENV !== 'production') {
   console.warn('[middleware] Supabase env vars absentes — auth check désactivé. Configure .env.local pour activer l\'auth.');
 }
 
-// CSP stricte à nonce — construite par requête. Phase 1 : émise en
-// Content-Security-Policy-Report-Only (n'enforce RIEN ; la CSP enforçante avec
-// 'unsafe-inline' reste posée par next.config en parallèle). On observe les
-// violations, puis Phase 2 = bascule en enforce + retrait de la CSP next.config.
+// CSP stricte à nonce — construite par requête, ENFORÇANTE (Phase 2). Seule
+// source de CSP de l'app (next.config n'en pose plus). Observée d'abord en
+// Report-Only (Phase 1) → 0 violation script-src constatée → bascule en enforce.
 // 'strict-dynamic' : un script de confiance (noncé) peut en charger d'autres
 // (PostHog/Sentry init JS) → plus besoin d'allowlister chaque domaine de script.
 // 'unsafe-inline'/https: gardés en fallback : ignorés par les navigateurs qui
 // honorent le nonce (CSP3), tolérés par les anciens.
+// Pour revenir en observation (si un script casse en prod) : remettre le header
+// réponse en 'Content-Security-Policy-Report-Only' (cf. DEPLOY_CHECKLIST §2bis).
 function buildCsp(nonce: string): string {
   const isProd = process.env.NODE_ENV === 'production';
   return [
@@ -112,8 +113,8 @@ export async function middleware(req: NextRequest) {
   req.headers.set('Content-Security-Policy', csp);
 
   const res = NextResponse.next({ request: { headers: req.headers } });
-  // Header RÉPONSE en Report-Only : le navigateur signale sans bloquer.
-  res.headers.set('Content-Security-Policy-Report-Only', csp);
+  // Header RÉPONSE enforçant : le navigateur bloque ce qui n'est pas noncé.
+  res.headers.set('Content-Security-Policy', csp);
 
   if (!SUPABASE_CONFIGURED) {
     return res;
@@ -145,7 +146,7 @@ export async function middleware(req: NextRequest) {
   const redirectWithSession = (url: URL) => {
     const r = NextResponse.redirect(url);
     res.cookies.getAll().forEach((c) => r.cookies.set(c));
-    r.headers.set('Content-Security-Policy-Report-Only', csp);
+    r.headers.set('Content-Security-Policy', csp);
     return r;
   };
 
