@@ -35,12 +35,15 @@ export async function POST(req: NextRequest) {
     const own = await requireOwnership(auth.user.id, memberId);
     if (isHttpError(own)) return own;
 
-    // Marque le message comme modéré (invisible pour le membre)
-    const { error } = await supabaseAdmin
+    // Marque le message comme modéré (invisible pour le membre) et récupère son
+    // sender_token pour la trace d'abus (corrélation cross-porteurs).
+    const { data: reported, error } = await supabaseAdmin
       .from('messages')
       .update({ moderated: true })
       .eq('id', messageId)
-      .eq('member_id', memberId);
+      .eq('member_id', memberId)
+      .select('sender_token')
+      .maybeSingle();
 
     if (error) throw error;
 
@@ -48,7 +51,8 @@ export async function POST(req: NextRequest) {
       action:   'message.reported',
       memberId,
       ip:       getIp(req),
-      metadata: { messageId },
+      // sender_token (pseudonyme) : relie un device à travers plusieurs porteurs.
+      metadata: { messageId, senderToken: reported?.sender_token ?? null },
     });
 
     return NextResponse.json({ ok: true });

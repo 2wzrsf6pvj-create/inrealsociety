@@ -22,6 +22,21 @@ export async function isBlocked(memberId: string, senderToken: string | null): P
 }
 
 /**
+ * Ce device (sender_token) est-il banni GLOBALEMENT (tous porteurs) ?
+ * Anti-harcèlement en série : un device banni par l'ops ne peut plus écrire à
+ * personne. Distinct de isBlocked (par-porteur). Sans jeton → false.
+ */
+export async function isDeviceBanned(senderToken: string | null): Promise<boolean> {
+  if (!senderToken) return false;
+  const { data } = await supabaseAdmin
+    .from('banned_devices')
+    .select('sender_token')
+    .eq('sender_token', senderToken)
+    .maybeSingle();
+  return !!data;
+}
+
+/**
  * Bloque une conversation : la ferme (blocked_at) et, si le device est connu,
  * enregistre le blocage (member_id, sender_token) pour couper tout re-contact.
  */

@@ -10,7 +10,7 @@ import { audit } from '@/lib/audit';
 import { SCAN_WINDOW_MS, MAX_CONVERSATIONS, QUICK_REPLIES as QUICK_REPLIES_LIST } from '@/lib/constants';
 import { moderateContent } from '@/lib/moderation';
 import { getSenderToken, createSenderToken, setSenderTokenCookie } from '@/lib/sender-token';
-import { isBlocked } from '@/lib/blocks';
+import { isBlocked, isDeviceBanned } from '@/lib/blocks';
 import { notifyMemberSubscribers } from '@/lib/push-notify';
 import { captureServerEvent } from '@/lib/posthog-server';
 import { APP_URL } from '@/lib/constants';
@@ -74,6 +74,33 @@ export async function POST(req: NextRequest) {
     // identique à « indisponible » pour ne pas révéler le blocage au harceleur.
     if (await isBlocked(memberId, existingToken)) {
       return NextResponse.json({ error: 'Ce membre est indisponible.', code: 'paused' }, { status: 403 });
+    }
+
+    // ─── Bannissement global du device (anti-harcèlement en série) ─────────
+    // Réponse identique à « indisponible » pour ne pas révéler le ban au device.
+    if (await isDeviceBanned(existingToken)) {
+      return NextResponse.json({ error: 'Ce membre est indisponible.', code: 'paused' }, { status: 403 });
+    }
+
+    // ─── §4 : un seul message racine par device et par porteur ─────────────
+    // Si ce device a déjà écrit un message racine à ce porteur, c'est à lui de
+    // répondre — pas de second canal. Vérifié seulement si le device est CONNU
+    // (cookie déjà posé) ; un device neuf n'a pas d'historique. On COMPTE aussi
+    // les messages modérés (sinon re-essais infinis pour passer la modération).
+    // Un rescan rouvre la fenêtre mais ne redonne pas un message racine.
+    if (existingToken) {
+      const { count: priorRoots } = await supabaseAdmin
+        .from('messages')
+        .select('*', { count: 'exact', head: true })
+        .eq('member_id', memberId)
+        .eq('sender_token', existingToken)
+        .is('parent_id', null);
+      if ((priorRoots ?? 0) > 0) {
+        return NextResponse.json(
+          { error: 'Vous avez déjà envoyé un message à ce profil. À lui de répondre.', code: 'already_messaged' },
+          { status: 409 },
+        );
+      }
     }
 
     // ─── Contact requis ───────────────────────────────────────────────────
@@ -171,6 +198,9 @@ export async function POST(req: NextRequest) {
       metadata: {
         messageId:    message?.id,
         isQuickReply: isKnownQuickReply,
+        // sender_token (pseudonyme) : permet de relier un abus à travers
+        // plusieurs porteurs (harcèlement en série). Trace conservée 24 mois.
+        senderToken,
         ...(moderated ? { moderationSource: moderation.source, categories: moderation.categories } : {}),
       },
     });

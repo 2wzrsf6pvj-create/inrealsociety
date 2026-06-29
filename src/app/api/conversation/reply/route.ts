@@ -14,7 +14,7 @@ import { APP_URL, MAX_THREAD_MESSAGES } from '@/lib/constants';
 import { isValidEmail } from '@/lib/validators';
 import { moderateContent } from '@/lib/moderation';
 import { getSenderToken } from '@/lib/sender-token';
-import { isBlocked } from '@/lib/blocks';
+import { isBlocked, isDeviceBanned } from '@/lib/blocks';
 
 const schema = z.object({
   messageId: z.string().uuid(),      // ID du message racine (le premier)
@@ -50,6 +50,10 @@ export async function POST(req: NextRequest) {
     }
     // Device bloqué par ce porteur via une AUTRE conversation → on coupe aussi ici.
     if (author === 'scanner' && await isBlocked(rootMsg.member_id, getSenderToken(req))) {
+      return NextResponse.json({ error: 'Cette conversation est close.', code: 'blocked' }, { status: 403 });
+    }
+    // Device banni globalement (anti-harcèlement en série) → même réponse opaque.
+    if (author === 'scanner' && await isDeviceBanned(getSenderToken(req))) {
       return NextResponse.json({ error: 'Cette conversation est close.', code: 'blocked' }, { status: 403 });
     }
 

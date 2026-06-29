@@ -64,8 +64,9 @@ export async function POST(req: NextRequest) {
       action:   action === 'block' ? 'conversation.blocked' : 'conversation.unblocked',
       memberId,
       ip:       getIp(req),
-      // On logue la présence d'un jeton (forensic anti-harcèlement), jamais sa valeur.
-      metadata: { messageId, senderTokenPresent: !!rootMsg.sender_token },
+      // sender_token (pseudonyme) logué pour relier un device à travers plusieurs
+      // porteurs (harcèlement en série) → décider d'un ban global. Trace 24 mois.
+      metadata: { messageId, senderToken: rootMsg.sender_token ?? null },
     });
 
     return NextResponse.json({ ok: true, blocked: action === 'block' });

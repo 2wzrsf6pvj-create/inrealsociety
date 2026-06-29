@@ -69,6 +69,9 @@ function MessageForm() {
   // Membre en pause OU device bloqué : le serveur renvoie le même code 'paused'
   // (volontaire — ne pas révéler le blocage). Écran terminal neutre.
   const [unavailable, setUnavailable] = useState(false);
+  // §4 — Ce device a déjà envoyé son message unique à ce porteur. Écran terminal
+  // qui renvoie vers la conversation existante si on en a le lien (localStorage).
+  const [alreadyMessaged, setAlreadyMessaged] = useState(false);
   // Ref pour guider (focus) vers le champ contact quand il est requis mais vide —
   // évite le dead-end quand on tape une quick-reply sans contact obligatoire.
   const contactRef = useRef<HTMLInputElement>(null);
@@ -132,6 +135,12 @@ function MessageForm() {
         if (data.code === 'paused') {
           captureEvent('message_blocked_paused', { member_id: memberId });
           setUnavailable(true); setSending(false); return;
+        }
+        if (data.code === 'already_messaged') {
+          captureEvent('message_blocked_already_messaged', { member_id: memberId });
+          const prior = localStorage.getItem(`conversation_${memberId}`);
+          if (prior) setConversationUrl(prior);
+          setAlreadyMessaged(true); setSending(false); return;
         }
         throw new Error(errorMsg);
       }
@@ -227,6 +236,32 @@ function MessageForm() {
         </p>
         <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
         <BecomeWearerCTA source="paused" hook={<>Et toi,<br />tu te montrerais ?</>} />
+        <button onClick={() => memberId ? router.push(`/profil/${memberId}`) : router.push('/')}
+          className="font-ui text-sm text-brand-gray/55 tracking-[0.15em] uppercase underline underline-offset-4 py-3"
+          style={{ minHeight: '44px' }}>
+          ← retour au profil
+        </button>
+      </div>
+    );
+  }
+
+  if (alreadyMessaged) {
+    return (
+      <div className="flex flex-col items-center gap-6 text-center animate-stagger-1">
+        <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
+        <p className="font-display text-2xl font-light">C&apos;est déjà lancé.</p>
+        <p className="font-ui text-sm text-brand-gray/65 leading-relaxed">
+          Vous avez déjà écrit à {memberName}.<br />
+          Un seul message — c&apos;est à elle/lui de répondre maintenant.
+        </p>
+        <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
+        {conversationUrl && (
+          <button onClick={() => router.push(conversationUrl.replace(window.location.origin, ''))}
+            className="w-full max-w-xs py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all"
+            style={{ minHeight: '44px' }}>
+            Voir la conversation
+          </button>
+        )}
         <button onClick={() => memberId ? router.push(`/profil/${memberId}`) : router.push('/')}
           className="font-ui text-sm text-brand-gray/55 tracking-[0.15em] uppercase underline underline-offset-4 py-3"
           style={{ minHeight: '44px' }}>
