@@ -123,10 +123,11 @@ function PushPrompt({ pushAsked, pushGranted, pushLoading, onSubscribe, hasConta
 
 // ─── Formulaire de réponse (membre OU scanner) ──────────────────────────────
 
-function ThreadReplyForm({ messageId, author, onSent }: {
+function ThreadReplyForm({ messageId, author, onSent, onClosed }: {
   messageId: string;
   author: 'scanner' | 'member';
   onSent: (reply: ThreadReply) => void;
+  onClosed: (code: 'blocked' | 'thread_limit') => void;
 }) {
   const [text, setText]       = useState('');
   const [loading, setLoading] = useState(false);
@@ -145,7 +146,15 @@ function ThreadReplyForm({ messageId, author, onSent }: {
         body: JSON.stringify({ messageId, content: text.trim(), author }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Erreur.');
+      if (!res.ok) {
+        // Course : conversation close (blocage) ou pleine côté serveur → on
+        // remonte au parent qui bascule l'UI sur l'état terminal (fin du form).
+        if (data.code === 'blocked' || data.code === 'thread_limit') {
+          onClosed(data.code);
+          return;
+        }
+        throw new Error(data.error || 'Erreur.');
+      }
       if (data.moderated) {
         setError('Ce message enfreint nos règles et n’a pas été envoyé.');
         return;
@@ -224,6 +233,10 @@ export default function ConversationClient({
   const [isBlocked, setIsBlocked]       = useState(initialBlocked);
   const [blockLoading, setBlockLoading] = useState(false);
   const [blockError, setBlockError]     = useState('');
+  // Verrou posé quand le SERVEUR refuse une réponse (course : l'autre a atteint
+  // la limite / le porteur a bloqué entre le chargement SSR et l'envoi). Sans ça
+  // le formulaire restait actif et l'erreur s'affichait sous un champ réinscriptible.
+  const [limitReached, setLimitReached] = useState(false);
 
   const setBlock = async (action: 'block' | 'unblock') => {
     if (action === 'block' && !window.confirm('Bloquer cette personne ? Elle ne pourra plus vous écrire, ici comme ailleurs.')) return;
@@ -249,7 +262,7 @@ export default function ConversationClient({
 
   const memberName = message.members?.name || 'Ce membre';
   const totalMessages = 1 + thread.length; // message initial + thread
-  const canReply = totalMessages < MAX_THREAD;
+  const canReply = totalMessages < MAX_THREAD && !limitReached;
 
   // Qui doit répondre en dernier ? Alterne scanner/member.
   // Le scanner est toujours l'auteur du message racine.
@@ -476,6 +489,7 @@ export default function ConversationClient({
               messageId={message.id}
               author={myRole}
               onSent={handleThreadReply}
+              onClosed={(code) => code === 'blocked' ? setIsBlocked(true) : setLimitReached(true)}
             />
           ) : (
             /* En attente de l'autre */
