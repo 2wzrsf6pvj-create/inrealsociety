@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
   for (let batch = 0; batch < MAX_BATCHES; batch++) {
     const { data: orders, error } = await supabaseAdmin
       .from('orders')
-      .select('id, activation_code, tshirt_color')
+      .select('id, activation_code, tshirt_color, tshirt_size')
       .eq('status', 'paid')
       .is('printful_order_id', null)
       .not('activation_code', 'is', null)
@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
 
       const tshirtColor = o.tshirt_color === 'light' ? 'light' : 'dark';
       try {
-        const result = await fulfillOrder({ orderId: o.id, memberId: codeRow.member_id, tshirtColor });
+        const result = await fulfillOrder({ orderId: o.id, memberId: codeRow.member_id, tshirtColor, tshirtSize: o.tshirt_size });
         if (result.ok && !result.alreadyFulfilled) {
           fulfilled++;
           audit({

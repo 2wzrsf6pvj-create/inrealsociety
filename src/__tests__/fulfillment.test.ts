@@ -45,7 +45,7 @@ describe('fulfillOrder — idempotence', () => {
       makeFromMock(null, null),
     );
 
-    const result = await fulfillOrder({ orderId: 'missing', memberId: 'm1', tshirtColor: 'dark' });
+    const result = await fulfillOrder({ orderId: 'missing', memberId: 'm1', tshirtColor: 'dark', tshirtSize: 'M' });
     expect(result.ok).toBe(false);
     expect(result.reason).toBe('order_not_found');
     expect(global.fetch).not.toHaveBeenCalled();
@@ -56,7 +56,7 @@ describe('fulfillOrder — idempotence', () => {
       makeFromMock({ id: 'o1', stripe_session_id: 'sess', printful_order_id: null, status: 'pending' }),
     );
 
-    const result = await fulfillOrder({ orderId: 'o1', memberId: 'm1', tshirtColor: 'dark' });
+    const result = await fulfillOrder({ orderId: 'o1', memberId: 'm1', tshirtColor: 'dark', tshirtSize: 'M' });
     expect(result.ok).toBe(false);
     expect(result.reason).toBe('order_not_paid');
     expect(global.fetch).not.toHaveBeenCalled();
@@ -72,7 +72,7 @@ describe('fulfillOrder — idempotence', () => {
       }),
     );
 
-    const result = await fulfillOrder({ orderId: 'o1', memberId: 'm1', tshirtColor: 'dark' });
+    const result = await fulfillOrder({ orderId: 'o1', memberId: 'm1', tshirtColor: 'dark', tshirtSize: 'M' });
     expect(result.ok).toBe(true);
     expect(result.alreadyFulfilled).toBe(true);
     expect(result.printfulOrderId).toBe('printful_existing_id');

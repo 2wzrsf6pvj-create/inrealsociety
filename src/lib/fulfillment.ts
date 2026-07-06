@@ -16,11 +16,18 @@ import { buildShortUrl, generateUniqueShortCode } from '@/lib/short-code';
 import type { PrintfulOrderPayload, PrintfulOrderResponse, PrintfulAddress } from '@/lib/printful.types';
 
 type TshirtColor = 'dark' | 'light';
+type TshirtSize  = 'S' | 'M' | 'L' | 'XL' | 'XXL';
+
+const VALID_SIZES: readonly string[] = ['S', 'M', 'L', 'XL', 'XXL'];
+function coerceSize(raw: string | null | undefined): TshirtSize {
+  return (VALID_SIZES.includes(raw ?? '') ? raw : 'M') as TshirtSize;
+}
 
 interface FulfillmentParams {
   orderId:     string;
   memberId:    string;
   tshirtColor: TshirtColor;
+  tshirtSize:  string;   // brut (S/M/L/XL/XXL) ; coercé en interne, défaut M
 }
 
 interface FulfillmentResult {
@@ -30,11 +37,18 @@ interface FulfillmentResult {
   printfulOrderId?:  string;
 }
 
-function getVariantId(color: TshirtColor): number {
-  const v = color === 'dark'
+// Un variant_id Printful encode À LA FOIS la couleur ET la taille. On résout donc
+// par (couleur × taille) via PRINTFUL_VARIANT_ID_{DARK|LIGHT}_{S|M|L|XL|XXL}.
+// Fallback legacy (déploiements mono-taille) : PRINTFUL_VARIANT_ID_{DARK|LIGHT}
+// puis PRINTFUL_VARIANT_ID. Sans l'env par taille, TOUTES les commandes partaient
+// à la taille figée dans le fallback → bug « tout le monde reçoit la même taille ».
+function getVariantId(color: TshirtColor, size: TshirtSize): number {
+  const c = color === 'dark' ? 'DARK' : 'LIGHT';
+  const perSize = process.env[`PRINTFUL_VARIANT_ID_${c}_${size}`];
+  const legacy = color === 'dark'
     ? (process.env.PRINTFUL_VARIANT_ID_DARK  || process.env.PRINTFUL_VARIANT_ID)
     : (process.env.PRINTFUL_VARIANT_ID_LIGHT || process.env.PRINTFUL_VARIANT_ID);
-  return parseInt(v || '0', 10);
+  return parseInt(perSize || legacy || '0', 10);
 }
 
 function getShippingDetails(session: Stripe.Checkout.Session): PrintfulAddress | null {
@@ -58,7 +72,8 @@ function getShippingDetails(session: Stripe.Checkout.Session): PrintfulAddress |
   };
 }
 
-export async function fulfillOrder({ orderId, memberId, tshirtColor }: FulfillmentParams): Promise<FulfillmentResult> {
+export async function fulfillOrder({ orderId, memberId, tshirtColor, tshirtSize }: FulfillmentParams): Promise<FulfillmentResult> {
+  const size = coerceSize(tshirtSize);
   // ─── 1. Idempotence : skip si déjà fulfilled ───────────────────────────────
   const { data: order, error: orderErr } = await supabaseAdmin
     .from('orders')
@@ -126,7 +141,7 @@ export async function fulfillOrder({ orderId, memberId, tshirtColor }: Fulfillme
   await supabaseAdmin.from('members').update({ qr_code_url: publicUrl }).eq('id', memberId);
 
   // ─── 5. Création Printful (idempotent via external_id) ─────────────────────
-  const variantId = getVariantId(tshirtColor);
+  const variantId = getVariantId(tshirtColor, size);
   if (!variantId) return { ok: false, reason: 'no_printful_variant_id' };
 
   const colorLabel = tshirtColor === 'dark' ? 'Black' : 'White';
@@ -137,7 +152,7 @@ export async function fulfillOrder({ orderId, memberId, tshirtColor }: Fulfillme
     items: [{
       variant_id: variantId,
       quantity:   1,
-      name:       `In Real Society — Comfort Colors 1717 ${colorLabel} (DTF)`,
+      name:       `In Real Society — Comfort Colors 1717 ${colorLabel} ${size} (DTF)`,
       files: [{
         type: 'back',
         url:  publicUrl,

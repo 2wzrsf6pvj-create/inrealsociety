@@ -95,6 +95,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
   const userId    = session.metadata?.userId;
   const rawColor  = session.metadata?.tshirtColor;
   const tshirtColor: TshirtColor = (rawColor === 'dark' || rawColor === 'light') ? rawColor : 'dark';
+  const tshirtSize = session.metadata?.tshirtSize ?? 'M';  // coercé dans fulfillOrder
   const sessionId = session.id;
   const email     = session.customer_details?.email ?? session.customer_email;
 
@@ -211,7 +212,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
   }
 
   if (fulfillMemberId) {
-    const result = await fulfillOrder({ orderId: existingOrder.id, memberId: fulfillMemberId, tshirtColor });
+    const result = await fulfillOrder({ orderId: existingOrder.id, memberId: fulfillMemberId, tshirtColor, tshirtSize });
     if (result.ok) {
       audit({
         action:   'order.fulfilled',
@@ -268,6 +269,21 @@ async function handleChargeRefunded(charge: Stripe.Charge): Promise<void> {
 
   if (order.status === 'refunded') {
     console.log('[webhook] Order déjà refunded:', order.id);
+    return;
+  }
+
+  // Remboursement PARTIEL (ex. les frais de port seuls) : Stripe émet aussi
+  // charge.refunded. On ne doit PAS traiter ça comme une annulation totale
+  // (marquer refunded + supprimer le code + annuler Printful) sinon le client
+  // garde son t-shirt payé mais perd son accès / voit sa commande annulée.
+  // `charge.refunded` = true seulement si TOTALEMENT remboursé.
+  const fullyRefunded = charge.refunded || charge.amount_refunded >= charge.amount;
+  if (!fullyRefunded) {
+    console.log('[webhook] Refund partiel sur order', order.id, '— pas d\'annulation.');
+    audit({
+      action:   'order.refunded',
+      metadata: { orderId: order.id, paymentIntent, partial: true, amountRefunded: charge.amount_refunded, amount: charge.amount },
+    });
     return;
   }
 

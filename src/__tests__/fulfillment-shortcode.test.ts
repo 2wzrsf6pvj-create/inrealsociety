@@ -77,7 +77,7 @@ describe('fulfillOrder — garantie short_code (H3)', () => {
   afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
 
   it('génère + persiste un short_code et encode l\'URL COURTE dans le QR', async () => {
-    const res = await fulfillOrder({ orderId: 'o1', memberId: 'm1', tshirtColor: 'dark' });
+    const res = await fulfillOrder({ orderId: 'o1', memberId: 'm1', tshirtColor: 'dark', tshirtSize: 'M' });
 
     expect(res.ok).toBe(true);
     expect(res.printfulOrderId).toBe('pf99');

@@ -134,7 +134,7 @@ export async function POST(req: NextRequest) {
       try {
         const { data: order } = await supabaseAdmin
           .from('orders')
-          .select('id, tshirt_color, printful_order_id, status')
+          .select('id, tshirt_color, tshirt_size, printful_order_id, status')
           .eq('activation_code', activationCode)
           .single();
 
@@ -144,6 +144,7 @@ export async function POST(req: NextRequest) {
             orderId:     order.id,
             memberId:    result.member_id,
             tshirtColor,
+            tshirtSize:  order.tshirt_size,
           });
           if (fulfillResult.ok) {
             audit({

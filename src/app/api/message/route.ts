@@ -188,7 +188,18 @@ export async function POST(req: NextRequest) {
       .select('id')
       .single();
 
-    if (msgError) throw msgError;
+    if (msgError) {
+      // Course perdue sur l'index unique (migration 047) : deux envois quasi
+      // simultanés du même device vers le même porteur. Même réponse que le
+      // garde applicatif §4 plus haut → « un seul message » garanti côté BDD.
+      if (msgError.code === '23505') {
+        return NextResponse.json(
+          { error: 'Vous avez déjà envoyé un message à ce profil. À lui de répondre.', code: 'already_messaged' },
+          { status: 409 },
+        );
+      }
+      throw msgError;
+    }
 
     // ─── Audit ────────────────────────────────────────────────────────────
     audit({

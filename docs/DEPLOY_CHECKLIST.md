@@ -26,6 +26,7 @@ Les migrations sont numérotées et **doivent s'appliquer dans l'ordre** (`supab
 | `044` | table `profile_completion_reminders` + fonction `accounts_pending_profile()` (DEFINER) | feature : relance « payé mais profil non finalisé » (t-shirt en attente) |
 | `045` | `REVOKE UPDATE ON members` (anon/authenticated) + fix `cleanup_old_data()` (`silent_views.created_at`) | 🔴 ferme l'escalade premium par PATCH direct (clé anon) + répare la purge RGPD (cron cleanup en 500) |
 | `046` | `banned_devices` (ban global device) + `members.terms_accepted_at`/`service_waiver_at` (consentement activation) + `cleanup_old_data()` (rétention 24 mois des traces d'abus, exemption `member.activated`) | 🟠 anti-harcèlement en série + preuve de consentement bien/service + minimisation RGPD différenciée |
+| `047` | index UNIQUE partiel `messages(member_id, sender_token) WHERE parent_id IS NULL` | 🟠 rend atomique la règle « un seul message par device » (anti-TOCTOU). ⚠️ dédupliquer d'abord si base existante (cf. commentaire migration) |
 
 ### Base NEUVE (staging / nouveau projet)
 ```bash
@@ -41,7 +42,7 @@ Appliquer **uniquement les nouvelles** dans l'ordre :
 for f in 033_rls_hardening_views 034_record_scan 035_secure_create_member_rpc 036_cleanup_push_subscriptions \
          040_audit_retain_consent 041_security_scan_count_and_consent 042_members_select_allowlist \
          043_newsletter_campaigns 044_profile_completion_reminders 045_fix_members_update_and_cleanup \
-         046_abuse_controls_and_activation_consent; do
+         046_abuse_controls_and_activation_consent 047_one_root_message_per_device; do
   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -1 -f "supabase/migrations/$f.sql"
 done
 # 021 a été édité (guard idempotent) : sûr à ré-exécuter si tu veux l'aligner.
@@ -106,7 +107,11 @@ plus exécuter `create_member_with_code` (service_role oui).
 - **Dashboard Stripe** : activer **Stripe Tax** (sinon `automatic_tax` applique 0 %), créer le **coupon parrainage** — ⚠️ y mettre une limite (`max_redemptions` et/ou durée) car l'UUID parrain est public : sans plafond, la remise est cumulable à l'infini par n'importe qui (coût marketing non borné) —, configurer le **webhook** vers `/api/webhook/stripe` (events : `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `charge.refunded`, `invoice.payment_failed`).
 
 ### 🟠 Fulfillment (sinon t-shirt payé jamais expédié — alerté via Sentry)
-- `PRINTFUL_API_TOKEN`, `PRINTFUL_VARIANT_ID_DARK`, `PRINTFUL_VARIANT_ID_LIGHT`
+- `PRINTFUL_API_TOKEN`
+- **⚠️ `PRINTFUL_VARIANT_ID_{DARK|LIGHT}_{S|M|L|XL|XXL}` (10 variables)** — un variant_id
+  Printful encode couleur **ET** taille. Sans elles, **toutes les commandes partent à la
+  taille du fallback** `PRINTFUL_VARIANT_ID_{DARK|LIGHT}` → le client reçoit la mauvaise
+  taille. Renseigner les 10 depuis le catalogue Printful avant toute vente réelle.
 
 ### 🟡 Rate-limit (sinon routes limitées → 500 ; dédup scan → fail-open)
 - `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
