@@ -9,12 +9,15 @@ const PUBLIC_PAGES = new Set([
   '/manifeste',
   '/faq',
   '/cgv',
+  '/confidentialite',   // politique RGPD — DOIT être accessible au public
+  '/mentions-legales',  // LCEN — DOIT être accessible au public
   '/message',
   '/shop',
   '/commande',          // suivi de commande (acheteur invité, lookup par code)
   '/confirmation',
   '/register',
   '/auth/login',
+  '/auth/signup',       // stub → redirect('/register') ; bookmark/lien externe
   '/auth/callback',
   '/auth/confirm',      // confirmation OTP token_hash (reset cross-device, signup)
   '/auth/forgot-password',
@@ -35,7 +38,8 @@ const PUBLIC_API_EXACT = new Set([
   '/api/message',        // envoi message scanner anonyme
   '/api/scan',
   '/api/order-code',
-  '/api/order/status',   // suivi de commande public (lookup par code d'activation)
+  '/api/order/status',       // suivi de commande public (lookup par code d'activation)
+  '/api/order/resend-code',  // renvoi de code (acheteur invité déconnecté) — rate-limit email
   '/api/activate',
   '/api/feedback',       // feedback conversation accessible aux scanners anonymes
   '/api/health',         // healthcheck pour monitoring uptime

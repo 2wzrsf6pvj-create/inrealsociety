@@ -104,12 +104,17 @@ export async function POST(req: NextRequest) {
         .from('members')
         .update({ terms_accepted_at: nowIso, service_waiver_at: nowIso })
         .eq('id', result.member_id);
-      if (consentErr) console.error('[api/member/create] Consent timestamp failed:', consentErr.message);
-      audit({
-        action:   'member.activated',
-        memberId: result.member_id,
-        metadata: { activationCode, termsAcceptedAt: nowIso, serviceWaiverAt: nowIso },
-      });
+      // N'émettre la preuve d'audit QUE si les colonnes reflètent le consentement,
+      // sinon les deux sources de vérité divergent (audit « activé » sans timestamps).
+      if (consentErr) {
+        console.error('[api/member/create] Consent timestamp failed:', consentErr.message);
+      } else {
+        audit({
+          action:   'member.activated',
+          memberId: result.member_id,
+          metadata: { activationCode, termsAcceptedAt: nowIso, serviceWaiverAt: nowIso },
+        });
+      }
     }
 
     // ─── Email de bienvenue (non-bloquant) ──────────────────────────────

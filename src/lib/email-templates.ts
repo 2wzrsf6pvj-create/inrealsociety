@@ -94,7 +94,7 @@ export function emailNouveauMessage(params: {
     ? (contact ? `${name} (${contact})` : name)
     : contact;
   return {
-    subject: `${safeName}, quelqu'un vous a envoyé un signal.`,
+    subject: `${params.memberName}, quelqu'un vous a envoyé un signal.`,
     html: layout(`
       <h1 style="font-size:26px;font-weight:300;letter-spacing:0.04em;margin:0 0 8px;text-align:center;">Un signal pour vous,</h1>
       <h2 style="font-size:26px;font-weight:600;letter-spacing:0.04em;margin:0 0 32px;text-align:center;">${safeName}.</h2>
@@ -112,7 +112,7 @@ export function emailReponse(params: {
 }): { subject: string; html: string } {
   const safeName = escapeHtml(params.memberName);
   return {
-    subject: `${safeName} vous a répondu.`,
+    subject: `${params.memberName} vous a répondu.`,
     html: layout(`
       <h1 style="font-size:22px;font-weight:300;margin:0 0 24px;text-align:center;">
         <strong style="font-weight:600;">${safeName}</strong> vous a répondu.
@@ -137,7 +137,7 @@ export function emailNouveauScan(params: {
     : 'Quelqu\'un vient de voir votre profil.';
 
   return {
-    subject: `${safeName}, quelqu'un vient de scanner votre profil.`,
+    subject: `${params.memberName}, quelqu'un vient de scanner votre profil.`,
     html: layout(`
       <h1 style="font-size:22px;font-weight:300;margin:0 0 24px;text-align:center;line-height:1.4;">
         ${headline}
@@ -158,7 +158,7 @@ export function emailBienvenue(params: {
 }): { subject: string; html: string } {
   const safeName = escapeHtml(params.name);
   return {
-    subject: `${safeName}, votre profil InRealSociety est actif.`,
+    subject: `${params.name}, votre profil InRealSociety est actif.`,
     html: layout(`
       <h1 style="font-size:28px;font-weight:300;letter-spacing:0.05em;margin:0 0 16px;text-align:center;">
         Bienvenue, ${safeName}.
@@ -186,7 +186,7 @@ export function emailScanReminder(params: {
 }): { subject: string; html: string } {
   const safeName = escapeHtml(params.name);
   return {
-    subject: `${safeName}, le monde attend votre première rencontre.`,
+    subject: `${params.name}, le monde attend votre première rencontre.`,
     html: layout(`
       <h1 style="font-size:28px;font-weight:300;letter-spacing:0.04em;margin:0 0 16px;text-align:center;">
         Pas encore de scan, ${safeName}.
@@ -217,7 +217,7 @@ export function emailPremium(params: {
 }): { subject: string; html: string } {
   const safeName = escapeHtml(params.name);
   return {
-    subject: `${safeName}, bienvenue dans le cercle premium.`,
+    subject: `${params.name}, bienvenue dans le cercle premium.`,
     html: layout(`
       <h1 style="font-size:28px;font-weight:300;letter-spacing:0.04em;margin:0 0 16px;text-align:center;">
         Bienvenue dans le cercle, ${safeName}.
@@ -247,7 +247,7 @@ export function emailPaymentFailed(params: {
   const safeName = escapeHtml(params.name);
   const attempt  = params.attemptNumber ?? 1;
   return {
-    subject: `${safeName}, votre paiement premium n’a pas pu être traité.`,
+    subject: `${params.name}, votre paiement premium n’a pas pu être traité.`,
     html: layout(`
       <h1 style="font-size:24px;font-weight:300;letter-spacing:0.04em;margin:0 0 16px;text-align:center;">
         Le paiement n’est pas passé.

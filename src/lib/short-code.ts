@@ -59,7 +59,10 @@ export async function generateUniqueShortCode(): Promise<string> {
 export function buildShortUrl(shortCode: string): string {
   const shortDomain = process.env.SHORT_DOMAIN; // ex: https://inreal.me
   if (shortDomain) {
-    return `${shortDomain}/${shortCode}`;
+    // Retire un éventuel slash final pour éviter 'https://inreal.me//u8'
+    // (URL imprimée sur le t-shirt → doit être impeccable). Le domaine court
+    // doit router /{code} vers /r/{code}.
+    return `${shortDomain.replace(/\/$/, '')}/${shortCode}`;
   }
   const appUrl = APP_URL;
   return `${appUrl}/r/${shortCode}`;

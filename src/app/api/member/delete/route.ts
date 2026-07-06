@@ -83,12 +83,16 @@ export async function DELETE(req: NextRequest) {
     // que 040 cherche à garder. La FK `audit_logs.member_id … ON DELETE SET NULL`
     // détache ces lignes à la suppression du membre (plus bas) : preuve conservée
     // mais pseudonymisée, cohérent avec l'anonymisation des orders.
-    // ⚠️ Garder synchronisé avec la liste NOT IN de migration 040.
+    // ⚠️ Garder synchronisé avec la liste NOT IN de cleanup_old_data (migration 046).
+    // member.activated = preuve de consentement §8/9 (CGV + renonciation service) :
+    // doit SURVIVRE à la suppression (détachée par la FK SET NULL), sinon on détruit
+    // la preuve au moment même où l'utilisateur exerce son droit à l'effacement.
     const RGPD_PROOF_ACTIONS = [
       'member.marketing_consent_changed',
       'member.data_exported',
       'member.deleted',
       'member.reclaimed',
+      'member.activated',
     ];
 
     const deletes = [

@@ -52,12 +52,17 @@ export function audit(params: AuditParams): void {
   // No-op si Sentry n'est pas configuré (pas de DSN).
   if (params.action.endsWith('_failed')) {
     const level = params.action.includes('payment_failed') ? 'warning' : 'error';
-    // RGPD : on N'ENVOIE PAS l'IP à Sentry (processeur tiers, hors UE selon le
-    // plan). L'IP reste dans audit_logs (1re partie) pour la forensique ;
-    // l'alerte ops (member_id + metadata) n'en a pas besoin.
+    // RGPD : on N'ENVOIE PAS de PII à Sentry (processeur tiers, hors UE selon le
+    // plan). L'IP est déjà exclue, mais params.metadata peut porter email / ip /
+    // sender_token (ex. order.email_failed) → on filtre ces clés avant le spread.
+    // La PII reste dans audit_logs (1re partie) ; l'alerte ops n'en a pas besoin.
+    const PII_KEYS = new Set(['email', 'ip', 'senderToken', 'sender_token', 'senderContact']);
+    const safeMeta = Object.fromEntries(
+      Object.entries(params.metadata ?? {}).filter(([k]) => !PII_KEYS.has(k)),
+    );
     Sentry.captureMessage(`audit: ${params.action}`, {
       level,
-      extra: { memberId: params.memberId, ...params.metadata },
+      extra: { memberId: params.memberId, ...safeMeta },
     });
   }
 
