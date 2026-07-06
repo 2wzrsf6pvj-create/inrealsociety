@@ -19,8 +19,14 @@ export default function ConsentBanner() {
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const stored = localStorage.getItem(CONSENT_KEY);
-    if (stored === 'granted' && posthog.__loaded) {
-      posthog.opt_in_capturing();
+    // La VISIBILITÉ ne dépend que du choix stocké — jamais de posthog.__loaded.
+    // Les effets s'exécutent enfant→parent : ce composant tourne AVANT le
+    // posthog.init() du provider parent, donc __loaded est encore falsy ici. Le
+    // conditionner ré-affichait le bandeau à chaque hard-reload d'un utilisateur
+    // ayant déjà accepté. L'opt-in réel est (re)posé à l'init de PostHogProvider ;
+    // on le tente aussi ici au cas où PostHog serait déjà chargé.
+    if (stored === 'granted') {
+      if (posthog.__loaded) posthog.opt_in_capturing();
       return;
     }
     if (stored === 'denied') return;

@@ -34,7 +34,8 @@ function PendingConversations({ messages }: { messages: Message[] }) {
           <span className="w-1.5 h-1.5 rounded-full bg-brand-white flex-shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="font-ui text-sm text-brand-white/80 truncate group-hover:text-brand-white transition-colors">{m.content}</p>
-            <p className="font-ui text-xxs text-brand-gray/50">{m.sender_contact || 'Anonyme'} · {timeAgo(m.created_at)}</p>
+            {/* suppressHydrationWarning : timeAgo dépend de Date.now() (SSR ≠ client). */}
+            <p suppressHydrationWarning className="font-ui text-xxs text-brand-gray/50">{m.sender_contact || 'Anonyme'} · {timeAgo(m.created_at)}</p>
           </div>
           <span className="font-ui text-xs text-brand-gray/50 group-hover:text-brand-white transition-colors flex-shrink-0">Répondre →</span>
         </Link>
@@ -344,7 +345,8 @@ export default function HomeSection({ member, recentScans, scansByDay = [], mess
                   <span className="font-ui text-xxs text-brand-gray/55">📍 {scan.location}</span>
                 )}
               </div>
-              <span className="font-ui text-xs text-brand-gray/50 flex-shrink-0">{formatDate(scan.scanned_at)}</span>
+              {/* suppressHydrationWarning : toLocaleDateString dépend du fuseau (SSR UTC ≠ client). */}
+              <span suppressHydrationWarning className="font-ui text-xs text-brand-gray/50 flex-shrink-0">{formatDate(scan.scanned_at)}</span>
             </div>
           ))}
         </div>

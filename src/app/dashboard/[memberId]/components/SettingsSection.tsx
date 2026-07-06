@@ -103,9 +103,11 @@ function ReferralBlock({ memberId }: { memberId: string }) {
   }, [memberId]);
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(referralUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    // clipboard peut rejeter (contexte non sécurisé / permission) → ne confirmer
+    // « Copié » qu'en cas de succès réel, et avaler le rejet (pas d'unhandled).
+    navigator.clipboard?.writeText(referralUrl)
+      .then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); })
+      .catch(() => {});
   };
 
   return (
@@ -271,17 +273,24 @@ function ExportDataLink() {
 function DeleteAccountButton() {
   const [confirming, setConfirming] = useState(false);
   const [deleting, setDeleting]     = useState(false);
+  const [error, setError]           = useState('');
 
   const handleDelete = async () => {
     setDeleting(true);
+    setError('');
     try {
       const res = await fetch('/api/member/delete', { method: 'DELETE' });
       if (res.ok) {
         window.location.href = '/';
+        return;
       }
-    } catch {
+      // Réponse non-2xx : sans ça le bouton restait bloqué sur « Suppression... »
+      // indéfiniment, sans message. On débloque et on signale.
+      setError('La suppression a échoué. Réessayez.');
       setDeleting(false);
-      setConfirming(false);
+    } catch {
+      setError('Erreur réseau. Réessayez.');
+      setDeleting(false);
     }
   };
 
@@ -311,6 +320,7 @@ function DeleteAccountButton() {
           {deleting ? 'Suppression...' : 'Confirmer'}
         </button>
       </div>
+      {error && <p className="font-ui text-xs text-red-400 text-center">{error}</p>}
     </div>
   );
 }

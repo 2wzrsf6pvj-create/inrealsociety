@@ -131,7 +131,10 @@ export default function ProfilClient({
     // rien, le scan part SANS localisation après 6 s — il est dédupliqué côté
     // serveur (IP+membre, 30 min) donc aucun double même si un envoi suit.
     setAskLocation(true);
-    fallbackRef.current = setTimeout(() => sendScan(), 6000);
+    // Ferme la carte AVANT l'auto-envoi : sinon elle reste affichée après le scan
+    // fallback, et un clic « Partager ma ville » ensuite déclenche le prompt natif
+    // de géoloc pour rien (sendScan est déjà ref-gardé → la position est jetée).
+    fallbackRef.current = setTimeout(() => { setAskLocation(false); sendScan(); }, 6000);
     return () => { if (fallbackRef.current) clearTimeout(fallbackRef.current); };
   }, [member.id, isOwner, member.is_paused, member.name, member.plan, sendScan]);
 

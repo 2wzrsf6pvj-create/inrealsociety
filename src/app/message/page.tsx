@@ -306,7 +306,7 @@ function MessageForm() {
         </div>
         <div className="w-full flex flex-col gap-3">
           <p className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Votre fil de conversation</p>
-          <button onClick={() => router.push(conversationUrl)}
+          <button onClick={() => router.push(conversationUrl.replace(window.location.origin, ''))}
             className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200"
             style={{ minHeight: '44px' }}
           >

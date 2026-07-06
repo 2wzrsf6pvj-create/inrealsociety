@@ -64,6 +64,7 @@ export default function InboxSection({ messages: initialMessages, memberId, plan
   const [messages, setMessages]         = useState(initialMessages);
   const [reportingId,  setReportingId]  = useState<string | null>(null);
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [reportError,  setReportError]  = useState<string | null>(null);
   const [reported,     setReported]     = useState<Set<string>>(new Set());
   const [loadingMore, setLoadingMore]   = useState(false);
   // Nombre de cartes au 1er rendu : celles AU-DELÀ (chargées via « Voir plus »)
@@ -89,6 +90,7 @@ export default function InboxSection({ messages: initialMessages, memberId, plan
   const handleReport = async (messageId: string) => {
     setReportingId(messageId);
     setConfirmingId(null);
+    setReportError(null);
     try {
       const res = await fetch('/api/report', {
         method: 'POST',
@@ -97,8 +99,16 @@ export default function InboxSection({ messages: initialMessages, memberId, plan
       });
       if (res.ok) {
         setReported(prev => new Set(prev).add(messageId));
+      } else {
+        // Échec : sans feedback l'utilisateur croyait avoir signalé. On rouvre le
+        // confirm (bouton réessayer) et on affiche l'erreur.
+        setReportError(messageId);
+        setConfirmingId(messageId);
       }
-    } catch {}
+    } catch {
+      setReportError(messageId);
+      setConfirmingId(messageId);
+    }
     setReportingId(null);
   };
 
@@ -205,6 +215,7 @@ export default function InboxSection({ messages: initialMessages, memberId, plan
                       className="font-ui text-xxs text-brand-gray/55 hover:text-brand-white/80 transition-colors">
                       Annuler
                     </button>
+                    {reportError === msg.id && <span className="font-ui text-xxs text-red-400/70">échec</span>}
                   </span>
                 ) : (
                   <button

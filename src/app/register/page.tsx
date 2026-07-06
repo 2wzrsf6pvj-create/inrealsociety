@@ -273,7 +273,10 @@ function StepProfile({ form, onChange, onSubmit, onBack, loading, error, isEditi
       return;
     }
     onChange({ ...form, photo: file });
-    setPreview(URL.createObjectURL(file));
+    setPreview(prev => {
+      if (prev) URL.revokeObjectURL(prev);  // libère l'objectURL précédent (anti-fuite)
+      return URL.createObjectURL(file);
+    });
   };
 
   const handleSubmit = () => {
@@ -486,6 +489,12 @@ function RegisterContent() {
           identifyMember(data.memberId, {});
           captureEvent('member_created', { member_id: data.memberId });
           localStorage.removeItem('pending_activation_code');
+          // Le code d'activation est désormais CONSOMMÉ. On bascule en mode édition
+          // pour qu'un ré-envoi (typiquement après échec d'upload photo ci-dessous)
+          // passe par le PATCH idempotent et NE re-poste PAS le code (sinon piège :
+          // profil créé mais dashboard inatteignable, code invalide).
+          setIsEditing(true);
+          setExistingId(data.memberId);
         }
       }
       if (form.photo) {

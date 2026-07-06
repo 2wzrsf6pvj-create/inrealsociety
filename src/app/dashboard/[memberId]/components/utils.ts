@@ -43,6 +43,10 @@ const WAITING_PHRASES = [
 ];
 
 export function getWaitingPhrase(memberId: string): string {
-  const seed = memberId.charCodeAt(0) + new Date().getDate();
+  // Seed DÉTERMINISTE (somme des char codes) — surtout PAS de `new Date()` : évalué
+  // au render, il diffère entre serveur (UTC) et client → mismatch d'hydratation
+  // (fréquent au cold-start scan_count=0, où cette phrase s'affiche).
+  let seed = 0;
+  for (let i = 0; i < memberId.length; i++) seed += memberId.charCodeAt(i);
   return WAITING_PHRASES[seed % WAITING_PHRASES.length];
 }

@@ -35,6 +35,14 @@ export default function PostHogProvider({ children }: { children: React.ReactNod
       opt_out_persistence_by_default:  true,
       advanced_disable_flags:          true,
     });
+
+    // Ré-applique le consentement DÈS l'init : le ConsentBanner (enfant) tourne
+    // avant cet effet, donc son opt_in au chargement était perdu (__loaded encore
+    // falsy). Sans ça, un visiteur récurrent ayant accepté restait opted-out
+    // jusqu'à re-cliquer. Ne concerne que 'granted' (l'opt-out est déjà le défaut).
+    if (localStorage.getItem('irs_consent') === 'granted') {
+      posthog.opt_in_capturing();
+    }
   }, []);
 
   useEffect(() => {
