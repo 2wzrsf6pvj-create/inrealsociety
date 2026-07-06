@@ -58,14 +58,28 @@ export async function POST(req: NextRequest) {
     const own = await requireOwnership(auth.user.id, referrerId);
     if (isHttpError(own)) return own;
 
-    // ─── Si orderId fourni, vérifie qu'il existe bien ────────────────────
+    // ─── Si orderId fourni, vérifie qu'il existe + anti auto-parrainage ──────
     if (orderId) {
       const { data: order } = await supabaseAdmin
-        .from('orders').select('id').eq('id', orderId).single();
+        .from('orders').select('id, email').eq('id', orderId).single();
 
       if (!order) {
         return NextResponse.json({ error: 'Commande introuvable' }, { status: 404 });
       }
+
+      // Le parrain ne peut pas être l'acheteur de la commande (auto-parrainage via
+      // une commande orpheline dont on connaît l'orderId). On compare l'email de
+      // la commande à celui du membre parrain (dont on a validé l'ownership).
+      const { data: refMember } = await supabaseAdmin
+        .from('members').select('email').eq('id', referrerId).maybeSingle();
+      const buyer    = (order.email ?? '').trim().toLowerCase();
+      const referrer = (refMember?.email ?? '').trim().toLowerCase();
+      if (buyer && referrer && buyer === referrer) {
+        return NextResponse.json({ error: 'Auto-parrainage non autorisé.' }, { status: 403 });
+      }
+      // Résidu assumé (faible) : revendiquer la commande orpheline d'un INCONNU
+      // reste possible si on en devine l'orderId (UUID non énumérable) — ne gonfle
+      // qu'un compteur de parrainage, sans valeur monétaire directe.
     }
 
     // ─── Insertion parrainage ─────────────────────────────────────────────

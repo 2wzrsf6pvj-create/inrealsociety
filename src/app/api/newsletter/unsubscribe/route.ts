@@ -21,13 +21,14 @@ import { verifyUnsubscribe } from '@/lib/unsubscribe-token';
 import { checkPublicRateLimit, getIp } from '@/lib/ratelimit';
 import { audit } from '@/lib/audit';
 
-function page(title: string, msg: string): NextResponse {
+function page(title: string, msg: string, extra = ''): NextResponse {
   const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${title}</title>
 <style>body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;background:#000;color:#fff;font-family:system-ui,sans-serif;text-align:center;padding:24px}
-.box{max-width:22rem}h1{font-weight:300;font-size:1.6rem;margin:0 0 .5rem}p{color:rgba(255,255,255,.5);font-size:.9rem;line-height:1.6}a{color:rgba(255,255,255,.8)}</style>
-</head><body><div class="box"><h1>${title}</h1><p>${msg}</p><p><a href="/">← In Real Society</a></p></div></body></html>`;
+.box{max-width:22rem}h1{font-weight:300;font-size:1.6rem;margin:0 0 .5rem}p{color:rgba(255,255,255,.5);font-size:.9rem;line-height:1.6}a{color:rgba(255,255,255,.8)}
+button{margin-top:1rem;padding:12px 20px;background:#fff;color:#000;border:0;border-radius:2px;font:inherit;font-weight:700;letter-spacing:.15em;text-transform:uppercase;font-size:.75rem;cursor:pointer}</style>
+</head><body><div class="box"><h1>${title}</h1><p>${msg}</p>${extra}<p><a href="/">← In Real Society</a></p></div></body></html>`;
   return new NextResponse(html, { status: 200, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 }
 
@@ -80,8 +81,13 @@ export async function GET(req: NextRequest) {
     return page('Lien invalide', "Ce lien de désinscription n'est pas valide ou a expiré.");
   }
 
-  await applyUnsubscribe(email, ip);
-  return page('Désinscription confirmée', 'Vous ne recevrez plus la newsletter. Vous pouvez vous réinscrire à tout moment.');
+  // ⚠️ Le GET NE MUTE PAS : les scanners anti-malware et prefetchers de messagerie
+  // (SafeLinks, Proofpoint…) font un GET sur les liens dès réception → une
+  // désinscription au GET désinscrirait à l'insu du destinataire. On affiche une
+  // page de CONFIRMATION dont le bouton POST déclenche la désinscription réelle.
+  const q = `?e=${encodeURIComponent(email)}&t=${encodeURIComponent(token)}`;
+  const form = `<form method="POST" action="${q}"><button type="submit">Me désinscrire</button></form>`;
+  return page('Se désinscrire ?', 'Confirmez que vous ne souhaitez plus recevoir la newsletter In Real Society.', form);
 }
 
 // One-click (RFC 8058) : le client mail POST `List-Unsubscribe=One-Click` sur la
@@ -101,5 +107,8 @@ export async function POST(req: NextRequest) {
   }
 
   await applyUnsubscribe(email, ip);
-  return NextResponse.json({ ok: true });
+  // Réponse HTML : sert à la fois le one-click RFC 8058 (le client mail ignore le
+  // corps, seul le 200 compte) ET la soumission du formulaire de confirmation
+  // (humain → voit la page de succès au lieu d'un JSON brut).
+  return page('Désinscription confirmée', 'Vous ne recevrez plus la newsletter. Vous pouvez vous réinscrire à tout moment.');
 }

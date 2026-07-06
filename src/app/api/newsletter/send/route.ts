@@ -17,6 +17,14 @@
 // les headers List-Unsubscribe / List-Unsubscribe-Post (RFC 8058, one-click).
 
 export const dynamic = 'force-dynamic';
+// Laisse le maximum de budget à la boucle d'envoi séquentielle (anti-timeout).
+export const maxDuration = 60;
+
+// Plafond d'audience par run : au-delà, on REFUSE bruyamment (avant de claim la
+// campagne) plutôt que de risquer un timeout serverless à mi-parcours qui
+// marquerait la campagne « envoyée » en laissant des destinataires jamais servis.
+// Segmenter l'envoi (sous-listes) au-dessus de cette taille.
+const MAX_AUDIENCE_PER_RUN = 3000;
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -76,6 +84,15 @@ export async function POST(req: NextRequest) {
 
   if (dryRun) {
     return NextResponse.json({ ok: true, dryRun: true, audience: recipients.length });
+  }
+
+  // Refus BRUYANT si l'audience dépasse ce qu'un run peut envoyer sûrement — AVANT
+  // de claim la campagne, donc la key reste réutilisable après segmentation.
+  if (recipients.length > MAX_AUDIENCE_PER_RUN) {
+    return NextResponse.json({
+      error:    `Audience trop grande pour un seul envoi (${recipients.length} > ${MAX_AUDIENCE_PER_RUN}). Segmentez l'envoi pour éviter un timeout à mi-parcours.`,
+      audience: recipients.length,
+    }, { status: 413 });
   }
 
   // ─── Idempotence : claim de la campagne (sent_at posé AVANT l'envoi) ───────
