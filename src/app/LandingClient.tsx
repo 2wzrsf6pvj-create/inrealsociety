@@ -10,15 +10,35 @@ import { SHOP_IMAGES_READY } from '@/lib/constants';
 // onError). Tant que false : rendu null → l'accueil reste exactement comme avant.
 function ProductHero() {
   const [missing, setMissing] = useState(false);
-  if (!SHOP_IMAGES_READY || missing) return null;
+  const showPhoto = SHOP_IMAGES_READY && !missing;
   return (
-    <div className="relative w-full max-w-[260px] aspect-square mx-auto rounded-[2px] overflow-hidden animate-stagger-2">
-      <Image
-        src="/shop/tee-noir-dos.webp"
-        alt="T-shirt In Real Society — dos avec QR code"
-        fill sizes="260px" className="object-cover"
-        onError={() => setMissing(true)} priority
-      />
+    <div className="relative w-full max-w-[240px] aspect-square mx-auto animate-stagger-2">
+      {showPhoto ? (
+        <Image
+          src="/shop/tee-noir-dos.webp"
+          alt="T-shirt In Real Society — dos avec QR code"
+          fill sizes="240px" className="object-cover rounded-[2px]"
+          onError={() => setMissing(true)} priority
+        />
+      ) : (
+        /* Présence produit INTENTIONNELLE (plus d'état vide) en attendant les vraies
+           photos : cadre « impression dos » avec le monogramme )( + signature or.
+           Même langage visuel que la galerie shop (AbstractTee). */
+        <div className="absolute inset-0 rounded-[2px] border border-brand-gray/12 bg-brand-dark overflow-hidden flex flex-col items-center justify-center gap-4">
+          <div className="absolute inset-0" style={{ background: 'radial-gradient(circle at 50% 42%, rgba(255,255,255,0.05), transparent 70%)' }} />
+          <span className="absolute top-3 right-3 font-ui text-[0.55rem] text-brand-accent/70 tracking-[0.2em] uppercase">Édition limitée</span>
+          <div className="relative flex items-center justify-center">
+            <div className="absolute w-28 h-28 rounded-full border border-brand-white/5" />
+            <div className="w-20 h-20 rounded-full border border-brand-white/20 flex items-center justify-center">
+              <span className="font-display text-4xl font-light leading-none text-brand-accent/70">)(</span>
+            </div>
+          </div>
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-8 h-px bg-brand-accent/50" />
+            <p className="font-ui text-xxs text-brand-gray/50 tracking-[0.22em] uppercase">Comfort Colors 1717</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -68,6 +88,11 @@ function LandingContent() {
         style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%)' }} />
       <div className="absolute bottom-[-10%] right-[-10%] w-64 h-64 lg:w-96 lg:h-96 rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 70%)' }} />
+
+      {/* Signature de marque : monogramme )( géant en filigrane derrière le héros. */}
+      <div aria-hidden="true" className="pointer-events-none select-none absolute inset-0 flex items-center justify-center overflow-hidden">
+        <span className="font-display font-light leading-none text-brand-white/[0.02]" style={{ fontSize: 'min(85vw, 62vh)' }}>)(</span>
+      </div>
 
       {/* Zone héros : occupe l'espace disponible et centre le contenu, quel que
           soit le viewport (mobile court → desktop haut). Le footer reste en flux. */}

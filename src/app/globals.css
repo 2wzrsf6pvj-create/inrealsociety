@@ -11,6 +11,26 @@ html {
 }
 
 /* ─────────────────────────────────────────
+   Grain / texture — film grain subtil sur le fond noir.
+   Donne de la matière (feel "drop"/premium) sans salir le contenu. Statique
+   (aucun coût d'animation, compatible reduced-motion). Data-URI SVG feTurbulence
+   → autorisé par la CSP (img-src data:). z-index 1 + pointer-events:none : texture
+   le fond et les halos, passe sous le contenu (z-10) donc n'altère pas le texte.
+   ───────────────────────────────────────── */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 120px 120px;
+}
+/* Mode plein soleil (fond clair) : grain plus discret pour ne pas grisailler. */
+html.sun body::after { opacity: 0.025; }
+
+/* ─────────────────────────────────────────
    A11y — focus visible (clavier uniquement)
    Tailwind par défaut supprime le ring du navigateur. On le remet
    en focus-visible (donc invisible au clic souris, visible au clavier).

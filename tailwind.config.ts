@@ -7,10 +7,13 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        'brand-black': '#000000',
-        'brand-white': '#FFFFFF',
-        'brand-gray':  '#FFFFFF',
-        'brand-dark':  '#0a0a0a',
+        'brand-black':  '#000000',
+        'brand-white':  '#FFFFFF',
+        'brand-gray':   '#FFFFFF',
+        'brand-dark':   '#0a0a0a',
+        // Accent de marque (or). Existant sur premium (✦) ; désormais tokenisé
+        // pour un usage signature parcimonieux (hairlines, monogramme).
+        'brand-accent': '#C5A059',
       },
       fontFamily: {
         display: ['var(--font-display)', 'Georgia', 'serif'],
