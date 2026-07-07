@@ -73,12 +73,15 @@ function isInLogoZone(row: number, col: number, size: number, logoModules: numbe
 /** Module en carré arrondi. Remplit plus de surface que les ronds → meilleur
  *  contraste/scan, look « grille » plus premium. `CORNER` = 0 → carré net,
  *  0.5 → cercle ; 0.28 = compromis doux. `INSET` = léger gap entre modules. */
-const MODULE_CORNER = 0.25;
-const MODULE_INSET  = 0.04;  // resserré : un inset trop large casse le décodage (vérifié)
-function renderModule(x: number, y: number, size: number, color: string): string {
-  const inset = size * MODULE_INSET;
+const DEFAULT_MODULE_CORNER = 0.25;   // 0 = carré net · 0.5 = rond/dot
+const DEFAULT_MODULE_INSET  = 0.04;   // resserré : un inset trop large casse le décodage (vérifié)
+const DEFAULT_QUIET_MODULES = 2;      // marge actuelle (prod inchangée). Spec QR = 4 ;
+                                      // mais en zone d'impression FIXE, +quiet = modules
+                                      // plus petits → compromis. Réglable via QRStyle.
+function renderModule(x: number, y: number, size: number, color: string, corner: number, insetRatio: number): string {
+  const inset = size * insetRatio;
   const s     = size - inset * 2;
-  const r     = s * MODULE_CORNER;
+  const r     = s * corner;
   return `<rect x="${x + inset}" y="${y + inset}" width="${s}" height="${s}" rx="${r}" ry="${r}" fill="${color}"/>`;
 }
 
@@ -142,24 +145,37 @@ export interface QRCodeResult {
   height: number;   // hauteur en px du viewBox
 }
 
+/** Options de forme du QR. Défauts = rendu actuel (carrés arrondis). */
+export interface QRStyle {
+  moduleCorner?: number;   // 0 = carré net · 0.25 (défaut) · 0.5 = rond/dot
+  moduleInset?:  number;   // gap entre modules (défaut 0.04 ; trop grand = illisible)
+  quietModules?: number;   // marge en modules (défaut 2 ; la spec QR recommande 4)
+}
+
 /**
  * Génère un QR code SVG premium pour impression textile.
  *
  * @param url   - URL courte à encoder (ex: https://inreal.me/u8)
  * @param theme - 'dark' (t-shirt noir → QR gold) ou 'light' (t-shirt blanc → QR navy)
+ * @param style - options de forme (optionnel ; défauts = rendu actuel)
  * @returns     - SVG string + Buffer prêts pour upload Printful
  */
 export function generatePremiumQRCode(
   url: string,
   theme: 'dark' | 'light',
+  style?: QRStyle,
 ): QRCodeResult {
+  const moduleCorner = style?.moduleCorner ?? DEFAULT_MODULE_CORNER;
+  const moduleInset  = style?.moduleInset  ?? DEFAULT_MODULE_INSET;
+  const quietModules = style?.quietModules ?? DEFAULT_QUIET_MODULES;
+
   const colors = getThemeColors(theme);
   const matrix = getQrMatrix(url);
   const size   = matrix.length;
 
   // ─── Dimensions ─────────────────────────────────────────────────────────
   const moduleSize = 40;                          // px par module
-  const padding    = moduleSize * 2;              // marge autour du QR
+  const padding    = moduleSize * quietModules;   // marge autour du QR (quiet zone)
   const qrSize     = size * moduleSize;           // taille du QR seul
   const totalSize  = qrSize + padding * 2;        // taille totale du SVG
 
@@ -208,7 +224,7 @@ export function generatePremiumQRCode(
       const x = padding + col * moduleSize;
       const y = padding + row * moduleSize;
 
-      parts.push(renderModule(x, y, moduleSize, colors.module));
+      parts.push(renderModule(x, y, moduleSize, colors.module, moduleCorner, moduleInset));
     }
   }
 
