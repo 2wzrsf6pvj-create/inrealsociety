@@ -12,6 +12,7 @@
 import Stripe from 'stripe';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { generatePremiumQRCode } from '@/lib/generate-qr-svg';
+import { QR_STYLE_CORNER, DEFAULT_QR_STYLE, type QrStyleKey } from '@/lib/constants';
 import { buildShortUrl, generateUniqueShortCode } from '@/lib/short-code';
 import type { PrintfulOrderPayload, PrintfulOrderResponse, PrintfulAddress } from '@/lib/printful.types';
 
@@ -77,7 +78,7 @@ export async function fulfillOrder({ orderId, memberId, tshirtColor, tshirtSize 
   // ─── 1. Idempotence : skip si déjà fulfilled ───────────────────────────────
   const { data: order, error: orderErr } = await supabaseAdmin
     .from('orders')
-    .select('id, stripe_session_id, printful_order_id, status')
+    .select('id, stripe_session_id, printful_order_id, status, qr_style')
     .eq('id', orderId)
     .single();
 
@@ -126,8 +127,13 @@ export async function fulfillOrder({ orderId, memberId, tshirtColor, tshirtSize 
     ? buildShortUrl(shortCode)
     : `${appUrl}/profil/${memberId}`;
 
-  // ─── 4. Génère + upload le QR SVG premium ──────────────────────────────────
-  const qr = generatePremiumQRCode(qrDataUrl, tshirtColor);
+  // ─── 4. Génère + upload le QR SVG premium (forme choisie par le client) ────
+  // qr_style est stocké sur l'order au checkout ; fallback défaut si absent
+  // (commandes antérieures à la feature). Toutes les formes exposées sont
+  // prouvées décodables (test qr-decode).
+  const styleKey = (order.qr_style as QrStyleKey) in QR_STYLE_CORNER
+    ? (order.qr_style as QrStyleKey) : DEFAULT_QR_STYLE;
+  const qr = generatePremiumQRCode(qrDataUrl, tshirtColor, { moduleCorner: QR_STYLE_CORNER[styleKey] });
   const filePath = `${memberId}/qr-${tshirtColor}.svg`;
 
   const { error: uploadError } = await supabaseAdmin.storage

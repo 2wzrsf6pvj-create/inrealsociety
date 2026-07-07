@@ -87,7 +87,8 @@ describe('fulfillOrder — garantie short_code (H3)', () => {
     // ...et persisté sur le membre.
     expect(membersUpdate).toHaveBeenCalledWith(expect.objectContaining({ short_code: 'ab2' }));
     // ...et le QR encode l'URL courte, PAS /profil/<uuid>.
-    expect(generatePremiumQRCode).toHaveBeenCalledWith('https://app.test/r/ab2', 'dark');
+    // 3e arg = style de forme (order de test sans qr_style → fallback 'rounded' = 0.25).
+    expect(generatePremiumQRCode).toHaveBeenCalledWith('https://app.test/r/ab2', 'dark', { moduleCorner: 0.25 });
     const urlArg = (generatePremiumQRCode as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
     expect(urlArg).not.toContain('/profil/');
   });

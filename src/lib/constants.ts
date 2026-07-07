@@ -37,3 +37,18 @@ export const QUICK_REPLIES = ["Belle audace.", "J'aime la démarche.", "👁"] a
  *  (tee-{noir|blanc}-{dos|face}.webp). Tant que false : la boutique ET l'accueil
  *  affichent le placeholder, sans requête image (pas de 404). Source unique. */
 export const SHOP_IMAGES_READY = false;
+
+/** Formes de QR proposées au client à l'achat. Seules des formes PROUVÉES
+ *  décodables (test qr-decode, y compris tee noir inversé) sont exposées :
+ *  net (0), arrondi (0.25, défaut), doux (0.35). Les dots pleins ne sont PAS
+ *  offerts (ne scannent pas de façon fiable avec le générateur SVG). Source unique. */
+export const QR_STYLES = ['sharp', 'rounded', 'soft'] as const;
+export type QrStyleKey = typeof QR_STYLES[number];
+export const DEFAULT_QR_STYLE: QrStyleKey = 'rounded';
+/** Rayon d'arrondi des modules par style (passé à generatePremiumQRCode). */
+export const QR_STYLE_CORNER: Record<QrStyleKey, number> = {
+  sharp: 0, rounded: 0.25, soft: 0.35,
+};
+export const QR_STYLE_LABELS: Record<QrStyleKey, string> = {
+  sharp: 'Net', rounded: 'Arrondi', soft: 'Doux',
+};

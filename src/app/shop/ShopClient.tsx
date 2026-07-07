@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { captureEvent } from '@/lib/posthog-client';
-import { SHOP_IMAGES_READY } from '@/lib/constants';
+import { SHOP_IMAGES_READY, QR_STYLES, QR_STYLE_LABELS, DEFAULT_QR_STYLE, type QrStyleKey } from '@/lib/constants';
 
 type TshirtColor = 'dark' | 'light';
 type TshirtSize  = 'S' | 'M' | 'L' | 'XL' | 'XXL';
@@ -200,6 +200,7 @@ export default function ShopClient() {
   const [email, setEmail]             = useState('');
   const [tshirtColor, setTshirtColor] = useState<TshirtColor>('dark');
   const [tshirtSize, setTshirtSize]   = useState<TshirtSize>('M');
+  const [qrStyle, setQrStyle]         = useState<QrStyleKey>(DEFAULT_QR_STYLE);
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState('');
   const [referrerId, setReferrerId]   = useState<string | null>(null);
@@ -224,7 +225,7 @@ export default function ShopClient() {
       const res = await fetch('/api/shop/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), tshirtColor, tshirtSize, referrerId: referrerId || undefined }),
+        body: JSON.stringify({ email: email.trim(), tshirtColor, tshirtSize, qrStyle, referrerId: referrerId || undefined }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -339,6 +340,29 @@ export default function ShopClient() {
                     }`}
                   >
                     {size}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Sélecteur de forme du QR (toutes garanties scannables) */}
+            <div className="flex flex-col gap-2">
+              <p className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Style du QR</p>
+              <p className="font-ui text-xxs text-brand-gray/55 -mt-1">La forme des modules imprimés dans le dos.</p>
+              <div className="flex gap-2">
+                {QR_STYLES.map(style => (
+                  <button
+                    key={style}
+                    type="button"
+                    onClick={() => setQrStyle(style)}
+                    aria-pressed={qrStyle === style}
+                    className={`flex-1 py-2.5 rounded-[2px] border transition-all font-ui text-sm tracking-[0.1em] ${
+                      qrStyle === style
+                        ? 'border-brand-white/60 bg-brand-white/5 text-brand-white'
+                        : 'border-brand-gray/15 text-brand-gray/50 hover:border-brand-gray/30'
+                    }`}
+                  >
+                    {QR_STYLE_LABELS[style]}
                   </button>
                 ))}
               </div>
