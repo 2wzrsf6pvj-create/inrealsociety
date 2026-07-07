@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
 import { captureEvent, identifyMember } from '@/lib/posthog-client';
+import QrStylePicker from '@/app/components/ui/QrStylePicker';
+import { DEFAULT_QR_STYLE, type QrStyleKey } from '@/lib/constants';
 
 const AI_PITCHES = [
   { who: "Je traverse les villes les yeux ouverts.", intent: "Provoquer la conversation qu'on n'aurait jamais eue.", closing: "Si vous êtes là, c'est que votre instinct vous a bien guidé." },
@@ -236,11 +238,12 @@ function StepAccount({ onNext, codeState }: {
 // Tout-en-un pour réduire la friction d'inscription. Champs requis (name, pitch)
 // en premier, puis section "Détails optionnels" pour la photo et Instagram.
 
-function StepProfile({ form, onChange, onSubmit, onBack, loading, error, isEditing, isLoggedIn, codeState }: {
+function StepProfile({ form, onChange, onSubmit, onBack, loading, error, isEditing, isLoggedIn, codeState, qrStyle, onQrStyleChange, orderColor }: {
   form: FormData; onChange: (f: FormData) => void; onSubmit: () => void; onBack: () => void;
   loading: boolean; error: string;
   isEditing: boolean; isLoggedIn: boolean;
   codeState: ReturnType<typeof useCodeValidation>;
+  qrStyle: QrStyleKey; onQrStyleChange: (s: QrStyleKey) => void; orderColor?: 'dark' | 'light';
 }) {
   const [aiLoading, setAiLoading] = useState(false);
   const [localError, setLocalError] = useState('');
@@ -383,6 +386,11 @@ function StepProfile({ form, onChange, onSubmit, onBack, loading, error, isEditi
             style={{ minHeight: '44px' }} />
         </div>
 
+        {/* Forme du QR : pré-remplie depuis le checkout, dernière chance de changer. */}
+        {!isEditing && (
+          <QrStylePicker value={qrStyle} onChange={onQrStyleChange} tshirtColor={orderColor} />
+        )}
+
         {/* §8/9 — consentement bien/service à l'activation (pas en édition). */}
         {!isEditing && (
           <label className="flex items-start gap-3 cursor-pointer select-none">
@@ -429,9 +437,28 @@ function RegisterContent() {
   const [loading,        setLoading]        = useState(false);
   const [error,          setError]          = useState('');
   const [form, setForm] = useState<FormData>({ name: '', who: '', intent: '', closing: '', instagram: '', photo: null, acceptedTerms: false });
+  // Forme du QR : pré-remplie depuis le choix du checkout (par code), modifiable ici.
+  const [qrStyle, setQrStyle]       = useState<QrStyleKey>(DEFAULT_QR_STYLE);
+  const [orderColor, setOrderColor] = useState<'dark' | 'light' | undefined>(undefined);
 
   const initialCode = searchParams.get('code')?.toUpperCase() || '';
   const codeState   = useCodeValidation(initialCode);
+
+  // Pré-remplit la forme du QR + la couleur du tee depuis la commande liée au code.
+  // Ne tourne qu'au changement de code validé → une modif manuelle ensuite persiste.
+  useEffect(() => {
+    if (!codeState.codeOk || !codeState.code) return;
+    let cancelled = false;
+    fetch(`/api/order/status?code=${encodeURIComponent(codeState.code)}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (cancelled || !d?.found) return;
+        if (d.order?.qrStyle) setQrStyle(d.order.qrStyle);
+        if (d.order?.color === 'dark' || d.order?.color === 'light') setOrderColor(d.order.color);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [codeState.codeOk, codeState.code]);
 
   // Funnel post-achat : ouverture de /register (avec ou sans code prérempli).
   useEffect(() => { captureEvent('register_viewed', { has_code: !!initialCode }); }, [initialCode]);
@@ -480,7 +507,7 @@ function RegisterContent() {
         });
         if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Erreur de mise à jour.'); }
       } else {
-        const res  = await fetch('/api/member/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: form.name.trim(), pitch: pitch.trim(), instagram: form.instagram.trim() || undefined, activationCode: codeState.code, acceptedTerms: form.acceptedTerms }) });
+        const res  = await fetch('/api/member/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: form.name.trim(), pitch: pitch.trim(), instagram: form.instagram.trim() || undefined, activationCode: codeState.code, acceptedTerms: form.acceptedTerms, qrStyle }) });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Erreur de création.');
         // Fin du funnel post-achat : profil créé → fulfillment déclenché. On lie
@@ -550,6 +577,9 @@ function RegisterContent() {
             isEditing={isEditing}
             isLoggedIn={isLoggedIn}
             codeState={codeState}
+            qrStyle={qrStyle}
+            onQrStyleChange={setQrStyle}
+            orderColor={orderColor}
           />
         )}
       </div>

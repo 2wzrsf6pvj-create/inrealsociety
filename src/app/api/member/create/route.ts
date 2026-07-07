@@ -7,6 +7,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { requireAuth, isHttpError } from '@/lib/require-auth';
 import { checkAuthRateLimit, rateLimitHeaders } from '@/lib/ratelimit';
 import { generateUniqueShortCode } from '@/lib/short-code';
+import { QR_STYLES } from '@/lib/constants';
 import { fulfillOrder } from '@/lib/fulfillment';
 import { audit } from '@/lib/audit';
 import { sendEmail, emailBienvenue } from '@/lib/email-templates';
@@ -20,6 +21,8 @@ const schema = z.object({
   // §8/9 : consentement OBLIGATOIRE à l'activation. z.literal(true) → une requête
   // sans acceptation explicite (false/absent) est rejetée (preuve juridique).
   acceptedTerms:  z.literal(true),
+  // Forme du QR : dernière chance de changer le choix du checkout avant impression.
+  qrStyle:        z.enum(QR_STYLES).optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -39,7 +42,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Données invalides.' }, { status: 400 });
     }
 
-    const { name, pitch, instagram, activationCode } = body.data;
+    const { name, pitch, instagram, activationCode, qrStyle } = body.data;
 
     // ─── Génère un code court unique pour l'URL du QR code ─────────────────
     let shortCode: string | null = null;
@@ -139,6 +142,13 @@ export async function POST(req: NextRequest) {
           .single();
 
         if (order && order.status === 'paid' && !order.printful_order_id) {
+          // Dernière chance de changer la forme du QR avant impression : si le
+          // client en a choisi une au register, on l'écrit sur l'order AVANT que
+          // fulfillOrder ne relise l'order (il lit qr_style). Non encore fulfilled
+          // (garde ci-dessus) → modifiable.
+          if (qrStyle) {
+            await supabaseAdmin.from('orders').update({ qr_style: qrStyle }).eq('id', order.id);
+          }
           const tshirtColor = (order.tshirt_color === 'light') ? 'light' : 'dark';
           const fulfillResult = await fulfillOrder({
             orderId:     order.id,

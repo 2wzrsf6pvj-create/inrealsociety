@@ -52,3 +52,9 @@ export const QR_STYLE_CORNER: Record<QrStyleKey, number> = {
 export const QR_STYLE_LABELS: Record<QrStyleKey, string> = {
   sharp: 'Net', rounded: 'Arrondi', soft: 'Doux',
 };
+/** Couleurs d'aperçu du swatch, fidèles au vrai QR imprimé (cf. generate-qr-svg) :
+ *  tee noir → modules or sur fond sombre ; tee blanc → modules navy sur fond blanc. */
+export const QR_SWATCH_COLORS: Record<'dark' | 'light', { module: string; bg: string }> = {
+  dark:  { module: '#C5A059', bg: '#0a0a0a' },
+  light: { module: '#0A192F', bg: '#ffffff' },
+};
