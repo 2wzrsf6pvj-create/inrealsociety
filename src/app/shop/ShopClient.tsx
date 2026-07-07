@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { captureEvent } from '@/lib/posthog-client';
-import { SHOP_IMAGES_READY, QR_STYLES, QR_STYLE_LABELS, DEFAULT_QR_STYLE, type QrStyleKey } from '@/lib/constants';
+import { SHOP_IMAGES_READY, QR_STYLES, QR_STYLE_LABELS, QR_STYLE_CORNER, DEFAULT_QR_STYLE, type QrStyleKey } from '@/lib/constants';
 
 type TshirtColor = 'dark' | 'light';
 type TshirtSize  = 'S' | 'M' | 'L' | 'XL' | 'XXL';
@@ -30,6 +30,20 @@ function AbstractTee({ color }: { color: TshirtColor }) {
         T-shirt · Comfort Colors 1717 · {isDark ? 'Noir' : 'Blanc'}
       </p>
     </div>
+  );
+}
+
+// Aperçu miniature de la forme des modules (grille 2×2 au bon arrondi). Hérite de
+// la couleur du bouton via currentColor → s'illumine quand le style est sélectionné.
+function QrStyleSwatch({ corner }: { corner: number }) {
+  const s = 12, gap = 3, r = corner * s, total = s * 2 + gap;
+  const cells = [[0, 0], [s + gap, 0], [0, s + gap], [s + gap, s + gap]];
+  return (
+    <svg width="22" height="22" viewBox={`0 0 ${total} ${total}`} aria-hidden="true">
+      {cells.map(([x, y], i) => (
+        <rect key={i} x={x} y={y} width={s} height={s} rx={r} ry={r} fill="currentColor" />
+      ))}
+    </svg>
   );
 }
 
@@ -356,12 +370,13 @@ export default function ShopClient() {
                     type="button"
                     onClick={() => setQrStyle(style)}
                     aria-pressed={qrStyle === style}
-                    className={`flex-1 py-2.5 rounded-[2px] border transition-all font-ui text-sm tracking-[0.1em] ${
+                    className={`flex-1 flex flex-col items-center gap-1.5 py-2.5 rounded-[2px] border transition-all font-ui text-xs tracking-[0.1em] ${
                       qrStyle === style
                         ? 'border-brand-white/60 bg-brand-white/5 text-brand-white'
                         : 'border-brand-gray/15 text-brand-gray/50 hover:border-brand-gray/30'
                     }`}
                   >
+                    <QrStyleSwatch corner={QR_STYLE_CORNER[style]} />
                     {QR_STYLE_LABELS[style]}
                   </button>
                 ))}
