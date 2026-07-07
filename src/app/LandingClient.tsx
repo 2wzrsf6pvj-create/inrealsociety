@@ -151,7 +151,7 @@ function LandingContent() {
                 <span className="text-brand-gray/15">·</span>
                 <span className="font-ui text-xs text-brand-gray/55 tracking-[0.15em] uppercase">Éphémère</span>
                 <span className="text-brand-gray/15">·</span>
-                <span className="font-ui text-xs text-brand-gray/55 tracking-[0.15em] uppercase">Sécurisé</span>
+                <span className="font-ui text-xs text-brand-gray/55 tracking-[0.15em] uppercase">Sans compte</span>
               </div>
             </div>
           )}

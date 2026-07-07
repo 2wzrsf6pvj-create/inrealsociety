@@ -68,6 +68,9 @@ export default function ProfilClient({
   // Expiré = temps réel écoulé (pas le `percent` arrondi, qui tombe à 0 ~7 min
   // avant la vraie fin et masquerait le CTA alors que le serveur accepte encore).
   const isExpired = countdown.active && countdown.hours === 0 && countdown.minutes === 0 && countdown.seconds === 0;
+  // Dernière heure : l'occasion file → on passe le compte à rebours en or + pulse
+  // pour rendre l'éphémère RESSENTI au moment de décision (sans clignoter fort).
+  const urgent = countdown.active && !isExpired && countdown.hours === 0;
   // En aperçu, le porteur voit la vue SCANNEUR de son propre profil (pas la vue
   // propriétaire) — pour « vivre son premier scan ».
   const showOwnerView = isOwner && !preview;
@@ -366,15 +369,15 @@ export default function ProfilClient({
         {!showOwnerView && (
           <div className="w-full flex flex-col gap-2 animate-stagger-5 mt-2">
             <div className="flex items-center justify-between">
-              <span className="font-ui text-xxs md:text-xs text-brand-gray/50 tracking-[0.2em] uppercase">
-                {countdown.active ? 'Occasion éphémère' : 'Profil actif'}
+              <span className={`font-ui text-xxs md:text-xs tracking-[0.2em] uppercase transition-colors ${urgent ? 'text-brand-accent/90 animate-count-urgent' : 'text-brand-gray/50'}`}>
+                {isExpired ? 'Occasion passée' : urgent ? 'Dernière heure' : countdown.active ? 'Occasion éphémère' : 'Profil actif'}
               </span>
-              <span className="font-ui text-xxs md:text-xs text-brand-gray/50 tabular-nums">
+              <span className={`font-ui text-xxs md:text-xs tabular-nums transition-colors ${urgent ? 'text-brand-accent/90' : 'text-brand-gray/50'}`}>
                 {isExpired ? 'Expiré' : countdown.active ? `${countdown.hours}h ${String(countdown.minutes).padStart(2, '0')}m ${String(countdown.seconds).padStart(2, '0')}s` : `${SCAN_WINDOW_MS[member.plan === 'premium' ? 'premium' : 'free'] / 3_600_000}h`}
               </span>
             </div>
             <div className="w-full h-px bg-brand-gray/10 relative overflow-hidden">
-              <div className="absolute left-0 top-0 h-full bg-brand-white/20 transition-all duration-1000"
+              <div className={`absolute left-0 top-0 h-full transition-all duration-1000 ${urgent ? 'bg-brand-accent/70' : 'bg-brand-white/20'}`}
                 style={{ width: `${countdown.percent}%` }} />
             </div>
           </div>

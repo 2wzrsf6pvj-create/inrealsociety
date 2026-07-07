@@ -222,6 +222,11 @@ html.sun [class*="placeholder:text-brand-gray/"]::placeholder { color: rgba(0, 0
 @keyframes unreadPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 .animate-unread { animation: unreadPulse 2s ease-in-out infinite; }
 
+/* Compte à rebours « dernière heure » : respiration douce (or) pour faire ressentir
+   l'urgence de l'occasion éphémère, sans clignoter fort. */
+@keyframes countUrgent { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
+.animate-count-urgent { animation: countUrgent 1.8s ease-in-out infinite; }
+
 /* Bascule de thème (sombre ↔ plein soleil) : transition de couleurs UNIQUEMENT
    pendant le switch (classe posée ~300ms par SunToggle) — sinon ça ralentirait
    tous les hovers en permanence. */
