@@ -29,13 +29,21 @@ Les migrations sont numérotées et **doivent s'appliquer dans l'ordre** (`supab
 | `047` | index UNIQUE partiel `messages(member_id, sender_token) WHERE parent_id IS NULL` | 🟠 rend atomique la règle « un seul message par device » (anti-TOCTOU). ⚠️ dédupliquer d'abord si base existante (cf. commentaire migration) |
 | `048` | `orders.qr_style` (TEXT NOT NULL DEFAULT 'rounded' + CHECK) | feature : le client choisit la forme du QR à l'achat. `ADD COLUMN` avec default = safe sur base live |
 
-### Base NEUVE (staging / nouveau projet)
-```bash
-# Avec Supabase CLI
-supabase db reset          # applique 001 → 035 dans l'ordre
-# OU psql, en transaction pour tout annuler en cas d'erreur :
-psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -1 -f <(cat supabase/migrations/0*.sql supabase/migrations/[123]*.sql)
+### Base NEUVE (staging / nouveau projet) — recommandé (Option A)
+⚠️ **L'ordre 001→048 naïf ÉCHOUE** : `001_enable_rls` fait `ALTER TABLE members …`
+alors que `members` n'est créée qu'en `015`. L'ordre correct est **015 D'ABORD**,
+puis 001-014, puis 016-048.
+
+Utiliser le bundle pré-généré **et validé** (48/48 migrations appliquées sur PG18) :
 ```
+scripts/fresh-setup.sql   ← à coller intégralement dans le Supabase SQL Editor d'un
+                            projet NEUF (auth + storage + rôles déjà présents) → Run.
+```
+Régénérer le bundle après ajout d'une migration :
+```bash
+# ordre : 015 puis le reste numérique (voir le script de génération dans l'historique git)
+```
+> Ne PAS utiliser `cat supabase/migrations/0*.sql` (ordre naïf → échec 001).
 
 ### Base EXISTANTE (prod déjà à 032)
 Appliquer **uniquement les nouvelles** dans l'ordre :
