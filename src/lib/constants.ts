@@ -38,6 +38,11 @@ export const QUICK_REPLIES = ["Belle audace.", "J'aime la démarche.", "👁"] a
  *  affichent le placeholder, sans requête image (pas de 404). Source unique. */
 export const SHOP_IMAGES_READY = false;
 
+/** Imprimer AUSSI le monogramme )( sur la poitrine (en plus du QR au dos).
+ *  ⚠️ Deux emplacements d'impression = coût Printful supérieur. Passer à `false`
+ *  pour revenir au dos seul, sans toucher au code. */
+export const PRINT_FRONT_LOGO = true;
+
 /** Formes de QR proposées au client à l'achat. Seules des formes PROUVÉES
  *  décodables (test qr-decode, y compris tee noir inversé) sont exposées :
  *  net (0), arrondi (0.25, défaut), doux (0.35). Les dots pleins ne sont PAS

@@ -23,6 +23,8 @@ vi.mock('stripe', () => ({
 
 vi.mock('@/lib/generate-qr-svg', () => ({
   generatePremiumQRCode: vi.fn(() => ({ svg: '<svg/>', buffer: Buffer.from('x'), width: 1, height: 1 })),
+  // Monogramme )( poitrine (print face) — uploadé par fulfillOrder quand PRINT_FRONT_LOGO.
+  generateBrandMonogramSVG: vi.fn(() => ({ svg: '<svg/>', buffer: Buffer.from('m') })),
 }));
 
 vi.mock('@/lib/short-code', () => ({
@@ -60,7 +62,7 @@ vi.mock('@/lib/supabase-admin', () => ({
 }));
 
 import { fulfillOrder } from '@/lib/fulfillment';
-import { generatePremiumQRCode } from '@/lib/generate-qr-svg';
+import { generatePremiumQRCode, generateBrandMonogramSVG } from '@/lib/generate-qr-svg';
 import { generateUniqueShortCode } from '@/lib/short-code';
 
 describe('fulfillOrder — garantie short_code (H3)', () => {
@@ -91,5 +93,24 @@ describe('fulfillOrder — garantie short_code (H3)', () => {
     expect(generatePremiumQRCode).toHaveBeenCalledWith('https://app.test/r/ab2', 'dark', { moduleCorner: 0.25 });
     const urlArg = (generatePremiumQRCode as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
     expect(urlArg).not.toContain('/profil/');
+  });
+
+  it('envoie DEUX fichiers à Printful : QR au dos + monogramme )( poitrine', async () => {
+    await fulfillOrder({ orderId: 'o1', memberId: 'm1', tshirtColor: 'dark', tshirtSize: 'M' });
+
+    // Le monogramme est généré depuis le THÈME du tee (pas depuis le membre).
+    expect(generateBrandMonogramSVG).toHaveBeenCalledWith('dark');
+
+    const fetchMock = global.fetch as unknown as ReturnType<typeof vi.fn>;
+    const call = fetchMock.mock.calls.find(([url]) => String(url).includes('api.printful.com/orders'));
+    expect(call).toBeTruthy();
+    const body  = JSON.parse((call![1] as RequestInit).body as string);
+    const files = body.items[0].files as Array<{ type: string; position: { width: number; left: number } }>;
+
+    expect(files.map(f => f.type)).toEqual(['back', 'front']);
+    expect(files[0].position.width).toBe(800);   // QR : grand, au dos
+    expect(files[1].position.width).toBe(300);   // monogramme : petit, poitrine
+    // Poitrine GAUCHE du porteur = à droite de la zone d'impression (centre = 750).
+    expect(files[1].position.left).toBeGreaterThan(750);
   });
 });

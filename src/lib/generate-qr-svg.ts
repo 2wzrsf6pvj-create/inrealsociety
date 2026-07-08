@@ -243,3 +243,23 @@ export function generatePremiumQRCode(
     height: totalSize,
   };
 }
+
+// ─── Monogramme de marque « )( » — impression POITRINE ────────────────────────
+
+/**
+ * Monogramme )( standalone : deux arcs, sans QR ni cercle de fond (impression
+ * directe sur tissu). Couleurs fidèles au tee — or sur noir, navy sur blanc.
+ *
+ * IDENTIQUE POUR TOUS LES PORTEURS (contrairement au QR du dos, unique par membre)
+ * → uploadé une seule fois par thème, en upsert (cf. fulfillment.ts).
+ */
+export function generateBrandMonogramSVG(theme: 'dark' | 'light'): { svg: string; buffer: Buffer } {
+  const color = theme === 'dark' ? GOLD : NAVY;
+  const svg = [
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">',
+    `<path d="M 156 108 Q 197 200 156 292" fill="none" stroke="${color}" stroke-width="22" stroke-linecap="round"/>`,
+    `<path d="M 244 108 Q 203 200 244 292" fill="none" stroke="${color}" stroke-width="22" stroke-linecap="round"/>`,
+    '</svg>',
+  ].join('\n');
+  return { svg, buffer: Buffer.from(svg, 'utf-8') };
+}

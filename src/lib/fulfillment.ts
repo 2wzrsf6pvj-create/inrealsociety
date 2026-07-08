@@ -11,13 +11,28 @@
 
 import Stripe from 'stripe';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { generatePremiumQRCode } from '@/lib/generate-qr-svg';
-import { QR_STYLE_CORNER, DEFAULT_QR_STYLE, type QrStyleKey } from '@/lib/constants';
+import { generatePremiumQRCode, generateBrandMonogramSVG } from '@/lib/generate-qr-svg';
+import { QR_STYLE_CORNER, DEFAULT_QR_STYLE, PRINT_FRONT_LOGO, type QrStyleKey } from '@/lib/constants';
 import { buildShortUrl, generateUniqueShortCode } from '@/lib/short-code';
 import type { PrintfulOrderPayload, PrintfulOrderResponse, PrintfulAddress } from '@/lib/printful.types';
 
 type TshirtColor = 'dark' | 'light';
 type TshirtSize  = 'S' | 'M' | 'L' | 'XL' | 'XXL';
+
+// ─── Zones d'impression Printful ──────────────────────────────────────────────
+// Coordonnées en px dans le repère de la zone d'impression.
+// ⚠️ À VALIDER dans le Mockup Generator PUIS sur un échantillon physique : un
+// `position` faux = QR décentré/mal dimensionné, ou logo du mauvais côté.
+const PRINT_AREA = { area_width: 1800, area_height: 2400 } as const;
+
+/** DOS : le QR, grand, centré horizontalement ((1800-800)/2 = 500), haut du dos. */
+const BACK_POSITION = { ...PRINT_AREA, width: 800, height: 800, top: 200, left: 500 };
+
+/** FACE : monogramme )( petit, POITRINE GAUCHE DU PORTEUR.
+ *  Vu de face, la poitrine gauche du porteur est à DROITE de l'image → `left`
+ *  supérieur au centre (qui serait (1800-300)/2 = 750).
+ *  Pour un print CENTRÉ poitrine à la place : left = 750. */
+const FRONT_POSITION = { ...PRINT_AREA, width: 300, height: 300, top: 400, left: 1060 };
 
 const VALID_SIZES: readonly string[] = ['S', 'M', 'L', 'XL', 'XXL'];
 function coerceSize(raw: string | null | undefined): TshirtSize {
@@ -146,6 +161,23 @@ export async function fulfillOrder({ orderId, memberId, tshirtColor, tshirtSize 
 
   await supabaseAdmin.from('members').update({ qr_code_url: publicUrl }).eq('id', memberId);
 
+  // ─── 4b. Monogramme )( poitrine — IDENTIQUE pour tous les porteurs ─────────
+  // Contrairement au QR (unique par membre), il ne dépend que du thème du tee.
+  // Upload en `upsert` sur un chemin fixe → écrit une fois, ré-écrit à l'identique
+  // ensuite. Pas de fichier par membre.
+  let frontUrl: string | null = null;
+  if (PRINT_FRONT_LOGO) {
+    const monogram = generateBrandMonogramSVG(tshirtColor);
+    const logoPath = `_brand/logo-front-${tshirtColor}.svg`;
+    const { error: logoErr } = await supabaseAdmin.storage
+      .from('qrcodes')
+      .upload(logoPath, monogram.buffer, { contentType: 'image/svg+xml', upsert: true });
+    // BLOQUANT volontairement : un tee sans son monogramme = incohérence de marque
+    // livrée au client. On échoue, et `cron/fulfillment-reconcile` rejouera.
+    if (logoErr) return { ok: false, reason: `front_logo_upload_failed: ${logoErr.message}` };
+    frontUrl = supabaseAdmin.storage.from('qrcodes').getPublicUrl(logoPath).data.publicUrl;
+  }
+
   // ─── 5. Création Printful (idempotent via external_id) ─────────────────────
   const variantId = getVariantId(tshirtColor, size);
   if (!variantId) return { ok: false, reason: 'no_printful_variant_id' };
@@ -159,18 +191,12 @@ export async function fulfillOrder({ orderId, memberId, tshirtColor, tshirtSize 
       variant_id: variantId,
       quantity:   1,
       name:       `In Real Society — Comfort Colors 1717 ${colorLabel} ${size} (DTF)`,
-      files: [{
-        type: 'back',
-        url:  publicUrl,
-        position: {
-          area_width:  1800,
-          area_height: 2400,
-          width:       800,
-          height:      800,
-          top:         200,
-          left:        500,
-        },
-      }],
+      files: [
+        // Dos : le QR unique du porteur.
+        { type: 'back' as const, url: publicUrl, position: BACK_POSITION },
+        // Face : le monogramme )( (si activé). Deux emplacements = coût Printful supérieur.
+        ...(frontUrl ? [{ type: 'front' as const, url: frontUrl, position: FRONT_POSITION }] : []),
+      ],
     }],
   };
 

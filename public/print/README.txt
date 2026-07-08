@@ -1,9 +1,14 @@
-Assets d'impression — POUR LES MOCKUPS MARKETING UNIQUEMENT.
+Assets d'impression — POUR LES MOCKUPS MARKETING.
 
-⚠️ NE PAS utiliser ces fichiers comme fichier d'impression des vraies commandes.
-Le QR réel est généré PAR MEMBRE au fulfillment (src/lib/fulfillment.ts →
-generatePremiumQRCode), avec l'URL courte unique du porteur. Le QR ci-dessous
-encode juste https://inrealsociety.com pour "faire vrai" sur une photo produit.
+⚠️ Le QR ci-dessous n'est PAS le fichier d'impression des vraies commandes : le QR réel
+est généré PAR MEMBRE au fulfillment (src/lib/fulfillment.ts → generatePremiumQRCode),
+avec l'URL courte unique du porteur. Celui-ci encode juste https://inrealsociety.com
+pour "faire vrai" sur une photo produit.
+
+Le MONOGRAMME poitrine, lui, est bien imprimé sur les vraies commandes — mais généré en
+code (generateBrandMonogramSVG) et uploadé dans Supabase Storage, pas lu depuis ce dossier.
+Le design est identique. Coupe-le via PRINT_FRONT_LOGO = false (src/lib/constants.ts) —
+deux emplacements d'impression coûtent plus cher chez Printful.
 
   qr-back-dark.svg     ← DOS, t-shirt NOIR  : QR or (#C5A059), fond transparent
   qr-back-light.svg    ← DOS, t-shirt BLANC : QR navy (#0A192F) + logo )( or
