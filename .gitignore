@@ -36,3 +36,8 @@ yarn-error.log*
 next-env.d.ts
 
 .vercel
+
+# aperçus jetables des formes de QR (régénérables — cf. ADR « Formes de QR »).
+# Conservés en local pour comparaison, hors repo : ce sont des PNG lourds et
+# public/ est servi publiquement en prod.
+/public/print/previews/
