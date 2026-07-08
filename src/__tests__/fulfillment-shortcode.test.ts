@@ -22,7 +22,7 @@ vi.mock('stripe', () => ({
 }));
 
 vi.mock('@/lib/generate-qr-svg', () => ({
-  generatePremiumQRCode: vi.fn(() => ({ svg: '<svg/>', buffer: Buffer.from('x'), width: 1, height: 1 })),
+  generatePremiumQRCode: vi.fn(() => ({ svg: '<svg/>', buffer: Buffer.from('x'), width: 1, height: 1, modules: 29 })),
   // Monogramme )( poitrine (print face) — uploadé par fulfillOrder quand PRINT_FRONT_LOGO.
   generateBrandMonogramSVG: vi.fn(() => ({ svg: '<svg/>', buffer: Buffer.from('m') })),
 }));
@@ -61,9 +61,37 @@ vi.mock('@/lib/supabase-admin', () => ({
   },
 }));
 
-import { fulfillOrder } from '@/lib/fulfillment';
+import { fulfillOrder, BACK_POSITION, PRINT_QUIET_MODULES } from '@/lib/fulfillment';
 import { generatePremiumQRCode, generateBrandMonogramSVG } from '@/lib/generate-qr-svg';
 import { generateUniqueShortCode } from '@/lib/short-code';
+
+// Ces constantes gouvernent un OBJET PHYSIQUE. Les changer sans mesurer, c'est
+// imprimer des t-shirts qui ne scannent pas. Distance ≈ 10× la largeur du QR.
+describe('Géométrie d’impression — la distance de scan est un contrat', () => {
+  const PX_PER_CM = 1800 / 30.48;   // 12" de large, DTG adulte
+
+  it('le QR du dos vise ~2,5 m de distance de scan (25 cm de large)', () => {
+    const widthCm = BACK_POSITION.width / PX_PER_CM;
+    expect(widthCm).toBeCloseTo(25, 0);
+    expect(widthCm * 10 / 100).toBeCloseTo(2.5, 1);   // règle 10:1 → mètres
+  });
+
+  it('le QR reste DANS la zone imprimable et centré horizontalement', () => {
+    expect(BACK_POSITION.left).toBe((1800 - BACK_POSITION.width) / 2);
+    expect(BACK_POSITION.left + BACK_POSITION.width).toBeLessThanOrEqual(1800);
+    expect(BACK_POSITION.top + BACK_POSITION.height).toBeLessThanOrEqual(2400);
+  });
+
+  it('le QR est carré (sinon les modules sont déformés → illisible)', () => {
+    expect(BACK_POSITION.width).toBe(BACK_POSITION.height);
+  });
+
+  it('le fichier imprimé ne porte AUCUNE quiet zone (le tissu la fournit)', () => {
+    // 2 modules de marge de chaque côté mangeaient 12 % de la largeur utile,
+    // donc 12 % de distance de scan, pour rien.
+    expect(PRINT_QUIET_MODULES).toBe(0);
+  });
+});
 
 describe('fulfillOrder — garantie short_code (H3)', () => {
   beforeEach(() => {
@@ -90,7 +118,9 @@ describe('fulfillOrder — garantie short_code (H3)', () => {
     expect(membersUpdate).toHaveBeenCalledWith(expect.objectContaining({ short_code: 'ab2' }));
     // ...et le QR encode l'URL courte, PAS /profil/<uuid>.
     // 3e arg = style de forme (order de test sans qr_style → fallback 'rounded' = 0.25).
-    expect(generatePremiumQRCode).toHaveBeenCalledWith('https://app.test/r/ab2', 'dark', { moduleCorner: 0.25 });
+    expect(generatePremiumQRCode).toHaveBeenCalledWith(
+      'https://app.test/r/ab2', 'dark', { moduleCorner: 0.25, quietModules: 0 },
+    );
     const urlArg = (generatePremiumQRCode as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
     expect(urlArg).not.toContain('/profil/');
   });
@@ -108,7 +138,8 @@ describe('fulfillOrder — garantie short_code (H3)', () => {
     const files = body.items[0].files as Array<{ type: string; position: { width: number; left: number } }>;
 
     expect(files.map(f => f.type)).toEqual(['back', 'front']);
-    expect(files[0].position.width).toBe(800);   // QR : grand, au dos
+    // QR : dimensionné pour ~2,5 m de scan (cf. « Géométrie d'impression »).
+    expect(files[0].position.width).toBe(BACK_POSITION.width);
     expect(files[1].position.width).toBe(300);   // monogramme : petit, poitrine
     // Poitrine GAUCHE du porteur = à droite de la zone d'impression (centre = 750).
     expect(files[1].position.left).toBeGreaterThan(750);

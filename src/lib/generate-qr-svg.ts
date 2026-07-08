@@ -172,10 +172,16 @@ function renderLogo(
 // ─── Fonction principale ──────────────────────────────────────────────────────
 
 export interface QRCodeResult {
-  svg:    string;   // SVG complet en string
-  buffer: Buffer;   // SVG en Buffer pour upload
-  width:  number;   // largeur en px du viewBox
-  height: number;   // hauteur en px du viewBox
+  svg:     string;   // SVG complet en string
+  buffer:  Buffer;   // SVG en Buffer pour upload
+  width:   number;   // largeur en px du viewBox
+  height:  number;   // hauteur en px du viewBox
+  /**
+   * Nombre de modules sur un côté (hors quiet zone). C'est LA grandeur qui gouverne
+   * la distance de scan : à largeur imprimée constante, plus de modules = modules plus
+   * petits = QR lisible de moins loin. Une URL plus longue coûte de la portée.
+   */
+  modules: number;
 }
 
 /** Options de forme du QR. Défauts = rendu actuel (carrés arrondis). */
@@ -271,9 +277,10 @@ export function generatePremiumQRCode(
 
   return {
     svg,
-    buffer: Buffer.from(svg, 'utf-8'),
-    width:  totalSize,
-    height: totalSize,
+    buffer:  Buffer.from(svg, 'utf-8'),
+    width:   totalSize,
+    height:  totalSize,
+    modules: size,
   };
 }
 

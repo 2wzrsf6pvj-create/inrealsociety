@@ -78,7 +78,11 @@
       "Bash(node .ext.cjs __TRACKED_VAR__/cg.ttf __TRACKED_VAR__/glyph.json)",
       "Bash(node --experimental-strip-types .r2.ts)",
       "WebSearch",
-      "Bash(npx tsx -e ' *)"
+      "Bash(npx tsx -e ' *)",
+      "Bash(grep -n \"Monogramme \\)\\( — le print\" \"/Users/clement/Developer/Brain/02 Projets/In Real Society/05 Roadmap/Changelog.md\")",
+      "Bash(find \"/Users/clement/Developer/Brain/02 Projets/In Real Society\" -name \"ADR-009*\")",
+      "Bash(tail -14 \"/Users/clement/Developer/Brain/02 Projets/In Real Society/06 Décisions \\(ADR\\)/ADR-009 Formes de QR — dots rejetés.md\")",
+      "Bash(npx tsx *)"
     ],
     "additionalDirectories": [
       "/Users/clement/Developer/Brain/02 Projets/In Real Society",

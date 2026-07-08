@@ -23,10 +23,47 @@ type TshirtSize  = 'S' | 'M' | 'L' | 'XL' | 'XXL';
 // Coordonnées en px dans le repère de la zone d'impression.
 // ⚠️ À VALIDER dans le Mockup Generator PUIS sur un échantillon physique : un
 // `position` faux = QR décentré/mal dimensionné, ou logo du mauvais côté.
+// 1800 px = 12" = 30,48 cm de large (DTG adulte, 150 DPI) → 59,06 px/cm.
 const PRINT_AREA = { area_width: 1800, area_height: 2400 } as const;
+const PX_PER_CM = 1800 / 30.48;
 
-/** DOS : le QR, grand, centré horizontalement ((1800-800)/2 = 500), haut du dos. */
-const BACK_POSITION = { ...PRINT_AREA, width: 800, height: 800, top: 200, left: 500 };
+/**
+ * DOS : le QR, dimensionné pour la DISTANCE DE SCAN, pas pour l'esthétique.
+ *
+ * La distance de lecture fiable ≈ **10× la largeur du QR** (le capteur doit
+ * résoudre chaque module) — et ce ratio tombe à ~7:1 en lumière faible.
+ *
+ *   800 px  = 11,9 cm de données → ~1,2 m. Un inconnu devait s'approcher à un bras.
+ *   1476 px = 25,0 cm            → ~2,5 m en bonne lumière, ~1,8 m le soir.
+ *
+ * ⚠️ Un 2,5 m garanti EN TOUTES CONDITIONS demanderait 36 cm : impossible sur une
+ * zone de 30,5 cm. Il faudrait un produit à zone 16" (40,6 cm).
+ *
+ * Le QR est imprimé SANS quiet zone (`PRINT_QUIET_MODULES = 0`) : le fond est
+ * transparent, donc le tissu la fournit — à l'infini, et gratuitement. Les 2 modules
+ * de marge qu'on imprimait mangeaient 12 % de la largeur utile.
+ * ⚠️ Corollaire : ne RIEN imprimer d'autre dans les ~3,5 cm autour du QR.
+ */
+const BACK_TARGET_SCAN_M = 2.5;                               // objectif produit
+const BACK_WIDTH_CM      = BACK_TARGET_SCAN_M * 100 / 10;     // règle 10:1 → 25 cm
+const BACK_WIDTH_PX      = Math.round(BACK_WIDTH_CM * PX_PER_CM);  // 1476 px
+export const BACK_POSITION = {
+  ...PRINT_AREA,
+  width:  BACK_WIDTH_PX,
+  height: BACK_WIDTH_PX,                                      // le QR est carré
+  top:    300,                                                // haut du dos, sous la nuque
+  left:   Math.round((PRINT_AREA.area_width - BACK_WIDTH_PX) / 2),  // centré : 150
+};
+
+/** Le print ne porte pas sa quiet zone : le tissu la fournit. Cf. BACK_POSITION. */
+export const PRINT_QUIET_MODULES = 0;
+
+/**
+ * Modules attendus pour une URL courte (`https://inreal.me/<code>`, ECC-H → v3).
+ * C'est l'hypothèse derrière `BACK_WIDTH_CM`. Au-delà, la portée promise n'est plus
+ * tenue — `fulfillOrder` le signale.
+ */
+export const NOMINAL_QR_MODULES = 29;
 
 /** FACE : monogramme )( petit, POITRINE GAUCHE DU PORTEUR.
  *  Vu de face, la poitrine gauche du porteur est à DROITE de l'image → `left`
@@ -148,7 +185,23 @@ export async function fulfillOrder({ orderId, memberId, tshirtColor, tshirtSize 
   // prouvées décodables (test qr-decode).
   const styleKey = (order.qr_style as QrStyleKey) in QR_STYLE_CORNER
     ? (order.qr_style as QrStyleKey) : DEFAULT_QR_STYLE;
-  const qr = generatePremiumQRCode(qrDataUrl, tshirtColor, { moduleCorner: QR_STYLE_CORNER[styleKey] });
+  const qr = generatePremiumQRCode(qrDataUrl, tshirtColor, {
+    moduleCorner:  QR_STYLE_CORNER[styleKey],
+    quietModules:  PRINT_QUIET_MODULES,   // le tissu fait la quiet zone
+  });
+
+  // La largeur imprimée est FIXE : plus l'URL est longue, plus les modules sont
+  // petits, moins le QR se lit de loin. Sans `SHORT_DOMAIN`, on encode
+  // `https://<app>.vercel.app/r/<code>` (37 modules) au lieu de `https://inreal.me/<code>`
+  // (29) → la portée tombe de ~2,5 m à ~2,0 m, en silence. On refuse le silence.
+  if (qr.modules > NOMINAL_QR_MODULES) {
+    const reach = BACK_TARGET_SCAN_M * (NOMINAL_QR_MODULES / qr.modules);
+    console.warn(
+      `[fulfillment] QR à ${qr.modules} modules (nominal ${NOMINAL_QR_MODULES}) : ` +
+      `portée de scan ≈ ${reach.toFixed(1)} m au lieu de ${BACK_TARGET_SCAN_M} m. ` +
+      `URL encodée : ${qrDataUrl}. Configurer SHORT_DOMAIN raccourcit l'URL et rend la portée.`,
+    );
+  }
   const filePath = `${memberId}/qr-${tshirtColor}.svg`;
 
   const { error: uploadError } = await supabaseAdmin.storage

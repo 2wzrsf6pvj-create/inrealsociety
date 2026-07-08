@@ -53,4 +53,30 @@ describe('QR — décodage réel (resvg + jsqr)', () => {
     const { svg } = generatePremiumQRCode(URL, 'dark', { moduleCorner: 0.5 });
     expect(decode(svg, 'black')).toBeNull();
   });
+
+  it('sans quiet zone (le tissu la fournit), le QR se décode toujours', () => {
+    // Le fichier envoyé à Printful n'embarque AUCUNE marge : elle coûtait 12 % de
+    // largeur utile, donc 12 % de distance de scan, alors que le tee la fournit.
+    const { svg } = generatePremiumQRCode(URL, 'dark', { quietModules: 0 });
+    expect(decode(svg, 'black')).toBe(URL);
+  });
+});
+
+// La distance de scan ≈ 10× la largeur imprimée, MAIS la largeur est fixe : c'est le
+// nombre de modules qui fait varier la taille d'un module, donc la portée réelle.
+// Une URL plus longue = un QR qui se lit de moins loin. Ce lien doit rester visible.
+describe('QR — la longueur de l’URL coûte de la distance de scan', () => {
+  const modulesFor = (url: string) => generatePremiumQRCode(url, 'dark', { quietModules: 0 }).modules;
+
+  it('URL courte (SHORT_DOMAIN) → 29 modules : l’hypothèse de BACK_WIDTH_CM', () => {
+    expect(modulesFor('https://inreal.me/A7kQ')).toBe(29);
+  });
+
+  it('fallback sans SHORT_DOMAIN → plus dense, donc portée réduite', () => {
+    const fallback = modulesFor('https://inrealsociety.vercel.app/r/A7kQ');
+    expect(fallback).toBeGreaterThan(29);
+    // À 25 cm de large : 29 modules → ~2,5 m ; 37 modules → ~2,0 m (−22 %).
+    const reachM = 2.5 * (29 / fallback);
+    expect(reachM).toBeLessThan(2.1);
+  });
 });
