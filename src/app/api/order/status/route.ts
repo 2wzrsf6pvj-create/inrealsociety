@@ -15,7 +15,11 @@ import { checkPublicRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
 import { getPrintfulTracking } from '@/lib/printful-status';
 
 const schema = z.object({
-  code: z.string().min(4).max(64).regex(/^[A-Za-z0-9-]+$/, 'Code invalide'),
+  // .toUpperCase() : les codes sont générés en MAJUSCULES uniquement
+  // (`generateSecureCode`), et le lookup `.eq('activation_code', …)` est
+  // sensible à la casse. Sans ça, un client tapant son code en minuscules voyait
+  // « Aucune commande pour ce code ». Aligné sur /api/activate et member/create.
+  code: z.string().min(4).max(64).regex(/^[A-Za-z0-9-]+$/, 'Code invalide').toUpperCase(),
 });
 
 export async function GET(req: NextRequest) {

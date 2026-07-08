@@ -16,14 +16,15 @@ function fmtDate(iso: string): string {
 }
 const COLOR_LABEL: Record<string, string> = { dark: 'Noir', light: 'Blanc' };
 
-function Step({ label, done, current, sub, children }: {
-  label: string; done: boolean; current?: boolean; sub?: string; children?: React.ReactNode;
+function Step({ label, done, current, sub, last, children }: {
+  label: string; done: boolean; current?: boolean; sub?: string; last?: boolean; children?: React.ReactNode;
 }) {
   return (
     <div className="flex gap-4">
       <div className="flex flex-col items-center">
         <span className={`w-3 h-3 rounded-full flex-shrink-0 mt-1 transition-colors ${done ? 'bg-brand-white' : current ? 'bg-brand-white/40 animate-unread' : 'border border-brand-gray/30'}`} />
-        <span className="flex-1 w-px bg-brand-gray/15 my-1" />
+        {/* pas de connecteur sous la dernière étape (sinon un trait pend dans le vide) */}
+        {!last && <span className="flex-1 w-px bg-brand-gray/15 my-1" />}
       </div>
       <div className="flex flex-col gap-1 pb-6">
         <p className={`font-ui text-sm tracking-[0.05em] ${done ? 'text-brand-white/90' : 'text-brand-gray/50'}`}>{label}</p>
@@ -36,7 +37,7 @@ function Step({ label, done, current, sub, children }: {
 
 function CommandeContent() {
   const searchParams = useSearchParams();
-  const [code, setCode]       = useState(searchParams.get('code') ?? '');
+  const [code, setCode]       = useState((searchParams.get('code') ?? '').toUpperCase());
   const [data, setData]       = useState<OrderStatus | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
@@ -47,7 +48,9 @@ function CommandeContent() {
     setLoading(true); setError(''); setData(null);
     try {
       const res = await fetch(`/api/order/status?code=${encodeURIComponent(clean)}`);
-      if (res.status === 404) { setData({ found: false }); return; }
+      // 404 = code inconnu · 400 = code malformé → même message « aucune commande »
+      // (une erreur générique laisserait croire à une panne).
+      if (res.status === 404 || res.status === 400) { setData({ found: false }); return; }
       if (!res.ok) throw new Error();
       setData(await res.json());
     } catch {
@@ -83,9 +86,15 @@ function CommandeContent() {
         <div className="flex gap-2">
           <input
             value={code}
-            onChange={(e) => setCode(e.target.value)}
+            // Normalise à la saisie (comme le CodeField de /register) : les codes sont
+            // en MAJUSCULES alphanumériques. Évite le « aucune commande » sur une
+            // simple minuscule ou un espace collé.
+            onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ''))}
             placeholder="ex. K7M2PQ9R"
             maxLength={64}
+            autoCapitalize="characters"
+            autoCorrect="off"
+            spellCheck={false}
             className="flex-1 bg-transparent border-b border-brand-gray/20 focus:border-brand-white/50 text-brand-white font-mono text-base py-3 outline-none transition-colors placeholder:text-brand-gray/30 tracking-[0.15em]"
             style={{ minHeight: '44px' }}
           />
@@ -134,7 +143,7 @@ function CommandeContent() {
             <Step label="En production" done={inProd} current={paid && !inProd}
               sub={inProd ? 'Votre t-shirt est en impression.' : 'Lancée dès le paiement confirmé.'} />
             <Step
-              label="Expédié" done={shipped} current={inProd && !shipped}
+              label="Expédié" done={shipped} current={inProd && !shipped} last
               sub={shipped
                 ? [shipment?.carrier, shipment?.shipDate ? `le ${fmtDate(shipment.shipDate)}` : null].filter(Boolean).join(' · ') || undefined
                 : 'Vous recevrez le suivi ici dès l’expédition.'}
