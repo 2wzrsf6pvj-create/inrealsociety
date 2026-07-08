@@ -89,9 +89,17 @@ function LandingContent() {
       <div className="absolute bottom-[-10%] right-[-10%] w-64 h-64 lg:w-96 lg:h-96 rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 70%)' }} />
 
-      {/* Signature de marque : monogramme )( géant en filigrane derrière le héros. */}
-      <div aria-hidden="true" className="pointer-events-none select-none absolute inset-0 flex items-center justify-center overflow-hidden">
-        <span className="font-display font-light leading-none text-brand-white/[0.02]" style={{ fontSize: 'min(85vw, 62vh)' }}>)(</span>
+      {/* Signature de marque : monogramme )( géant en filigrane, ANCRÉ EN DÉBORD
+          (bas-gauche) et non centré. Centré, ses arcs traversaient la copie du héros
+          et le )( se lisait une 3e fois (logo + cadre produit) → il se diluait au lieu
+          de s'imposer. En débord, il lit comme une texture de marque. */}
+      <div aria-hidden="true" className="pointer-events-none select-none absolute inset-0 overflow-hidden">
+        <span
+          className="absolute font-display font-light leading-none text-brand-white/[0.018]"
+          style={{ fontSize: 'min(72vw, 58vh)', left: '-18%', bottom: '-16%' }}
+        >
+          )(
+        </span>
       </div>
 
       {/* Zone héros : occupe l'espace disponible et centre le contenu, quel que
@@ -107,9 +115,11 @@ function LandingContent() {
         </div>
 
         <div className="flex flex-col gap-5 animate-stagger-2">
-          <h1 className="font-ui text-xs md:text-sm font-light tracking-[0.35em] uppercase text-brand-gray/60">
+          {/* Sur-titre de marque : ce n'est PAS le titre de la page. Le <h1> est
+              l'accroche (proposition de valeur) — cf. les deux branches ci-dessous. */}
+          <p className="font-ui text-xs md:text-sm font-light tracking-[0.35em] uppercase text-brand-gray/60">
             In Real Society
-          </h1>
+          </p>
           {qrError && (
             <div className="px-4 py-3 border border-red-500/20 rounded-[2px] mb-2">
               <p className="font-ui text-sm text-red-400/80 text-center">{qrError}</p>
@@ -117,10 +127,10 @@ function LandingContent() {
           )}
           {scannerName && hasMemberId ? (
             <div className="flex flex-col gap-2">
-              <p className="font-display text-2xl md:text-3xl font-light leading-snug">
+              <h1 className="font-display text-2xl md:text-3xl font-light leading-snug">
                 Vous êtes de retour,<br />
                 <span className="font-semibold italic">{scannerName}</span>.
-              </p>
+              </h1>
               {memberName && (
                 <p className="font-ui text-xs text-brand-gray/55 tracking-[0.1em]">
                   Profil de <span className="text-brand-white/50">{memberName}</span>
@@ -137,10 +147,10 @@ function LandingContent() {
             </div>
           ) : (
             <div className="flex flex-col gap-4">
-              <p className="font-display text-2xl md:text-3xl lg:text-4xl font-light leading-snug tracking-[0.02em]">
+              <h1 className="font-display text-2xl md:text-3xl lg:text-4xl font-light leading-snug tracking-[0.02em]">
                 Un QR.<br />
                 <span className="text-brand-gray/50">Une rencontre.</span>
-              </p>
+              </h1>
               <p className="font-ui text-sm lg:text-base font-light text-brand-gray/50 leading-relaxed">
                 Un t-shirt, un QR code au dos.<br />
                 On vous remarque dans la vraie vie — et on vous écrit, une seule fois.
