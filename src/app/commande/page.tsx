@@ -71,7 +71,23 @@ function CommandeContent() {
   const paid     = !!o && (o.status === 'paid' || !!o.fulfilledAt);
   const inProd   = !!o?.fulfilledAt;
   const shipment = data?.tracking?.shipments.find(s => s.trackingNumber || s.shipDate) ?? data?.tracking?.shipments[0] ?? null;
-  const shipped  = !!shipment && (!!shipment.trackingNumber || !!shipment.shipDate);
+
+  // État réel côté Printful (draft|pending|inprocess|onhold|fulfilled|canceled|failed…).
+  // Sans lui, une commande annulée ou refusée par Printful restait affichée
+  // « En production » indéfiniment — le t-shirt ne partira pourtant jamais.
+  const pf       = data?.tracking?.printfulStatus ?? null;
+  const canceled = pf === 'canceled';
+  const failed   = pf === 'failed';
+  const onhold   = pf === 'onhold';
+  const stopped  = canceled || failed;   // états terminaux anormaux → le colis ne partira pas
+  // `fulfilled` côté Printful vaut expédition même si le shipment n'a pas encore de tracking.
+  const shipped  = !stopped && ((!!shipment && (!!shipment.trackingNumber || !!shipment.shipDate)) || pf === 'fulfilled');
+
+  const prodSub = canceled ? 'Production annulée.'
+    : failed   ? 'La production a échoué.'
+    : onhold   ? 'En attente — vérification en cours.'
+    : inProd   ? 'Votre t-shirt est en impression.'
+    : 'Lancée dès le paiement confirmé.';
 
   return (
     <div className="z-10 flex flex-col w-full max-w-xs md:max-w-sm gap-8">
@@ -125,6 +141,19 @@ function CommandeContent() {
         </div>
       )}
 
+      {/* Production annulée / échouée côté Printful (et pas remboursée) : le colis ne
+          partira pas. On le DIT, au lieu de laisser « En production » indéfiniment. */}
+      {o && !refunded && stopped && (
+        <div className="animate-fade-in w-full bg-[#0a0a0a] border border-red-500/20 rounded-[2px] p-4 flex flex-col gap-1.5 text-center">
+          <p className="font-ui text-sm text-red-400/80">
+            {canceled ? 'La production de cette commande a été annulée.' : 'Un problème est survenu pendant la production.'}
+          </p>
+          <p className="font-ui text-xs text-brand-gray/55 leading-relaxed">
+            Écrivez-nous à <span className="text-brand-white/70">hello@inrealsociety.com</span> — on règle ça avec vous.
+          </p>
+        </div>
+      )}
+
       {o && !refunded && (
         <div className="animate-fade-in flex flex-col gap-6">
           {/* Récap article */}
@@ -140,8 +169,13 @@ function CommandeContent() {
           <div className="flex flex-col">
             <Step label="Commande passée" done sub={fmtDate(o.createdAt)} />
             <Step label="Paiement confirmé" done={paid} current={!paid} sub={paid ? undefined : 'En attente du paiement.'} />
-            <Step label="En production" done={inProd} current={paid && !inProd}
-              sub={inProd ? 'Votre t-shirt est en impression.' : 'Lancée dès le paiement confirmé.'} />
+            <Step label="En production"
+              done={inProd && !stopped}
+              current={!stopped && paid && !inProd}
+              last={stopped}
+              sub={prodSub} />
+            {/* Si la production est annulée/échouée, la timeline s'arrête là. */}
+            {!stopped && (
             <Step
               label="Expédié" done={shipped} current={inProd && !shipped} last
               sub={shipped
@@ -158,18 +192,21 @@ function CommandeContent() {
                 <p className="mt-1 font-mono text-xs text-brand-gray/55">N° {shipment.trackingNumber}</p>
               )}
             </Step>
+            )}
           </div>
 
-          {/* Prochaine étape */}
-          <div className="w-full bg-[#0a0a08] border border-[#C5A059]/20 rounded-[2px] p-4 flex flex-col gap-2">
-            <p className="font-ui text-xs text-[#C5A059]/80 tracking-[0.15em] uppercase">À réception</p>
-            <p className="font-ui text-xs text-brand-gray/55 leading-relaxed">
-              Créez votre profil avec votre code d&apos;activation, puis portez le t-shirt.
-            </p>
-            <Link href="/register" className="font-ui text-xs text-brand-white/70 underline underline-offset-4 hover:text-brand-white transition-colors">
-              Créer mon profil →
-            </Link>
-          </div>
+          {/* Prochaine étape — sans objet si le colis ne partira pas. */}
+          {!stopped && (
+            <div className="w-full bg-[#0a0a08] border border-[#C5A059]/20 rounded-[2px] p-4 flex flex-col gap-2">
+              <p className="font-ui text-xs text-[#C5A059]/80 tracking-[0.15em] uppercase">À réception</p>
+              <p className="font-ui text-xs text-brand-gray/55 leading-relaxed">
+                Créez votre profil avec votre code d&apos;activation, puis portez le t-shirt.
+              </p>
+              <Link href="/register" className="font-ui text-xs text-brand-white/70 underline underline-offset-4 hover:text-brand-white transition-colors">
+                Créer mon profil →
+              </Link>
+            </div>
+          )}
         </div>
       )}
 
