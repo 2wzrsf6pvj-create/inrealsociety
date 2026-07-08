@@ -8,16 +8,18 @@ import { SHOP_IMAGES_READY } from '@/lib/constants';
 
 // Visuel produit de la hero — affiché seulement quand un mockup existe (flag +
 // onError). Tant que false : rendu null → l'accueil reste exactement comme avant.
-function ProductHero() {
+// `className` porte le dimensionnement/visibilité : le mobile garde son instance en
+// flux (lg:hidden), le desktop en a une dédiée dans la colonne de gauche (hidden lg:block).
+function ProductHero({ className = '' }: { className?: string }) {
   const [missing, setMissing] = useState(false);
   const showPhoto = SHOP_IMAGES_READY && !missing;
   return (
-    <div className="relative w-full max-w-[240px] aspect-square mx-auto animate-stagger-2">
+    <div className={`relative aspect-square animate-stagger-2 ${className}`}>
       {showPhoto ? (
         <Image
           src="/shop/tee-noir-dos.webp"
           alt="T-shirt In Real Society — dos avec QR code"
-          fill sizes="240px" className="object-cover rounded-[2px]"
+          fill sizes="(min-width: 1024px) 340px, 240px" className="object-cover rounded-[2px]"
           onError={() => setMissing(true)} priority
         />
       ) : (
@@ -103,9 +105,21 @@ function LandingContent() {
       </div>
 
       {/* Zone héros : occupe l'espace disponible et centre le contenu, quel que
-          soit le viewport (mobile court → desktop haut). Le footer reste en flux. */}
+          soit le viewport (mobile court → desktop haut). Le footer reste en flux.
+          MOBILE/TABLETTE : colonne unique, strictement inchangée (le mobile est le cas
+          dominant — un scanneur arrive au téléphone). À partir de lg (≥1024px) seulement :
+          héros en DEUX COLONNES (visuel produit | accroche + preuves + CTA), sinon la
+          colonne de ~450px se perdait dans un écran de 1500px. */}
       <div className="z-10 flex-1 flex flex-col items-center w-full">
-      <div className="flex flex-col items-center text-center gap-10 md:gap-12 w-full max-w-xs md:max-w-sm lg:max-w-md my-auto py-4">
+      <div className="w-full my-auto py-4 flex flex-col items-center lg:flex-row lg:items-center lg:justify-center lg:gap-16 lg:max-w-5xl">
+
+        {/* Colonne GAUCHE (desktop only) — le visuel produit, plus grand. */}
+        {!(scannerName && hasMemberId) && (
+          <ProductHero className="hidden lg:block w-[340px] shrink-0" />
+        )}
+
+        {/* Colonne DROITE (= la colonne unique du mobile, inchangée). */}
+        <div className="flex flex-col items-center text-center gap-10 md:gap-12 w-full max-w-xs md:max-w-sm lg:max-w-md lg:items-start lg:text-left">
 
         <div className="relative flex items-center justify-center animate-stagger-1">
           <div className="absolute w-24 h-24 lg:w-28 lg:h-28 rounded-full border border-brand-white/10 animate-ring-pulse" />
@@ -155,8 +169,10 @@ function LandingContent() {
                 Un t-shirt, un QR code au dos.<br />
                 On vous remarque dans la vraie vie — et on vous écrit, une seule fois.
               </p>
-              <ProductHero />
-              <div className="flex items-center justify-center gap-4">
+              {/* Instance MOBILE/tablette : reste exactement en flux, entre la copie et
+                  la triade. Sur lg, c'est l'instance de la colonne de gauche qui prend le relais. */}
+              <ProductHero className="w-full max-w-[240px] mx-auto lg:hidden" />
+              <div className="flex items-center justify-center gap-4 lg:justify-start">
                 <span className="font-ui text-xs text-brand-gray/55 tracking-[0.15em] uppercase">Anonyme</span>
                 <span className="text-brand-gray/15">·</span>
                 <span className="font-ui text-xs text-brand-gray/55 tracking-[0.15em] uppercase">Éphémère</span>
@@ -190,6 +206,8 @@ function LandingContent() {
         <p className="font-ui text-xs text-brand-gray/50 tracking-[0.25em] uppercase animate-stagger-4">
           The IRL Social Club
         </p>
+
+        </div>{/* /colonne droite */}
       </div>
       </div>
 
