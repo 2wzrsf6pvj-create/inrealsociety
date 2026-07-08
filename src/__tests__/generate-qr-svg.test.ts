@@ -44,18 +44,19 @@ describe('generatePremiumQRCode', () => {
       expect(result.svg).toContain('fill-rule="evenodd"');
     });
 
-    it('devrait contenir le logo )( (deux arcs stroke)', () => {
-      const arcCount = (result.svg.match(/<path[^>]*stroke=/g) || []).length;
-      expect(arcCount).toBe(2); // les deux arcs ) (
+    it('devrait utiliser les CONTOURS du vrai glyphe )( (Cormorant 300), pas un dessin à la main', () => {
+      // Garde anti-régression : le print doit être identique au logo du site.
+      // Fragment stable du tracé extrait du TTF (début du glyphe « ) »).
+      expect(result.svg).toContain('M239-304Q239-211');
+      // Contours REMPLIS, donc aucun <path stroke=...> (l'ancien logo était 2 arcs stroke).
+      expect(result.svg).not.toMatch(/<path[^>]*stroke=/);
+      // Ajusté dans la zone logo via un transform (translate + scale).
+      expect(result.svg).toMatch(/<g transform="translate\([^)]+\) scale\([^)]+\)">/);
     });
 
     it('devrait avoir un fond blanc derrière le logo (lisibilité)', () => {
       // Le cercle blanc de fond du logo
       expect(result.svg).toContain('fill="white"');
-    });
-
-    it('devrait avoir stroke-linecap round sur le logo', () => {
-      expect(result.svg).toContain('stroke-linecap="round"');
     });
   });
 

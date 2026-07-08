@@ -105,35 +105,58 @@ function renderFinderEye(x: number, y: number, s: number, color: string): string
   return ring + inner;
 }
 
-// ─── Logo central — « )( » (deux arcs de parenthèses) ────────────────────────
+// ─── Monogramme de marque « )( » — CONTOURS DU VRAI GLYPHE ───────────────────
+//
+// Le site rend le « )( » comme un GLYPHE typographique : les parenthèses de
+// **Cormorant Garamond**, graisse **300** (`font-light`, cf. layout.tsx), avec
+// `tracking-[0.05em]`. Les traits y sont *modulés* (fins aux extrémités, épais au
+// ventre) et les terminaisons effilées.
+//
+// Le print utilisait auparavant deux arcs de Bézier dessinés à la main, d'épaisseur
+// UNIFORME et à bouts ronds → une forme trapue qui ne ressemblait pas au logo du site
+// (elle lisait comme un nœud papillon). On utilise désormais les **contours exacts**
+// du glyphe, extraits du TTF variable (défaut wght=300) et figés ici :
+//   → aucune dépendance à une police au moment de l'impression (Printful reçoit du
+//     vecteur pur), et le print est identique au site.
+//
+// Repère du tracé : opentype `getPath(0, 0, 1000)` — y vers le bas, ligne de base à 0.
+const MONOGRAM_PATH = 'M239-304Q239-211 215-128.50Q191-46 145.50 17.50Q100 81 35 117Q34 118 31.50 115.50Q29 113 31 111Q110 39 145-65Q180-169 180-304Q180-439 145-543Q110-647 31-719Q29-721 31.50-723.50Q34-726 35-725Q100-689 145.50-625.50Q191-562 215-480Q239-398 239-304M429-304Q429-398 453-480Q477-562 522.50-625.50Q568-689 633-725Q635-726 637-723.50Q639-721 637-719Q558-647 523-543Q488-439 488-304Q488-169 523-65Q558 39 637 111Q639 112 637 115Q635 118 633 117Q568 80 522.50 17Q477-46 453-128.50Q429-211 429-304';
+const MONOGRAM_BBOX = { x1: 30.11, y1: -725.29, x2: 638, y2: 117.29 };
 
-/** Génère le logo en SVG — deux arcs « )( » : à gauche un « ) » bombé vers le
- *  centre, à droite un « ( » bombé vers le centre. Extrémités arrondies. */
+/**
+ * Place le monogramme )( (contours remplis, PAS de stroke) ajusté dans le carré
+ * `[x, y, size]`. `padRatio` = marge intérieure (fraction de `size`).
+ */
+function renderMonogram(x: number, y: number, size: number, color: string, padRatio = 0): string {
+  const w = MONOGRAM_BBOX.x2 - MONOGRAM_BBOX.x1;
+  const h = MONOGRAM_BBOX.y2 - MONOGRAM_BBOX.y1;
+  const inner = size * (1 - 2 * padRatio);
+  const s  = Math.min(inner / w, inner / h);   // conserve le ratio (le glyphe est haut)
+  const tx = x + (size - w * s) / 2 - MONOGRAM_BBOX.x1 * s;
+  const ty = y + (size - h * s) / 2 - MONOGRAM_BBOX.y1 * s;
+  return `<g transform="translate(${tx.toFixed(2)},${ty.toFixed(2)}) scale(${s.toFixed(5)})">`
+       + `<path d="${MONOGRAM_PATH}" fill="${color}"/></g>`;
+}
+
+// ─── Logo central du QR ──────────────────────────────────────────────────────
+
+/** Cercle blanc de lisibilité + le monogramme )( au centre du QR. */
 function renderLogo(
   cx: number,
   cy: number,
   logoSize: number,
   color: string,
 ): string {
-  const half   = logoSize / 2;
-  const gap    = logoSize * 0.12;
-  const arm    = half * 0.5;            // demi-hauteur des arcs
-  const spread = logoSize * 0.15;       // écart horizontal entre les 2 arcs
-  const bow    = logoSize * 0.16;       // profondeur de courbure (vers le centre)
-  const stroke = logoSize * 0.13;
+  const half = logoSize / 2;
+  const gap  = logoSize * 0.12;
 
   // Fond blanc circulaire derrière le logo pour la lisibilité du scan
-  const bgRadius = half + gap;
-  const bg = `<circle cx="${cx}" cy="${cy}" r="${bgRadius}" fill="white"/>`;
+  const bg = `<circle cx="${cx}" cy="${cy}" r="${half + gap}" fill="white"/>`;
+  // Marge interne minime : à cette taille (5 modules), le glyphe est déjà fin — trop
+  // de marge et il se perd dans le disque. Le disque reste plus grand que le glyphe.
+  const mono = renderMonogram(cx - half, cy - half, logoSize, color, 0.02);
 
-  // « ) » à gauche : courbe quadratique bombée vers la droite (le centre).
-  const lx = cx - spread;
-  const rParen = `<path d="M ${lx} ${cy - arm} Q ${lx + bow} ${cy} ${lx} ${cy + arm}" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round"/>`;
-  // « ( » à droite : courbe bombée vers la gauche (le centre).
-  const rx = cx + spread;
-  const lParen = `<path d="M ${rx} ${cy - arm} Q ${rx - bow} ${cy} ${rx} ${cy + arm}" fill="none" stroke="${color}" stroke-width="${stroke}" stroke-linecap="round"/>`;
-
-  return bg + rParen + lParen;
+  return bg + mono;
 }
 
 // ─── Fonction principale ──────────────────────────────────────────────────────
@@ -257,8 +280,7 @@ export function generateBrandMonogramSVG(theme: 'dark' | 'light'): { svg: string
   const color = theme === 'dark' ? GOLD : NAVY;
   const svg = [
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">',
-    `<path d="M 156 108 Q 197 200 156 292" fill="none" stroke="${color}" stroke-width="22" stroke-linecap="round"/>`,
-    `<path d="M 244 108 Q 203 200 244 292" fill="none" stroke="${color}" stroke-width="22" stroke-linecap="round"/>`,
+    renderMonogram(0, 0, 400, color, 0.08),
     '</svg>',
   ].join('\n');
   return { svg, buffer: Buffer.from(svg, 'utf-8') };
