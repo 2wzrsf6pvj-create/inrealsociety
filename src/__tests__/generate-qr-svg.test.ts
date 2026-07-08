@@ -2,7 +2,7 @@
 // Tests du générateur QR code SVG premium.
 
 import { describe, it, expect } from 'vitest';
-import { generatePremiumQRCode } from '@/lib/generate-qr-svg';
+import { generatePremiumQRCode, generateBrandMonogramSVG } from '@/lib/generate-qr-svg';
 
 const TEST_URL = 'https://inreal.me/u8';
 
@@ -26,12 +26,15 @@ describe('generatePremiumQRCode', () => {
       expect(result.width).toBe(result.height); // QR code est carré
     });
 
-    it('devrait utiliser la couleur Gold #C5A059 pour les modules', () => {
-      expect(result.svg).toContain('#C5A059');
+    it('devrait imprimer en BLANC sur le tee noir (contraste maximal)', () => {
+      expect(result.svg).toContain('#FFFFFF');
     });
 
-    it('ne devrait PAS utiliser la couleur Navy sur le thème dark', () => {
+    it('ne devrait utiliser AUCUNE autre encre (monochrome, une seule couleur)', () => {
+      // Print = 1 seule encre. Ni or, ni navy, ni noir sur le tee noir.
+      expect(result.svg).not.toContain('#C5A059');
       expect(result.svg).not.toContain('#0A192F');
+      expect(result.svg).not.toContain('#000000');
     });
 
     it('devrait rendre les modules en carrés arrondis (<rect rx)', () => {
@@ -54,27 +57,32 @@ describe('generatePremiumQRCode', () => {
       expect(result.svg).toMatch(/<g transform="translate\([^)]+\) scale\([^)]+\)">/);
     });
 
-    it('devrait avoir un fond blanc derrière le logo (lisibilité)', () => {
-      // Le cercle blanc de fond du logo
-      expect(result.svg).toContain('fill="white"');
+    it('ne devrait PAS avoir de disque de fond derrière le logo', () => {
+      // Garde anti-régression : un disque blanc rendrait le )( blanc invisible sur
+      // le tee noir, et déposerait une rondelle d'encre inutile.
+      expect(result.svg).not.toContain('<circle');
+      expect(result.svg).not.toContain('fill="white"');
     });
   });
 
   describe('Thème light (t-shirt blanc)', () => {
     const result = generatePremiumQRCode(TEST_URL, 'light');
 
-    it('devrait utiliser Navy #0A192F pour les modules', () => {
-      expect(result.svg).toContain('#0A192F');
+    it('devrait imprimer en NOIR sur le tee blanc (contraste maximal)', () => {
+      expect(result.svg).toContain('#000000');
     });
 
-    it('devrait utiliser Gold #C5A059 pour le logo )(', () => {
-      // Le logo doit être gold même sur le thème light
-      expect(result.svg).toContain('#C5A059');
+    it('ne devrait utiliser AUCUNE autre encre (monochrome, une seule couleur)', () => {
+      expect(result.svg).not.toContain('#C5A059');
+      expect(result.svg).not.toContain('#0A192F');
+      expect(result.svg).not.toContain('#FFFFFF');
     });
 
-    it('devrait contenir les deux couleurs (navy modules + gold logo)', () => {
-      expect(result.svg).toContain('#0A192F');
-      expect(result.svg).toContain('#C5A059');
+    it('devrait donner au monogramme du dos la MÊME encre que celui de la poitrine', () => {
+      // C'était l'incohérence : )( or au dos, )( navy en poitrine, même vêtement.
+      const chest = generateBrandMonogramSVG('light').svg;
+      expect(chest).toContain('#000000');
+      expect(result.svg).toContain('#000000');
     });
   });
 

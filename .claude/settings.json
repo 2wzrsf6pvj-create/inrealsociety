@@ -69,7 +69,16 @@
       "Read(//Users/clement/Developer/Brain/02 Projets/In Real Society/01 Produit/**)",
       "Read(//Users/clement/Developer/Brain/02 Projets/In Real Society/06 Décisions \\\\\\(ADR\\\\\\)/**)",
       "Read(//Users/clement/Developer/Brain/02 Projets/In Real Society/07 Journal/**)",
-      "Bash(awk '{printf \" %s %s\\\\n\", $5, $9}')"
+      "Bash(awk '{printf \" %s %s\\\\n\", $5, $9}')",
+      "Bash(node scripts/printful-variants.mjs)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(PRINTFUL_API_TOKEN=fake_token_test node scripts/printful-variants.mjs)",
+      "Bash(node --check scripts/printful-variants.mjs)",
+      "Bash(echo \"exit=$?\")",
+      "Bash(node .ext.cjs __TRACKED_VAR__/cg.ttf __TRACKED_VAR__/glyph.json)",
+      "Bash(node --experimental-strip-types .r2.ts)",
+      "WebSearch",
+      "Bash(npx tsx -e ' *)"
     ],
     "additionalDirectories": [
       "/Users/clement/Developer/Brain/02 Projets/In Real Society",

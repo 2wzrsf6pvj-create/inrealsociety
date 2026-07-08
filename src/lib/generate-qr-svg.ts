@@ -1,28 +1,36 @@
 // src/lib/generate-qr-svg.ts
 // Génère un QR code SVG premium avec modules en carrés arrondis, yeux stylisés
-// et logo central « )( » (deux arcs de parenthèses). Adapte les couleurs au thème du t-shirt.
+// et monogramme central « )( ». Adapte les couleurs au thème du t-shirt.
 //
-// Dark (t-shirt noir)  → QR Gold #C5A059, fond transparent
-// Light (t-shirt blanc) → QR Navy #0A192F, logo Gold #C5A059
+// PRINT = MONOCHROME, contraste maximal, une seule encre :
+//   Dark  (t-shirt noir)  → tout BLANC sur le tissu (fond transparent)
+//   Light (t-shirt blanc) → tout NOIR  sur le tissu (fond transparent)
+//
+// Pourquoi : c'est le contraste maximal pour un lecteur de QR (or sur noir et navy
+// sur blanc en offraient nettement moins), c'est une seule encre à l'impression, et
+// le monogramme du dos est enfin de la même couleur que celui de la poitrine.
 
 import qrGenerator from 'qrcode-generator';
 
 // ─── Couleurs ─────────────────────────────────────────────────────────────────
 
-const GOLD = '#C5A059';
-const NAVY = '#0A192F';
+const WHITE = '#FFFFFF';
+const BLACK = '#000000';
 
 interface ThemeColors {
   module: string;   // couleur des modules/data du QR
   eye:    string;   // couleur des yeux de positionnement
-  logo:   string;   // couleur du logo 'X' central
+  logo:   string;   // couleur du monogramme )( central
+}
+
+/** L'encre à déposer sur le tissu. Une seule couleur par tee. */
+export function getInkColor(theme: 'dark' | 'light'): string {
+  return theme === 'dark' ? WHITE : BLACK;
 }
 
 function getThemeColors(theme: 'dark' | 'light'): ThemeColors {
-  if (theme === 'dark') {
-    return { module: GOLD, eye: GOLD, logo: GOLD };
-  }
-  return { module: NAVY, eye: NAVY, logo: GOLD };
+  const ink = getInkColor(theme);
+  return { module: ink, eye: ink, logo: ink };
 }
 
 // ─── Matrice QR ───────────────────────────────────────────────────────────────
@@ -140,7 +148,17 @@ function renderMonogram(x: number, y: number, size: number, color: string, padRa
 
 // ─── Logo central du QR ──────────────────────────────────────────────────────
 
-/** Cercle blanc de lisibilité + le monogramme )( au centre du QR. */
+/**
+ * Le monogramme )( au centre du QR.
+ *
+ * Pas de disque de fond : en monochrome, un )( blanc sur un disque blanc serait
+ * invisible. Le tissu joue le fond — les modules sont déjà évidés sur cette zone
+ * (la correction d'erreur H tolère les ~2,3 % de modules masqués).
+ *
+ * Le glyphe )( est plus HAUT que large : ajusté au carré, il touchait les modules
+ * et se lisait comme un œil, plus comme deux parenthèses. La marge interne lui rend
+ * sa contre-forme.
+ */
 function renderLogo(
   cx: number,
   cy: number,
@@ -148,15 +166,7 @@ function renderLogo(
   color: string,
 ): string {
   const half = logoSize / 2;
-  const gap  = logoSize * 0.12;
-
-  // Fond blanc circulaire derrière le logo pour la lisibilité du scan
-  const bg = `<circle cx="${cx}" cy="${cy}" r="${half + gap}" fill="white"/>`;
-  // Marge interne minime : à cette taille (5 modules), le glyphe est déjà fin — trop
-  // de marge et il se perd dans le disque. Le disque reste plus grand que le glyphe.
-  const mono = renderMonogram(cx - half, cy - half, logoSize, color, 0.02);
-
-  return bg + mono;
+  return renderMonogram(cx - half, cy - half, logoSize, color, 0.14);
 }
 
 // ─── Fonction principale ──────────────────────────────────────────────────────
@@ -270,14 +280,14 @@ export function generatePremiumQRCode(
 // ─── Monogramme de marque « )( » — impression POITRINE ────────────────────────
 
 /**
- * Monogramme )( standalone : deux arcs, sans QR ni cercle de fond (impression
- * directe sur tissu). Couleurs fidèles au tee — or sur noir, navy sur blanc.
+ * Monogramme )( standalone : le vrai glyphe, sans QR ni disque de fond (impression
+ * directe sur tissu). Même encre que le QR du dos — blanc sur noir, noir sur blanc.
  *
  * IDENTIQUE POUR TOUS LES PORTEURS (contrairement au QR du dos, unique par membre)
  * → uploadé une seule fois par thème, en upsert (cf. fulfillment.ts).
  */
 export function generateBrandMonogramSVG(theme: 'dark' | 'light'): { svg: string; buffer: Buffer } {
-  const color = theme === 'dark' ? GOLD : NAVY;
+  const color = getInkColor(theme);
   const svg = [
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">',
     renderMonogram(0, 0, 400, color, 0.08),
