@@ -7,7 +7,12 @@
 //                                 génèrent un QR par membre au fulfillment)
 //   logo-front-{dark,light}.svg — le monogramme )( poitrine (identique aux vraies
 //                                 commandes, au fichier près)
-//   scan-test-A4.svg            — feuille de test de distance, à imprimer à 100 %
+//   scan-test-A4.svg            — feuille de test de distance (source)
+//   scan-test-A4.pdf            — LA MÊME, en page A4 réelle : c'est CELLE-CI qu'on imprime
+//
+// Pourquoi un PDF : un SVG s'ouvre dans un éditeur de texte, et un navigateur peut le mettre
+// à l'échelle sans le dire. Un PDF porte une page de 210×297 mm : « Taille réelle / 100 % »
+// dans la boîte d'impression suffit. La barre d'étalonnage vérifie le résultat.
 //
 // Le QR est écrit SANS quiet zone, exactement comme le fichier envoyé à Printful :
 // le tissu (ou le papier) fournit la marge. Cf. BACK_POSITION dans fulfillment.ts.
@@ -93,5 +98,30 @@ const sheet = `<svg xmlns="http://www.w3.org/2000/svg" width="${A4_W}mm" height=
 
 writeFileSync(join(OUT, 'scan-test-A4.svg'), sheet);
 
-console.log(`✓ QR ${qrLight.width}px (sans quiet zone) → ${QR_MM} mm sur la feuille de test`);
-console.log('✓ public/print/{qr-back,logo-front}-{dark,light}.svg + scan-test-A4.svg');
+// ─── PDF A4 réel, prêt à imprimer ─────────────────────────────────────────────
+// Chromium pose une VRAIE page de 210×297 mm. `margin: 0` + le SVG en 210×297 mm
+// garantissent le 1:1. `preferCSSPageSize` évite que Chromium impose son format.
+const { chromium } = await import('playwright');
+const browser = await chromium.launch();
+const page = await browser.newPage();
+await page.setContent(
+  `<!doctype html><style>
+     @page { size: ${A4_W}mm ${A4_H}mm; margin: 0 }
+     html,body { margin:0; padding:0 }
+     svg { display:block }
+   </style>${sheet}`,
+  { waitUntil: 'load' },
+);
+await page.pdf({
+  path: join(OUT, 'scan-test-A4.pdf'),
+  width: `${A4_W}mm`,
+  height: `${A4_H}mm`,
+  margin: { top: '0', right: '0', bottom: '0', left: '0' },
+  printBackground: true,
+  preferCSSPageSize: true,
+});
+await browser.close();
+
+console.log(`✓ QR ${qrLight.modules} modules, ${qrLight.width}px (sans quiet zone) → ${QR_MM} mm sur la feuille`);
+console.log('✓ public/print/{qr-back,logo-front}-{dark,light}.svg');
+console.log('✓ public/print/scan-test-A4.pdf  ← imprimer CELUI-CI, à 100 % / « taille réelle »');

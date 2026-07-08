@@ -7,7 +7,9 @@ Le code est la source de vérité (src/lib/generate-qr-svg.ts). Ne PAS éditer c
   qr-back-light.svg    ← DOS, t-shirt BLANC : QR NOIR,  fond transparent
   logo-front-dark.svg  ← POITRINE, tee noir  : monogramme )( BLANC
   logo-front-light.svg ← POITRINE, tee blanc : monogramme )( NOIR
-  scan-test-A4.svg     ← feuille de test de distance (voir plus bas)
+  scan-test-A4.pdf     ← FEUILLE DE TEST À IMPRIMER (voir plus bas)
+  scan-test-A4.svg     ← la même, en source (ne s'imprime pas fiablement : un éditeur
+                          l'ouvre en texte, un navigateur peut la redimensionner)
 
 LE PRINT EST MONOCHROME. Une seule encre par tee : blanc sur noir, noir sur blanc.
 C'est le contraste maximal pour un lecteur de QR — la scannabilité à distance EST la
@@ -36,15 +38,22 @@ dans Supabase Storage, pas lu depuis ce dossier). Coupe-le via PRINT_FRONT_LOGO 
 deux emplacements coûtent plus cher chez Printful.
 
 
-TESTER LA DISTANCE AVANT DE COMMANDER  (scan-test-A4.svg)
+TESTER LA DISTANCE AVANT DE COMMANDER  (scan-test-A4.pdf)
 ---------------------------------------------------------
 Le rapport distance/taille est INVARIANT D'ÉCHELLE. 25 cm ne rentre pas sur une A4 — mais
 un QR de 15 cm lisible à 1,50 m prouve qu'un QR de 25 cm le sera à 2,50 m (même angle
 sous-tendu, même nombre de modules par pixel de capteur).
 
-  1. Imprimer scan-test-A4.svg à 100 % (surtout PAS « ajuster à la page »).
-  2. Vérifier à la règle que la barre d'étalonnage fait bien 100 mm.
-  3. Reculer jusqu'à 1,50 m et scanner.
+  1. Ouvrir scan-test-A4.pdf (Aperçu / n'importe quel lecteur PDF) puis Cmd+P.
+     Terminal :  open public/print/scan-test-A4.pdf
+  2. Dans la boîte d'impression : Échelle = 100 % ou « Taille réelle ».
+     PAS « Ajuster à la page » / « Fit to page » — c'est le seul réglage qui casse le test.
+  3. Vérifier à la règle que la barre d'étalonnage fait bien 100 mm. Sinon, recommencer.
+  4. Reculer jusqu'à 1,50 m et scanner.
+
+Le PDF porte une VRAIE page de 210×297 mm (vérifié : MediaBox 594.96×841.92 pt) et le QR y
+mesure exactement 150,00 mm (mesuré au pixel sur le PDF rastérisé). Le SVG, lui, s'ouvre dans
+un éditeur de texte et se fait redimensionner par les navigateurs : ne pas l'imprimer.
 
 La feuille encode une URL de la MÊME longueur que la vraie (29 modules) : elle teste le
 bon QR. Le lien ne mène nulle part — on teste la lecture, pas la destination.

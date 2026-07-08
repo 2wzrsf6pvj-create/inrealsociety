@@ -82,7 +82,12 @@
       "Bash(grep -n \"Monogramme \\)\\( — le print\" \"/Users/clement/Developer/Brain/02 Projets/In Real Society/05 Roadmap/Changelog.md\")",
       "Bash(find \"/Users/clement/Developer/Brain/02 Projets/In Real Society\" -name \"ADR-009*\")",
       "Bash(tail -14 \"/Users/clement/Developer/Brain/02 Projets/In Real Society/06 Décisions \\(ADR\\)/ADR-009 Formes de QR — dots rejetés.md\")",
-      "Bash(npx tsx *)"
+      "Bash(npx tsx *)",
+      "Bash(node -e \"console.log\\(require\\('@playwright/test/package.json'\\).version\\)\")",
+      "Bash(python3 -c \"import fitz\")",
+      "Bash(sips -s format png public/print/scan-test-A4.pdf --out /private/tmp/claude-501/-Users-clement-Downloads-inrealsociety-main/cfa0c34f-19b4-4ce0-a619-f91f894b40c2/scratchpad/pdf.png)",
+      "Bash(python3 -c \"import PIL; print\\('pil ok'\\)\")",
+      "Bash(node -e \"console.log\\(Object.keys\\(require\\('/Users/clement/Downloads/inrealsociety-main/package.json'\\).devDependencies\\).join\\(' '\\)\\)\")"
     ],
     "additionalDirectories": [
       "/Users/clement/Developer/Brain/02 Projets/In Real Society",
