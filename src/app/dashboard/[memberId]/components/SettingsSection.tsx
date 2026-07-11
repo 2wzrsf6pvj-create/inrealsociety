@@ -401,7 +401,9 @@ export default function SettingsSection({ member }: { member: Member }) {
           <button
             onClick={togglePause}
             disabled={saving}
-            aria-label={isPaused ? 'Réactiver le profil' : 'Mettre le profil en pause'}
+            role="switch"
+            aria-checked={isPaused}
+            aria-label="Mettre le profil en pause"
             className={`w-10 h-5 rounded-full transition-colors flex-shrink-0 relative ${isPaused ? 'bg-red-500/80' : 'bg-brand-gray/20'}`}
           >
             <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${isPaused ? 'left-5' : 'left-0.5'}`} />
@@ -422,7 +424,9 @@ export default function SettingsSection({ member }: { member: Member }) {
           <button
             onClick={toggleRequireContact}
             disabled={saving}
-            aria-label={requireContact ? 'Ne plus exiger un contact' : 'Exiger un contact pour vous écrire'}
+            role="switch"
+            aria-checked={requireContact}
+            aria-label="Exiger un contact pour vous écrire"
             className={`w-10 h-5 rounded-full transition-colors flex-shrink-0 relative ${requireContact ? 'bg-brand-white/60' : 'bg-brand-gray/20'}`}
           >
             <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${requireContact ? 'left-5' : 'left-0.5'}`} />
@@ -445,7 +449,9 @@ export default function SettingsSection({ member }: { member: Member }) {
           <button
             onClick={toggleMarketing}
             disabled={saving}
-            aria-label={marketingConsent ? 'Désactiver les emails marketing' : 'Activer les emails marketing'}
+            role="switch"
+            aria-checked={marketingConsent}
+            aria-label="Recevoir la newsletter et les actualités"
             className={`w-10 h-5 rounded-full transition-colors flex-shrink-0 relative ${marketingConsent ? 'bg-brand-white/60' : 'bg-brand-gray/20'}`}
           >
             <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${marketingConsent ? 'left-5' : 'left-0.5'}`} />
