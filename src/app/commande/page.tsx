@@ -98,9 +98,10 @@ function CommandeContent() {
 
       {/* Recherche par code */}
       <form onSubmit={(e) => { e.preventDefault(); lookup(code); }} className="flex flex-col gap-2 animate-stagger-2">
-        <label className="font-ui text-xs text-brand-gray/50 tracking-[0.2em] uppercase">Votre code d&apos;activation</label>
+        <label htmlFor="commande-code" className="font-ui text-xs text-brand-gray/50 tracking-[0.2em] uppercase">Votre code d&apos;activation</label>
         <div className="flex gap-2">
           <input
+            id="commande-code"
             value={code}
             // Normalise à la saisie (comme le CodeField de /register) : les codes sont
             // en MAJUSCULES alphanumériques. Évite le « aucune commande » sur une
@@ -123,12 +124,12 @@ function CommandeContent() {
         <p className="font-ui text-xxs text-brand-gray/50 leading-relaxed">
           Le code figure sur la page de confirmation et dans votre email de commande.
         </p>
-        {error && <p className="animate-fade-in font-ui text-sm text-red-400">{error}</p>}
+        {error && <p className="animate-fade-in font-ui text-sm text-red-400" role="alert">{error}</p>}
       </form>
 
       {/* Résultat */}
       {data && !data.found && (
-        <div className="animate-fade-in flex flex-col items-center gap-3 text-center py-4">
+        <div className="animate-fade-in flex flex-col items-center gap-3 text-center py-4" role="status">
           <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
           <p className="font-display text-xl font-light italic text-brand-gray/50">Aucune commande pour ce code.</p>
           <p className="font-ui text-xs text-brand-gray/50 leading-relaxed">Vérifiez le code, ou contactez <span className="text-brand-white/70">hello@inrealsociety.com</span>.</p>
