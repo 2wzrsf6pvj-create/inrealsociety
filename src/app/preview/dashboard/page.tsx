@@ -29,7 +29,7 @@ export default function PreviewDashboardPage({ searchParams }: { searchParams: {
     name:                   'Clément',
     pitch:                  "Si tu lis ça, c'est qu'on s'est croisés pour de vrai.",
     instagram:              empty ? null : 'clement',
-    email:                  'clementch@yahoo.com',
+    email:                  'clement@example.com',
     photo_url:              null,
     scan_count:             empty ? 0 : 27,
     is_paused:              false,

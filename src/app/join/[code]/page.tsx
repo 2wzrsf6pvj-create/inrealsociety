@@ -18,7 +18,7 @@ export default function JoinPage() {
     // Stocké tel quel (UUID) → ShopClient le relira et l'acceptera (avant, on
     // stockait un referral_code non-UUID jamais consommé : funnel mort).
     localStorage.setItem('referral_code', code);
-    supabase.from('members').select('name').eq('id', code).single()
+    supabase.from('members').select('name').eq('id', code).maybeSingle()
       .then(({ data }) => { if (data) setReferrer(data.name); });
   }, [code]);
 
