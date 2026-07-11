@@ -31,13 +31,15 @@ export async function POST(req: NextRequest) {
 
     const { messageId, content, author } = body.data;
 
-    // Récupère le message racine d'abord (besoin de rootMsg.member_id pour l'auth)
+    // Récupère le message racine d'abord (besoin de member_id pour l'auth + du
+    // sender_token pour verrouiller l'identité du scanneur). maybeSingle : 0 ligne
+    // = lien invalide (cas normal), pas une erreur/406.
     const { data: rootMsg } = await supabaseAdmin
       .from('messages')
-      .select('id, member_id, sender_contact, blocked_at')
+      .select('id, member_id, sender_contact, blocked_at, sender_token')
       .eq('id', messageId)
       .is('parent_id', null)
-      .single();
+      .maybeSingle();
 
     if (!rootMsg) {
       return NextResponse.json({ error: 'Conversation introuvable.' }, { status: 404 });
@@ -48,13 +50,27 @@ export async function POST(req: NextRequest) {
     if (rootMsg.blocked_at) {
       return NextResponse.json({ error: 'Cette conversation est close.', code: 'blocked' }, { status: 403 });
     }
-    // Device bloqué par ce porteur via une AUTRE conversation → on coupe aussi ici.
-    if (author === 'scanner' && await isBlocked(rootMsg.member_id, getSenderToken(req))) {
-      return NextResponse.json({ error: 'Cette conversation est close.', code: 'blocked' }, { status: 403 });
-    }
-    // Device banni globalement (anti-harcèlement en série) → même réponse opaque.
-    if (author === 'scanner' && await isDeviceBanned(getSenderToken(req))) {
-      return NextResponse.json({ error: 'Cette conversation est close.', code: 'blocked' }, { status: 403 });
+
+    if (author === 'scanner') {
+      const token = getSenderToken(req);
+      // ─── Verrou anti-imposture du scanneur ──────────────────────────────
+      // Seul le device d'ORIGINE (cookie httpOnly posé au 1er message) peut écrire
+      // au nom du scanneur. Le lien-capability permet de LIRE la conversation, pas
+      // d'y injecter des messages « du scanneur » s'il fuite (email du porteur,
+      // presse-papier, referer). Contrepartie assumée : pas de réponse cross-device
+      // côté scanneur (il peut toujours LIRE). Legacy : root sans sender_token → on
+      // ne peut pas vérifier, on tolère.
+      if (rootMsg.sender_token && token !== rootMsg.sender_token) {
+        return NextResponse.json(
+          { error: "Répondez depuis l'appareil d'origine de la conversation.", code: 'wrong_device' },
+          { status: 403 },
+        );
+      }
+      // Device bloqué par ce porteur (ici ou ailleurs) OU banni globalement →
+      // réponse opaque « close » (ne révèle ni le blocage ni le ban).
+      if (await isBlocked(rootMsg.member_id, token) || await isDeviceBanned(token)) {
+        return NextResponse.json({ error: 'Cette conversation est close.', code: 'blocked' }, { status: 403 });
+      }
     }
 
     // Auth + rate limit selon l'auteur :
@@ -96,7 +112,16 @@ export async function POST(req: NextRequest) {
     // Modération (scanner anonyme inclus) — comme le message racine.
     const moderation = await moderateContent(content);
 
-    // Insère le nouveau message dans le thread
+    // Cohérence avec le message racine (choix B) : un message modéré n'est PAS inséré.
+    // Il ne laisse pas de ligne morte, et comme il serait de toute façon exclu du
+    // compteur/affichage/realtime, rien ne change côté limite. L'auteur peut
+    // reformuler (rate-limit + tour de parole plafonnent les ré-essais). On ne
+    // propage jamais le contenu abusif.
+    if (moderation.flagged) {
+      return NextResponse.json({ ok: true, moderated: true });
+    }
+
+    // Insère le nouveau message (NON modéré) dans le thread
     const { data: newMsg, error: insertErr } = await supabaseAdmin
       .from('messages')
       .insert({
@@ -106,84 +131,73 @@ export async function POST(req: NextRequest) {
         author,
         sender_contact: rootMsg.sender_contact,
         is_quick_reply: false,
-        moderated:      moderation.flagged,
+        moderated:      false,
       })
       .select('id')
       .single();
 
     if (insertErr) throw insertErr;
 
-    // Si modéré : stocké (moderated:true, masqué partout) mais NON diffusé ni
-    // notifié — on ne propage pas le contenu abusif.
-    if (!moderation.flagged) {
-      // Realtime fire-and-forget — diffuse aux clients abonnés au canal du
-      // thread (scanner anon inclus, via broadcast public).
-      if (newMsg?.id) {
-        broadcastThreadMessage(messageId, {
-          id:         newMsg.id,
-          content:    content.trim(),
-          author,
-          created_at: new Date().toISOString(),
-        }).catch(() => {});
-      }
+    // Realtime fire-and-forget — diffuse aux clients abonnés au canal du thread
+    // (scanner anon inclus, via broadcast public).
+    if (newMsg?.id) {
+      broadcastThreadMessage(messageId, {
+        id:         newMsg.id,
+        content:    content.trim(),
+        author,
+        created_at: new Date().toISOString(),
+      }).catch(() => {});
+    }
 
-      // Notification email :
-      //   * scanner → notifie le membre sur son email (alerte dashboard)
-      //   * member → notifie le scanner sur sender_contact si c'est un email
-      if (author === 'scanner') {
+    // Notification email :
+    //   * scanner → notifie le membre sur son email (alerte dashboard)
+    //   * member → notifie le scanner sur sender_contact si c'est un email
+    if (author === 'scanner') {
+      const { data: member } = await supabaseAdmin
+        .from('members').select('name, email').eq('id', rootMsg.member_id).maybeSingle();
+
+      if (member?.email) {
+        const dashboardUrl = `${APP_URL}/conversation/${messageId}`;
+        const { subject, html } = emailNouveauMessage({
+          memberName:    member.name,
+          content:       content.trim(),
+          senderContact: rootMsg.sender_contact,
+          dashboardUrl,
+        });
+        sendEmail({ to: member.email, subject, html }).catch((err) => console.error('[conversation/reply] Échec email membre:', err));
+      }
+    } else if (author === 'member') {
+      const contact = rootMsg.sender_contact?.trim();
+      if (contact && isValidEmail(contact)) {
         const { data: member } = await supabaseAdmin
-          .from('members')
-          .select('name, email')
-          .eq('id', rootMsg.member_id)
-          .single();
+          .from('members').select('name').eq('id', rootMsg.member_id).maybeSingle();
 
-        if (member?.email) {
-          const dashboardUrl = `${APP_URL}/conversation/${messageId}`;
-          const { subject, html } = emailNouveauMessage({
-            memberName:    member.name,
-            content:       content.trim(),
-            senderContact: rootMsg.sender_contact,
-            dashboardUrl,
-          });
-          sendEmail({ to: member.email, subject, html }).catch((err) => console.error('[conversation/reply] Échec email membre:', err));
-        }
-      } else if (author === 'member') {
-        const contact = rootMsg.sender_contact?.trim();
-        if (contact && isValidEmail(contact)) {
-          const { data: member } = await supabaseAdmin
-            .from('members')
-            .select('name')
-            .eq('id', rootMsg.member_id)
-            .single();
-
-          const { subject, html } = emailReponse({
-            memberName: member?.name || 'Ce membre',
-            reply:      content.trim(),
-            convUrl:    `${APP_URL}/conversation/${messageId}`,
-          });
-          sendEmail({ to: contact, subject, html }).catch((err) => console.error('[conversation/reply] Échec email scanner:', err));
-        }
-      }
-
-      // Push fire-and-forget — notifie l'AUTRE côté, sur le bon scope :
-      //   * member répond  → le scanneur (abonné au thread via messageId).
-      //   * scanner répond → le PORTEUR (abonné au niveau membre depuis le
-      //     dashboard — il n'est PAS abonné au thread ; sans ça il ne recevait
-      //     que l'email, jamais de push, sur l'événement le plus important).
-      const pushBody = content.trim().slice(0, 80);
-      const pushUrl  = `${APP_URL}/conversation/${messageId}`;
-      if (author === 'member') {
-        notifyThreadSubscribers({
-          messageId, title: 'Nouveau message — réponse du membre', body: pushBody, url: pushUrl,
-        }).catch((err) => console.error('[conversation/reply] Échec push thread:', err));
-      } else {
-        notifyMemberSubscribers({
-          memberId: rootMsg.member_id, messageId, title: 'Nouveau message', body: pushBody, url: pushUrl,
-        }).catch((err) => console.error('[conversation/reply] Échec push membre:', err));
+        const { subject, html } = emailReponse({
+          memberName: member?.name || 'Ce membre',
+          reply:      content.trim(),
+          convUrl:    `${APP_URL}/conversation/${messageId}`,
+        });
+        sendEmail({ to: contact, subject, html }).catch((err) => console.error('[conversation/reply] Échec email scanner:', err));
       }
     }
 
-    return NextResponse.json({ ok: true, moderated: moderation.flagged, replyId: newMsg?.id });
+    // Push fire-and-forget — notifie l'AUTRE côté, sur le bon scope :
+    //   * member répond  → le scanneur (abonné au thread via messageId).
+    //   * scanner répond → le PORTEUR (abonné au niveau membre depuis le dashboard —
+    //     il n'est PAS abonné au thread ; sans ça il ne recevait que l'email).
+    const pushBody = content.trim().slice(0, 80);
+    const pushUrl  = `${APP_URL}/conversation/${messageId}`;
+    if (author === 'member') {
+      notifyThreadSubscribers({
+        messageId, title: 'Nouveau message — réponse du membre', body: pushBody, url: pushUrl,
+      }).catch((err) => console.error('[conversation/reply] Échec push thread:', err));
+    } else {
+      notifyMemberSubscribers({
+        memberId: rootMsg.member_id, messageId, title: 'Nouveau message', body: pushBody, url: pushUrl,
+      }).catch((err) => console.error('[conversation/reply] Échec push membre:', err));
+    }
+
+    return NextResponse.json({ ok: true, moderated: false, replyId: newMsg?.id });
 
   } catch (err) {
     console.error('[conversation/reply]', err);

@@ -17,7 +17,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     .from('messages')
     .select('members(name)')
     .eq('id', params.messageId)
-    .single();
+    .maybeSingle();
 
   const members = message?.members as unknown as { name: string } | null;
   const name = members?.name ?? 'Un membre';
@@ -32,7 +32,7 @@ export default async function ConversationPage({ params }: Props) {
     .from('messages')
     .select('*, members(name, photo_url, instagram, auth_user_id)')
     .eq('id', params.messageId)
-    .single();
+    .maybeSingle();
 
   if (!message || message.moderated) notFound();
 
