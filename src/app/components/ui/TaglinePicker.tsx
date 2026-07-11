@@ -1,12 +1,13 @@
 'use client';
 
-// Sélecteur d'ACCROCHE imprimée sous le QR, partagé boutique (achat) et activation
-// (register). Le client choisit dans une bibliothèque FERMÉE (jamais de texte libre).
+// Sélecteur d'ACCROCHE imprimée sous le QR, partagé boutique (achat) et activation.
+// Le client choisit dans une bibliothèque FERMÉE (jamais de texte libre).
 //
-// Deux niveaux (26 accroches → un <select> était hors du langage visuel du shop, qui
-// n'utilise que des grilles de boutons) : on choisit d'abord un REGISTRE, puis une
-// accroche parmi ses puces. L'aperçu est fidèle au tee — texte clair sur fond sombre /
-// sombre sur fond clair — soit exactement ce qui sera imprimé (monochrome, getInkColor).
+// Deux niveaux, VISUELLEMENT DISTINCTS pour qu'on sache ce qui est quoi :
+//  - niveau 1 = la CATÉGORIE → onglets soulignés (navigation, pas un choix) ;
+//  - niveau 2 = le CHOIX → puces bordées (« QR seul » + les accroches).
+// L'aperçu est un mini-DOS (QR décoratif + accroche dessous) : il montre le vrai
+// placement et la vraie encre (blanc sur noir / noir sur blanc, cf. getInkColor).
 
 import { useState } from 'react';
 import {
@@ -16,7 +17,7 @@ import {
 
 type TeeColor = 'dark' | 'light';
 
-// Libellés COURTS pour les onglets (les longs de REGISTRE_LABELS débordent sur mobile).
+// Libellés COURTS pour les onglets (les longs débordent sur mobile).
 const SHORT: Record<TaglineRegistre, string> = {
   'drague':         'Drague',
   'message-unique': 'Message',
@@ -24,6 +25,23 @@ const SHORT: Record<TaglineRegistre, string> = {
   'mystere':        'Mystère',
   'amitie':         'Amitié',
 };
+
+/** Petit QR décoratif (non scannable) pour l'aperçu — 3 yeux + quelques modules. */
+function MiniQr({ color }: { color: string }) {
+  const eye = (x: number, y: number) => (
+    <>
+      <rect x={x} y={y} width={13} height={13} rx={2.5} fill="none" stroke={color} strokeWidth={2.5} />
+      <rect x={x + 4.5} y={y + 4.5} width={4} height={4} rx={1} fill={color} />
+    </>
+  );
+  const dots = [[19, 3], [24, 8], [19, 13], [29, 3], [3, 19], [8, 24], [13, 19], [24, 19], [29, 24], [19, 24], [24, 29], [19, 29], [29, 19]];
+  return (
+    <svg width="40" height="40" viewBox="0 0 42 42" aria-hidden="true">
+      {eye(0, 0)}{eye(29, 0)}{eye(0, 29)}
+      {dots.map(([x, y], i) => <rect key={i} x={x} y={y} width={3.2} height={3.2} rx={0.8} fill={color} />)}
+    </svg>
+  );
+}
 
 export default function TaglinePicker({ value, onChange, tshirtColor }: {
   value: string | null;
@@ -33,7 +51,6 @@ export default function TaglinePicker({ value, onChange, tshirtColor }: {
   const groups = taglinesByRegistre();
   const current = getTagline(value);
 
-  // Onglet ouvert : celui de l'accroche choisie, sinon le premier (drague).
   const [openReg, setOpenReg] = useState<TaglineRegistre>(current?.registre ?? 'drague');
   const openGroup = groups.find((g) => g.registre === openReg) ?? groups[0];
 
@@ -42,67 +59,81 @@ export default function TaglinePicker({ value, onChange, tshirtColor }: {
   const bg = dark ? '#0a0a0a' : '#ffffff';
   const ink = dark ? '#ffffff' : '#0a0a0a';
 
-  const chip = (active: boolean) =>
-    `rounded-[2px] border transition-all font-ui ${
-      active
-        ? 'border-brand-white/60 bg-brand-white/5 text-brand-white'
-        : 'border-brand-gray/15 text-brand-gray/50 hover:border-brand-gray/30'
-    }`;
-
   return (
-    <div className="flex flex-col gap-2">
-      <p className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Accroche</p>
-      <p className="font-ui text-xxs text-brand-gray/55 -mt-1">
-        Imprimée sous le QR, dans le dos. Elle donne envie de scanner.
-      </p>
+    <div className="flex flex-col gap-3">
+      <div>
+        <p className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Accroche</p>
+        <p className="font-ui text-xxs text-brand-gray/55 mt-0.5">
+          Imprimée sous le QR, dans le dos. Elle donne envie de scanner.
+        </p>
+      </div>
 
-      {/* Niveau 1 — registre (navigation pure) */}
-      <div className="flex flex-wrap gap-2">
+      {/* Niveau 1 — CATÉGORIE : onglets soulignés (navigation, pas un choix) */}
+      <div className="flex flex-wrap gap-x-4 gap-y-1 border-b border-brand-gray/10 pb-1">
         {groups.map((g) => (
           <button
             key={g.registre}
             type="button"
             onClick={() => setOpenReg(g.registre)}
             aria-pressed={openReg === g.registre}
-            className={`${chip(openReg === g.registre)} px-3 py-2 text-xs tracking-[0.1em]`}
+            className={`font-ui text-xs tracking-[0.12em] uppercase pb-1.5 -mb-[5px] border-b-2 transition-colors ${
+              openReg === g.registre
+                ? 'border-brand-white text-brand-white'
+                : 'border-transparent text-brand-gray/40 hover:text-brand-gray/70'
+            }`}
           >
             {SHORT[g.registre]}
           </button>
         ))}
       </div>
 
-      {/* Niveau 2 — le choix : « QR seul » puis les accroches du registre ouvert */}
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => onChange(null)}
-          aria-pressed={value === null}
-          className={`${chip(value === null)} px-3 py-2 text-sm`}
-        >
-          QR seul
-        </button>
-        {openGroup.items.map((t) => (
+      {/* Niveau 2 — LE CHOIX : « QR seul » puis les accroches du registre ouvert */}
+      <div className="flex flex-col gap-1.5">
+        <p className="font-ui text-xxs text-brand-gray/40 tracking-[0.15em] uppercase">Choisis ta phrase</p>
+        <div className="flex flex-wrap gap-2">
           <button
-            key={t.id}
             type="button"
-            onClick={() => onChange(t.id)}
-            aria-pressed={value === t.id}
-            className={`${chip(value === t.id)} px-3 py-2 text-sm text-left`}
+            onClick={() => onChange(null)}
+            aria-pressed={value === null}
+            className={`rounded-[2px] border px-3 py-2 font-ui text-sm transition-all ${
+              value === null
+                ? 'border-brand-white/70 bg-brand-white/10 text-brand-white'
+                : 'border-brand-gray/15 text-brand-gray/45 hover:border-brand-gray/30'
+            }`}
           >
-            {t.text}
+            QR seul
           </button>
-        ))}
+          {openGroup.items.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => onChange(t.id)}
+              aria-pressed={value === t.id}
+              className={`rounded-[2px] border px-3 py-2 font-ui text-sm text-left transition-all ${
+                value === t.id
+                  ? 'border-brand-white/70 bg-brand-white/10 text-brand-white'
+                  : 'border-brand-gray/15 text-brand-gray/55 hover:border-brand-gray/30'
+              }`}
+            >
+              {t.text}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Aperçu « comme imprimé » (bordure pour le détacher du fond sombre du shop) */}
-      <div
-        className="flex items-center justify-center text-center rounded-[2px] px-4 py-4 min-h-[52px] border border-brand-gray/15"
-        style={{ background: bg, color: ink }}
-        aria-live="polite"
-      >
-        <span className="font-ui font-bold text-sm leading-tight">
-          {current ? current.text : 'QR seul'}
-        </span>
+      {/* Aperçu = mini-DOS : QR décoratif + accroche dessous, à la vraie place et à la vraie encre */}
+      <div className="flex flex-col gap-1.5">
+        <p className="font-ui text-xxs text-brand-gray/40 tracking-[0.15em] uppercase">Aperçu du dos</p>
+        <div
+          className="flex flex-col items-center justify-center gap-2 rounded-[2px] border border-brand-gray/15 px-4 py-5"
+          style={{ background: bg, color: ink }}
+          aria-live="polite"
+        >
+          <MiniQr color={ink} />
+          {current
+            ? <span className="font-ui font-bold text-sm leading-tight text-center">{current.text}</span>
+            : <span className="font-ui text-xs italic" style={{ opacity: 0.5 }}>sans accroche</span>}
+        </div>
       </div>
     </div>
   );
