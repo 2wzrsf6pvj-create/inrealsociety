@@ -12,7 +12,8 @@
 import { useState } from 'react';
 import {
   taglinesByRegistre, getTagline, TAGLINES,
-  type TaglineRegistre,
+  TAGLINE_LANGS, TAGLINE_LANG_LABELS,
+  type TaglineRegistre, type TaglineLang,
 } from '@/lib/taglines';
 
 type TeeColor = 'dark' | 'light';
@@ -49,8 +50,12 @@ export default function TaglinePicker({ value, onChange, tshirtColor }: {
   onChange: (id: string | null) => void;
   tshirtColor?: TeeColor;
 }) {
-  const groups = taglinesByRegistre();
   const current = getTagline(value);
+  // Langue de l'accroche IMPRIMÉE. Ouvre sur la langue de la sélection courante (ex.
+  // pré-rempli depuis le checkout), sinon français. Le choix (value) persiste quand on
+  // change de langue : le toggle ne fait que naviguer, l'aperçu reste la vérité.
+  const [lang, setLang] = useState<TaglineLang>(current?.lang ?? 'fr');
+  const groups = taglinesByRegistre(lang);
 
   const [openReg, setOpenReg] = useState<TaglineRegistre>(current?.registre ?? 'drague');
   const openGroup = groups.find((g) => g.registre === openReg) ?? groups[0];
@@ -62,11 +67,31 @@ export default function TaglinePicker({ value, onChange, tshirtColor }: {
 
   return (
     <div className="flex flex-col gap-3">
-      <div>
-        <p className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Accroche</p>
-        <p className="font-ui text-xxs text-brand-gray/55 mt-0.5">
-          Imprimée sous le QR, dans le dos. Elle donne envie de scanner.
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Accroche</p>
+          <p className="font-ui text-xxs text-brand-gray/55 mt-0.5">
+            Imprimée sous le QR, dans le dos. Elle donne envie de scanner.
+          </p>
+        </div>
+        {/* Langue IMPRIMÉE (l'anglais couvre voyage/étranger + le style streetwear). */}
+        <div className="flex gap-1 shrink-0" role="group" aria-label="Langue de l'accroche imprimée">
+          {TAGLINE_LANGS.map((l) => (
+            <button
+              key={l}
+              type="button"
+              onClick={() => setLang(l)}
+              aria-pressed={lang === l}
+              className={`px-2.5 py-1.5 rounded-[2px] border font-ui text-xxs tracking-[0.1em] transition-colors ${
+                lang === l
+                  ? 'border-brand-white/60 text-brand-white'
+                  : 'border-brand-gray/15 text-brand-gray/45 hover:border-brand-gray/30'
+              }`}
+            >
+              {TAGLINE_LANG_LABELS[l]}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Niveau 1 — CATÉGORIE : onglets soulignés (navigation, pas un choix) */}

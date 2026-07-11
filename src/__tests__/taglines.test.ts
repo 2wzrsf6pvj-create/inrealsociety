@@ -3,7 +3,7 @@
 // les slugs sont uniques (un slug figé sur des commandes passées ne doit pas dériver).
 
 import { describe, it, expect } from 'vitest';
-import { TAGLINES, isValidTaglineId, getTagline, TAGLINE_NONE } from '@/lib/taglines';
+import { TAGLINES, isValidTaglineId, getTagline, TAGLINE_NONE, taglinesByRegistre, TAGLINE_LANGS } from '@/lib/taglines';
 import { BAKED_TAGLINES } from '@/lib/taglines.generated';
 
 describe('bibliothèque d’accroches', () => {
@@ -33,5 +33,22 @@ describe('bibliothèque d’accroches', () => {
     expect(getTagline(TAGLINES[0].id)?.id).toBe(TAGLINES[0].id);
     expect(getTagline(TAGLINE_NONE)).toBeNull();
     expect(getTagline('nope')).toBeNull();
+  });
+
+  it('les deux langues (fr, en) ont des accroches', () => {
+    for (const lang of TAGLINE_LANGS) {
+      expect(TAGLINES.some((t) => t.lang === lang), `aucune accroche ${lang}`).toBe(true);
+    }
+  });
+
+  it('taglinesByRegistre(lang) ne renvoie QUE la langue demandée', () => {
+    for (const lang of TAGLINE_LANGS) {
+      const groups = taglinesByRegistre(lang);
+      expect(groups.length).toBeGreaterThan(0);
+      for (const g of groups) {
+        expect(g.items.length).toBeGreaterThan(0);           // pas de registre vide
+        expect(g.items.every((t) => t.lang === lang)).toBe(true);
+      }
+    }
   });
 });
