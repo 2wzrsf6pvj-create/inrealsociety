@@ -12,12 +12,16 @@ import Stripe from 'stripe';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { checkPublicRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
 import { QR_STYLES, DEFAULT_QR_STYLE } from '@/lib/constants';
+import { isValidTaglineId } from '@/lib/taglines';
 
 const schema = z.object({
   email:       z.string().email().max(320),
   tshirtColor: z.enum(['dark', 'light']),
   tshirtSize:  z.enum(['S', 'M', 'L', 'XL', 'XXL']),
   qrStyle:     z.enum(QR_STYLES).default(DEFAULT_QR_STYLE),
+  // Accroche : id de la bibliothèque fermée, ou null (QR seul). On refuse tout id
+  // inconnu — jamais de texte arbitraire imprimé. `nullish` accepte null ET absent.
+  taglineId:   z.string().max(64).refine(isValidTaglineId, 'Accroche inconnue').nullish(),
   referrerId:  z.string().uuid().optional(),
 });
 
@@ -46,7 +50,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Données invalides.' }, { status: 400 });
     }
 
-    const { email, tshirtColor, tshirtSize, qrStyle, referrerId } = body.data;
+    const { email, tshirtColor, tshirtSize, qrStyle, taglineId, referrerId } = body.data;
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;
     if (!appUrl) {
       console.error('[api/shop/checkout] NEXT_PUBLIC_APP_URL non défini');
@@ -74,6 +78,7 @@ export async function POST(req: NextRequest) {
         tshirt_color:  tshirtColor,
         tshirt_size:   tshirtSize,
         qr_style:      qrStyle,
+        tagline_id:    taglineId ?? null,
         status:        'pending',
         amount:        4900,
         referrer_id:   validReferrerId,

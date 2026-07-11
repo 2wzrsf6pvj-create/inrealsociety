@@ -11,7 +11,7 @@
 
 import Stripe from 'stripe';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { generatePremiumQRCode, generateBrandMonogramSVG } from '@/lib/generate-qr-svg';
+import { composeBackPrintSVG, generateBrandMonogramSVG } from '@/lib/generate-qr-svg';
 import { QR_STYLE_CORNER, DEFAULT_QR_STYLE, PRINT_FRONT_LOGO, type QrStyleKey } from '@/lib/constants';
 import { buildShortUrl, generateUniqueShortCode } from '@/lib/short-code';
 import type { PrintfulOrderPayload, PrintfulOrderResponse, PrintfulAddress } from '@/lib/printful.types';
@@ -130,7 +130,7 @@ export async function fulfillOrder({ orderId, memberId, tshirtColor, tshirtSize 
   // ─── 1. Idempotence : skip si déjà fulfilled ───────────────────────────────
   const { data: order, error: orderErr } = await supabaseAdmin
     .from('orders')
-    .select('id, stripe_session_id, printful_order_id, status, qr_style')
+    .select('id, stripe_session_id, printful_order_id, status, qr_style, tagline_id')
     .eq('id', orderId)
     .single();
 
@@ -185,9 +185,12 @@ export async function fulfillOrder({ orderId, memberId, tshirtColor, tshirtSize 
   // prouvées décodables (test qr-decode).
   const styleKey = (order.qr_style as QrStyleKey) in QR_STYLE_CORNER
     ? (order.qr_style as QrStyleKey) : DEFAULT_QR_STYLE;
-  const qr = generatePremiumQRCode(qrDataUrl, tshirtColor, {
-    moduleCorner:  QR_STYLE_CORNER[styleKey],
-    quietModules:  PRINT_QUIET_MODULES,   // le tissu fait la quiet zone
+  // Dos = QR + accroche (le hameçon). L'accroche est choisie par le client dans une
+  // bibliothèque fermée (orders.tagline_id) ; absente/invalide → QR seul. Elle est
+  // détourée en vecteur (aucune dépendance police au POD) et placée SOUS la quiet zone.
+  const qr = composeBackPrintSVG(qrDataUrl, tshirtColor, {
+    moduleCorner: QR_STYLE_CORNER[styleKey],
+    taglineId:    (order.tagline_id as string | null | undefined) ?? null,
   });
 
   // La largeur imprimée est FIXE : plus l'URL est longue, plus les modules sont
@@ -237,6 +240,19 @@ export async function fulfillOrder({ orderId, memberId, tshirtColor, tshirtSize 
 
   const colorLabel = tshirtColor === 'dark' ? 'Black' : 'White';
 
+  // Le fichier dos n'est plus carré quand il porte une accroche (QR + texte dessous).
+  // On adapte la hauteur de la zone Printful au ratio réel du fichier → le QR garde
+  // sa largeur (25 cm ⇒ ~2,5 m) et rien n'est étiré. Sans accroche, ratio = 1 → BACK_POSITION.
+  const backAspect  = qr.height / qr.width;
+  const backHeight  = Math.round(BACK_POSITION.width * backAspect);
+  const backPosition = {
+    ...PRINT_AREA,
+    width:  BACK_POSITION.width,
+    height: backHeight,
+    left:   BACK_POSITION.left,
+    top:    Math.min(BACK_POSITION.top, PRINT_AREA.area_height - backHeight),
+  };
+
   const payload: PrintfulOrderPayload & { external_id: string } = {
     external_id: orderId,
     recipient: shipping,
@@ -245,8 +261,8 @@ export async function fulfillOrder({ orderId, memberId, tshirtColor, tshirtSize 
       quantity:   1,
       name:       `In Real Society — Comfort Colors 1717 ${colorLabel} ${size} (DTF)`,
       files: [
-        // Dos : le QR unique du porteur.
-        { type: 'back' as const, url: publicUrl, position: BACK_POSITION },
+        // Dos : le QR unique du porteur (+ accroche dessous si choisie).
+        { type: 'back' as const, url: publicUrl, position: backPosition },
         // Face : le monogramme )( (si activé). Deux emplacements = coût Printful supérieur.
         ...(frontUrl ? [{ type: 'front' as const, url: frontUrl, position: FRONT_POSITION }] : []),
       ],

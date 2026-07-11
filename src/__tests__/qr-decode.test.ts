@@ -6,7 +6,8 @@
 import { describe, it, expect } from 'vitest';
 import { Resvg } from '@resvg/resvg-js';
 import jsQR from 'jsqr';
-import { generatePremiumQRCode, type QRStyle } from '@/lib/generate-qr-svg';
+import { generatePremiumQRCode, composeBackPrintSVG, type QRStyle } from '@/lib/generate-qr-svg';
+import { TAGLINES } from '@/lib/taglines';
 
 const URL = 'https://inreal.me/u8';
 
@@ -59,6 +60,39 @@ describe('QR — décodage réel (resvg + jsqr)', () => {
     // largeur utile, donc 12 % de distance de scan, alors que le tee la fournit.
     const { svg } = generatePremiumQRCode(URL, 'dark', { quietModules: 0 });
     expect(decode(svg, 'black')).toBe(URL);
+  });
+});
+
+// L'accroche est imprimée SOUS le QR. Elle ne doit jamais casser le décodage.
+describe('QR — le dos composé (QR + accroche) décode toujours', () => {
+  it('avec accroche, tee noir (cas inversé, le plus fragile)', () => {
+    const { svg } = composeBackPrintSVG(URL, 'dark', { taglineId: 'un-message-une-chance' });
+    expect(decode(svg, 'black')).toBe(URL);
+  });
+
+  it('avec accroche longue, tee blanc', () => {
+    const { svg } = composeBackPrintSVG(URL, 'light', { taglineId: 'ecris-sans-connaitre' });
+    expect(decode(svg, 'white')).toBe(URL);
+  });
+
+  it('sans accroche (id null) → dos carré, identique au QR seul', () => {
+    const back = composeBackPrintSVG(URL, 'dark', { taglineId: null });
+    expect(back.width).toBe(back.height);   // carré = pas de bande d'accroche
+    expect(back.taglineId).toBeNull();
+    expect(decode(back.svg, 'black')).toBe(URL);
+  });
+
+  it("l'accroche agrandit la hauteur mais JAMAIS la largeur (le QR garde sa taille)", () => {
+    const plain = composeBackPrintSVG(URL, 'dark', { taglineId: null });
+    const withT = composeBackPrintSVG(URL, 'dark', { taglineId: 'tas-le-cran' });
+    expect(withT.width).toBe(plain.width);        // largeur = celle du QR, inchangée
+    expect(withT.height).toBeGreaterThan(plain.height);
+  });
+
+  it('un id inconnu retombe proprement sur QR seul (jamais de crash)', () => {
+    const back = composeBackPrintSVG(URL, 'dark', { taglineId: 'nexiste-pas' });
+    expect(back.taglineId).toBeNull();
+    expect(back.width).toBe(back.height);
   });
 });
 

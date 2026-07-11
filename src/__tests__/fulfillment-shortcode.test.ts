@@ -22,7 +22,8 @@ vi.mock('stripe', () => ({
 }));
 
 vi.mock('@/lib/generate-qr-svg', () => ({
-  generatePremiumQRCode: vi.fn(() => ({ svg: '<svg/>', buffer: Buffer.from('x'), width: 1, height: 1, modules: 29 })),
+  // Dos = QR + accroche composés en un seul SVG (le carré 1×1 suffit pour ce test).
+  composeBackPrintSVG: vi.fn(() => ({ svg: '<svg/>', buffer: Buffer.from('x'), width: 1, height: 1, modules: 29, taglineId: null })),
   // Monogramme )( poitrine (print face) — uploadé par fulfillOrder quand PRINT_FRONT_LOGO.
   generateBrandMonogramSVG: vi.fn(() => ({ svg: '<svg/>', buffer: Buffer.from('m') })),
 }));
@@ -62,7 +63,7 @@ vi.mock('@/lib/supabase-admin', () => ({
 }));
 
 import { fulfillOrder, BACK_POSITION, PRINT_QUIET_MODULES } from '@/lib/fulfillment';
-import { generatePremiumQRCode, generateBrandMonogramSVG } from '@/lib/generate-qr-svg';
+import { composeBackPrintSVG, generateBrandMonogramSVG } from '@/lib/generate-qr-svg';
 import { generateUniqueShortCode } from '@/lib/short-code';
 
 // Ces constantes gouvernent un OBJET PHYSIQUE. Les changer sans mesurer, c'est
@@ -116,12 +117,13 @@ describe('fulfillOrder — garantie short_code (H3)', () => {
     expect(generateUniqueShortCode).toHaveBeenCalledTimes(1);
     // ...et persisté sur le membre.
     expect(membersUpdate).toHaveBeenCalledWith(expect.objectContaining({ short_code: 'ab2' }));
-    // ...et le QR encode l'URL courte, PAS /profil/<uuid>.
-    // 3e arg = style de forme (order de test sans qr_style → fallback 'rounded' = 0.25).
-    expect(generatePremiumQRCode).toHaveBeenCalledWith(
-      'https://app.test/r/ab2', 'dark', { moduleCorner: 0.25, quietModules: 0 },
+    // ...et le dos encode l'URL courte, PAS /profil/<uuid>.
+    // 3e arg : forme (order de test sans qr_style → fallback 'rounded' = 0.25) + accroche
+    // (order de test sans tagline_id → null = QR seul).
+    expect(composeBackPrintSVG).toHaveBeenCalledWith(
+      'https://app.test/r/ab2', 'dark', { moduleCorner: 0.25, taglineId: null },
     );
-    const urlArg = (generatePremiumQRCode as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
+    const urlArg = (composeBackPrintSVG as ReturnType<typeof vi.fn>).mock.calls[0][0] as string;
     expect(urlArg).not.toContain('/profil/');
   });
 

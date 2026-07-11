@@ -284,6 +284,88 @@ export function generatePremiumQRCode(
   };
 }
 
+// ─── Composition du DOS : QR + accroche ───────────────────────────────────────
+
+import { BAKED_TAGLINES } from '@/lib/taglines.generated';
+import { getTagline } from '@/lib/taglines';
+
+export interface BackPrintResult {
+  svg:        string;
+  buffer:     Buffer;
+  width:      number;
+  height:     number;
+  modules:    number;
+  taglineId:  string | null;   // null = QR seul
+}
+
+/**
+ * Fichier d'impression du DOS : le QR (dimensionné pour ~2,5 m) et, dessous, l'accroche
+ * choisie par le client — le hameçon qui donne une RAISON de scanner.
+ *
+ * L'accroche est un TRACÉ VECTORIEL pré-cuit (Montserrat Bold, cf. taglines.generated) :
+ * aucune dépendance à une police au rendu du POD, même discipline que le monogramme.
+ * Monochrome : même encre que le QR (blanc sur noir, noir sur blanc).
+ *
+ * Sans accroche (taglineId absent/invalide) → renvoie le QR seul (carré), comportement
+ * historique inchangé.
+ *
+ * ⚠️ L'accroche est placée SOUS la quiet zone du QR : elle ne touche jamais les modules,
+ * donc n'affecte pas le décodage (garanti par un test).
+ */
+export function composeBackPrintSVG(
+  url: string,
+  theme: 'dark' | 'light',
+  opts?: { moduleCorner?: number; taglineId?: string | null },
+): BackPrintResult {
+  const qr = generatePremiumQRCode(url, theme, {
+    moduleCorner: opts?.moduleCorner,
+    quietModules: 0,           // le tissu fournit la quiet zone (cf. fulfillment)
+  });
+  const tagline = getTagline(opts?.taglineId);
+  const baked = tagline ? BAKED_TAGLINES[tagline.id] : null;
+
+  // Pas d'accroche → QR seul, à l'identique.
+  if (!baked) {
+    return { svg: qr.svg, buffer: qr.buffer, width: qr.width, height: qr.height, modules: qr.modules, taglineId: null };
+  }
+
+  const W = qr.width;                       // le QR occupe toute la largeur du fichier
+  const ink = getInkColor(theme);
+
+  // Mise à l'échelle de l'accroche : tenir dans 86 % de la largeur, sans dépasser une
+  // hauteur de capitale raisonnable (sinon les accroches très courtes deviennent énormes).
+  const tagW = baked.bbox.x2 - baked.bbox.x1;
+  const tagH = baked.bbox.y2 - baked.bbox.y1;
+  const targetW = 0.86 * W;
+  const maxCapH = 0.11 * W;
+  const scale = Math.min(targetW / tagW, maxCapH / tagH);
+
+  const drawnW = tagW * scale;
+  const drawnH = tagH * scale;
+  const clearance = 0.10 * W;               // > quiet zone : l'accroche ne touche pas le QR
+  const bottom = 0.05 * W;
+
+  const tx = (W - drawnW) / 2 - baked.bbox.x1 * scale;   // centré horizontalement
+  const ty = W + clearance - baked.bbox.y1 * scale;      // sous le QR
+  const H = W + clearance + drawnH + bottom;
+
+  const svg = [
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H.toFixed(1)}" width="${W}" height="${H.toFixed(1)}">`,
+    qr.svg.replace(/^[\s\S]*?<svg[^>]*>/, '').replace(/<\/svg>\s*$/, ''),
+    `<g transform="translate(${tx.toFixed(2)},${ty.toFixed(2)}) scale(${scale.toFixed(5)})"><path d="${baked.path}" fill="${ink}"/></g>`,
+    '</svg>',
+  ].join('\n');
+
+  return {
+    svg,
+    buffer:  Buffer.from(svg, 'utf-8'),
+    width:   W,
+    height:  Math.round(H),
+    modules: qr.modules,
+    taglineId: baked.id,
+  };
+}
+
 // ─── Monogramme de marque « )( » — impression POITRINE ────────────────────────
 
 /**

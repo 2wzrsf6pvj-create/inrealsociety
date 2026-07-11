@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
 
   const { data: order } = await supabaseAdmin
     .from('orders')
-    .select('status, tshirt_color, tshirt_size, qr_style, amount, created_at, fulfilled_at, printful_order_id')
+    .select('status, tshirt_color, tshirt_size, qr_style, tagline_id, amount, created_at, fulfilled_at, printful_order_id')
     .eq('activation_code', parsed.data.code)
     .maybeSingle();
 
@@ -56,6 +56,7 @@ export async function GET(req: NextRequest) {
       color:       order.tshirt_color,  // dark | light
       size:        order.tshirt_size,
       qrStyle:     order.qr_style,      // sharp | rounded | soft (pré-remplit register)
+      taglineId:   order.tagline_id,    // slug d'accroche | null (pré-remplit register)
       amount:      order.amount,        // centimes
       createdAt:   order.created_at,
       fulfilledAt: order.fulfilled_at,  // envoyé en production

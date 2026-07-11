@@ -8,6 +8,7 @@ import { requireAuth, isHttpError } from '@/lib/require-auth';
 import { checkAuthRateLimit, rateLimitHeaders } from '@/lib/ratelimit';
 import { generateUniqueShortCode } from '@/lib/short-code';
 import { QR_STYLES } from '@/lib/constants';
+import { isValidTaglineId } from '@/lib/taglines';
 import { fulfillOrder } from '@/lib/fulfillment';
 import { audit } from '@/lib/audit';
 import { sendEmail, emailBienvenue } from '@/lib/email-templates';
@@ -23,6 +24,9 @@ const schema = z.object({
   acceptedTerms:  z.literal(true),
   // Forme du QR : dernière chance de changer le choix du checkout avant impression.
   qrStyle:        z.enum(QR_STYLES).optional(),
+  // Accroche : id de bibliothèque, null (QR seul) ou absent (ne pas changer le choix
+  // du checkout). On distingue null (« retirer l'accroche ») de undefined (« laisser »).
+  taglineId:      z.string().max(64).refine((v) => isValidTaglineId(v), 'Accroche inconnue').nullish(),
 });
 
 export async function POST(req: NextRequest) {
@@ -42,7 +46,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Données invalides.' }, { status: 400 });
     }
 
-    const { name, pitch, instagram, activationCode, qrStyle } = body.data;
+    const { name, pitch, instagram, activationCode, qrStyle, taglineId } = body.data;
 
     // ─── Génère un code court unique pour l'URL du QR code ─────────────────
     let shortCode: string | null = null;
@@ -148,6 +152,11 @@ export async function POST(req: NextRequest) {
           // (garde ci-dessus) → modifiable.
           if (qrStyle) {
             await supabaseAdmin.from('orders').update({ qr_style: qrStyle }).eq('id', order.id);
+          }
+          // Idem pour l'accroche. `undefined` = ne pas toucher au choix du checkout ;
+          // `null` = le client a explicitement retiré l'accroche (QR seul).
+          if (taglineId !== undefined) {
+            await supabaseAdmin.from('orders').update({ tagline_id: taglineId }).eq('id', order.id);
           }
           const tshirtColor = (order.tshirt_color === 'light') ? 'light' : 'dark';
           const fulfillResult = await fulfillOrder({

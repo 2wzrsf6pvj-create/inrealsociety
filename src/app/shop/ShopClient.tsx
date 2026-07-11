@@ -5,8 +5,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { captureEvent } from '@/lib/posthog-client';
-import { SHOP_IMAGES_READY, DEFAULT_QR_STYLE, type QrStyleKey } from '@/lib/constants';
-import QrStylePicker from '@/app/components/ui/QrStylePicker';
+import { SHOP_IMAGES_READY } from '@/lib/constants';
+import TaglinePicker from '@/app/components/ui/TaglinePicker';
 
 type TshirtColor = 'dark' | 'light';
 type TshirtSize  = 'S' | 'M' | 'L' | 'XL' | 'XXL';
@@ -201,7 +201,7 @@ export default function ShopClient() {
   const [email, setEmail]             = useState('');
   const [tshirtColor, setTshirtColor] = useState<TshirtColor>('dark');
   const [tshirtSize, setTshirtSize]   = useState<TshirtSize>('M');
-  const [qrStyle, setQrStyle]         = useState<QrStyleKey>(DEFAULT_QR_STYLE);
+  const [taglineId, setTaglineId]     = useState<string | null>(null);
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState('');
   const [referrerId, setReferrerId]   = useState<string | null>(null);
@@ -226,7 +226,7 @@ export default function ShopClient() {
       const res = await fetch('/api/shop/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), tshirtColor, tshirtSize, qrStyle, referrerId: referrerId || undefined }),
+        body: JSON.stringify({ email: email.trim(), tshirtColor, tshirtSize, taglineId, referrerId: referrerId || undefined }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -346,8 +346,8 @@ export default function ShopClient() {
               </div>
             </div>
 
-            {/* Sélecteur de forme du QR (toutes garanties scannables) */}
-            <QrStylePicker value={qrStyle} onChange={setQrStyle} tshirtColor={tshirtColor} />
+            {/* Accroche imprimée sous le QR — le hameçon qui donne envie de scanner */}
+            <TaglinePicker value={taglineId} onChange={setTaglineId} tshirtColor={tshirtColor} />
 
             {/* Infos produit */}
             <div className="flex flex-col gap-4">
