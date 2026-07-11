@@ -200,10 +200,11 @@ function FeedbackBlock({ memberId }: { memberId: string }) {
             onChange={e => { setMessage(e.target.value); setError(''); }}
             maxLength={2000}
             rows={3}
+            aria-label="Votre retour (bug, suggestion, impression)"
             placeholder="Votre message..."
             className="w-full bg-transparent border border-brand-gray/15 focus:border-brand-white/30 text-brand-white font-ui font-light text-sm p-3 outline-none transition-colors placeholder:text-brand-gray/50 rounded-[2px] resize-none"
           />
-          {error && <p className="font-ui text-xs text-red-400">{error}</p>}
+          {error && <p className="font-ui text-xs text-red-400" role="alert">{error}</p>}
           <button onClick={handleSubmit} disabled={sending || !message.trim()}
             className="w-full py-2.5 bg-brand-white/10 text-center font-ui text-xs font-light tracking-[0.15em] uppercase text-brand-white/60 hover:bg-brand-white/15 transition-colors rounded-[2px] disabled:opacity-30 disabled:cursor-not-allowed">
             {sending ? 'Envoi...' : 'Envoyer'}
@@ -320,7 +321,7 @@ function DeleteAccountButton() {
           {deleting ? 'Suppression...' : 'Confirmer'}
         </button>
       </div>
-      {error && <p className="font-ui text-xs text-red-400 text-center">{error}</p>}
+      {error && <p className="font-ui text-xs text-red-400 text-center" role="alert">{error}</p>}
     </div>
   );
 }
@@ -407,7 +408,7 @@ export default function SettingsSection({ member }: { member: Member }) {
           </button>
         </div>
         {savedField === 'pause' && <p className="font-ui text-xs text-green-400/60">Sauvegardé.</p>}
-        {errorField?.field === 'pause' && <p className="font-ui text-xs text-red-400">{errorField.msg}</p>}
+        {errorField?.field === 'pause' && <p className="font-ui text-xs text-red-400" role="alert">{errorField.msg}</p>}
 
         <div className="w-full h-px bg-brand-gray/10" />
 
@@ -428,7 +429,7 @@ export default function SettingsSection({ member }: { member: Member }) {
           </button>
         </div>
         {savedField === 'require_contact' && <p className="font-ui text-xs text-green-400/60">Sauvegardé.</p>}
-        {errorField?.field === 'require_contact' && <p className="font-ui text-xs text-red-400">{errorField.msg}</p>}
+        {errorField?.field === 'require_contact' && <p className="font-ui text-xs text-red-400" role="alert">{errorField.msg}</p>}
       </div>
 
       {/* Communications email (consent marketing — distinct du consent analytics) */}
@@ -451,7 +452,7 @@ export default function SettingsSection({ member }: { member: Member }) {
           </button>
         </div>
         {savedField === 'marketing' && <p className="font-ui text-xs text-green-400/60">Sauvegardé.</p>}
-        {errorField?.field === 'marketing' && <p className="font-ui text-xs text-red-400">{errorField.msg}</p>}
+        {errorField?.field === 'marketing' && <p className="font-ui text-xs text-red-400" role="alert">{errorField.msg}</p>}
       </div>
 
       {/* Premium */}
