@@ -64,16 +64,29 @@ export default function ProfilClient({
   const [askLocation, setAskLocation] = useState(false);
   const scanSentRef = useRef(false);
   const fallbackRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const countdown = useCountdown(firstScanAt, member.plan);
+
+  // En aperçu, le porteur voit la vue SCANNEUR de son propre profil (pas la vue
+  // propriétaire) — pour « vivre son premier scan ».
+  const showOwnerView = isOwner && !preview;
+
+  // Fenêtre PAR RENCONTRE : l'arrivée d'un scanneur EST un scan (auto-enregistré au
+  // mount / au clic sur le CTA) qui ROUVRE la fenêtre. On compte donc depuis SON
+  // arrivée, pas depuis `firstScanAt` (le dernier scan global). Sinon, tout scanneur
+  // arrivant +24h après le scan précédent voyait « Ce moment est passé » avec le CTA
+  // masqué — alors que son propre scan venait justement de rouvrir la fenêtre côté
+  // serveur (cul-de-sac du « deuxième jour », le cas le plus courant). Le propriétaire
+  // (compte à rebours masqué) conserve `firstScanAt`.
+  const [arrivalAt, setArrivalAt] = useState<string | null>(null);
+  useEffect(() => { setArrivalAt(new Date().toISOString()); }, []);
+  const windowStart = showOwnerView ? firstScanAt : arrivalAt;
+  const countdown = useCountdown(windowStart, member.plan);
+
   // Expiré = temps réel écoulé (pas le `percent` arrondi, qui tombe à 0 ~7 min
   // avant la vraie fin et masquerait le CTA alors que le serveur accepte encore).
   const isExpired = countdown.active && countdown.hours === 0 && countdown.minutes === 0 && countdown.seconds === 0;
   // Dernière heure : l'occasion file → on passe le compte à rebours en or + pulse
   // pour rendre l'éphémère RESSENTI au moment de décision (sans clignoter fort).
   const urgent = countdown.active && !isExpired && countdown.hours === 0;
-  // En aperçu, le porteur voit la vue SCANNEUR de son propre profil (pas la vue
-  // propriétaire) — pour « vivre son premier scan ».
-  const showOwnerView = isOwner && !preview;
 
   // Enregistre le scan UNE seule fois (ref-guard). keepalive : survit à la
   // navigation (ex. clic immédiat sur « Lui envoyer un message »). La géoloc est
@@ -123,7 +136,11 @@ export default function ProfilClient({
 
     const existingConv = localStorage.getItem(`conversation_${member.id}`);
     if (existingConv) {
-      try { setConvUrl(new URL(existingConv).pathname); } catch { setConvUrl(existingConv); }
+      // N'accepte qu'un chemin INTERNE (commence par « / ») : le localStorage sert de
+      // href, un `javascript:`/URL externe ouvrirait une surface (self-XSS/redirect).
+      let path: string | null = null;
+      try { path = new URL(existingConv).pathname; } catch { path = existingConv; }
+      if (path && path.startsWith('/')) setConvUrl(path);
     }
 
     // Sauvegarde le nom du membre pour le retour sur la landing
@@ -376,7 +393,10 @@ export default function ProfilClient({
                 {isExpired ? 'Expiré' : countdown.active ? `${countdown.hours}h ${String(countdown.minutes).padStart(2, '0')}m ${String(countdown.seconds).padStart(2, '0')}s` : `${SCAN_WINDOW_MS[member.plan === 'premium' ? 'premium' : 'free'] / 3_600_000}h`}
               </span>
             </div>
-            <div className="w-full h-px bg-brand-gray/10 relative overflow-hidden">
+            <div className="w-full h-px bg-brand-gray/10 relative overflow-hidden"
+              role="progressbar" aria-valuemin={0} aria-valuemax={100}
+              aria-valuenow={countdown.active ? countdown.percent : 100}
+              aria-label="Temps restant de la fenêtre">
               <div className={`absolute left-0 top-0 h-full transition-all duration-1000 ${urgent ? 'bg-brand-accent/70' : 'bg-brand-white/20'}`}
                 style={{ width: `${countdown.percent}%` }} />
             </div>

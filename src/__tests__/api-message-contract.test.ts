@@ -36,7 +36,7 @@ function wireSupabase({ member, firstScanAt, activeConvs }: {
       return { select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: member, error: null }) }) }) };
     }
     if (table === 'first_scans') {
-      return { select: () => ({ eq: () => ({ single: () => Promise.resolve({
+      return { select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({
         data: firstScanAt ? { first_scan_at: firstScanAt } : null, error: null,
       }) }) }) };
     }

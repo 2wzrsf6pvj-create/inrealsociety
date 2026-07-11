@@ -118,8 +118,9 @@ export async function POST(req: NextRequest) {
 
     // admin : first_scans hérite la RLS owner-only de scans → anon renverrait
     // null et la fenêtre ne serait jamais appliquée (fail-open).
+    // maybeSingle : 0 ligne = membre jamais scanné (cas normal), pas une erreur/406.
     const { data: firstScan } = await supabaseAdmin
-      .from('first_scans').select('first_scan_at').eq('member_id', memberId).single();
+      .from('first_scans').select('first_scan_at').eq('member_id', memberId).maybeSingle();
 
     if (firstScan?.first_scan_at) {
       const elapsed = Date.now() - new Date(firstScan.first_scan_at).getTime();
