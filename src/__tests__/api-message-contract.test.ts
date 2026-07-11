@@ -22,6 +22,7 @@ vi.mock('@/lib/moderation', () => ({
 
 import { POST } from '@/app/api/message/route';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { moderateContent } from '@/lib/moderation';
 
 const UUID = '11111111-1111-4111-8111-111111111111';
 
@@ -33,7 +34,7 @@ function wireSupabase({ member, firstScanAt, activeConvs }: {
 }) {
   (supabaseAdmin.from as ReturnType<typeof vi.fn>).mockImplementation((table: string) => {
     if (table === 'members') {
-      return { select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: member, error: null }) }) }) };
+      return { select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: member, error: null }) }) }) };
     }
     if (table === 'first_scans') {
       return { select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({
@@ -108,5 +109,22 @@ describe('POST /api/message — contrat des codes d\'erreur', () => {
     const res = await POST(makeReq({ memberId: UUID, content: 'salut' })); // pas de senderContact
     expect(res.status).toBe(403);
     expect((await res.json()).code).toBe('contact_required');
+  });
+
+  // Régression (choix B) : un message modéré N'EST PAS inséré → il ne consomme pas
+  // le message unique du device, donc le scanneur peut reformuler après un faux
+  // positif. Le mock `messages` n'expose pas `.insert` : si le code tentait
+  // d'insérer, il ferait 500 → asserter 200 + moderated:true prouve la non-insertion.
+  it('message modéré → 200 { moderated:true }, PAS d\'insertion (reformulation possible)', async () => {
+    (moderateContent as ReturnType<typeof vi.fn>).mockResolvedValueOnce({ flagged: true, source: 'regex', categories: ['insult'] });
+    wireSupabase({
+      member: { id: UUID, name: 'A', email: 'a@b.c', is_paused: false, plan: 'free' },
+      firstScanAt: null, activeConvs: 0,
+    });
+    const res = await POST(makeReq({ memberId: UUID, content: 'texte signalé' }));
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.moderated).toBe(true);
+    expect(data.messageId).toBeUndefined(); // rien inséré → pas d'id
   });
 });

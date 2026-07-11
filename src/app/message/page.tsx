@@ -173,13 +173,16 @@ function MessageForm() {
     }
   };
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     if (!conversationUrl) return;
-    navigator.clipboard.writeText(conversationUrl).then(() => {
+    try {
+      await navigator.clipboard.writeText(conversationUrl);
       setCopied(true);
       haptic('light');
       setTimeout(() => setCopied(false), 2000);
-    });
+    } catch {
+      // Presse-papier indisponible (contexte non sécurisé / vieux navigateur) : no-op.
+    }
   };
 
   if (expired) {
@@ -342,14 +345,14 @@ function MessageForm() {
   // tête) ou seulement recommandé (personnalisation en bas).
   const nameField = (
     <div className="flex flex-col gap-1">
-      <label className="font-ui text-xs text-brand-gray/60 tracking-[0.2em] uppercase">
+      <label htmlFor="msg-name" className="font-ui text-xs text-brand-gray/60 tracking-[0.2em] uppercase">
         Votre prénom{' '}
         <span className="normal-case tracking-normal ml-1 text-brand-white/60">(optionnel)</span>
       </label>
-      <p className="font-ui text-xs text-brand-gray/65 leading-relaxed mb-1">
+      <p id="msg-name-hint" className="font-ui text-xs text-brand-gray/65 leading-relaxed mb-1">
         Pour qu&apos;il sache qui l&apos;a remarqué. Sinon, vous restez anonyme.
       </p>
-      <input type="text" placeholder="Anonyme par défaut" value={senderName} maxLength={50}
+      <input id="msg-name" aria-describedby="msg-name-hint" type="text" placeholder="Anonyme par défaut" value={senderName} maxLength={50}
         autoComplete="given-name"
         onChange={(e) => setSenderName(e.target.value)}
         className="w-full bg-transparent border-b border-brand-gray/20 focus:border-brand-white/50 text-brand-white font-ui font-light text-base py-3 outline-none transition-colors placeholder:text-brand-gray/45"
@@ -360,18 +363,18 @@ function MessageForm() {
 
   const contactField = (
     <div className="flex flex-col gap-1">
-      <label className="font-ui text-xs text-brand-gray/60 tracking-[0.2em] uppercase">
+      <label htmlFor="msg-contact" className="font-ui text-xs text-brand-gray/60 tracking-[0.2em] uppercase">
         Votre @instagram ou email{' '}
         <span className={`normal-case tracking-normal ml-1 ${contactRequired ? 'text-[#C5A059]' : 'text-brand-white/60'}`}>
           ({contactRequired ? 'requis' : 'recommandé'})
         </span>
       </label>
-      <p className="font-ui text-xs text-brand-gray/65 leading-relaxed mb-1">
+      <p id="msg-contact-hint" className="font-ui text-xs text-brand-gray/65 leading-relaxed mb-1">
         {contactRequired
           ? 'Ce membre n’accepte que les messages avec un contact.'
           : 'Sans contact, il ne pourra pas vous répondre.'}
       </p>
-      <input ref={contactRef} type="text" inputMode="email" autoCapitalize="none" autoCorrect="off"
+      <input id="msg-contact" aria-describedby="msg-contact-hint" ref={contactRef} type="text" inputMode="email" autoCapitalize="none" autoCorrect="off"
         placeholder={contactRequired ? '@instagram ou email' : 'Anonyme par défaut'} value={contact} maxLength={200}
         onChange={(e) => setContact(e.target.value)}
         className={`w-full bg-transparent border-b text-brand-white font-ui font-light text-base py-3 outline-none transition-colors placeholder:text-brand-gray/45 ${contactRequired && !contact.trim() ? 'border-[#C5A059]/50 focus:border-[#C5A059]' : 'border-brand-gray/20 focus:border-brand-white/50'}`}
@@ -439,8 +442,8 @@ function MessageForm() {
       {/* Message libre */}
       <div className="flex flex-col gap-3 animate-stagger-3">
         <div className="flex flex-col gap-1">
-          <label className="font-ui text-xs text-brand-gray/60 tracking-[0.2em] uppercase">Message libre</label>
-          <textarea rows={4} placeholder="Quelque chose vous a traversé l'esprit..." value={message}
+          <label htmlFor="msg-content" className="font-ui text-xs text-brand-gray/60 tracking-[0.2em] uppercase">Message libre</label>
+          <textarea id="msg-content" rows={4} placeholder="Quelque chose vous a traversé l'esprit..." value={message}
             maxLength={1000} onChange={(e) => setMessage(e.target.value)}
             className="w-full bg-transparent border-b border-brand-gray/20 focus:border-brand-white/50 text-brand-white font-ui font-light text-base py-3 outline-none transition-colors resize-none placeholder:text-brand-gray/45 leading-relaxed"
           />
@@ -448,7 +451,7 @@ function MessageForm() {
             <span className="font-ui text-xxs text-brand-gray/55 tabular-nums">{1000 - message.length}</span>
           </div>
         </div>
-        {error && <p className="animate-fade-in font-ui text-sm text-red-400 text-center">{error}</p>}
+        {error && <p className="animate-fade-in font-ui text-sm text-red-400 text-center" role="alert">{error}</p>}
         <button onClick={() => sendMessage(message)} disabled={!message.trim() || sending || isPreview}
           className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.3em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
           style={{ minHeight: '44px' }}

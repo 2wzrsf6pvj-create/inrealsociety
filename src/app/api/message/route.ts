@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     // ─── Vérification membre ──────────────────────────────────────────────
     // admin : lit email (revoke pour anon en 026) pour la notification.
     const { data: member } = await supabaseAdmin
-      .from('members').select('id, name, email, is_paused, require_contact, plan').eq('id', memberId).single();
+      .from('members').select('id, name, email, is_paused, require_contact, plan').eq('id', memberId).maybeSingle();
 
     if (!member) {
       return NextResponse.json({ error: 'Membre introuvable' }, { status: 404 });
@@ -85,8 +85,10 @@ export async function POST(req: NextRequest) {
     // ─── §4 : un seul message racine par device et par porteur ─────────────
     // Si ce device a déjà écrit un message racine à ce porteur, c'est à lui de
     // répondre — pas de second canal. Vérifié seulement si le device est CONNU
-    // (cookie déjà posé) ; un device neuf n'a pas d'historique. On COMPTE aussi
-    // les messages modérés (sinon re-essais infinis pour passer la modération).
+    // (cookie déjà posé) ; un device neuf n'a pas d'historique.
+    // NB : les messages MODÉRÉS ne sont PAS insérés (cf. plus bas) → ils ne comptent
+    // pas ici, donc un scanneur peut reformuler après un faux positif. L'anti-bypass
+    // « re-essais infinis » est assuré par le rate-limit, pas par ce compteur.
     // Un rescan rouvre la fenêtre mais ne redonne pas un message racine.
     if (existingToken) {
       const { count: priorRoots } = await supabaseAdmin
@@ -171,10 +173,27 @@ export async function POST(req: NextRequest) {
       isKnownQuickReply ? Promise.resolve(passthrough) : moderateContent(content),
       trimmedName ? moderateContent(trimmedName) : Promise.resolve(passthrough),
     ]);
-    const moderated = moderation.flagged;
     const cleanName: string | null = (trimmedName && !nameModeration.flagged) ? trimmedName : null;
 
-    // ─── Insertion BDD ────────────────────────────────────────────────────
+    // ─── Message signalé : NON inséré ─────────────────────────────────────
+    // On ne l'écrit PAS en base → il ne consomme pas le message unique du device
+    // (§4). Le scanneur peut donc reformuler : un faux positif de la modération
+    // (regex) ne le verrouille pas à vie sur le geste central du produit. L'audit
+    // garde la trace de la tentative (sender_token → harcèlement en série) et le
+    // rate-limit plafonne les ré-essais abusifs. Le porteur ne reçoit rien.
+    if (moderation.flagged) {
+      audit({
+        action:   'message.moderated',
+        memberId,
+        ip,
+        metadata: { isQuickReply: isKnownQuickReply, senderToken, moderationSource: moderation.source, categories: moderation.categories },
+      });
+      const res = NextResponse.json({ ok: true, moderated: true });
+      setSenderTokenCookie(res, senderToken); // device identifié pour la reformulation
+      return res;
+    }
+
+    // ─── Insertion BDD (message NON modéré) ───────────────────────────────
     const { data: message, error: msgError } = await supabaseAdmin
       .from('messages')
       .insert({
@@ -183,7 +202,7 @@ export async function POST(req: NextRequest) {
         sender_contact: senderContact?.trim() || null,
         sender_name:    cleanName,
         is_quick_reply: isQuickReply || isKnownQuickReply,
-        moderated,
+        moderated:      false,
         sender_token:   senderToken,
       })
       .select('id')
@@ -204,31 +223,23 @@ export async function POST(req: NextRequest) {
 
     // ─── Audit ────────────────────────────────────────────────────────────
     audit({
-      action:   moderated ? 'message.moderated' : 'message.sent',
+      action:   'message.sent',
       memberId,
       ip,
-      metadata: {
-        messageId:    message?.id,
-        isQuickReply: isKnownQuickReply,
-        // sender_token (pseudonyme) : permet de relier un abus à travers
-        // plusieurs porteurs (harcèlement en série). Trace conservée 24 mois.
-        senderToken,
-        ...(moderated ? { moderationSource: moderation.source, categories: moderation.categories } : {}),
-      },
+      // sender_token (pseudonyme) : relie un abus à travers plusieurs porteurs
+      // (harcèlement en série). Trace conservée 24 mois.
+      metadata: { messageId: message?.id, isQuickReply: isKnownQuickReply, senderToken },
     });
 
     // ─── Rétention (P0) : signal reçu par le PORTEUR (distinctId = member_id) ──
-    // Seulement si non modéré (un message masqué n'est pas une valeur reçue).
-    if (!moderated) {
-      captureServerEvent({
-        distinctId: memberId,
-        event:      'member_signal_received',
-        properties: { member_id: memberId, is_quick_reply: isKnownQuickReply, has_contact: !!senderContact?.trim() },
-      }).catch(() => {});
-    }
+    captureServerEvent({
+      distinctId: memberId,
+      event:      'member_signal_received',
+      properties: { member_id: memberId, is_quick_reply: isKnownQuickReply, has_contact: !!senderContact?.trim() },
+    }).catch(() => {});
 
     // ─── Notification email ───────────────────────────────────────────────
-    if (!moderated && member.email) {
+    if (member.email) {
       const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/${member.id}`;
       const { subject, html } = emailNouveauMessage({
         memberName:    member.name,
@@ -241,7 +252,7 @@ export async function POST(req: NextRequest) {
     }
 
     // ─── Notification push (porteur abonné au niveau membre depuis le dashboard) ──
-    if (!moderated && message?.id) {
+    if (message?.id) {
       notifyMemberSubscribers({
         memberId,
         messageId: message.id, // tag par message → les notifs s'empilent
@@ -253,7 +264,7 @@ export async function POST(req: NextRequest) {
 
     // Pose/rafraîchit le cookie de jeton device (httpOnly) — permet au porteur
     // de bloquer ce scanneur plus tard, même sur une autre conversation.
-    const res = NextResponse.json({ ok: true, moderated, messageId: message?.id });
+    const res = NextResponse.json({ ok: true, moderated: false, messageId: message?.id });
     setSenderTokenCookie(res, senderToken);
     return res;
 
