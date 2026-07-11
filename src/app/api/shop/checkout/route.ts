@@ -13,6 +13,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { checkPublicRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
 import { QR_STYLES, DEFAULT_QR_STYLE } from '@/lib/constants';
 import { isValidTaglineId } from '@/lib/taglines';
+import { TSHIRT_PRICE_CENTS } from '@/lib/constants';
 
 const schema = z.object({
   email:       z.string().email().max(320),
@@ -80,7 +81,8 @@ export async function POST(req: NextRequest) {
         qr_style:      qrStyle,
         tagline_id:    taglineId ?? null,
         status:        'pending',
-        amount:        4900,
+        // Placeholder : le webhook réécrit avec le vrai total Stripe (TVA + port).
+        amount:        TSHIRT_PRICE_CENTS,
         referrer_id:   validReferrerId,
       })
       .select('id')

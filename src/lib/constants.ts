@@ -43,6 +43,15 @@ export const SHOP_IMAGES_READY = false;
  *  pour revenir au dos seul, sans toucher au code. */
 export const PRINT_FRONT_LOGO = true;
 
+/** Prix du t-shirt — source UNIQUE côté app (affichage + `orders.amount` initial).
+ *  ⚠️ Le montant réellement débité vient du Stripe Price (STRIPE_PRICE_ID) ; le
+ *  webhook réécrit `orders.amount` avec le vrai total (`session.amount_total`,
+ *  TVA + port inclus). Garder ces valeurs alignées avec le Stripe Price.
+ *  ⚠️ TTC : le Price Stripe DOIT être en tax_behavior « inclusive », sinon
+ *  `automatic_tax` ajoute la TVA par-dessus et l'affichage « 49€ » devient faux. */
+export const TSHIRT_PRICE_EUR   = 49;
+export const TSHIRT_PRICE_CENTS = 4900;
+
 /** Formes de QR proposées au client à l'achat. Seules des formes PROUVÉES
  *  décodables (test qr-decode, y compris tee noir inversé) sont exposées :
  *  net (0), arrondi (0.25, défaut), doux (0.35). Les dots pleins ne sont PAS

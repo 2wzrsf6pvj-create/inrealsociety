@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { captureEvent } from '@/lib/posthog-client';
-import { SHOP_IMAGES_READY } from '@/lib/constants';
+import { SHOP_IMAGES_READY, TSHIRT_PRICE_EUR } from '@/lib/constants';
 import TaglinePicker from '@/app/components/ui/TaglinePicker';
 
 type TshirtColor = 'dark' | 'light';
@@ -24,7 +24,9 @@ function AbstractTee({ color }: { color: TshirtColor }) {
       <div className="relative flex items-center justify-center">
         <div className={`absolute w-32 h-32 rounded-full border ${isDark ? 'border-brand-white/5' : 'border-brand-black/5'}`} />
         <div className={`w-24 h-24 rounded-full border flex items-center justify-center ${isDark ? 'border-brand-white/20' : 'border-brand-black/20'}`}>
-          <span className={`font-display text-5xl font-light ${isDark ? 'text-[#C5A059]/60' : 'text-[#0A192F]/60'}`}>)(</span>
+          {/* Monochrome comme le vrai print : blanc sur tee noir, noir sur tee blanc
+              (l'or reste la couleur de marque à l'écran, pas sur le vêtement). */}
+          <span className={`font-display text-5xl font-light ${isDark ? 'text-brand-white/60' : 'text-brand-black/50'}`}>)(</span>
         </div>
       </div>
       <p className={`font-ui text-xs tracking-[0.2em] uppercase ${isDark ? 'text-brand-gray/50' : 'text-brand-black/30'}`}>
@@ -202,6 +204,7 @@ export default function ShopClient() {
   const [tshirtColor, setTshirtColor] = useState<TshirtColor>('dark');
   const [tshirtSize, setTshirtSize]   = useState<TshirtSize>('M');
   const [taglineId, setTaglineId]     = useState<string | null>(null);
+  const [acceptedCgv, setAcceptedCgv] = useState(false);
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState('');
   const [referrerId, setReferrerId]   = useState<string | null>(null);
@@ -218,6 +221,9 @@ export default function ShopClient() {
     e.preventDefault();
     if (!email.trim()) { setError('Votre email est requis.'); return; }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError('Email invalide.'); return; }
+    // Acceptation EXPLICITE des CGV avant paiement (droit conso FR : pas d'acceptation
+    // implicite par simple clic « Commander »). Miroir du z.literal(true) à l'activation.
+    if (!acceptedCgv) { setError('Veuillez accepter les Conditions Générales de Vente pour continuer.'); return; }
 
     setLoading(true);
     setError('');
@@ -360,14 +366,14 @@ export default function ShopClient() {
                     Comfort Colors 1717 · {colorLabel} · QR code imprimé dans le dos
                   </p>
                 </div>
-                <span className="font-display text-3xl font-light">49€</span>
+                <span className="font-display text-3xl font-light">{TSHIRT_PRICE_EUR}€</span>
               </div>
 
               <div className="flex flex-col gap-2 py-4 border-t border-b border-brand-gray/10">
                 {[
                   'T-shirt coton lourd Comfort Colors 1717',
-                  'Patch brodé doré à l\'avant',
-                  'QR code premium imprimé en DTFlex dans le dos',
+                  'Monogramme )( imprimé sur la poitrine',
+                  'QR unique + accroche imprimés dans le dos',
                   'Code d\'activation unique par email',
                   'Accès à la plateforme In Real Society',
                   'Profil configurable en 2 minutes',
@@ -417,13 +423,30 @@ export default function ShopClient() {
                   {error && <p className="font-ui text-sm text-red-400">{error}</p>}
                 </div>
 
+                {/* Acceptation EXPLICITE des CGV avant paiement (obligatoire en B2C FR). */}
+                <label htmlFor="cgv-accept" className="flex items-start gap-3 cursor-pointer py-1">
+                  <input
+                    id="cgv-accept"
+                    type="checkbox"
+                    checked={acceptedCgv}
+                    onChange={e => { setAcceptedCgv(e.target.checked); setError(''); }}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-brand-white cursor-pointer"
+                  />
+                  <span className="font-ui text-xxs md:text-xs text-brand-gray/55 leading-relaxed">
+                    J&apos;ai lu et j&apos;accepte les{' '}
+                    <Link href="/cgv" className="underline underline-offset-2 hover:text-brand-white/80 transition-colors">
+                      Conditions Générales de Vente
+                    </Link>.
+                  </span>
+                </label>
+
                 <button
                   type="submit"
                   disabled={loading}
-                  className="animate-shimmer w-full py-4 mt-2 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.3em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="animate-shimmer w-full py-4 mt-1 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.3em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ minHeight: '44px' }}
                 >
-                  {loading ? 'Redirection...' : `Commander en ${colorLabel} — 49€`}
+                  {loading ? 'Redirection...' : `Commander en ${colorLabel} — ${TSHIRT_PRICE_EUR}€`}
                 </button>
 
                 <p className="font-ui text-xxs md:text-xs text-brand-gray/50 text-center leading-relaxed">
@@ -432,12 +455,6 @@ export default function ShopClient() {
                 <Link href="/faq" className="font-ui text-xxs text-brand-gray/50 text-center underline underline-offset-4 hover:text-brand-white/80 transition-colors">
                   Comment ça marche ?
                 </Link>
-                <p className="font-ui text-xxs text-brand-gray/50 text-center leading-relaxed">
-                  En commandant, vous acceptez les{' '}
-                  <Link href="/cgv" className="underline underline-offset-2 hover:text-brand-white/80 transition-colors">
-                    Conditions Générales de Vente
-                  </Link>
-                </p>
               </form>
             </div>
           </div>
