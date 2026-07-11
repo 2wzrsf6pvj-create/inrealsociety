@@ -73,12 +73,12 @@ export default function LoginPage() {
         </div>
 
         {resetOk && (
-          <div className="w-full px-4 py-3 border border-green-500/25 rounded-[2px] animate-fade-in">
+          <div className="w-full px-4 py-3 border border-green-500/25 rounded-[2px] animate-fade-in" role="status">
             <p className="font-ui text-sm text-green-400/80 text-center">Mot de passe mis à jour. Connectez-vous.</p>
           </div>
         )}
         {urlErrorMsg && (
-          <div className="w-full px-4 py-3 border border-red-500/20 rounded-[2px] animate-fade-in">
+          <div className="w-full px-4 py-3 border border-red-500/20 rounded-[2px] animate-fade-in" role="alert">
             <p className="font-ui text-sm text-red-400/80 text-center">{urlErrorMsg}</p>
           </div>
         )}
@@ -86,10 +86,11 @@ export default function LoginPage() {
         <form onSubmit={handleLogin} noValidate className="w-full flex flex-col gap-5 animate-stagger-2">
 
           <div className="flex flex-col gap-1">
-            <label className="font-ui text-xs text-brand-gray/50 tracking-[0.18em] uppercase">
+            <label htmlFor="login-email" className="font-ui text-xs text-brand-gray/50 tracking-[0.18em] uppercase">
               Email
             </label>
             <input
+              id="login-email"
               type="email"
               autoComplete="email"
               value={email}
@@ -101,7 +102,7 @@ export default function LoginPage() {
 
           <div className="flex flex-col gap-1">
             <div className="flex items-center justify-between">
-              <label className="font-ui text-xs text-brand-gray/50 tracking-[0.18em] uppercase">
+              <label htmlFor="login-password" className="font-ui text-xs text-brand-gray/50 tracking-[0.18em] uppercase">
                 Mot de passe
               </label>
               <Link
@@ -112,6 +113,7 @@ export default function LoginPage() {
               </Link>
             </div>
             <input
+              id="login-password"
               type="password"
               autoComplete="current-password"
               value={password}
@@ -122,7 +124,7 @@ export default function LoginPage() {
           </div>
 
           {error && (
-            <p className="font-ui text-sm text-red-400 text-center">{error}</p>
+            <p className="font-ui text-sm text-red-400 text-center" role="alert">{error}</p>
           )}
 
           <button

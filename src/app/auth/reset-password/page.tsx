@@ -117,10 +117,11 @@ export default function ResetPasswordPage() {
 
         <form onSubmit={handleSubmit} noValidate className="w-full flex flex-col gap-5 animate-stagger-2">
           <div className="flex flex-col gap-1">
-            <label className="font-ui text-xs text-brand-gray/50 tracking-[0.18em] uppercase">
+            <label htmlFor="reset-password" className="font-ui text-xs text-brand-gray/50 tracking-[0.18em] uppercase">
               Nouveau mot de passe <span className="text-brand-gray/50 normal-case tracking-normal">(8 car. min)</span>
             </label>
             <input
+              id="reset-password"
               type="password"
               autoComplete="new-password"
               value={password}
@@ -131,10 +132,11 @@ export default function ResetPasswordPage() {
           </div>
 
           <div className="flex flex-col gap-1">
-            <label className="font-ui text-xs text-brand-gray/50 tracking-[0.18em] uppercase">
+            <label htmlFor="reset-confirm" className="font-ui text-xs text-brand-gray/50 tracking-[0.18em] uppercase">
               Confirmer
             </label>
             <input
+              id="reset-confirm"
               type="password"
               autoComplete="new-password"
               value={confirm}
@@ -145,7 +147,7 @@ export default function ResetPasswordPage() {
           </div>
 
           {error && (
-            <p className="font-ui text-sm text-red-400 text-center">{error}</p>
+            <p className="font-ui text-sm text-red-400 text-center" role="alert">{error}</p>
           )}
 
           <button

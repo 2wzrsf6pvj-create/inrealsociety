@@ -90,10 +90,11 @@ export default function ForgotPasswordPage() {
 
         <form onSubmit={handleSubmit} noValidate className="w-full flex flex-col gap-5 animate-stagger-2">
           <div className="flex flex-col gap-1">
-            <label className="font-ui text-xs text-brand-gray/50 tracking-[0.18em] uppercase">
+            <label htmlFor="forgot-email" className="font-ui text-xs text-brand-gray/50 tracking-[0.18em] uppercase">
               Email
             </label>
             <input
+              id="forgot-email"
               type="email"
               autoComplete="email"
               value={email}
@@ -104,7 +105,7 @@ export default function ForgotPasswordPage() {
           </div>
 
           {error && (
-            <p className="font-ui text-sm text-red-400 text-center">{error}</p>
+            <p className="font-ui text-sm text-red-400 text-center" role="alert">{error}</p>
           )}
 
           <button
