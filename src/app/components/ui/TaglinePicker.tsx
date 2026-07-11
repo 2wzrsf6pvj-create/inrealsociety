@@ -95,6 +95,7 @@ export default function TaglinePicker({ value, onChange, tshirtColor }: {
             type="button"
             onClick={() => onChange(null)}
             aria-pressed={value === null}
+            style={{ minHeight: '44px' }}
             className={`rounded-[2px] border px-3 py-2 font-ui text-sm transition-all ${
               value === null
                 ? 'border-brand-white/70 bg-brand-white/10 text-brand-white'
@@ -109,7 +110,8 @@ export default function TaglinePicker({ value, onChange, tshirtColor }: {
               type="button"
               onClick={() => onChange(t.id)}
               aria-pressed={value === t.id}
-              className={`rounded-[2px] border px-3 py-2 font-ui text-sm text-left transition-all ${
+              style={{ minHeight: '44px' }}
+            className={`rounded-[2px] border px-3 py-2 font-ui text-sm text-left transition-all ${
                 value === t.id
                   ? 'border-brand-white/70 bg-brand-white/10 text-brand-white'
                   : 'border-brand-gray/15 text-brand-gray/55 hover:border-brand-gray/30'

@@ -90,20 +90,28 @@ function NewsletterCapture({ source }: { source: string }) {
   const [email, setEmail]     = useState('');
   const [sending, setSending] = useState(false);
   const [done, setDone]       = useState(false);
+  const [failed, setFailed]   = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || sending) return;
     setSending(true);
+    setFailed(false);
     try {
-      await fetch('/api/newsletter', {
+      // Ne confirmer QUE si la requête aboutit — sinon on affichait « réussi »
+      // sur un échec réseau et l'inscription était perdue en silence.
+      const res = await fetch('/api/newsletter', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email.trim(), source }),
       });
-    } catch { /* silencieux */ }
-    setSending(false);
-    setDone(true);
+      if (!res.ok) throw new Error();
+      setDone(true);
+    } catch {
+      setFailed(true);
+    } finally {
+      setSending(false);
+    }
   };
 
   if (done) {
@@ -143,6 +151,11 @@ function NewsletterCapture({ source }: { source: string }) {
           {sending ? '...' : 'OK'}
         </button>
       </div>
+      {failed && (
+        <p className="font-ui text-xs text-red-400 text-center" role="alert">
+          L&apos;inscription a échoué. Vérifiez votre connexion et réessayez.
+        </p>
+      )}
       <p className="font-ui text-xxs text-brand-gray/50 text-center">
         Désabonnable à tout moment via le lien dans chaque email.
       </p>
@@ -235,8 +248,13 @@ export default function ShopClient() {
         body: JSON.stringify({ email: email.trim(), tshirtColor, tshirtSize, taglineId, referrerId: referrerId || undefined }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      captureEvent('checkout_started', { tshirt_color: tshirtColor, has_referrer: !!referrerId });
+      if (!res.ok || !data.url) throw new Error(data.error);
+      captureEvent('checkout_started', {
+        tshirt_color: tshirtColor,
+        tshirt_size:  tshirtSize,
+        has_tagline:  !!taglineId,
+        has_referrer: !!referrerId,
+      });
       window.location.href = data.url;
     } catch {
       setError('Une erreur est survenue. Réessayez.');
@@ -290,7 +308,7 @@ export default function ShopClient() {
             <span className="text-brand-gray/15">·</span>
             <span className="font-ui text-xs text-brand-gray/50 tracking-[0.2em] uppercase">Éphémère</span>
             <span className="text-brand-gray/15">·</span>
-            <span className="font-ui text-xs text-brand-gray/50 tracking-[0.2em] uppercase">Sécurisé</span>
+            <span className="font-ui text-xs text-brand-gray/50 tracking-[0.2em] uppercase">Sans compte</span>
           </div>
         </section>
 
@@ -304,15 +322,18 @@ export default function ShopClient() {
 
             {/* Sélecteur couleur */}
             <div className="flex flex-col gap-2">
-              <p className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Couleur</p>
-              <div className="flex gap-3">
+              <p id="lbl-couleur" className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Couleur</p>
+              <div className="flex gap-3" role="group" aria-labelledby="lbl-couleur">
                 {([
                   { value: 'dark'  as const, label: 'Noir',  bg: '#0a0a0a' },
                   { value: 'light' as const, label: 'Blanc', bg: '#f5f5f5' },
                 ]).map(opt => (
                   <button
                     key={opt.value}
+                    type="button"
                     onClick={() => setTshirtColor(opt.value)}
+                    aria-pressed={tshirtColor === opt.value}
+                    aria-label={`Couleur ${opt.label}`}
                     className={`flex-1 py-3 rounded-[2px] border transition-all flex items-center justify-center gap-2 ${
                       tshirtColor === opt.value
                         ? 'border-brand-white/60 bg-brand-white/5'
@@ -329,17 +350,21 @@ export default function ShopClient() {
             {/* Sélecteur taille + guide */}
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <p className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Taille</p>
+                <p id="lbl-taille" className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Taille</p>
                 <SizeGuide />
               </div>
               <p className="font-ui text-xxs text-brand-gray/55 -mt-1">
                 Coupe <span className="text-brand-gray/50">oversize</span> · M sélectionné par défaut · prenez votre taille habituelle
               </p>
-              <div className="flex gap-2">
+              <div className="flex gap-2" role="group" aria-labelledby="lbl-taille">
                 {SIZES.map(size => (
                   <button
                     key={size}
+                    type="button"
                     onClick={() => setTshirtSize(size)}
+                    aria-pressed={tshirtSize === size}
+                    aria-label={`Taille ${size}`}
+                    style={{ minHeight: '44px' }}
                     className={`flex-1 py-2.5 rounded-[2px] border transition-all font-ui text-sm tracking-[0.1em] ${
                       tshirtSize === size
                         ? 'border-brand-white/60 bg-brand-white/5 text-brand-white'
@@ -408,19 +433,24 @@ export default function ShopClient() {
 
               <form onSubmit={handleBuy} className="flex flex-col gap-3">
                 <div className="flex flex-col gap-1">
-                  <label className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Votre email</label>
-                  <p className="font-ui text-xxs md:text-xs text-brand-gray/50 leading-relaxed">
+                  <label htmlFor="buy-email" className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Votre email</label>
+                  <p id="buy-email-hint" className="font-ui text-xxs md:text-xs text-brand-gray/50 leading-relaxed">
                     Votre code d&apos;activation vous sera envoyé ici après paiement.
                   </p>
                   <input
+                    id="buy-email"
                     type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    aria-describedby="buy-email-hint"
+                    aria-invalid={!!error}
                     placeholder="votre@email.com"
                     value={email}
                     onChange={e => { setEmail(e.target.value); setError(''); }}
                     className="w-full bg-transparent border-b border-brand-gray/20 focus:border-brand-white/50 text-brand-white font-ui font-light text-base py-3 outline-none transition-colors placeholder:text-brand-gray/50"
                     style={{ minHeight: '44px' }}
                   />
-                  {error && <p className="font-ui text-sm text-red-400">{error}</p>}
+                  {error && <p className="font-ui text-sm text-red-400" role="alert">{error}</p>}
                 </div>
 
                 {/* Acceptation EXPLICITE des CGV avant paiement (obligatoire en B2C FR). */}
