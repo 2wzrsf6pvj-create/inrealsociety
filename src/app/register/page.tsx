@@ -7,13 +7,6 @@ import { createClient } from '@/lib/supabase-browser';
 import { captureEvent, identifyMember } from '@/lib/posthog-client';
 import TaglinePicker from '@/app/components/ui/TaglinePicker';
 
-const AI_PITCHES = [
-  { who: "Je traverse les villes les yeux ouverts.", intent: "Provoquer la conversation qu'on n'aurait jamais eue.", closing: "Si vous êtes là, c'est que votre instinct vous a bien guidé." },
-  { who: "Curieux du monde, attentif aux gens.", intent: "Créer un moment qui n'existait pas il y a cinq secondes.", closing: "La vie est trop courte pour attendre que les occasions arrivent seules." },
-  { who: "Je crois aux rencontres sans algorithme.", intent: "Voir ce qui se passe quand deux inconnus osent se parler.", closing: "Le hasard fait mieux que les applications." },
-  { who: "Je porte ce vêtement pour une raison simple.", intent: "Dire oui avant même qu'on me pose la question.", closing: "Le reste, c'est entre vous et moi." },
-];
-
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5 Mo
 
@@ -45,14 +38,19 @@ function useCodeValidation(initialCode: string) {
   const [codeOk,   setCodeOk]   = useState(false);
   const [codeErr,  setCodeErr]  = useState('');
   const [checking, setChecking] = useState(false);
+  // Anti-rafale : la frappe déclenchait un appel /api/activate à CHAQUE caractère
+  // dès 6 (3 appels pour un code de 8, consommant le rate-limit). On debounce.
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (initialCode) {
       setCode(initialCode);
-      if (initialCode.length >= 6) validate(initialCode);
+      if (initialCode.length >= 6) validate(initialCode);  // depuis l'URL : direct
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialCode]);
+
+  useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
 
   const validate = async (val: string) => {
     if (val.length < 6) { setCodeOk(false); return; }
@@ -71,7 +69,8 @@ function useCodeValidation(initialCode: string) {
     setCode(v);
     setCodeOk(false);
     setCodeErr('');
-    if (v.length >= 6) validate(v);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (v.length >= 6) debounceRef.current = setTimeout(() => validate(v), 400);
   };
 
   return { code, codeOk, codeErr, checking, handleChange };
@@ -93,7 +92,7 @@ function CodeField({ code, codeOk, codeErr, checking, onChange }: {
           style={{ minHeight: '44px' }} />
         <span className="font-ui text-xs text-brand-gray/55 pb-3">{checking ? '...' : codeOk ? 'Valide' : ''}</span>
       </div>
-      {codeErr && <p className="font-ui text-sm text-red-400">{codeErr}</p>}
+      {codeErr && <p className="font-ui text-sm text-red-400" role="alert">{codeErr}</p>}
     </div>
   );
 }
@@ -213,7 +212,7 @@ function StepAccount({ onNext, codeState }: {
             className="w-full bg-transparent border-b border-brand-gray/20 focus:border-brand-white/60 font-ui font-light text-base text-brand-white py-3 outline-none transition-colors"
             style={{ minHeight: '44px' }} />
         </div>
-        {error && <p className="font-ui text-sm text-red-400 text-center">{error}</p>}
+        {error && <p className="font-ui text-sm text-red-400 text-center" role="alert">{error}</p>}
         {notice && (
           <div className="w-full bg-[#0a0a08] border border-[#C5A059]/30 rounded-[2px] px-4 py-3 flex flex-col items-center gap-1 text-center animate-fade-in">
             <p className="font-ui text-xxs text-[#C5A059]/85 tracking-[0.18em] uppercase">✦ Vérifiez votre email</p>
@@ -244,7 +243,6 @@ function StepProfile({ form, onChange, onSubmit, onBack, loading, error, isEditi
   codeState: ReturnType<typeof useCodeValidation>;
   taglineId: string | null; onTaglineChange: (id: string | null) => void; orderColor?: 'dark' | 'light';
 }) {
-  const [aiLoading, setAiLoading] = useState(false);
   const [localError, setLocalError] = useState('');
   const fileRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview]   = useState<string | null>(null);
@@ -253,14 +251,6 @@ function StepProfile({ form, onChange, onSubmit, onBack, loading, error, isEditi
   const field = (key: keyof FormData, value: string) => onChange({ ...form, [key]: value });
 
   const needsCode = !isEditing && isLoggedIn;
-
-  const handleAi = async () => {
-    setAiLoading(true);
-    await new Promise(r => setTimeout(r, 1200));
-    const pitch = AI_PITCHES[Math.floor(Math.random() * AI_PITCHES.length)];
-    onChange({ ...form, who: pitch.who, intent: pitch.intent, closing: pitch.closing });
-    setAiLoading(false);
-  };
 
   const handlePhoto = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -317,27 +307,14 @@ function StepProfile({ form, onChange, onSubmit, onBack, loading, error, isEditi
 
         <div className="flex flex-col gap-3">
           <p className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Votre pitch</p>
-          <button type="button" onClick={handleAi} disabled={aiLoading}
-            className="w-full py-3 border border-brand-white/20 rounded-[1px] flex items-center justify-center gap-2 hover:border-brand-white/40 transition-colors disabled:opacity-40"
-            style={{ minHeight: '44px' }}>
-            <span style={{ fontSize: '14px' }}>{aiLoading ? '...' : '✦'}</span>
-            <span className="font-ui text-sm text-brand-white/60 tracking-[0.15em] uppercase">
-              {aiLoading ? 'Génération...' : "Générer avec l'IA"}
-            </span>
-          </button>
-          <div className="flex items-center gap-3">
-            <div className="flex-1 h-px bg-brand-gray/10" />
-            <span className="font-ui text-xxs text-brand-gray/50 uppercase">ou rédigez</span>
-            <div className="flex-1 h-px bg-brand-gray/10" />
-          </div>
           {[
             { key: 'who',     label: 'Qui êtes-vous ?',                ph: 'En une phrase, juste.' },
             { key: 'intent',  label: 'Que cherchez-vous à provoquer ?', ph: 'Une conversation, une rencontre...' },
             { key: 'closing', label: 'Votre phrase de fin',             ph: 'Celle qui reste.' },
           ].map(f => (
             <div key={f.key} className="flex flex-col gap-1">
-              <label className="font-ui text-xxs md:text-xs text-brand-gray/50 tracking-[0.15em] uppercase">{f.label}</label>
-              <input type="text" maxLength={200} placeholder={f.ph} value={form[f.key as keyof FormData] as string}
+              <label htmlFor={`pitch-${f.key}`} className="font-ui text-xxs md:text-xs text-brand-gray/50 tracking-[0.15em] uppercase">{f.label}</label>
+              <input id={`pitch-${f.key}`} type="text" maxLength={200} placeholder={f.ph} value={form[f.key as keyof FormData] as string}
                 onChange={e => field(f.key as keyof FormData, e.target.value)}
                 className="w-full bg-transparent border-b border-brand-gray/10 focus:border-brand-white/50 font-ui font-light text-base text-brand-white py-2.5 outline-none transition-colors placeholder:text-brand-gray/50"
                 style={{ minHeight: '44px' }} />
@@ -371,7 +348,7 @@ function StepProfile({ form, onChange, onSubmit, onBack, loading, error, isEditi
           <div className="flex flex-col gap-0.5">
             <p className="font-ui text-xs text-brand-gray/50">Photo de profil</p>
             <p className="font-ui text-xxs text-brand-gray/50">JPEG, PNG ou WebP · 5 Mo max</p>
-            {fileErr && <p className="font-ui text-xs text-red-400">{fileErr}</p>}
+            {fileErr && <p className="font-ui text-xs text-red-400" role="alert">{fileErr}</p>}
           </div>
         </div>
 
@@ -407,7 +384,7 @@ function StepProfile({ form, onChange, onSubmit, onBack, loading, error, isEditi
           </label>
         )}
 
-        {displayedError && <p className="font-ui text-sm text-red-400 text-center">{displayedError}</p>}
+        {displayedError && <p className="font-ui text-sm text-red-400 text-center" role="alert">{displayedError}</p>}
 
         <button onClick={handleSubmit} disabled={loading}
           className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.3em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 disabled:opacity-50"
@@ -471,7 +448,7 @@ function RegisterContent() {
       // Colonnes non-revoke uniquement : select('*') échouerait pour le rôle
       // authenticated (030 revoke email/stripe_*/plan_expires_at).
       const { data: member } = await supabase
-        .from('members').select('id, name, pitch, instagram').eq('auth_user_id', user.id).single();
+        .from('members').select('id, name, pitch, instagram').eq('auth_user_id', user.id).maybeSingle();
 
       if (member) {
         setIsEditing(true);

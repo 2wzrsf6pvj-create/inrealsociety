@@ -28,13 +28,13 @@ export async function POST(req: NextRequest) {
 
     const { code } = body.data;
 
-    const { data, error } = await supabaseAdmin
+    const { data } = await supabaseAdmin
       .from('activation_codes')
       .select('code, used')
       .eq('code', code)
-      .single();
+      .maybeSingle();
 
-    if (error || !data) {
+    if (!data) {
       return NextResponse.json({ valid: false, error: 'Code introuvable.' });
     }
     if (data.used) {
