@@ -1,13 +1,13 @@
 // app/api/order-code/route.ts
 // GET /api/order-code?session=xxx
-// Retourne le code d'activation d'une commande payée.
-// Vérifie que la session Stripe est bien complétée avant de retourner le code.
+// Retourne le code d'activation d'une commande payée (poll par /shop/success).
+// Preuve de paiement = la BDD (status='paid' + code, posés par le webhook signé),
+// pas un appel Stripe. Ne révèle pas un code déjà consommé.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { checkPublicRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
-import Stripe from 'stripe';
 
 const querySchema = z.object({
   session: z.string().min(1).max(200),
@@ -34,26 +34,18 @@ export async function GET(req: NextRequest) {
 
   const { session: sessionId } = parsed.data;
 
-  // ─── Vérifie que la session Stripe est bien payée ──────────────────────
-  try {
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-      apiVersion: '2026-03-25.dahlia',
-    });
-
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
-    if (session.payment_status !== 'paid') {
-      return NextResponse.json({ code: null });
-    }
-  } catch {
-    return NextResponse.json({ code: null });
-  }
-
   // ─── Récupère le code en BDD ──────────────────────────────────────────
+  // Pas d'appel Stripe : `status='paid'` + `activation_code` ne sont posés QUE par
+  // le webhook (signature Stripe vérifiée), et uniquement sur paiement confirmé. La
+  // BDD EST donc la preuve de paiement — un `sessions.retrieve` par poll serait
+  // redondant (jusqu'à 8 appels Stripe par achat rien que pour cette page).
+  // `maybeSingle` : 0 ligne est le cas NORMAL tant que le webhook n'a pas écrit
+  // le code (le front poll) — pas une erreur (evite les 406 dans les logs Supabase).
   const { data } = await supabaseAdmin
     .from('orders')
     .select('activation_code, status')
     .eq('stripe_session_id', sessionId)
-    .single();
+    .maybeSingle();
 
   if (!data || data.status !== 'paid' || !data.activation_code) {
     return NextResponse.json({ code: null });

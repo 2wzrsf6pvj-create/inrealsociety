@@ -12,6 +12,20 @@ function SuccessContent() {
   const sessionId    = searchParams.get('session') || searchParams.get('session_id');
   const [status, setStatus] = useState<'loading' | 'ok' | 'error'>('loading');
   const [code, setCode]     = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const copyCode = async () => {
+    if (!code) return;
+    try {
+      await navigator.clipboard.writeText(code);
+      haptic('light');
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Presse-papier indisponible (contexte non sécurisé / vieux navigateur) :
+      // le code reste sélectionnable (select-all) → copie manuelle possible.
+    }
+  };
 
   useEffect(() => {
     if (!sessionId) { setStatus('error'); return; }
@@ -60,7 +74,7 @@ function SuccessContent() {
 
   if (status === 'loading') {
     return (
-      <div className="flex flex-col items-center gap-6 animate-pulse">
+      <div className="flex flex-col items-center gap-6 animate-pulse" role="status" aria-live="polite">
         <div className="w-14 h-14 rounded-full border border-brand-gray/20" />
         <p className="font-ui text-sm text-brand-gray/55 tracking-[0.2em] uppercase">Confirmation en cours...</p>
       </div>
@@ -69,7 +83,7 @@ function SuccessContent() {
 
   if (status === 'error') {
     return (
-      <div className="flex flex-col items-center gap-6 text-center">
+      <div className="flex flex-col items-center gap-6 text-center" role="alert">
         <p className="font-display text-2xl font-light">Une erreur est survenue.</p>
         <Link href="/shop" className="font-ui text-sm text-brand-gray/55 underline underline-offset-4">← Retour à la boutique</Link>
       </div>
@@ -77,11 +91,11 @@ function SuccessContent() {
   }
 
   return (
-    <div className="flex flex-col items-center gap-8 text-center animate-stagger-1">
+    <div className="flex flex-col items-center gap-8 text-center animate-stagger-1" role="status" aria-live="polite">
       <div className="relative flex items-center justify-center">
         <div className="absolute w-20 h-20 rounded-full border border-brand-white/10 animate-ring-pulse" />
         <div className="w-14 h-14 rounded-full border border-brand-white/30 flex items-center justify-center">
-          <span style={{ fontSize: '20px' }}>✦</span>
+          <span style={{ fontSize: '20px' }} aria-hidden="true">✦</span>
         </div>
       </div>
 
@@ -101,10 +115,17 @@ function SuccessContent() {
           <p className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Votre code d&apos;activation</p>
           <p className="font-mono text-2xl font-bold tracking-[0.3em] text-brand-white select-all">{code}</p>
           <button
-            onClick={() => { navigator.clipboard.writeText(code); haptic('light'); }}
-            className="font-ui text-xs text-brand-gray/50 tracking-[0.15em] uppercase border border-brand-gray/20 px-4 py-1.5 rounded-[2px] hover:border-brand-gray/40 hover:text-brand-white/80 transition-colors"
+            type="button"
+            onClick={copyCode}
+            aria-live="polite"
+            style={{ minHeight: '36px' }}
+            className={`font-ui text-xs tracking-[0.15em] uppercase border px-4 py-1.5 rounded-[2px] transition-colors ${
+              copied
+                ? 'border-brand-white/60 text-brand-white'
+                : 'border-brand-gray/20 text-brand-gray/50 hover:border-brand-gray/40 hover:text-brand-white/80'
+            }`}
           >
-            Copier le code
+            {copied ? '✓ Copié !' : 'Copier le code'}
           </button>
         </div>
       )}
