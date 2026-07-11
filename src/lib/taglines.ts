@@ -18,6 +18,7 @@
 export type TaglineRegistre =
   | 'drague'
   | 'message-unique'
+  | 'ephemere'
   | 'jeu'
   | 'mystere'
   | 'amitie';
@@ -32,6 +33,7 @@ export interface Tagline {
 export const REGISTRE_LABELS: Record<TaglineRegistre, string> = {
   'drague':         'Drague / rencontre',
   'message-unique': 'Un seul message',
+  'ephemere':       'Éphémère',
   'jeu':            'Jeu / léger',
   'mystere':        'Mystère / stylé',
   'amitie':         'Amitié / networking',
@@ -43,41 +45,36 @@ export const REGISTRE_LABELS: Record<TaglineRegistre, string> = {
  * changer le SENS = créer un nouvel id.
  */
 export const TAGLINES: readonly Tagline[] = [
-  // ─── Drague / rencontre — le cœur de l'usage ──────────────────────────────
-  { id: 'ecris-sans-connaitre', registre: 'drague', text: 'Écris-moi sans me connaître' },
-  { id: 'tu-noseras-pas',       registre: 'drague', text: "Tu n'oseras pas" },
+  // ─── Drague / rencontre — le cœur, élégant-invitational ───────────────────
   { id: 'un-message-une-chance',registre: 'drague', text: 'Un message. Une chance.' },
-  { id: 'dis-le-tu-verras',     registre: 'drague', text: 'Dis-le, tu verras' },
-  { id: 'tas-le-cran',          registre: 'drague', text: "T'as le cran ?" },
-  { id: 'ose-cest-anonyme',     registre: 'drague', text: "Ose, c'est anonyme" },
-  { id: 'je-ne-saurai-pas',     registre: 'drague', text: 'Je ne saurai pas qui tu es' },
-  { id: 'parle-moi-en-scred',   registre: 'drague', text: 'Parle-moi en scred' },
+  { id: 'ecris-sans-connaitre', registre: 'drague', text: 'Écris-moi sans me connaître' },
+  { id: 'premier-mot-a-toi',    registre: 'drague', text: 'Le premier mot est à toi' },
+  { id: 'dis-ce-que-tu-noses',  registre: 'drague', text: "Dis-moi ce que tu n'oses pas dire" },
 
-  // ─── Un seul message — met en avant la signature du produit ────────────────
-  { id: 'fais-le-compter',      registre: 'message-unique', text: 'Un seul message. Fais-le compter.' },
-  { id: 'droit-a-un-message',   registre: 'message-unique', text: "T'as droit à un message" },
-  { id: 'un-scan-un-message',   registre: 'message-unique', text: '1 scan = 1 message' },
+  // ─── Un seul message — la signature du produit ─────────────────────────────
   { id: 'une-phrase-pas-plus',  registre: 'message-unique', text: 'Une phrase, pas plus' },
-  { id: 'choisis-tes-mots',     registre: 'message-unique', text: 'Choisis bien tes mots' },
+  { id: 'fais-le-compter',      registre: 'message-unique', text: 'Un seul message. Fais-le compter.' },
 
-  // ─── Jeu / léger — déstigmatise, partageable ───────────────────────────────
-  { id: 'scanne-on-verra',      registre: 'jeu', text: 'Scanne, on verra' },
+  // ─── Éphémère — la moitié du positionnement qui manquait ───────────────────
+  { id: 'scanne-ecris-oublie',  registre: 'ephemere', text: 'Scanne. Écris. Oublie.' },
+  { id: 'rien-ne-reste',        registre: 'ephemere', text: 'Rien ne reste. Tout commence.' },
+  { id: 'dis-le-ca-sefface',    registre: 'ephemere', text: "Dis-le, ça s'efface." },
+
+  // ─── Jeu / léger — provoc' assumée (les 2 dares gardés vivent ici) ─────────
   { id: 'surprends-moi',        registre: 'jeu', text: 'Surprends-moi' },
-  { id: 'un-truc-a-me-dire',    registre: 'jeu', text: "T'as un truc à me dire ?" },
-  { id: 'vas-y-tente',          registre: 'jeu', text: 'Vas-y, tente' },
-  { id: 'quest-ce-que-tattends',registre: 'jeu', text: "Qu'est-ce que t'attends ?" },
+  { id: 'scanne-on-verra',      registre: 'jeu', text: 'Scanne, on verra' },
+  { id: 'tas-le-cran',          registre: 'jeu', text: "T'as le cran ?" },
+  { id: 'ose-cest-anonyme',     registre: 'jeu', text: "Ose, c'est anonyme" },
 
   // ─── Mystère / stylé — minimaliste ─────────────────────────────────────────
-  { id: 'derriere-ce-code',     registre: 'mystere', text: 'Derrière ce code…' },
-  { id: 'tu-meurs-de-curiosite',registre: 'mystere', text: 'Tu meurs de curiosité' },
-  { id: 'scanne-si-tu-loses',   registre: 'mystere', text: "Scanne si tu l'oses" },
   { id: 'pas-quun-qr',          registre: 'mystere', text: "Ceci n'est pas qu'un QR" },
+  { id: 'derriere-ce-code',     registre: 'mystere', text: 'Derrière ce code…' },
+  { id: 'tu-me-connais-pas',    registre: 'mystere', text: 'Tu ne me connais pas encore' },
 
   // ─── Amitié / networking — au-delà de la drague (festivals, campus) ─────────
   { id: 'on-se-connait-pas',    registre: 'amitie', text: 'On se connaît pas encore' },
-  { id: 'fais-le-premier-pas',  registre: 'amitie', text: 'Fais le premier pas' },
   { id: 'nouveau-dans-le-coin', registre: 'amitie', text: 'Nouveau dans le coin ?' },
-  { id: 'connecte-sans-appli',  registre: 'amitie', text: 'Connecte, sans appli' },
+  { id: 'sans-appli-sans-filtre',registre: 'amitie', text: 'Sans appli, sans filtre' },
 ];
 
 /** Valeur stockée quand le client ne veut AUCUNE accroche (QR seul). */
@@ -96,7 +93,7 @@ export function getTagline(id: string | null | undefined): Tagline | null {
 
 /** Accroches groupées par registre, dans l'ordre d'affichage. */
 export function taglinesByRegistre(): Array<{ registre: TaglineRegistre; label: string; items: Tagline[] }> {
-  const order: TaglineRegistre[] = ['drague', 'message-unique', 'jeu', 'mystere', 'amitie'];
+  const order: TaglineRegistre[] = ['drague', 'message-unique', 'ephemere', 'jeu', 'mystere', 'amitie'];
   return order.map((registre) => ({
     registre,
     label: REGISTRE_LABELS[registre],

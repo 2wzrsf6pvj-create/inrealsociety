@@ -21,6 +21,7 @@ type TeeColor = 'dark' | 'light';
 const SHORT: Record<TaglineRegistre, string> = {
   'drague':         'Drague',
   'message-unique': 'Message',
+  'ephemere':       'Éphémère',
   'jeu':            'Jeu',
   'mystere':        'Mystère',
   'amitie':         'Amitié',
