@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import SectionDivider from '@/app/components/ui/SectionDivider';
 
 export interface FaqGroup {
@@ -10,23 +10,35 @@ export interface FaqGroup {
 
 function FaqItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false);
+  const panelId = useId();
+  const btnId   = useId();
   return (
     <div className="border-b border-brand-gray/10">
       <button
+        id={btnId}
         onClick={() => setOpen(o => !o)}
         aria-expanded={open}
+        aria-controls={panelId}
         className="w-full flex items-start justify-between gap-4 py-4 text-left group"
         style={{ minHeight: '44px' }}
       >
         <span className="font-ui text-sm md:text-base text-brand-white/85 group-hover:text-brand-white transition-colors leading-snug">
           {q}
         </span>
-        <span className={`font-ui text-lg text-brand-gray/50 group-hover:text-brand-white/80 transition-all duration-300 flex-shrink-0 leading-none mt-0.5 ${open ? 'rotate-45' : ''}`}>
+        {/* décoratif : l'état est déjà porté par aria-expanded */}
+        <span aria-hidden="true" className={`font-ui text-lg text-brand-gray/50 group-hover:text-brand-white/80 transition-all duration-300 flex-shrink-0 leading-none mt-0.5 ${open ? 'rotate-45' : ''}`}>
           +
         </span>
       </button>
-      {/* grid 0fr→1fr : hauteur animée en douceur, réponse toujours dans le DOM (SEO) */}
-      <div className={`grid transition-all duration-300 ease-out ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+      {/* grid 0fr→1fr : hauteur animée, réponse toujours dans le DOM (SEO). aria-hidden
+          quand replié → le lecteur d'écran ne lit pas toutes les réponses d'un coup. */}
+      <div
+        id={panelId}
+        role="region"
+        aria-labelledby={btnId}
+        aria-hidden={!open}
+        className={`grid transition-all duration-300 ease-out ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}
+      >
         <div className="overflow-hidden">
           <p className="font-ui text-sm font-light text-brand-gray/55 leading-relaxed pb-4 pr-6">{a}</p>
         </div>
