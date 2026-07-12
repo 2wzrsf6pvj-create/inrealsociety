@@ -289,10 +289,12 @@ export default function ShopClient() {
         </div>
       )}
 
-      <div className="relative z-10 max-w-lg mx-auto px-6">
+      {/* Largeur gérée PAR SECTION : seule la section produit s'élargit en desktop
+          (2 colonnes). Les autres restent en colonne étroite centrée → mobile inchangé. */}
+      <div className="relative z-10 px-6">
 
         {/* Hero */}
-        <section className="py-16 md:py-20 flex flex-col items-center text-center gap-8 animate-stagger-1">
+        <section className="max-w-lg mx-auto py-16 md:py-20 flex flex-col items-center text-center gap-8 animate-stagger-1">
           <div className="flex flex-col gap-2">
             <p className="font-ui text-xs text-brand-gray/55 tracking-[0.35em] uppercase">The IRL Social Club</p>
             <h1 className="font-display text-4xl md:text-5xl font-light leading-[1.1] tracking-[0.03em]">
@@ -312,13 +314,20 @@ export default function ShopClient() {
           </div>
         </section>
 
-        {/* Produit */}
-        <section className="py-12 border-t border-brand-gray/10 animate-stagger-2">
-          <div className="flex flex-col gap-8">
+        {/* Produit — 2 colonnes en desktop (lg:), empilé en mobile */}
+        <section className="max-w-lg lg:max-w-5xl mx-auto py-12 border-t border-brand-gray/10 animate-stagger-2">
+          <div className="flex flex-col gap-8 lg:flex-row lg:gap-14 lg:items-start">
 
-            {/* Visuel produit — galerie (mockups réels dans /public/shop si présents,
-                sinon fallback placeholder). Dos+QR montré en premier. */}
-            <ProductGallery color={tshirtColor} />
+            {/* Colonne visuel — sticky en desktop : reste visible pendant qu'on scrolle
+                le panneau d'achat. Sur mobile (lg: inertes), rien ne change. */}
+            <div className="lg:w-1/2 lg:sticky lg:top-24">
+              {/* Visuel produit — galerie (mockups réels dans /public/shop si présents,
+                  sinon fallback placeholder). Dos+QR montré en premier. */}
+              <ProductGallery color={tshirtColor} />
+            </div>
+
+            {/* Colonne achat — sélecteurs + accroche + infos + formulaire */}
+            <div className="flex flex-col gap-8 lg:w-1/2">
 
             {/* Sélecteur couleur */}
             <div className="flex flex-col gap-2">
@@ -487,11 +496,12 @@ export default function ShopClient() {
                 </Link>
               </form>
             </div>
+            </div>{/* fin colonne achat */}
           </div>
         </section>
 
         {/* Comment ça marche */}
-        <section className="py-12 border-t border-brand-gray/10 animate-stagger-3">
+        <section className="max-w-lg mx-auto py-12 border-t border-brand-gray/10 animate-stagger-3">
           <div className="flex flex-col gap-8">
             <h2 className="font-display text-2xl md:text-3xl font-light tracking-[0.04em] text-center">
               Comment ça marche ?
@@ -516,7 +526,7 @@ export default function ShopClient() {
         </section>
 
         {/* Témoignages */}
-        <section className="py-12 border-t border-brand-gray/10">
+        <section className="max-w-lg mx-auto py-12 border-t border-brand-gray/10">
           <div className="flex flex-col gap-8">
             <h2 className="font-display text-2xl md:text-3xl font-light tracking-[0.04em] text-center">
               Ils le portent.
@@ -539,11 +549,11 @@ export default function ShopClient() {
         </section>
 
         {/* Capture newsletter pour les visiteurs pas prêts à acheter */}
-        <section className="py-12 border-t border-brand-gray/10 animate-stagger-4">
+        <section className="max-w-lg mx-auto py-12 border-t border-brand-gray/10 animate-stagger-4">
           <NewsletterCapture source="shop_inline" />
         </section>
 
-        <footer className="py-12 border-t border-brand-gray/10 flex flex-col gap-4">
+        <footer className="max-w-lg mx-auto py-12 border-t border-brand-gray/10 flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <span className="font-ui text-xs text-brand-gray/50 tracking-[0.2em] uppercase">In Real Society</span>
             <Link href="/" className="font-ui text-xs text-brand-gray/50 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white/80 transition-colors">
