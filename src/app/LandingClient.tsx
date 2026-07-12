@@ -128,7 +128,9 @@ function LandingContent() {
           </div>
         </div>
 
-        <div className="flex flex-col gap-5 animate-stagger-2">
+        {/* lg:-mt-6 : rapproche le nom du monogramme pour qu'ils lisent comme UNE
+            signature de marque (lockup). Desktop uniquement — mobile inchangé. */}
+        <div className="flex flex-col gap-5 animate-stagger-2 lg:-mt-6">
           {/* Sur-titre de marque : ce n'est PAS le titre de la page. Le <h1> est
               l'accroche (proposition de valeur) — cf. les deux branches ci-dessous. */}
           <p className="font-ui text-xs md:text-sm font-light tracking-[0.35em] uppercase text-brand-gray/60">
