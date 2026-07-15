@@ -12,7 +12,8 @@
 import Stripe from 'stripe';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { composeBackPrintSVG, generateBrandMonogramSVG } from '@/lib/generate-qr-svg';
-import { QR_STYLE_CORNER, DEFAULT_QR_STYLE, PRINT_FRONT_LOGO, type QrStyleKey } from '@/lib/constants';
+import { QR_STYLE_CORNER, DEFAULT_QR_STYLE, PRINT_FRONT_LOGO, FULFILLMENT_PROVIDER, type QrStyleKey } from '@/lib/constants';
+import { createGelatoOrder } from '@/lib/gelato';
 import { buildShortUrl, generateUniqueShortCode } from '@/lib/short-code';
 import type { PrintfulOrderPayload, PrintfulOrderResponse, PrintfulAddress } from '@/lib/printful.types';
 
@@ -234,63 +235,89 @@ export async function fulfillOrder({ orderId, memberId, tshirtColor, tshirtSize 
     frontUrl = supabaseAdmin.storage.from('qrcodes').getPublicUrl(logoPath).data.publicUrl;
   }
 
-  // ─── 5. Création Printful (idempotent via external_id) ─────────────────────
-  const variantId = getVariantId(tshirtColor, size);
-  if (!variantId) return { ok: false, reason: 'no_printful_variant_id' };
+  // ─── 5. Création de la commande chez le POD (Printful OU Gelato) ───────────
+  // Le fichier dos (QR + accroche) et le monogramme sont déjà uploadés (publicUrl,
+  // frontUrl) — provider-agnostic. Seule la création diffère.
+  let providerOrderId: string;
 
-  const colorLabel = tshirtColor === 'dark' ? 'Black' : 'White';
+  if (FULFILLMENT_PROVIDER === 'gelato') {
+    // ── Gelato (alternative EU). productUid par (couleur × taille), fichiers SVG,
+    // placements 'back'/'default'. Cf. src/lib/gelato.ts (points à valider). ──
+    const buyerEmail = session.customer_details?.email ?? session.customer_email ?? '';
+    const g = await createGelatoOrder({
+      orderId,
+      email:     buyerEmail,
+      recipient: shipping,
+      color:     tshirtColor,
+      size,
+      backUrl:   publicUrl,
+      frontUrl,
+    });
+    if (!g.ok) return { ok: false, reason: g.reason };
+    providerOrderId = g.providerOrderId ?? '';
 
-  // Le fichier dos n'est plus carré quand il porte une accroche (QR + texte dessous).
-  // On adapte la hauteur de la zone Printful au ratio réel du fichier → le QR garde
-  // sa largeur (25 cm ⇒ ~2,5 m) et rien n'est étiré. Sans accroche, ratio = 1 → BACK_POSITION.
-  const backAspect  = qr.height / qr.width;
-  const backHeight  = Math.round(BACK_POSITION.width * backAspect);
-  const backPosition = {
-    ...PRINT_AREA,
-    width:  BACK_POSITION.width,
-    height: backHeight,
-    left:   BACK_POSITION.left,
-    top:    Math.min(BACK_POSITION.top, PRINT_AREA.area_height - backHeight),
-  };
+  } else {
+    // ── Printful (idempotent via external_id) ──
+    const variantId = getVariantId(tshirtColor, size);
+    if (!variantId) return { ok: false, reason: 'no_printful_variant_id' };
 
-  const payload: PrintfulOrderPayload & { external_id: string } = {
-    external_id: orderId,
-    recipient: shipping,
-    items: [{
-      variant_id: variantId,
-      quantity:   1,
-      name:       `In Real Society — Comfort Colors 1717 ${colorLabel} ${size} (DTF)`,
-      files: [
-        // Dos : le QR unique du porteur (+ accroche dessous si choisie).
-        { type: 'back' as const, url: publicUrl, position: backPosition },
-        // Face : le monogramme )( (si activé). Deux emplacements = coût Printful supérieur.
-        ...(frontUrl ? [{ type: 'front' as const, url: frontUrl, position: FRONT_POSITION }] : []),
-      ],
-    }],
-  };
+    const colorLabel = tshirtColor === 'dark' ? 'Black' : 'White';
 
-  const res = await fetch('https://api.printful.com/orders', {
-    method:  'POST',
-    headers: {
-      'Content-Type':  'application/json',
-      'Authorization': `Bearer ${process.env.PRINTFUL_API_TOKEN}`,
-    },
-    body: JSON.stringify(payload),
-  });
+    // Le fichier dos n'est plus carré quand il porte une accroche (QR + texte dessous).
+    // On adapte la hauteur de la zone Printful au ratio réel du fichier → le QR garde
+    // sa largeur (25 cm ⇒ ~2,5 m) et rien n'est étiré. Sans accroche, ratio = 1 → BACK_POSITION.
+    const backAspect  = qr.height / qr.width;
+    const backHeight  = Math.round(BACK_POSITION.width * backAspect);
+    const backPosition = {
+      ...PRINT_AREA,
+      width:  BACK_POSITION.width,
+      height: backHeight,
+      left:   BACK_POSITION.left,
+      top:    Math.min(BACK_POSITION.top, PRINT_AREA.area_height - backHeight),
+    };
 
-  if (!res.ok) {
-    const text = await res.text();
-    return { ok: false, reason: `printful_${res.status}: ${text.slice(0, 200)}` };
+    const payload: PrintfulOrderPayload & { external_id: string } = {
+      external_id: orderId,
+      recipient: shipping,
+      items: [{
+        variant_id: variantId,
+        quantity:   1,
+        name:       `In Real Society — Comfort Colors 1717 ${colorLabel} ${size} (DTF)`,
+        files: [
+          // Dos : le QR unique du porteur (+ accroche dessous si choisie).
+          { type: 'back' as const, url: publicUrl, position: backPosition },
+          // Face : le monogramme )( (si activé). Deux emplacements = coût Printful supérieur.
+          ...(frontUrl ? [{ type: 'front' as const, url: frontUrl, position: FRONT_POSITION }] : []),
+        ],
+      }],
+    };
+
+    const res = await fetch('https://api.printful.com/orders', {
+      method:  'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': `Bearer ${process.env.PRINTFUL_API_TOKEN}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const text = await res.text();
+      return { ok: false, reason: `printful_${res.status}: ${text.slice(0, 200)}` };
+    }
+
+    const printfulData = await res.json() as PrintfulOrderResponse;
+    providerOrderId = String(printfulData.result?.id ?? '');
   }
 
-  const printfulData = await res.json() as PrintfulOrderResponse;
-  const printfulOrderId = String(printfulData.result?.id ?? '');
-
   // ─── 6. Mark fulfilled ─────────────────────────────────────────────────────
+  // `printful_order_id` stocke l'id du POD actif (Printful OU Gelato). ⚠️ Le suivi
+  // (/commande → getPrintfulTracking) et l'annulation (refund → cancelPrintfulOrder)
+  // ciblent encore Printful : les rendre provider-aware AVANT de basculer en prod.
   await supabaseAdmin
     .from('orders')
-    .update({ printful_order_id: printfulOrderId, fulfilled_at: new Date().toISOString() })
+    .update({ printful_order_id: providerOrderId, fulfilled_at: new Date().toISOString() })
     .eq('id', orderId);
 
-  return { ok: true, printfulOrderId };
+  return { ok: true, printfulOrderId: providerOrderId };
 }

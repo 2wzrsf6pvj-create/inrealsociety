@@ -38,6 +38,13 @@ export const QUICK_REPLIES = ["Belle audace.", "J'aime la démarche.", "👁"] a
  *  affichent le placeholder, sans requête image (pas de 404). Source unique. */
 export const SHOP_IMAGES_READY = false;
 
+/** POD de fabrication. `printful` par défaut (en place, testé). `gelato` = alternative
+ *  EU (fabriqué en Europe). Bascule via l'env `FULFILLMENT_PROVIDER=gelato` — mais NE PAS
+ *  basculer en prod tant que les productUid Gelato + le suivi/annulation ne sont pas
+ *  validés (cf. src/lib/gelato.ts et [[Backlog]]). */
+export const FULFILLMENT_PROVIDER: 'printful' | 'gelato' =
+  process.env.FULFILLMENT_PROVIDER === 'gelato' ? 'gelato' : 'printful';
+
 /** Imprimer AUSSI le monogramme )( sur la poitrine (en plus du QR au dos).
  *  ⚠️ Deux emplacements d'impression = coût Printful supérieur. Passer à `false`
  *  pour revenir au dos seul, sans toucher au code. */
