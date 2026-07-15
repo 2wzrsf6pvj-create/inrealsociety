@@ -23,22 +23,32 @@ function ProductHero({ className = '' }: { className?: string }) {
           onError={() => setMissing(true)} priority
         />
       ) : (
-        /* Présence produit INTENTIONNELLE (plus d'état vide) en attendant les vraies
-           photos : cadre « impression dos » avec le monogramme )( + signature or.
-           Même langage visuel que la galerie shop (AbstractTee). */
-        <div className="absolute inset-0 rounded-[2px] border border-brand-gray/12 bg-brand-dark overflow-hidden flex flex-col items-center justify-center gap-4">
+        /* Placeholder produit en attendant les vraies photos : une VRAIE silhouette de
+           t-shirt avec le monogramme )( sur la poitrine. Tee noir + )( blanc = le vrai
+           produit (print monochrome). Remplacé par la photo dès SHOP_IMAGES_READY. */
+        <div className="absolute inset-0 rounded-[2px] border border-brand-gray/12 bg-brand-dark overflow-hidden flex flex-col items-center justify-center gap-3">
           <div className="absolute inset-0" style={{ background: 'radial-gradient(circle at 50% 42%, rgba(255,255,255,0.05), transparent 70%)' }} />
           <span className="absolute top-3 right-3 font-ui text-[0.55rem] text-brand-accent/70 tracking-[0.2em] uppercase">Édition limitée</span>
-          <div className="relative flex items-center justify-center">
-            <div className="absolute w-28 h-28 rounded-full border border-brand-white/5" />
-            <div className="w-20 h-20 rounded-full border border-brand-white/20 flex items-center justify-center">
-              <span className="font-display text-4xl font-light leading-none text-brand-accent/70">)(</span>
-            </div>
+
+          {/* T-shirt (silhouette) + monogramme )( sur la poitrine */}
+          <div className="relative w-[72%] max-w-[230px] aspect-square flex items-center justify-center">
+            <svg viewBox="0 0 240 240" className="w-full h-full" fill="none" aria-hidden="true">
+              <path
+                d="M100,56 Q120,72 140,56 L166,62 L196,88 L184,106 L164,96 L172,198 L68,198 L76,96 L56,106 L44,88 L74,62 Z"
+                fill="#131313" stroke="rgba(255,255,255,0.16)" strokeWidth="1.6" strokeLinejoin="round"
+              />
+              {/* liseré de col */}
+              <path d="M104,60 Q120,74 136,60" fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth="1.4" strokeLinecap="round" />
+            </svg>
+            <span
+              className="absolute left-1/2 -translate-x-1/2 font-display font-light text-brand-white/85 leading-none"
+              style={{ top: '42%', fontSize: 'clamp(1.35rem, 4.5vw, 2.1rem)' }}
+            >
+              )(
+            </span>
           </div>
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-8 h-px bg-brand-accent/50" />
-            <p className="font-ui text-xxs text-brand-gray/50 tracking-[0.22em] uppercase">Comfort Colors 1717</p>
-          </div>
+
+          <p className="font-ui text-xxs text-brand-gray/50 tracking-[0.22em] uppercase">Comfort Colors 1717</p>
         </div>
       )}
     </div>
