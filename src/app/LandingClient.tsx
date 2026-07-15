@@ -111,31 +111,34 @@ function LandingContent() {
           héros en DEUX COLONNES (visuel produit | accroche + preuves + CTA), sinon la
           colonne de ~450px se perdait dans un écran de 1500px. */}
       <div className="z-10 flex-1 flex flex-col items-center w-full">
-      <div className="w-full my-auto py-4 flex flex-col items-center lg:flex-row lg:items-center lg:justify-center lg:gap-16 lg:max-w-5xl">
+      <div className="w-full my-auto py-4 flex flex-col items-center">
 
-        {/* Colonne GAUCHE (desktop only) — le visuel produit, plus grand. */}
+        {/* SIGNATURE — masthead CENTRÉ en haut du héros, au-dessus des 2 colonnes.
+            Monogramme + nom collés (lockup). Centré sur toute la largeur (« au milieu »). */}
+        <div className="flex flex-col items-center gap-3 animate-stagger-1 mb-10 lg:mb-14">
+          <div className="relative flex items-center justify-center">
+            <div className="absolute w-24 h-24 lg:w-28 lg:h-28 rounded-full border border-brand-white/10 animate-ring-pulse" />
+            <div className="w-[72px] h-[72px] lg:w-[88px] lg:h-[88px] rounded-full border border-brand-white/40 flex items-center justify-center">
+              <span className="font-display text-3xl md:text-4xl lg:text-5xl font-light tracking-[0.05em]">)(</span>
+            </div>
+          </div>
+          <p className="font-ui text-xs md:text-sm font-light tracking-[0.35em] uppercase text-brand-gray/60">
+            In Real Society
+          </p>
+        </div>
+
+        {/* Contenu produit — 2 colonnes en desktop, empilé en mobile. */}
+        <div className="w-full flex flex-col items-center lg:flex-row lg:items-center lg:justify-center lg:gap-16 lg:max-w-5xl">
+
+        {/* Colonne GAUCHE (desktop only) — le visuel produit. */}
         {!(scannerName && hasMemberId) && (
           <ProductHero className="hidden lg:block w-[340px] shrink-0" />
         )}
 
-        {/* Colonne DROITE (= la colonne unique du mobile, inchangée). */}
+        {/* Colonne DROITE (= la colonne unique du mobile). */}
         <div className="flex flex-col items-center text-center gap-10 md:gap-12 w-full max-w-xs md:max-w-sm lg:max-w-md lg:items-start lg:text-left">
 
-        <div className="relative flex items-center justify-center animate-stagger-1">
-          <div className="absolute w-24 h-24 lg:w-28 lg:h-28 rounded-full border border-brand-white/10 animate-ring-pulse" />
-          <div className="w-[72px] h-[72px] lg:w-[88px] lg:h-[88px] rounded-full border border-brand-white/40 flex items-center justify-center">
-            <span className="font-display text-3xl md:text-4xl lg:text-5xl font-light tracking-[0.05em]">)(</span>
-          </div>
-        </div>
-
-        {/* lg:-mt-6 : rapproche le nom du monogramme pour qu'ils lisent comme UNE
-            signature de marque (lockup). Desktop uniquement — mobile inchangé. */}
-        <div className="flex flex-col gap-5 animate-stagger-2 lg:-mt-6">
-          {/* Sur-titre de marque : ce n'est PAS le titre de la page. Le <h1> est
-              l'accroche (proposition de valeur) — cf. les deux branches ci-dessous. */}
-          <p className="font-ui text-xs md:text-sm font-light tracking-[0.35em] uppercase text-brand-gray/60">
-            In Real Society
-          </p>
+        <div className="flex flex-col gap-5 animate-stagger-2">
           {qrError && (
             <div className="px-4 py-3 border border-red-500/20 rounded-[2px] mb-2">
               <p className="font-ui text-sm text-red-400/80 text-center">{qrError}</p>
@@ -210,6 +213,7 @@ function LandingContent() {
         </p>
 
         </div>{/* /colonne droite */}
+        </div>{/* /rangée contenu (2 colonnes) */}
       </div>
       </div>
 
