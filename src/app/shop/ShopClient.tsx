@@ -47,9 +47,10 @@ function ProductGallery({ color, taglineId }: { color: TshirtColor; taglineId: s
   const [missing, setMissing] = useState<Record<string, boolean>>({});
   const isDark   = color === 'dark';
   const colorKey = isDark ? 'noir' : 'blanc';
-  const viewKey  = view === 'back' ? 'dos' : 'face';
-  const src      = `/shop/tee-${colorKey}-${viewKey}.png`;
-  const hasPhoto = !missing[src];
+  // Les DEUX faces sont chargées (flip 3D) : dos + face.
+  const backSrc   = `/shop/tee-${colorKey}-dos.png`;
+  const frontSrc  = `/shop/tee-${colorKey}-face.png`;
+  const hasPhotos = !missing[backSrc] && !missing[frontSrc];
 
   const baked = taglineId ? BAKED_TAGLINES[taglineId] : null;
 
@@ -65,36 +66,56 @@ function ProductGallery({ color, taglineId }: { color: TshirtColor; taglineId: s
   const tagAspect = baked ? (baked.bbox.x2 - baked.bbox.x1) / (baked.bbox.y2 - baked.bbox.y1) : 1;
   const tagWidthPct = QR_W * Math.min(1.0, 0.085 * tagAspect) * 100;   // cap-height constante
 
+  const faceBg = isDark ? 'bg-[#0a0a0a] border-brand-gray/10' : 'bg-[#f0ede8] border-brand-gray/20';
+
   return (
     <div className="flex flex-col gap-3">
-      <div className={`relative w-full aspect-square border rounded-[2px] overflow-hidden ${isDark ? 'bg-[#0a0a0a] border-brand-gray/10' : 'bg-[#f0ede8] border-brand-gray/20'}`}>
-        {hasPhoto ? (
-          <>
-            <Image
-              src={src}
-              alt={`T-shirt In Real Society ${isDark ? 'Noir' : 'Blanc'} — ${view === 'back' ? 'dos avec QR code' : 'face avec le logo'}`}
-              fill sizes="(max-width: 768px) 100vw, 420px" className="object-contain"
-              onError={() => setMissing(m => ({ ...m, [src]: true }))} priority
-            />
-            {/* Accroche incrustée EN DIRECT sous le QR (dos uniquement) — même encre que le print. */}
-            {view === 'back' && baked && (
-              <div
-                key={`${colorKey}-${taglineId}`}
-                className="absolute animate-fade-in [&_svg]:block [&_svg]:w-full [&_svg]:h-auto"
-                style={{ top: tagPos.top, left: tagPos.left, transform: 'translateX(-50%)', width: `${tagWidthPct.toFixed(1)}%` }}
-              >
-                <svg viewBox={`${baked.bbox.x1} ${baked.bbox.y1} ${(baked.bbox.x2 - baked.bbox.x1).toFixed(2)} ${(baked.bbox.y2 - baked.bbox.y1).toFixed(2)}`}>
-                  <path d={baked.path} fill={isDark ? '#f2f2f2' : '#1a1a1a'} />
-                </svg>
-              </div>
-            )}
-          </>
-        ) : (
+      {hasPhotos ? (
+        // FLIP 3D : le tee pivote sur l'axe vertical pour révéler l'autre face.
+        <div className="relative w-full aspect-square [perspective:1400px]">
+          <div
+            className="relative w-full h-full [transform-style:preserve-3d] transition-transform duration-[650ms] ease-in-out motion-reduce:transition-none"
+            style={{ transform: view === 'front' ? 'rotateY(180deg)' : 'rotateY(0deg)' }}
+          >
+            {/* Face ARRIÈRE (dos + QR + accroche) */}
+            <div className={`absolute inset-0 [backface-visibility:hidden] rounded-[2px] overflow-hidden border ${faceBg}`}>
+              <Image
+                src={backSrc}
+                alt={`T-shirt In Real Society ${isDark ? 'Noir' : 'Blanc'} — dos avec QR code`}
+                fill sizes="(max-width: 768px) 100vw, 420px" className="object-contain"
+                onError={() => setMissing(m => ({ ...m, [backSrc]: true }))} priority
+              />
+              {baked && (
+                <div
+                  key={`${colorKey}-${taglineId}`}
+                  className="absolute animate-fade-in [&_svg]:block [&_svg]:w-full [&_svg]:h-auto"
+                  style={{ top: tagPos.top, left: tagPos.left, transform: 'translateX(-50%)', width: `${tagWidthPct.toFixed(1)}%` }}
+                >
+                  <svg viewBox={`${baked.bbox.x1} ${baked.bbox.y1} ${(baked.bbox.x2 - baked.bbox.x1).toFixed(2)} ${(baked.bbox.y2 - baked.bbox.y1).toFixed(2)}`}>
+                    <path d={baked.path} fill={isDark ? '#f2f2f2' : '#1a1a1a'} />
+                  </svg>
+                </div>
+              )}
+            </div>
+            {/* Face AVANT (logo poitrine) — pré-tournée de 180° */}
+            <div className={`absolute inset-0 [backface-visibility:hidden] [transform:rotateY(180deg)] rounded-[2px] overflow-hidden border ${faceBg}`}>
+              <Image
+                src={frontSrc}
+                alt={`T-shirt In Real Society ${isDark ? 'Noir' : 'Blanc'} — face avec le logo`}
+                fill sizes="(max-width: 768px) 100vw, 420px" className="object-contain"
+                onError={() => setMissing(m => ({ ...m, [frontSrc]: true }))}
+              />
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className={`relative w-full aspect-square border rounded-[2px] overflow-hidden ${faceBg}`}>
           <AbstractTee color={color} />
-        )}
-      </div>
-      {/* Toggle Avant / Arrière — seulement si la photo de cette couleur existe. */}
-      {hasPhoto && (
+        </div>
+      )}
+
+      {/* Toggle Avant / Arrière — seulement si les photos de cette couleur existent. */}
+      {hasPhotos && (
         <div className="flex gap-2">
           {([['back', 'Arrière'], ['front', 'Avant']] as const).map(([v, label]) => (
             <button key={v} type="button" onClick={() => setView(v)}
