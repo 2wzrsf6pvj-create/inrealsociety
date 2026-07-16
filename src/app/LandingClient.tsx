@@ -4,7 +4,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { SHOP_IMAGES_READY } from '@/lib/constants';
 import { BrandMark } from '@/app/components/ui/BrandMark';
 import { captureEvent } from '@/lib/posthog-client';
 
@@ -14,14 +13,17 @@ import { captureEvent } from '@/lib/posthog-client';
 // flux (lg:hidden), le desktop en a une dédiée dans la colonne de gauche (hidden lg:block).
 function ProductHero({ className = '' }: { className?: string }) {
   const [missing, setMissing] = useState(false);
-  const showPhoto = SHOP_IMAGES_READY && !missing;
+  // Maquette produit réelle (Printful, fond transparent) : dos QR + face logo. Affichée
+  // dès qu'elle existe, indépendamment de SHOP_IMAGES_READY (qui, lui, pilote la GALERIE
+  // boutique). Repli sur le SVG si le fichier manque.
+  const showPhoto = !missing;
   return (
     <div className={`relative aspect-square animate-stagger-2 ${className}`}>
       {showPhoto ? (
         <Image
-          src="/shop/tee-noir-dos.webp"
-          alt="T-shirt In Real Society — dos avec QR code"
-          fill sizes="(min-width: 1024px) 340px, 240px" className="object-cover rounded-[2px]"
+          src="/shop/tee-hero.png"
+          alt="T-shirt In Real Society — dos avec QR code et face avec le logo ( • )"
+          fill sizes="(min-width: 1024px) 340px, 240px" className="object-contain"
           onError={() => setMissing(true)} priority
         />
       ) : (
