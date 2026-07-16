@@ -53,6 +53,10 @@ function ProductGallery({ color, taglineId }: { color: TshirtColor; taglineId: s
 
   const baked = taglineId ? BAKED_TAGLINES[taglineId] : null;
 
+  // Position du QR relevée sur CHAQUE photo (le dos noir est un poil plus haut/à droite)
+  // → l'accroche se pose pile sous le QR, quelle que soit la couleur.
+  const tagPos = isDark ? { top: '49.5%', left: '51%' } : { top: '50.5%', left: '50%' };
+
   return (
     <div className="flex flex-col gap-3">
       <div className={`relative w-full aspect-square border rounded-[2px] overflow-hidden ${isDark ? 'bg-[#0a0a0a] border-brand-gray/10' : 'bg-[#f0ede8] border-brand-gray/20'}`}>
@@ -68,8 +72,8 @@ function ProductGallery({ color, taglineId }: { color: TshirtColor; taglineId: s
             {view === 'back' && baked && (
               <div
                 key={`${colorKey}-${taglineId}`}
-                className="absolute left-1/2 -translate-x-1/2 animate-fade-in [&_svg]:block [&_svg]:w-full [&_svg]:h-auto"
-                style={{ top: '51%', width: '27%' }}
+                className="absolute animate-fade-in [&_svg]:block [&_svg]:w-full [&_svg]:h-auto"
+                style={{ top: tagPos.top, left: tagPos.left, transform: 'translateX(-50%)', width: '27%' }}
               >
                 <svg viewBox={`${baked.bbox.x1} ${baked.bbox.y1} ${(baked.bbox.x2 - baked.bbox.x1).toFixed(2)} ${(baked.bbox.y2 - baked.bbox.y1).toFixed(2)}`}>
                   <path d={baked.path} fill={isDark ? '#f2f2f2' : '#1a1a1a'} />
