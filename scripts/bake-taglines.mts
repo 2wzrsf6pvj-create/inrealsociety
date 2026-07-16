@@ -7,9 +7,10 @@
 // (Printful/Gelato) n'a peut-être pas → texte remplacé ou disparu sur le tee. Un tracé
 // détouré n'a AUCUNE dépendance. Même discipline que le monogramme )( .
 //
-// Police : Cormorant Garamond 400 — LA MÊME que « IN REAL SOCIETY » sous le logo
-// (cf. brand-name.generated). L'accroche sous le QR et le nom sous le mark partagent
-// donc la même griffe. On la fige ici : le rendu imprimé ne dépend plus d'une police.
+// Police : Cormorant Garamond — MÊME FAMILLE que « IN REAL SOCIETY » sous le logo
+// (cf. brand-name.generated, qui est en 400). Ici en graisse **600** : l'accroche est une
+// PHRASE-hameçon, elle doit rester lisible (le 400 fin s'affaiblissait) — donc un poil plus
+// de corps que le nom-signature, tout en gardant la même griffe serif. Figé au print.
 
 import opentype from 'opentype.js';
 import { writeFileSync } from 'node:fs';
@@ -18,10 +19,10 @@ import { TAGLINES } from '../src/lib/taglines';
 
 const FONT_SIZE = 200;   // unité de cuisson ; la composition rescale ensuite
 
-// Sources candidates pour Cormorant Garamond 400 STATIQUE. On prend la première valide.
+// Sources candidates pour Cormorant Garamond 600 (SemiBold) STATIQUE. Première valide.
 const FONT_URLS = [
-  'https://cdn.jsdelivr.net/fontsource/fonts/cormorant-garamond@latest/latin-400-normal.ttf',
-  'https://raw.githubusercontent.com/google/fonts/main/ofl/cormorantgaramond/CormorantGaramond-Regular.ttf',
+  'https://cdn.jsdelivr.net/fontsource/fonts/cormorant-garamond@latest/latin-600-normal.ttf',
+  'https://raw.githubusercontent.com/google/fonts/main/ofl/cormorantgaramond/CormorantGaramond-SemiBold.ttf',
 ];
 
 function isTTF(buf: Buffer): boolean {
