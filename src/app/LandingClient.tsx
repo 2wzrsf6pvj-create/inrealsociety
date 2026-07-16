@@ -23,26 +23,49 @@ function ProductHero({ className = '' }: { className?: string }) {
           onError={() => setMissing(true)} priority
         />
       ) : (
-        /* Placeholder produit en attendant les vraies photos : une VRAIE silhouette de
-           t-shirt avec le monogramme )( sur la poitrine. Tee noir + )( blanc = le vrai
-           produit (print monochrome). Remplacé par la photo dès SHOP_IMAGES_READY. */
+        /* Placeholder produit en attendant les vraies photos : une silhouette de t-shirt
+           réaliste (col côtelé, épaules, manches, plis de tissu) avec le monogramme )(
+           en PETIT sur la poitrine gauche — le vrai print face (front logo). Le QR (dos)
+           n'est pas montré ici (vue de face). Remplacé par la photo dès SHOP_IMAGES_READY. */
         <div className="absolute inset-0 rounded-[2px] border border-brand-gray/12 bg-brand-dark overflow-hidden flex flex-col items-center justify-center gap-3">
-          <div className="absolute inset-0" style={{ background: 'radial-gradient(circle at 50% 42%, rgba(255,255,255,0.05), transparent 70%)' }} />
+          <div className="absolute inset-0" style={{ background: 'radial-gradient(circle at 50% 38%, rgba(255,255,255,0.045), transparent 68%)' }} />
           <span className="absolute top-3 right-3 font-ui text-[0.55rem] text-brand-accent/70 tracking-[0.2em] uppercase">Édition limitée</span>
 
-          {/* T-shirt (silhouette) + monogramme )( sur la poitrine */}
-          <div className="relative w-[72%] max-w-[230px] aspect-square flex items-center justify-center">
-            <svg viewBox="0 0 240 240" className="w-full h-full" fill="none" aria-hidden="true">
+          {/* T-shirt (silhouette réaliste) + monogramme )( en petit sur la poitrine gauche */}
+          <div className="relative w-[80%] max-w-[248px] aspect-square flex items-center justify-center">
+            <svg viewBox="0 0 200 200" className="w-full h-full" fill="none" aria-hidden="true">
+              <defs>
+                <linearGradient id="teeFabric" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0" stopColor="#1e1e1e" />
+                  <stop offset="0.55" stopColor="#161616" />
+                  <stop offset="1" stopColor="#101010" />
+                </linearGradient>
+              </defs>
+              {/* corps du t-shirt : épaules tombantes, emmanchures, manches courtes, taille légèrement cintrée, ourlet */}
               <path
-                d="M100,56 Q120,72 140,56 L166,62 L196,88 L184,106 L164,96 L172,198 L68,198 L76,96 L56,106 L44,88 L74,62 Z"
-                fill="#131313" stroke="rgba(255,255,255,0.16)" strokeWidth="1.6" strokeLinejoin="round"
+                d="M74,40
+                   C 80,52 120,52 126,40
+                   L 150,38 L 178,64 C 172,72 166,74 160,74 L 150,66
+                   C 152,104 152,150 151,176 L 49,176
+                   C 48,150 48,104 50,66 L 40,74 C 34,74 28,72 22,64 L 50,38 Z"
+                fill="url(#teeFabric)" stroke="rgba(255,255,255,0.18)" strokeWidth="1.3" strokeLinejoin="round"
               />
-              {/* liseré de col */}
-              <path d="M104,60 Q120,74 136,60" fill="none" stroke="rgba(255,255,255,0.14)" strokeWidth="1.4" strokeLinecap="round" />
+              {/* col côtelé (double liseré) */}
+              <path d="M76,41 C 84,53 116,53 124,41" fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth="1.4" strokeLinecap="round" />
+              <path d="M79,45 C 86,55 114,55 121,45" fill="none" stroke="rgba(255,255,255,0.10)" strokeWidth="1" strokeLinecap="round" />
+              {/* ombres de plis : coutures de manche + creux sous les bras + tombé central */}
+              <path d="M55,64 C 58,96 58,140 57,174" fill="none" stroke="rgba(0,0,0,0.35)" strokeWidth="1.1" strokeLinecap="round" />
+              <path d="M145,64 C 142,96 142,140 143,174" fill="none" stroke="rgba(0,0,0,0.35)" strokeWidth="1.1" strokeLinecap="round" />
+              <path d="M100,58 C 101,96 101,140 100,172" fill="none" stroke="rgba(0,0,0,0.18)" strokeWidth="1" strokeLinecap="round" />
+              <path d="M156,70 L 150,64" fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth="1" strokeLinecap="round" />
+              <path d="M44,70 L 50,64" fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth="1" strokeLinecap="round" />
+              {/* ourlet bas */}
+              <path d="M49,171 L 151,171" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
             </svg>
+            {/* monogramme )( — petit, poitrine gauche (haut-gauche vue de face) */}
             <span
-              className="absolute left-1/2 -translate-x-1/2 font-display font-light text-brand-white/85 leading-none"
-              style={{ top: '42%', fontSize: 'clamp(1.35rem, 4.5vw, 2.1rem)' }}
+              className="absolute font-display font-light text-brand-white/85 leading-none"
+              style={{ top: '35%', left: '35%', fontSize: 'clamp(0.6rem, 2vw, 0.95rem)', letterSpacing: '-0.04em' }}
             >
               )(
             </span>
