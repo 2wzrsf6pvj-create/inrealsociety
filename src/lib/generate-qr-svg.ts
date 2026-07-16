@@ -308,8 +308,8 @@ export function composeBackPrintSVG(
   // hauteur de capitale raisonnable (sinon les accroches très courtes deviennent énormes).
   const tagW = baked.bbox.x2 - baked.bbox.x1;
   const tagH = baked.bbox.y2 - baked.bbox.y1;
-  const targetW = 0.86 * W;
-  const maxCapH = 0.11 * W;
+  const targetW = 0.92 * W;
+  const maxCapH = 0.14 * W;
   const scale = Math.min(targetW / tagW, maxCapH / tagH);
 
   const drawnW = tagW * scale;
