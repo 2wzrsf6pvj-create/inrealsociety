@@ -88,7 +88,7 @@ function ProductGallery({ color, taglineId }: { color: TshirtColor; taglineId: s
               {baked && (
                 <div
                   key={`${colorKey}-${taglineId}`}
-                  className="absolute animate-fade-in [&_svg]:block [&_svg]:w-full [&_svg]:h-auto"
+                  className="absolute animate-fade-in [backface-visibility:hidden] [&_svg]:block [&_svg]:w-full [&_svg]:h-auto"
                   style={{ top: tagPos.top, left: tagPos.left, transform: 'translateX(-50%)', width: `${tagWidthPct.toFixed(1)}%` }}
                 >
                   <svg viewBox={`${baked.bbox.x1} ${baked.bbox.y1} ${(baked.bbox.x2 - baked.bbox.x1).toFixed(2)} ${(baked.bbox.y2 - baked.bbox.y1).toFixed(2)}`}>
