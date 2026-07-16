@@ -298,7 +298,7 @@ export async function fulfillOrder({ orderId, memberId, tshirtColor, tshirtSize 
       items: [{
         variant_id: variantId,
         quantity:   1,
-        name:       `In Real Society — Comfort Colors 1717 ${colorLabel} ${size} (DTF)`,
+        name:       `In Real Society — Stanley/Stella Creator 2.0 ${colorLabel} ${size} (DTF)`,
         files: [
           // Dos : le QR unique du porteur (+ accroche dessous si choisie).
           { type: 'back' as const, url: publicUrl, position: backPosition },

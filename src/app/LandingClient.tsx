@@ -77,7 +77,7 @@ function ProductHero({ className = '' }: { className?: string }) {
             </div>
           </div>
 
-          <p className="font-ui text-xxs text-brand-gray/50 tracking-[0.22em] uppercase">Comfort Colors 1717</p>
+          <p className="font-ui text-xxs text-brand-gray/50 tracking-[0.22em] uppercase">Stanley/Stella Creator 2.0</p>
         </div>
       )}
     </div>

@@ -56,7 +56,7 @@ export default function CGVPage() {
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
             In Real Society commercialise des vêtements (t-shirts, sweats) fabriqués à la demande et
             personnalisés. Chaque article est imprimé individuellement après validation du paiement,
-            via la technique DTFlex (Direct to Film), sur le modèle Comfort Colors 1717.
+            via la technique DTFlex (Direct to Film), sur le modèle Stanley/Stella Creator 2.0 (coton bio).
           </p>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
             Chaque vêtement comporte un QR code unique, crypté et lié au profil personnel de l&apos;Acheteur,

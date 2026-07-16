@@ -24,7 +24,7 @@ export interface PrintfulFile {
 }
 
 export interface PrintfulItem {
-  variant_id:    number;    // ⚠️ À remplacer par l'ID réel du Comfort Colors 1717 sur Printful
+  variant_id:    number;    // ⚠️ À remplacer par l'ID réel du Stanley/Stella Creator 2.0 (STTU169) sur Printful
   quantity:      number;
   files:         PrintfulFile[];
   name?:         string;

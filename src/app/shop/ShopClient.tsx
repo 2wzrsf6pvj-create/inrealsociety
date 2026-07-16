@@ -31,7 +31,7 @@ function AbstractTee({ color }: { color: TshirtColor }) {
         </div>
       </div>
       <p className={`font-ui text-xs tracking-[0.2em] uppercase ${isDark ? 'text-brand-gray/50' : 'text-brand-black/30'}`}>
-        T-shirt · Comfort Colors 1717 · {isDark ? 'Noir' : 'Blanc'}
+        T-shirt · Stanley/Stella Creator 2.0 · {isDark ? 'Noir' : 'Blanc'}
       </p>
     </div>
   );
@@ -186,7 +186,7 @@ function SizeGuide() {
               <p className="font-ui text-xs text-brand-gray/50 tracking-[0.2em] uppercase">Guide des tailles</p>
               <button onClick={() => setOpen(false)} aria-label="Fermer le guide des tailles" className="font-ui text-xs text-brand-gray/55 hover:text-brand-white transition-colors">✕</button>
             </div>
-            <p className="font-ui text-xxs text-brand-gray/55">Comfort Colors 1717 — coupe oversize. En cas de doute, prenez votre taille habituelle.</p>
+            <p className="font-ui text-xxs text-brand-gray/55">Stanley/Stella Creator 2.0 — coton bio, coupe droite. En cas de doute, prenez votre taille habituelle.</p>
             <table className="w-full">
               <thead>
                 <tr className="border-b border-brand-gray/10">
@@ -364,7 +364,7 @@ export default function ShopClient() {
                 <SizeGuide />
               </div>
               <p className="font-ui text-xxs text-brand-gray/55 -mt-1">
-                Coupe <span className="text-brand-gray/50">oversize</span> · M sélectionné par défaut · prenez votre taille habituelle
+                Coupe <span className="text-brand-gray/50">droite</span> · M sélectionné par défaut · prenez votre taille habituelle
               </p>
               <div className="flex gap-2" role="group" aria-labelledby="lbl-taille">
                 {SIZES.map(size => (
@@ -398,7 +398,7 @@ export default function ShopClient() {
                     T-shirt In Real Society
                   </h2>
                   <p className="font-ui text-xs md:text-sm text-brand-gray/50">
-                    Comfort Colors 1717 · {colorLabel} · QR code imprimé dans le dos
+                    Stanley/Stella Creator 2.0 · {colorLabel} · QR code imprimé dans le dos
                   </p>
                 </div>
                 <span className="font-display text-3xl font-light">{TSHIRT_PRICE_EUR}€</span>
@@ -406,7 +406,7 @@ export default function ShopClient() {
 
               <div className="flex flex-col gap-2 py-4 border-t border-b border-brand-gray/10">
                 {[
-                  'T-shirt coton lourd Comfort Colors 1717',
+                  'T-shirt coton bio Stanley/Stella Creator 2.0',
                   'Logo ( • ) imprimé sur la poitrine',
                   'QR unique + accroche imprimés dans le dos',
                   'Code d\'activation unique par email',
