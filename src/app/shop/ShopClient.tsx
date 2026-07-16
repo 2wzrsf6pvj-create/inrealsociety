@@ -7,6 +7,7 @@ import { useSearchParams } from 'next/navigation';
 import { captureEvent } from '@/lib/posthog-client';
 import { SHOP_IMAGES_READY, TSHIRT_PRICE_EUR } from '@/lib/constants';
 import TaglinePicker from '@/app/components/ui/TaglinePicker';
+import TaglinePreview from '@/app/components/ui/TaglinePreview';
 import { BrandMark } from '@/app/components/ui/BrandMark';
 
 type TshirtColor = 'dark' | 'light';
@@ -409,6 +410,8 @@ export default function ShopClient() {
             </div>
 
             {/* Accroche imprimée sous le QR — le hameçon qui donne envie de scanner */}
+            {/* Aperçu LIVE : le dos du tee se met à jour avec l'accroche + la couleur choisies. */}
+            <TaglinePreview taglineId={taglineId} tshirtColor={tshirtColor} />
             <TaglinePicker value={taglineId} onChange={setTaglineId} tshirtColor={tshirtColor} />
 
             {/* Infos produit */}
