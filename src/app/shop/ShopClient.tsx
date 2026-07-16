@@ -166,12 +166,14 @@ function NewsletterCapture({ source }: { source: string }) {
 
 function SizeGuide() {
   const [open, setOpen] = useState(false);
+  // Mesures officielles Stanley/Stella Creator 2.0 (STTU169) : 1/2 poitrine (à 2 cm sous
+  // l'emmanchure) × longueur (épaule → bas). Cf. size chart S/S. À recouper avec Printful.
   const sizes = [
-    { size: 'S',   chest: '46', length: '71' },
-    { size: 'M',   chest: '51', length: '74' },
-    { size: 'L',   chest: '56', length: '76' },
-    { size: 'XL',  chest: '61', length: '79' },
-    { size: 'XXL', chest: '66', length: '81' },
+    { size: 'S',   chest: '49', length: '69' },
+    { size: 'M',   chest: '52', length: '72' },
+    { size: 'L',   chest: '55', length: '74' },
+    { size: 'XL',  chest: '58', length: '76' },
+    { size: 'XXL', chest: '61', length: '78' },
   ];
 
   return (
