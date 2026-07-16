@@ -24,15 +24,14 @@ function ProductHero({ className = '' }: { className?: string }) {
           onError={() => setMissing(true)} priority
         />
       ) : (
-        /* Placeholder produit en attendant les vraies photos : une silhouette de t-shirt
-           réaliste (col côtelé, épaules, manches, plis de tissu) avec le monogramme )(
-           en PETIT sur la poitrine gauche — le vrai print face (front logo). Le QR (dos)
-           n'est pas montré ici (vue de face). Remplacé par la photo dès SHOP_IMAGES_READY. */
+        /* Placeholder produit en attendant les vraies photos : le t-shirt vu de DOS, avec
+           le QR (le vrai print arrière) et l'accroche dessous — l'accroche produit. Tee noir
+           + QR blanc = le rendu réel (print monochrome). Remplacé par la photo dès SHOP_IMAGES_READY. */
         <div className="absolute inset-0 rounded-[2px] border border-brand-gray/12 bg-brand-dark overflow-hidden flex flex-col items-center justify-center gap-3">
           <div className="absolute inset-0" style={{ background: 'radial-gradient(circle at 50% 38%, rgba(255,255,255,0.045), transparent 68%)' }} />
           <span className="absolute top-3 right-3 font-ui text-[0.55rem] text-brand-accent/70 tracking-[0.2em] uppercase">Édition limitée</span>
 
-          {/* T-shirt (silhouette réaliste) + logo ( • ) en petit sur la poitrine gauche */}
+          {/* T-shirt vu de DOS (silhouette réaliste) + QR imprimé au centre du dos */}
           <div className="relative w-[80%] max-w-[248px] aspect-square flex items-center justify-center">
             <svg viewBox="0 0 200 200" className="w-full h-full" fill="none" aria-hidden="true">
               <defs>
@@ -42,34 +41,37 @@ function ProductHero({ className = '' }: { className?: string }) {
                   <stop offset="1" stopColor="#101010" />
                 </linearGradient>
               </defs>
-              {/* corps du t-shirt : épaules tombantes, emmanchures, manches courtes, taille légèrement cintrée, ourlet */}
+              {/* corps du t-shirt (dos) : épaules tombantes, emmanchures, manches courtes, ourlet.
+                  Encolure DOS = arc peu profond (contrairement au décolleté de face). */}
               <path
                 d="M74,40
-                   C 80,52 120,52 126,40
+                   C 84,47 116,47 126,40
                    L 150,38 L 178,64 C 172,72 166,74 160,74 L 150,66
                    C 152,104 152,150 151,176 L 49,176
                    C 48,150 48,104 50,66 L 40,74 C 34,74 28,72 22,64 L 50,38 Z"
                 fill="url(#teeFabric)" stroke="rgba(255,255,255,0.18)" strokeWidth="1.3" strokeLinejoin="round"
               />
-              {/* col côtelé (double liseré) */}
-              <path d="M76,41 C 84,53 116,53 124,41" fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth="1.4" strokeLinecap="round" />
-              <path d="M79,45 C 86,55 114,55 121,45" fill="none" stroke="rgba(255,255,255,0.10)" strokeWidth="1" strokeLinecap="round" />
-              {/* ombres de plis : coutures de manche + creux sous les bras + tombé central */}
+              {/* bande de propreté dos (parementure) sous le col */}
+              <path d="M78,42 C 90,49 110,49 122,42" fill="none" stroke="rgba(255,255,255,0.20)" strokeWidth="1.4" strokeLinecap="round" />
+              <path d="M84,49 L 116,49" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="1" strokeLinecap="round" />
+              {/* ombres de plis : coutures de manche + creux sous les bras */}
               <path d="M55,64 C 58,96 58,140 57,174" fill="none" stroke="rgba(0,0,0,0.35)" strokeWidth="1.1" strokeLinecap="round" />
               <path d="M145,64 C 142,96 142,140 143,174" fill="none" stroke="rgba(0,0,0,0.35)" strokeWidth="1.1" strokeLinecap="round" />
-              <path d="M100,58 C 101,96 101,140 100,172" fill="none" stroke="rgba(0,0,0,0.18)" strokeWidth="1" strokeLinecap="round" />
               <path d="M156,70 L 150,64" fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth="1" strokeLinecap="round" />
               <path d="M44,70 L 50,64" fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth="1" strokeLinecap="round" />
               {/* ourlet bas */}
               <path d="M49,171 L 151,171" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
             </svg>
-            {/* logo ( • ) — petit, poitrine gauche (haut-gauche vue de face) */}
-            <span
-              className="absolute text-brand-white/85 leading-none"
-              style={{ top: '35%', left: '36%', fontSize: 'clamp(0.7rem, 2.4vw, 1.15rem)' }}
-            >
-              <BrandMark />
-            </span>
+            {/* QR (print réel du dos) + accroche, centré sur le haut du dos */}
+            <div className="absolute" style={{ top: '30%', left: '50%', transform: 'translateX(-50%)', width: '44%' }}>
+              <Image
+                src="/shop/tee-back-print.png"
+                alt="QR code imprimé au dos du t-shirt"
+                width={264} height={319}
+                className="w-full h-auto opacity-95"
+                priority
+              />
+            </div>
           </div>
 
           <p className="font-ui text-xxs text-brand-gray/50 tracking-[0.22em] uppercase">Comfort Colors 1717</p>
