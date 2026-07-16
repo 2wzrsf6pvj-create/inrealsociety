@@ -48,6 +48,23 @@ function ProductGallery({ color }: { color: TshirtColor }) {
   const src      = `/shop/tee-${colorKey}-${view}.webp`;
   const fallback = !SHOP_IMAGES_READY || !!missing[src];
 
+  // Maquette produit réelle (face + dos combinés), déplacée de l'accueil vers la boutique.
+  // Disponible pour le BLANC (public/shop/tee-hero.png) ; le NOIR n'a pas encore de mockup
+  // → placeholder abstrait. Affichée telle quelle tant qu'on n'a pas les 4 vues séparées.
+  const heroSrc = '/shop/tee-hero.png';
+  if (!isDark && !missing[heroSrc]) {
+    return (
+      <div className="relative w-full aspect-square border rounded-[2px] overflow-hidden bg-[#f0ede8] border-brand-gray/20">
+        <Image
+          src={heroSrc}
+          alt="T-shirt In Real Society Blanc — dos (QR code) et face (logo ( • ))"
+          fill sizes="(max-width: 768px) 100vw, 420px" className="object-contain p-3"
+          onError={() => setMissing(m => ({ ...m, [heroSrc]: true }))} priority
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-3">
       <div className={`relative w-full aspect-square border rounded-[2px] overflow-hidden transition-colors ${isDark ? 'bg-[#0a0a0a] border-brand-gray/10' : 'bg-[#f0ede8] border-brand-gray/20'}`}>

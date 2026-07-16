@@ -13,17 +13,17 @@ import { captureEvent } from '@/lib/posthog-client';
 // flux (lg:hidden), le desktop en a une dédiée dans la colonne de gauche (hidden lg:block).
 function ProductHero({ className = '' }: { className?: string }) {
   const [missing, setMissing] = useState(false);
-  // Maquette produit réelle (Printful, fond transparent) : dos QR + face logo. Affichée
-  // dès qu'elle existe, indépendamment de SHOP_IMAGES_READY (qui, lui, pilote la GALERIE
-  // boutique). Repli sur le SVG si le fichier manque.
+  // Emplacement du VISUEL D'USAGE (scène IRL — image/vidéo, ex. générée IA) :
+  // public/shop/hero-scene.png. Tant qu'il n'existe pas → repli sur le placeholder SVG.
+  // La MAQUETTE produit (tee-hero.png) est désormais dans la BOUTIQUE (/shop), pas ici.
   const showPhoto = !missing;
   return (
     <div className={`relative aspect-square animate-stagger-2 ${className}`}>
       {showPhoto ? (
         <Image
-          src="/shop/tee-hero.png"
-          alt="T-shirt In Real Society — dos avec QR code et face avec le logo ( • )"
-          fill sizes="(min-width: 1024px) 340px, 240px" className="object-contain"
+          src="/shop/hero-scene.png"
+          alt="Quelqu'un remarque et scanne un t-shirt In Real Society dans la rue"
+          fill sizes="(min-width: 1024px) 340px, 240px" className="object-cover rounded-[2px]"
           onError={() => setMissing(true)} priority
         />
       ) : (
