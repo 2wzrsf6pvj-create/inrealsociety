@@ -234,7 +234,9 @@ function SizeGuide() {
 export default function ShopClient() {
   const searchParams = useSearchParams();
   const [email, setEmail]             = useState('');
-  const [tshirtColor, setTshirtColor] = useState<TshirtColor>('dark');
+  // Défaut = BLANC : c'est la seule couleur avec une vraie maquette (public/shop/tee-hero.png)
+  // → le visiteur voit le produit réel dès l'arrivée (le noir n'a encore que le placeholder).
+  const [tshirtColor, setTshirtColor] = useState<TshirtColor>('light');
   const [tshirtSize, setTshirtSize]   = useState<TshirtSize>('M');
   const [taglineId, setTaglineId]     = useState<string | null>(null);
   const [acceptedCgv, setAcceptedCgv] = useState(false);
