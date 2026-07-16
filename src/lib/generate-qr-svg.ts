@@ -308,9 +308,13 @@ export function composeBackPrintSVG(
   // hauteur de capitale raisonnable (sinon les accroches très courtes deviennent énormes).
   const tagW = baked.bbox.x2 - baked.bbox.x1;
   const tagH = baked.bbox.y2 - baked.bbox.y1;
-  const targetW = 0.92 * W;
-  const maxCapH = 0.14 * W;
-  const scale = Math.min(targetW / tagW, maxCapH / tagH);
+  // Hauteur de capitale CONSTANTE (0.085·W) → toutes les accroches ont la MÊME taille de
+  // lettres, quelle que soit leur longueur. Bornée par la largeur (1.0·W) pour que les
+  // phrases très longues ne débordent pas du QR (elles rétrécissent alors un peu — inévitable
+  // sans passer sur 2 lignes). Avant : fit-to-width → lettres plus petites pour les longues.
+  const TAG_CAP_H = 0.085 * W;
+  const TAG_MAX_W = 1.0 * W;
+  const scale = Math.min(TAG_CAP_H / tagH, TAG_MAX_W / tagW);
 
   const drawnW = tagW * scale;
   const drawnH = tagH * scale;

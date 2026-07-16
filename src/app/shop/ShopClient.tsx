@@ -57,6 +57,14 @@ function ProductGallery({ color, taglineId }: { color: TshirtColor; taglineId: s
   // → l'accroche se pose pile sous le QR, quelle que soit la couleur.
   const tagPos = isDark ? { top: '49.5%', left: '51%' } : { top: '50.5%', left: '50%' };
 
+  // Échelle de l'accroche = EXACTEMENT celle du print (composeBackPrintSVG) : bornée par la
+  // hauteur de capitale (0.14·W) puis par la largeur (0.92·W), W = largeur du QR (~31 % de la
+  // photo). Résultat : toutes les accroches ont la MÊME taille de lettres (pas étirées à une
+  // largeur fixe). Sinon une phrase courte sortait en grosses lettres, une longue en petites.
+  const QR_W = 0.309;                                  // largeur QR / largeur photo (relevé)
+  const tagAspect = baked ? (baked.bbox.x2 - baked.bbox.x1) / (baked.bbox.y2 - baked.bbox.y1) : 1;
+  const tagWidthPct = QR_W * Math.min(1.0, 0.085 * tagAspect) * 100;   // cap-height constante
+
   return (
     <div className="flex flex-col gap-3">
       <div className={`relative w-full aspect-square border rounded-[2px] overflow-hidden ${isDark ? 'bg-[#0a0a0a] border-brand-gray/10' : 'bg-[#f0ede8] border-brand-gray/20'}`}>
@@ -73,7 +81,7 @@ function ProductGallery({ color, taglineId }: { color: TshirtColor; taglineId: s
               <div
                 key={`${colorKey}-${taglineId}`}
                 className="absolute animate-fade-in [&_svg]:block [&_svg]:w-full [&_svg]:h-auto"
-                style={{ top: tagPos.top, left: tagPos.left, transform: 'translateX(-50%)', width: '27%' }}
+                style={{ top: tagPos.top, left: tagPos.left, transform: 'translateX(-50%)', width: `${tagWidthPct.toFixed(1)}%` }}
               >
                 <svg viewBox={`${baked.bbox.x1} ${baked.bbox.y1} ${(baked.bbox.x2 - baked.bbox.x1).toFixed(2)} ${(baked.bbox.y2 - baked.bbox.y1).toFixed(2)}`}>
                   <path d={baked.path} fill={isDark ? '#f2f2f2' : '#1a1a1a'} />
