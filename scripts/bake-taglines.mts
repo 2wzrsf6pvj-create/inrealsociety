@@ -7,8 +7,9 @@
 // (Printful/Gelato) n'a peut-être pas → texte remplacé ou disparu sur le tee. Un tracé
 // détouré n'a AUCUNE dépendance. Même discipline que le monogramme )( .
 //
-// Police : Montserrat Bold — c'est la police UI de la marque (--font-ui). Punchy pour la
-// drague ET cohérente avec le site. On la fige ici : le rendu imprimé ne dépend plus d'elle.
+// Police : Cormorant Garamond 400 — LA MÊME que « IN REAL SOCIETY » sous le logo
+// (cf. brand-name.generated). L'accroche sous le QR et le nom sous le mark partagent
+// donc la même griffe. On la fige ici : le rendu imprimé ne dépend plus d'une police.
 
 import opentype from 'opentype.js';
 import { writeFileSync } from 'node:fs';
@@ -17,11 +18,10 @@ import { TAGLINES } from '../src/lib/taglines';
 
 const FONT_SIZE = 200;   // unité de cuisson ; la composition rescale ensuite
 
-// Sources candidates pour un Montserrat Bold STATIQUE (pas variable : opentype 2.0 lit
-// l'instance par défaut d'un variable, pas forcément le bold). On prend la première valide.
+// Sources candidates pour Cormorant Garamond 400 STATIQUE. On prend la première valide.
 const FONT_URLS = [
-  'https://cdn.jsdelivr.net/fontsource/fonts/montserrat@latest/latin-700-normal.ttf',
-  'https://raw.githubusercontent.com/google/fonts/main/ofl/montserrat/static/Montserrat-Bold.ttf',
+  'https://cdn.jsdelivr.net/fontsource/fonts/cormorant-garamond@latest/latin-400-normal.ttf',
+  'https://raw.githubusercontent.com/google/fonts/main/ofl/cormorantgaramond/CormorantGaramond-Regular.ttf',
 ];
 
 function isTTF(buf: Buffer): boolean {
