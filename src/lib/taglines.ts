@@ -60,7 +60,7 @@ export const TAGLINE_LANG_LABELS: Record<TaglineLang, string> = { fr: 'FR', en: 
 export const TAGLINES: readonly Tagline[] = [
   // ══════════════════════ FRANÇAIS ══════════════════════════════════════════
   // ─── Drague / rencontre — le cœur, élégant-invitational ───────────────────
-  { id: 'un-message-une-chance', lang: 'fr', registre: 'drague', text: 'Un message. Une chance.' },
+  { id: 'un-message-une-chance', lang: 'fr', registre: 'drague', text: 'Un message ? Une chance.' },
   { id: 'ecris-sans-connaitre',  lang: 'fr', registre: 'drague', text: 'Écris-moi sans me connaître' },
   { id: 'premier-mot-a-toi',     lang: 'fr', registre: 'drague', text: 'Le premier mot est à toi' },
   { id: 'dis-ce-que-tu-noses',   lang: 'fr', registre: 'drague', text: "Dis-moi ce que tu n'oses pas dire" },
