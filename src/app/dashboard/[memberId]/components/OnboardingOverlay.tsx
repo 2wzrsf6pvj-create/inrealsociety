@@ -6,6 +6,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { haptic } from '@/lib/haptics';
+import { BrandMark } from '@/app/components/ui/BrandMark';
 
 const KEY = 'irs_onboarding_v1';
 
@@ -60,7 +61,7 @@ export default function OnboardingOverlay({ name }: { name?: string }) {
       <div key={i} className="flex flex-col items-center text-center gap-6 max-w-xs animate-stagger-1">
         {s.logo && (
           <div className="w-20 h-20 rounded-full border border-brand-white/20 flex items-center justify-center mb-2">
-            <span className="font-display text-4xl font-light">)(</span>
+            <span className="font-display text-4xl font-light"><BrandMark /></span>
           </div>
         )}
         <h2 className="font-display text-3xl font-light tracking-[0.04em] leading-snug">

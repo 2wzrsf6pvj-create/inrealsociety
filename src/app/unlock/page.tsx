@@ -2,6 +2,7 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { BrandMark } from '@/app/components/ui/BrandMark';
 
 const NAME_REGEX = /^[a-zA-ZÀ-ÿ\s\-']{1,30}$/;
 
@@ -57,7 +58,7 @@ export default function UnlockPage() {
       <main className="relative flex min-h-screen flex-col items-center justify-center bg-brand-black text-brand-white px-6 overflow-hidden">
         <div className="z-10 flex flex-col items-center text-center gap-6 w-full max-w-xs md:max-w-sm animate-stagger-1">
           <div className="w-14 h-14 rounded-full border border-brand-white/20 flex items-center justify-center">
-            <span className="font-display text-base">)(</span>
+            <span className="font-display text-base"><BrandMark /></span>
           </div>
           <div className="flex flex-col gap-2">
             <p className="font-display text-2xl md:text-3xl font-light">Ce lien est incomplet.</p>

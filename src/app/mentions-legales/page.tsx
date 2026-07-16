@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { BrandMark } from '@/app/components/ui/BrandMark';
 
 export const metadata = {
   title: 'Mentions légales — In Real Society',
@@ -30,7 +31,7 @@ export default function MentionsLegalesPage() {
         <div className="flex flex-col gap-4 border-b border-brand-gray/10 pb-8">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full border border-brand-white/40 flex items-center justify-center">
-              <span className="font-display text-sm font-light">)(</span>
+              <span className="font-display text-sm font-light"><BrandMark /></span>
             </div>
             <span className="font-ui text-sm tracking-[0.25em] uppercase text-brand-gray/50">In Real Society</span>
           </div>

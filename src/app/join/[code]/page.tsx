@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
+import { BrandMark } from '@/app/components/ui/BrandMark';
 
 // Le « code » d'invitation est le memberId (UUID) — même identifiant que le lien
 // dashboard /shop?ref=<id> et que ShopClient (qui n'accepte que des UUID).
@@ -32,7 +33,7 @@ export default function JoinPage() {
         <div className="relative flex items-center justify-center animate-float">
           <div className="absolute w-20 h-20 rounded-full border border-brand-white/10 animate-ring-pulse" />
           <div className="w-14 h-14 rounded-full border border-brand-white/30 flex items-center justify-center">
-            <span className="font-display text-2xl font-light">)(</span>
+            <span className="font-display text-2xl font-light"><BrandMark /></span>
           </div>
         </div>
 

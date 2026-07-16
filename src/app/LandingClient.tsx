@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { SHOP_IMAGES_READY } from '@/lib/constants';
+import { BrandMark } from '@/app/components/ui/BrandMark';
 
 // Visuel produit de la hero — affiché seulement quand un mockup existe (flag +
 // onError). Tant que false : rendu null → l'accueil reste exactement comme avant.
@@ -31,7 +32,7 @@ function ProductHero({ className = '' }: { className?: string }) {
           <div className="absolute inset-0" style={{ background: 'radial-gradient(circle at 50% 38%, rgba(255,255,255,0.045), transparent 68%)' }} />
           <span className="absolute top-3 right-3 font-ui text-[0.55rem] text-brand-accent/70 tracking-[0.2em] uppercase">Édition limitée</span>
 
-          {/* T-shirt (silhouette réaliste) + monogramme )( en petit sur la poitrine gauche */}
+          {/* T-shirt (silhouette réaliste) + logo ( • ) en petit sur la poitrine gauche */}
           <div className="relative w-[80%] max-w-[248px] aspect-square flex items-center justify-center">
             <svg viewBox="0 0 200 200" className="w-full h-full" fill="none" aria-hidden="true">
               <defs>
@@ -62,12 +63,12 @@ function ProductHero({ className = '' }: { className?: string }) {
               {/* ourlet bas */}
               <path d="M49,171 L 151,171" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
             </svg>
-            {/* monogramme )( — petit, poitrine gauche (haut-gauche vue de face) */}
+            {/* logo ( • ) — petit, poitrine gauche (haut-gauche vue de face) */}
             <span
-              className="absolute font-display font-light text-brand-white/85 leading-none"
-              style={{ top: '35%', left: '35%', fontSize: 'clamp(0.6rem, 2vw, 0.95rem)', letterSpacing: '-0.04em' }}
+              className="absolute text-brand-white/85 leading-none"
+              style={{ top: '35%', left: '36%', fontSize: 'clamp(0.7rem, 2.4vw, 1.15rem)' }}
             >
-              )(
+              <BrandMark />
             </span>
           </div>
 
@@ -124,16 +125,16 @@ function LandingContent() {
       <div className="absolute bottom-[-10%] right-[-10%] w-64 h-64 lg:w-96 lg:h-96 rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 70%)' }} />
 
-      {/* Signature de marque : monogramme )( géant en filigrane, ANCRÉ EN DÉBORD
-          (bas-gauche) et non centré. Centré, ses arcs traversaient la copie du héros
-          et le )( se lisait une 3e fois (logo + cadre produit) → il se diluait au lieu
-          de s'imposer. En débord, il lit comme une texture de marque. */}
+      {/* Signature de marque : le logo ( • ) géant en filigrane, ANCRÉ EN DÉBORD
+          (bas-gauche) et non centré. Centré, il traversait la copie du héros et se
+          lisait une 3e fois (logo + cadre produit) → il se diluait au lieu de s'imposer.
+          En débord, il lit comme une texture de marque. */}
       <div aria-hidden="true" className="pointer-events-none select-none absolute inset-0 overflow-hidden">
         <span
-          className="absolute font-display font-light leading-none text-brand-white/[0.018]"
+          className="absolute leading-none text-brand-white/[0.018]"
           style={{ fontSize: 'min(72vw, 58vh)', left: '-18%', bottom: '-16%' }}
         >
-          )(
+          <BrandMark />
         </span>
       </div>
 
@@ -152,7 +153,7 @@ function LandingContent() {
           <div className="relative flex items-center justify-center">
             <div className="absolute w-24 h-24 lg:w-28 lg:h-28 rounded-full border border-brand-white/10 animate-ring-pulse" />
             <div className="w-[72px] h-[72px] lg:w-[88px] lg:h-[88px] rounded-full border border-brand-white/40 flex items-center justify-center">
-              <span className="font-display text-3xl md:text-4xl lg:text-5xl font-light tracking-[0.05em]">)(</span>
+              <span className="font-display text-3xl md:text-4xl lg:text-5xl font-light tracking-[0.05em]"><BrandMark /></span>
             </div>
           </div>
           <p className="font-ui text-xs md:text-sm font-light tracking-[0.35em] uppercase text-brand-gray/60">

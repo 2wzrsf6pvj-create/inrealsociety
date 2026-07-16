@@ -16,6 +16,7 @@ function getInitials(name: string): string {
 
 import { SCAN_WINDOW_MS } from '@/lib/constants';
 import type { MemberPlan } from '@/lib/types';
+import { BrandMark } from '@/app/components/ui/BrandMark';
 
 function useCountdown(firstScanAt: string | null, plan?: MemberPlan) {
   const safePlan = (plan === 'premium' ? 'premium' : 'free') as keyof typeof SCAN_WINDOW_MS;
@@ -196,9 +197,9 @@ export default function ProfilClient({
       <div className="absolute bottom-[-10%] left-[-10%] w-52 h-52 rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%)' }} />
 
-      {/* Signature de marque : monogramme )( en filigrane. */}
+      {/* Signature de marque : le logo ( • ) en filigrane. */}
       <div aria-hidden="true" className="pointer-events-none select-none absolute inset-0 flex items-center justify-center overflow-hidden">
-        <span className="font-display font-light leading-none text-brand-white/[0.02]" style={{ fontSize: 'min(80vw, 58vh)' }}>)(</span>
+        <span className="font-display font-light leading-none text-brand-white/[0.02]" style={{ fontSize: 'min(80vw, 58vh)' }}><BrandMark /></span>
       </div>
 
       <div className="z-10 flex flex-col items-center w-full max-w-xs md:max-w-sm gap-6">

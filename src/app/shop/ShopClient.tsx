@@ -7,6 +7,7 @@ import { useSearchParams } from 'next/navigation';
 import { captureEvent } from '@/lib/posthog-client';
 import { SHOP_IMAGES_READY, TSHIRT_PRICE_EUR } from '@/lib/constants';
 import TaglinePicker from '@/app/components/ui/TaglinePicker';
+import { BrandMark } from '@/app/components/ui/BrandMark';
 
 type TshirtColor = 'dark' | 'light';
 type TshirtSize  = 'S' | 'M' | 'L' | 'XL' | 'XXL';
@@ -15,7 +16,7 @@ const SIZES: TshirtSize[] = ['S', 'M', 'L', 'XL', 'XXL'];
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // ─── Galerie produit ──────────────────────────────────────────────────────────
-// Placeholder abstrait (logo )( ) — fallback tant qu'aucune vraie image n'est
+// Placeholder abstrait (logo ( • )) — fallback tant qu'aucune vraie image n'est
 // présente dans /public/shop/.
 function AbstractTee({ color }: { color: TshirtColor }) {
   const isDark = color === 'dark';
@@ -26,7 +27,7 @@ function AbstractTee({ color }: { color: TshirtColor }) {
         <div className={`w-24 h-24 rounded-full border flex items-center justify-center ${isDark ? 'border-brand-white/20' : 'border-brand-black/20'}`}>
           {/* Monochrome comme le vrai print : blanc sur tee noir, noir sur tee blanc
               (l'or reste la couleur de marque à l'écran, pas sur le vêtement). */}
-          <span className={`font-display text-5xl font-light ${isDark ? 'text-brand-white/60' : 'text-brand-black/50'}`}>)(</span>
+          <span className={`font-display text-5xl font-light ${isDark ? 'text-brand-white/60' : 'text-brand-black/50'}`}><BrandMark /></span>
         </div>
       </div>
       <p className={`font-ui text-xs tracking-[0.2em] uppercase ${isDark ? 'text-brand-gray/50' : 'text-brand-black/30'}`}>
@@ -273,7 +274,7 @@ export default function ShopClient() {
         style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 70%)' }} />
 
       <nav className="relative z-10 flex items-center justify-between px-6 py-6 border-b border-brand-gray/10">
-        <Link href="/" className="font-display text-xl font-light tracking-[0.1em]">)(</Link>
+        <Link href="/" className="font-display text-xl font-light tracking-[0.1em]"><BrandMark /></Link>
         <span className="font-ui text-xs text-brand-gray/55 tracking-[0.3em] uppercase">In Real Society</span>
         <Link href="/register" className="font-ui text-xs text-brand-gray/50 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white/80 transition-colors" style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}>
           Membres
@@ -406,7 +407,7 @@ export default function ShopClient() {
               <div className="flex flex-col gap-2 py-4 border-t border-b border-brand-gray/10">
                 {[
                   'T-shirt coton lourd Comfort Colors 1717',
-                  'Monogramme )( imprimé sur la poitrine',
+                  'Logo ( • ) imprimé sur la poitrine',
                   'QR unique + accroche imprimés dans le dos',
                   'Code d\'activation unique par email',
                   'Accès à la plateforme In Real Society',

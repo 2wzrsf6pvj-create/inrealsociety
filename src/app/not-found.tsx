@@ -1,5 +1,6 @@
 // app/not-found.tsx
 import Link from 'next/link';
+import { BrandMark } from '@/app/components/ui/BrandMark';
 
 export default function NotFound() {
   return (
@@ -14,7 +15,7 @@ export default function NotFound() {
         <div className="relative flex items-center justify-center animate-stagger-1">
           <div className="absolute w-24 h-24 rounded-full border border-brand-white/10 animate-ring-pulse" />
           <div className="w-[72px] h-[72px] rounded-full border border-brand-white/20 flex items-center justify-center">
-            <span className="font-display text-3xl font-light tracking-[0.05em] opacity-40">)(</span>
+            <span className="font-display text-3xl font-light tracking-[0.05em] opacity-40"><BrandMark /></span>
           </div>
         </div>
 

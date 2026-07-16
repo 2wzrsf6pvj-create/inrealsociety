@@ -2,6 +2,7 @@
 import Link from 'next/link';
 import { useEffect } from 'react';
 import * as Sentry from '@sentry/nextjs';
+import { BrandMark } from '@/app/components/ui/BrandMark';
 
 export default function GlobalError({ error, reset }: { error: Error & { digest?: string }; reset: () => void }) {
   // Remonte le crash de rendu client à Sentry (onRequestError ne couvre que le serveur).
@@ -10,7 +11,7 @@ export default function GlobalError({ error, reset }: { error: Error & { digest?
     <main className="relative flex min-h-screen flex-col items-center justify-center bg-brand-black text-brand-white px-6">
       <div className="z-10 flex flex-col items-center text-center gap-6 w-full max-w-xs md:max-w-sm">
         <div className="w-14 h-14 rounded-full border border-brand-gray/20 flex items-center justify-center">
-          <span className="font-display text-xl font-light text-brand-gray/50">)(</span>
+          <span className="font-display text-xl font-light text-brand-gray/50"><BrandMark /></span>
         </div>
         <div className="flex flex-col gap-2">
           <p className="font-display text-2xl font-light">Une erreur est survenue.</p>
