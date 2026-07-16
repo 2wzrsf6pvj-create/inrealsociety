@@ -5,9 +5,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { captureEvent } from '@/lib/posthog-client';
-import { SHOP_IMAGES_READY, TSHIRT_PRICE_EUR } from '@/lib/constants';
+import { TSHIRT_PRICE_EUR } from '@/lib/constants';
+import { BAKED_TAGLINES } from '@/lib/taglines.generated';
 import TaglinePicker from '@/app/components/ui/TaglinePicker';
-import TaglinePreview from '@/app/components/ui/TaglinePreview';
 import { BrandMark } from '@/app/components/ui/BrandMark';
 
 type TshirtColor = 'dark' | 'light';
@@ -38,60 +38,53 @@ function AbstractTee({ color }: { color: TshirtColor }) {
   );
 }
 
-// Galerie : affiche /public/shop/tee-{noir|blanc}-{dos|face}.webp (mockups Printful).
-// Le DOS (QR) est montré en premier — c'est l'argument de vente. onError = filet
-// si un fichier manque malgré le flag. Cf. public/shop/README.txt.
-function ProductGallery({ color }: { color: TshirtColor }) {
+// Galerie produit : photos Printful réelles (public/shop/tee-{noir|blanc}-{dos|face}.png),
+// toggle Avant / Arrière. Sur le DOS, l'accroche choisie est incrustée EN DIRECT sous le QR
+// (le QR est déjà sur la photo). Repli sur le placeholder abstrait si une photo manque (ex.
+// le NOIR, pas encore shooté). Position du QR relevée sur la photo : centré, bas ~49,5 %.
+function ProductGallery({ color, taglineId }: { color: TshirtColor; taglineId: string | null }) {
   const [view, setView]       = useState<'back' | 'front'>('back');
   const [missing, setMissing] = useState<Record<string, boolean>>({});
   const isDark   = color === 'dark';
   const colorKey = isDark ? 'noir' : 'blanc';
-  const src      = `/shop/tee-${colorKey}-${view}.webp`;
-  const fallback = !SHOP_IMAGES_READY || !!missing[src];
+  const viewKey  = view === 'back' ? 'dos' : 'face';
+  const src      = `/shop/tee-${colorKey}-${viewKey}.png`;
+  const hasPhoto = !missing[src];
 
-  // Maquette produit réelle (face + dos combinés), déplacée de l'accueil vers la boutique.
-  // Disponible pour le BLANC (public/shop/tee-hero.png) ; le NOIR n'a pas encore de mockup
-  // → placeholder abstrait. Affichée telle quelle tant qu'on n'a pas les 4 vues séparées.
-  const heroSrc = '/shop/tee-hero.png';
-  if (!isDark && !missing[heroSrc]) {
-    return (
-      <div className="relative w-full aspect-square border rounded-[2px] overflow-hidden bg-[#f0ede8] border-brand-gray/20">
-        <Image
-          src={heroSrc}
-          alt="T-shirt In Real Society Blanc — dos (QR code) et face (logo ( • ))"
-          fill sizes="(max-width: 768px) 100vw, 420px" className="object-contain p-3"
-          onError={() => setMissing(m => ({ ...m, [heroSrc]: true }))} priority
-        />
-      </div>
-    );
-  }
+  const baked = taglineId ? BAKED_TAGLINES[taglineId] : null;
 
   return (
     <div className="flex flex-col gap-3">
-      <div className={`relative w-full aspect-square border rounded-[2px] overflow-hidden transition-colors ${isDark ? 'bg-[#0a0a0a] border-brand-gray/10' : 'bg-[#f0ede8] border-brand-gray/20'}`}>
-        {fallback ? (
-          <AbstractTee color={color} />
+      <div className={`relative w-full aspect-square border rounded-[2px] overflow-hidden ${isDark ? 'bg-[#0a0a0a] border-brand-gray/10' : 'bg-[#f0ede8] border-brand-gray/20'}`}>
+        {hasPhoto ? (
+          <>
+            <Image
+              src={src}
+              alt={`T-shirt In Real Society ${isDark ? 'Noir' : 'Blanc'} — ${view === 'back' ? 'dos avec QR code' : 'face avec le logo'}`}
+              fill sizes="(max-width: 768px) 100vw, 420px" className="object-contain"
+              onError={() => setMissing(m => ({ ...m, [src]: true }))} priority
+            />
+            {/* Accroche incrustée EN DIRECT sous le QR (dos uniquement) — même encre que le print. */}
+            {view === 'back' && baked && (
+              <div
+                key={`${colorKey}-${taglineId}`}
+                className="absolute left-1/2 -translate-x-1/2 animate-fade-in [&_svg]:block [&_svg]:w-full [&_svg]:h-auto"
+                style={{ top: '51%', width: '27%' }}
+              >
+                <svg viewBox={`${baked.bbox.x1} ${baked.bbox.y1} ${(baked.bbox.x2 - baked.bbox.x1).toFixed(2)} ${(baked.bbox.y2 - baked.bbox.y1).toFixed(2)}`}>
+                  <path d={baked.path} fill={isDark ? '#f2f2f2' : '#1a1a1a'} />
+                </svg>
+              </div>
+            )}
+          </>
         ) : (
-          <Image
-            src={src}
-            alt={`T-shirt In Real Society ${isDark ? 'Noir' : 'Blanc'} — ${view === 'back' ? 'dos avec QR code' : 'face'}`}
-            fill
-            sizes="(max-width: 768px) 100vw, 420px"
-            className="object-cover"
-            onError={() => setMissing(m => ({ ...m, [src]: true }))}
-            priority
-          />
-        )}
-        {SHOP_IMAGES_READY && view === 'back' && !fallback && (
-          <span className="absolute bottom-2 left-2 px-2 py-1 rounded-[2px] bg-black/50 backdrop-blur-sm font-ui text-xxs tracking-[0.15em] uppercase text-brand-white/80">
-            QR au dos
-          </span>
+          <AbstractTee color={color} />
         )}
       </div>
-      {/* Toggle face/dos UNIQUEMENT quand les images existent (sinon il ne change rien). */}
-      {SHOP_IMAGES_READY && (
+      {/* Toggle Avant / Arrière — seulement si la photo de cette couleur existe. */}
+      {hasPhoto && (
         <div className="flex gap-2">
-          {([['back', 'Dos (QR)'], ['front', 'Face']] as const).map(([v, label]) => (
+          {([['back', 'Arrière'], ['front', 'Avant']] as const).map(([v, label]) => (
             <button key={v} type="button" onClick={() => setView(v)}
               className={`flex-1 py-2 rounded-[2px] border font-ui text-xxs tracking-[0.15em] uppercase transition-all ${
                 view === v ? 'border-brand-white/60 bg-brand-white/5 text-brand-white' : 'border-brand-gray/15 text-brand-gray/55 hover:border-brand-gray/30'
@@ -346,7 +339,7 @@ export default function ShopClient() {
             <div className="lg:w-1/2 lg:sticky lg:top-24">
               {/* Visuel produit — galerie (mockups réels dans /public/shop si présents,
                   sinon fallback placeholder). Dos+QR montré en premier. */}
-              <ProductGallery color={tshirtColor} />
+              <ProductGallery color={tshirtColor} taglineId={taglineId} />
             </div>
 
             {/* Colonne achat — sélecteurs + accroche + infos + formulaire */}
@@ -409,10 +402,9 @@ export default function ShopClient() {
               </div>
             </div>
 
-            {/* Accroche imprimée sous le QR — le hameçon qui donne envie de scanner */}
+            {/* Accroche imprimée sous le QR — le hameçon qui donne envie de scanner.
+                L'aperçu est désormais dans la galerie (vue Arrière), plus de carte séparée. */}
             <TaglinePicker value={taglineId} onChange={setTaglineId} tshirtColor={tshirtColor} />
-            {/* Aperçu LIVE sous les choix : l'imprimé du dos se met à jour avec l'accroche + la couleur. */}
-            <TaglinePreview taglineId={taglineId} tshirtColor={tshirtColor} />
 
             {/* Infos produit */}
             <div className="flex flex-col gap-4">
