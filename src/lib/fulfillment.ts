@@ -66,11 +66,15 @@ export const PRINT_QUIET_MODULES = 0;
  */
 export const NOMINAL_QR_MODULES = 29;
 
-/** FACE : monogramme )( petit, POITRINE GAUCHE DU PORTEUR.
- *  Vu de face, la poitrine gauche du porteur est à DROITE de l'image → `left`
- *  supérieur au centre (qui serait (1800-300)/2 = 750).
- *  Pour un print CENTRÉ poitrine à la place : left = 750. */
-const FRONT_POSITION = { ...PRINT_AREA, width: 300, height: 300, top: 400, left: 1060 };
+/** FACE : lockup )( + « IN REAL SOCIETY », POITRINE GAUCHE DU PORTEUR.
+ *  Le lockup est PAYSAGE (nom sur une ligne) → largeur ~9 cm pour que le nom se lise.
+ *  Hauteur dérivée du ratio réel du fichier (cf. fulfillOrder) — ne pas figer un carré,
+ *  sinon Printful déforme. `left` place le centre côté poitrine gauche du porteur
+ *  (à DROITE de l'image vue de face).
+ *  ⚠️ À VALIDER dans le Mockup Generator (taille/centrage du print poitrine). */
+const FRONT_WIDTH_PX = Math.round(9 * PX_PER_CM);   // ~531 px ≈ 9 cm
+const FRONT_CENTER_X = 1180;                         // centre du print, poitrine gauche du porteur
+const FRONT_TOP      = 400;
 
 const VALID_SIZES: readonly string[] = ['S', 'M', 'L', 'XL', 'XXL'];
 function coerceSize(raw: string | null | undefined): TshirtSize {
@@ -223,8 +227,10 @@ export async function fulfillOrder({ orderId, memberId, tshirtColor, tshirtSize 
   // Upload en `upsert` sur un chemin fixe → écrit une fois, ré-écrit à l'identique
   // ensuite. Pas de fichier par membre.
   let frontUrl: string | null = null;
+  let frontAspect = 1;                            // hauteur/largeur du lockup (pour la zone Printful)
   if (PRINT_FRONT_LOGO) {
     const monogram = generateBrandMonogramSVG(tshirtColor);
+    frontAspect = monogram.height / monogram.width;
     const logoPath = `_brand/logo-front-${tshirtColor}.svg`;
     const { error: logoErr } = await supabaseAdmin.storage
       .from('qrcodes')
@@ -276,6 +282,16 @@ export async function fulfillOrder({ orderId, memberId, tshirtColor, tshirtSize 
       top:    Math.min(BACK_POSITION.top, PRINT_AREA.area_height - backHeight),
     };
 
+    // Face : lockup )( + nom, PAYSAGE. Hauteur = ratio réel du fichier (pas de carré figé).
+    const frontHeight   = Math.round(FRONT_WIDTH_PX * frontAspect);
+    const frontPosition = {
+      ...PRINT_AREA,
+      width:  FRONT_WIDTH_PX,
+      height: frontHeight,
+      left:   Math.round(FRONT_CENTER_X - FRONT_WIDTH_PX / 2),
+      top:    FRONT_TOP,
+    };
+
     const payload: PrintfulOrderPayload & { external_id: string } = {
       external_id: orderId,
       recipient: shipping,
@@ -286,8 +302,8 @@ export async function fulfillOrder({ orderId, memberId, tshirtColor, tshirtSize 
         files: [
           // Dos : le QR unique du porteur (+ accroche dessous si choisie).
           { type: 'back' as const, url: publicUrl, position: backPosition },
-          // Face : le monogramme )( (si activé). Deux emplacements = coût Printful supérieur.
-          ...(frontUrl ? [{ type: 'front' as const, url: frontUrl, position: FRONT_POSITION }] : []),
+          // Face : le lockup )( + nom (si activé). Deux emplacements = coût Printful supérieur.
+          ...(frontUrl ? [{ type: 'front' as const, url: frontUrl, position: frontPosition }] : []),
         ],
       }],
     };

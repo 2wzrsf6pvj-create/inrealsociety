@@ -25,7 +25,7 @@ vi.mock('@/lib/generate-qr-svg', () => ({
   // Dos = QR + accroche composés en un seul SVG (le carré 1×1 suffit pour ce test).
   composeBackPrintSVG: vi.fn(() => ({ svg: '<svg/>', buffer: Buffer.from('x'), width: 1, height: 1, modules: 29, taglineId: null })),
   // Monogramme )( poitrine (print face) — uploadé par fulfillOrder quand PRINT_FRONT_LOGO.
-  generateBrandMonogramSVG: vi.fn(() => ({ svg: '<svg/>', buffer: Buffer.from('m') })),
+  generateBrandMonogramSVG: vi.fn(() => ({ svg: '<svg/>', buffer: Buffer.from('m'), width: 900, height: 496 })),
 }));
 
 vi.mock('@/lib/short-code', () => ({
@@ -137,12 +137,14 @@ describe('fulfillOrder — garantie short_code (H3)', () => {
     const call = fetchMock.mock.calls.find(([url]) => String(url).includes('api.printful.com/orders'));
     expect(call).toBeTruthy();
     const body  = JSON.parse((call![1] as RequestInit).body as string);
-    const files = body.items[0].files as Array<{ type: string; position: { width: number; left: number } }>;
+    const files = body.items[0].files as Array<{ type: string; position: { width: number; height: number; left: number } }>;
 
     expect(files.map(f => f.type)).toEqual(['back', 'front']);
     // QR : dimensionné pour ~2,5 m de scan (cf. « Géométrie d'impression »).
     expect(files[0].position.width).toBe(BACK_POSITION.width);
-    expect(files[1].position.width).toBe(300);   // monogramme : petit, poitrine
+    // Face = lockup )( + « IN REAL SOCIETY » : PAYSAGE (plus large que haut), ~9 cm.
+    expect(files[1].position.width).toBeGreaterThan(300);
+    expect(files[1].position.height).toBeLessThan(files[1].position.width);
     // Poitrine GAUCHE du porteur = à droite de la zone d'impression (centre = 750).
     expect(files[1].position.left).toBeGreaterThan(750);
   });

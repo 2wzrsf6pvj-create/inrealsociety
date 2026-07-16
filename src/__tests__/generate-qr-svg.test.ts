@@ -3,6 +3,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { generatePremiumQRCode, generateBrandMonogramSVG } from '@/lib/generate-qr-svg';
+import { PAREN_LEFT_PATH } from '@/lib/brand-mark.generated';
 
 const TEST_URL = 'https://inreal.me/u8';
 
@@ -47,21 +48,24 @@ describe('generatePremiumQRCode', () => {
       expect(result.svg).toContain('fill-rule="evenodd"');
     });
 
-    it('devrait utiliser les CONTOURS du vrai glyphe )( (Cormorant 300), pas un dessin à la main', () => {
-      // Garde anti-régression : le print doit être identique au logo du site.
-      // Fragment stable du tracé extrait du TTF (début du glyphe « ) »).
-      expect(result.svg).toContain('M239-304Q239-211');
-      // Contours REMPLIS, donc aucun <path stroke=...> (l'ancien logo était 2 arcs stroke).
+    it('devrait utiliser le mark ( • ) — parenthèses Cormorant détourées + point central', () => {
+      // Garde anti-régression : le centre du QR = le mark de marque ( • ), cohérent
+      // avec le lockup poitrine. Tracé figé de la « ( » (aucune dépendance police).
+      expect(result.svg).toContain(PAREN_LEFT_PATH);
+      // Contours REMPLIS, aucun <path stroke=...>.
       expect(result.svg).not.toMatch(/<path[^>]*stroke=/);
       // Ajusté dans la zone logo via un transform (translate + scale).
       expect(result.svg).toMatch(/<g transform="translate\([^)]+\) scale\([^)]+\)">/);
+      // La pupille : un cercle central (le point du ( • )).
+      expect(result.svg).toContain('<circle');
     });
 
     it('ne devrait PAS avoir de disque de fond derrière le logo', () => {
-      // Garde anti-régression : un disque blanc rendrait le )( blanc invisible sur
-      // le tee noir, et déposerait une rondelle d'encre inutile.
-      expect(result.svg).not.toContain('<circle');
+      // Garde anti-régression : pas de rondelle d'encre de fond (le tissu fait le fond).
+      // Un SEUL cercle = la pupille du ( • ), en encre — pas un disque opaque.
       expect(result.svg).not.toContain('fill="white"');
+      const circles = result.svg.match(/<circle/g) ?? [];
+      expect(circles.length).toBe(1);
     });
   });
 

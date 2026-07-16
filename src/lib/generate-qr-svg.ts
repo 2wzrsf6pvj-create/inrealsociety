@@ -11,6 +11,10 @@
 // le monogramme du dos est enfin de la même couleur que celui de la poitrine.
 
 import qrGenerator from 'qrcode-generator';
+import { LOCKUP_NAME_PATH, LOCKUP_NAME_BBOX } from '@/lib/brand-name.generated';
+import {
+  PAREN_LEFT_PATH, PAREN_LEFT_BBOX, PAREN_RIGHT_PATH, PAREN_RIGHT_BBOX,
+} from '@/lib/brand-mark.generated';
 
 // ─── Couleurs ─────────────────────────────────────────────────────────────────
 
@@ -113,51 +117,19 @@ function renderFinderEye(x: number, y: number, s: number, color: string): string
   return ring + inner;
 }
 
-// ─── Monogramme de marque « )( » — CONTOURS DU VRAI GLYPHE ───────────────────
-//
-// Le site rend le « )( » comme un GLYPHE typographique : les parenthèses de
-// **Cormorant Garamond**, graisse **300** (`font-light`, cf. layout.tsx), avec
-// `tracking-[0.05em]`. Les traits y sont *modulés* (fins aux extrémités, épais au
-// ventre) et les terminaisons effilées.
-//
-// Le print utilisait auparavant deux arcs de Bézier dessinés à la main, d'épaisseur
-// UNIFORME et à bouts ronds → une forme trapue qui ne ressemblait pas au logo du site
-// (elle lisait comme un nœud papillon). On utilise désormais les **contours exacts**
-// du glyphe, extraits du TTF variable (défaut wght=300) et figés ici :
-//   → aucune dépendance à une police au moment de l'impression (Printful reçoit du
-//     vecteur pur), et le print est identique au site.
-//
-// Repère du tracé : opentype `getPath(0, 0, 1000)` — y vers le bas, ligne de base à 0.
-const MONOGRAM_PATH = 'M239-304Q239-211 215-128.50Q191-46 145.50 17.50Q100 81 35 117Q34 118 31.50 115.50Q29 113 31 111Q110 39 145-65Q180-169 180-304Q180-439 145-543Q110-647 31-719Q29-721 31.50-723.50Q34-726 35-725Q100-689 145.50-625.50Q191-562 215-480Q239-398 239-304M429-304Q429-398 453-480Q477-562 522.50-625.50Q568-689 633-725Q635-726 637-723.50Q639-721 637-719Q558-647 523-543Q488-439 488-304Q488-169 523-65Q558 39 637 111Q639 112 637 115Q635 118 633 117Q568 80 522.50 17Q477-46 453-128.50Q429-211 429-304';
-const MONOGRAM_BBOX = { x1: 30.11, y1: -725.29, x2: 638, y2: 117.29 };
-
-/**
- * Place le monogramme )( (contours remplis, PAS de stroke) ajusté dans le carré
- * `[x, y, size]`. `padRatio` = marge intérieure (fraction de `size`).
- */
-function renderMonogram(x: number, y: number, size: number, color: string, padRatio = 0): string {
-  const w = MONOGRAM_BBOX.x2 - MONOGRAM_BBOX.x1;
-  const h = MONOGRAM_BBOX.y2 - MONOGRAM_BBOX.y1;
-  const inner = size * (1 - 2 * padRatio);
-  const s  = Math.min(inner / w, inner / h);   // conserve le ratio (le glyphe est haut)
-  const tx = x + (size - w * s) / 2 - MONOGRAM_BBOX.x1 * s;
-  const ty = y + (size - h * s) / 2 - MONOGRAM_BBOX.y1 * s;
-  return `<g transform="translate(${tx.toFixed(2)},${ty.toFixed(2)}) scale(${s.toFixed(5)})">`
-       + `<path d="${MONOGRAM_PATH}" fill="${color}"/></g>`;
-}
-
 // ─── Logo central du QR ──────────────────────────────────────────────────────
+// Le mark « ( • ) » (renderEyeMark, défini plus bas) sert à la fois au centre du QR
+// et au lockup poitrine. L'ancien monogramme )( est retiré (marque migrée vers ( • ),
+// cf. brand-mark.generated + ADR risque Hurley).
 
 /**
- * Le monogramme )( au centre du QR.
+ * Le mark de marque « ( • ) » au centre du QR — cohérent avec le lockup poitrine.
  *
- * Pas de disque de fond : en monochrome, un )( blanc sur un disque blanc serait
- * invisible. Le tissu joue le fond — les modules sont déjà évidés sur cette zone
- * (la correction d'erreur H tolère les ~2,3 % de modules masqués).
- *
- * Le glyphe )( est plus HAUT que large : ajusté au carré, il touchait les modules
- * et se lisait comme un œil, plus comme deux parenthèses. La marge interne lui rend
- * sa contre-forme.
+ * Pas de disque de fond : en monochrome, du blanc sur un disque blanc serait invisible.
+ * Le tissu joue le fond — les modules sont déjà évidés sur cette zone (la correction
+ * d'erreur H tolère les ~2,3 % de modules masqués). Le mark reste DANS la zone logo
+ * (marge interne) → il n'encre aucun module actif, le décodage est préservé (test jsQR).
+ * `renderEyeMark` place le point pile au centre (cx, cy) du QR.
  */
 function renderLogo(
   cx: number,
@@ -165,8 +137,8 @@ function renderLogo(
   logoSize: number,
   color: string,
 ): string {
-  const half = logoSize / 2;
-  return renderMonogram(cx - half, cy - half, logoSize, color, 0.14);
+  const H = logoSize * (1 - 2 * 0.12);   // hauteur des parenthèses dans la zone logo
+  return renderEyeMark(cx, cy - H / 2, H, color).svg;
 }
 
 // ─── Fonction principale ──────────────────────────────────────────────────────
@@ -369,18 +341,82 @@ export function composeBackPrintSVG(
 // ─── Monogramme de marque « )( » — impression POITRINE ────────────────────────
 
 /**
- * Monogramme )( standalone : le vrai glyphe, sans QR ni disque de fond (impression
- * directe sur tissu). Même encre que le QR du dos — blanc sur noir, noir sur blanc.
+ * Le mark de marque « ( • ) » : deux parenthèses Cormorant se faisant face (un œil /
+ * une lentille) avec un point au centre (la pupille / le regard). Placé dans la boîte
+ * `[cx (centré), top (haut visuel), H (hauteur des parenthèses)]`. Tracés figés
+ * (brand-mark.generated) → aucune dépendance police au rendu POD.
+ */
+function renderEyeMark(cx: number, top: number, H: number, color: string): { svg: string; width: number } {
+  const glyphH = PAREN_LEFT_BBOX.y2 - PAREN_LEFT_BBOX.y1;
+  const s = H / glyphH;
+  const lw = (PAREN_LEFT_BBOX.x2 - PAREN_LEFT_BBOX.x1) * s;
+  const rw = (PAREN_RIGHT_BBOX.x2 - PAREN_RIGHT_BBOX.x1) * s;
+  const gap = 0.26 * H;                          // écart ( ↔ ) = ouverture de l'œil
+  const totalW = lw + gap + rw;
+  const startX = cx - totalW / 2;
+  const lTx = startX - PAREN_LEFT_BBOX.x1 * s;
+  const lTy = top - PAREN_LEFT_BBOX.y1 * s;
+  const rTx = startX + lw + gap - PAREN_RIGHT_BBOX.x1 * s;
+  const rTy = top - PAREN_RIGHT_BBOX.y1 * s;
+  const svg =
+    `<g transform="translate(${lTx.toFixed(2)},${lTy.toFixed(2)}) scale(${s.toFixed(5)})"><path d="${PAREN_LEFT_PATH}" fill="${color}"/></g>`
+    + `<g transform="translate(${rTx.toFixed(2)},${rTy.toFixed(2)}) scale(${s.toFixed(5)})"><path d="${PAREN_RIGHT_PATH}" fill="${color}"/></g>`
+    + `<circle cx="${cx.toFixed(2)}" cy="${(top + H / 2).toFixed(2)}" r="${(0.07 * H).toFixed(2)}" fill="${color}"/>`;
+  return { svg, width: totalW };
+}
+
+/**
+ * Lockup de marque POITRINE : le mark « ( • ) » au-dessus, « IN REAL SOCIETY » détouré
+ * en dessous (Cormorant, interlettrage large = signature couture). Sans QR ni fond.
+ * Même encre que le QR du dos — blanc sur noir, noir sur blanc.
+ *
+ * Pourquoi ( • ) + NOM et pas un emblème seul : un symbole isolé lit comme une marque
+ * abstraite et augmente le risque de confusion (cf. )( ≈ Hurley, classe 25). Accolé au
+ * nom, il devient une signature identifiée « In Real Society » → impression d'ensemble
+ * distincte. Le mark ne s'utilise JAMAIS seul sur le produit. (Parenthèses + nom = tracés
+ * figés, cf. brand-mark/brand-name.generated : aucune dépendance police au rendu POD.)
  *
  * IDENTIQUE POUR TOUS LES PORTEURS (contrairement au QR du dos, unique par membre)
  * → uploadé une seule fois par thème, en upsert (cf. fulfillment.ts).
  */
-export function generateBrandMonogramSVG(theme: 'dark' | 'light'): { svg: string; buffer: Buffer } {
+export function generateBrandMonogramSVG(theme: 'dark' | 'light'): { svg: string; buffer: Buffer; width: number; height: number } {
   const color = getInkColor(theme);
+
+  // ─── Mark ( • ) (haut) ──────────────────────────────────────────────────
+  const MARK_H = 300;                           // hauteur des parenthèses
+  const PAD_TOP = 44;
+  // ─── Nom « IN REAL SOCIETY » (bas), tracé figé corps LOCKUP_NAME_SIZE ────
+  const nameScale = 0.33;                       // ~ corps 66 (cf. LOCKUP_NAME_SIZE=200)
+  const nameW = (LOCKUP_NAME_BBOX.x2 - LOCKUP_NAME_BBOX.x1) * nameScale;
+  const nameH = (LOCKUP_NAME_BBOX.y2 - LOCKUP_NAME_BBOX.y1) * nameScale;
+  const GAP = 64;                               // espace mark ↔ nom
+  const PAD_SIDE = 48;
+  const PAD_BOT = 40;
+
+  // largeur du mark (pour dimensionner le canvas avant de dessiner)
+  const glyphH = PAREN_LEFT_BBOX.y2 - PAREN_LEFT_BBOX.y1;
+  const sMark = MARK_H / glyphH;
+  const markW = (PAREN_LEFT_BBOX.x2 - PAREN_LEFT_BBOX.x1) * sMark
+    + 0.26 * MARK_H + (PAREN_RIGHT_BBOX.x2 - PAREN_RIGHT_BBOX.x1) * sMark;
+
+  const W = Math.round(Math.max(nameW, markW) + PAD_SIDE * 2);
+  const markBottom = PAD_TOP + MARK_H;
+  const H = Math.round(markBottom + GAP + nameH + PAD_BOT);
+
+  const mark = renderEyeMark(W / 2, PAD_TOP, MARK_H, color);
+
+  // nom centré horizontalement, posé sous le mark
+  const nx = (W - nameW) / 2 - LOCKUP_NAME_BBOX.x1 * nameScale;
+  const ny = markBottom + GAP - LOCKUP_NAME_BBOX.y1 * nameScale;
+  const nameGrp =
+    `<g transform="translate(${nx.toFixed(2)},${ny.toFixed(2)}) scale(${nameScale})">`
+    + `<path d="${LOCKUP_NAME_PATH}" fill="${color}"/></g>`;
+
   const svg = [
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">',
-    renderMonogram(0, 0, 400, color, 0.08),
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">`,
+    mark.svg,
+    nameGrp,
     '</svg>',
   ].join('\n');
-  return { svg, buffer: Buffer.from(svg, 'utf-8') };
+  return { svg, buffer: Buffer.from(svg, 'utf-8'), width: W, height: H };
 }
