@@ -410,9 +410,9 @@ export default function ShopClient() {
             </div>
 
             {/* Accroche imprimée sous le QR — le hameçon qui donne envie de scanner */}
-            {/* Aperçu LIVE : le dos du tee se met à jour avec l'accroche + la couleur choisies. */}
-            <TaglinePreview taglineId={taglineId} tshirtColor={tshirtColor} />
             <TaglinePicker value={taglineId} onChange={setTaglineId} tshirtColor={tshirtColor} />
+            {/* Aperçu LIVE sous les choix : l'imprimé du dos se met à jour avec l'accroche + la couleur. */}
+            <TaglinePreview taglineId={taglineId} tshirtColor={tshirtColor} />
 
             {/* Infos produit */}
             <div className="flex flex-col gap-4">

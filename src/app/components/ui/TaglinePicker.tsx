@@ -6,8 +6,7 @@
 // Deux niveaux, VISUELLEMENT DISTINCTS pour qu'on sache ce qui est quoi :
 //  - niveau 1 = la CATÉGORIE → onglets soulignés (navigation, pas un choix) ;
 //  - niveau 2 = le CHOIX → puces bordées (« QR seul » + les accroches).
-// L'aperçu est un mini-DOS (QR décoratif + accroche dessous) : il montre le vrai
-// placement et la vraie encre (blanc sur noir / noir sur blanc, cf. getInkColor).
+// L'aperçu du dos vit à côté (composant TaglinePreview), pas ici — on ne montre que le CHOIX.
 
 import { useState } from 'react';
 import {
@@ -28,23 +27,6 @@ const SHORT: Record<TaglineRegistre, string> = {
   'amitie':         'Amitié',
 };
 
-/** Petit QR décoratif (non scannable) pour l'aperçu — 3 yeux + quelques modules. */
-function MiniQr({ color }: { color: string }) {
-  const eye = (x: number, y: number) => (
-    <>
-      <rect x={x} y={y} width={13} height={13} rx={2.5} fill="none" stroke={color} strokeWidth={2.5} />
-      <rect x={x + 4.5} y={y + 4.5} width={4} height={4} rx={1} fill={color} />
-    </>
-  );
-  const dots = [[19, 3], [24, 8], [19, 13], [29, 3], [3, 19], [8, 24], [13, 19], [24, 19], [29, 24], [19, 24], [24, 29], [19, 29], [29, 19]];
-  return (
-    <svg width="40" height="40" viewBox="0 0 42 42" aria-hidden="true">
-      {eye(0, 0)}{eye(29, 0)}{eye(0, 29)}
-      {dots.map(([x, y], i) => <rect key={i} x={x} y={y} width={3.2} height={3.2} rx={0.8} fill={color} />)}
-    </svg>
-  );
-}
-
 export default function TaglinePicker({ value, onChange, tshirtColor }: {
   value: string | null;
   onChange: (id: string | null) => void;
@@ -59,11 +41,6 @@ export default function TaglinePicker({ value, onChange, tshirtColor }: {
 
   const [openReg, setOpenReg] = useState<TaglineRegistre>(current?.registre ?? 'drague');
   const openGroup = groups.find((g) => g.registre === openReg) ?? groups[0];
-
-  // Aperçu fidèle au tee : encre blanche sur noir, noire sur blanc.
-  const dark = tshirtColor !== 'light';
-  const bg = dark ? '#0a0a0a' : '#ffffff';
-  const ink = dark ? '#ffffff' : '#0a0a0a';
 
   return (
     <div className="flex flex-col gap-3">
@@ -149,20 +126,6 @@ export default function TaglinePicker({ value, onChange, tshirtColor }: {
         </div>
       </div>
 
-      {/* Aperçu = mini-DOS : QR décoratif + accroche dessous, à la vraie place et à la vraie encre */}
-      <div className="flex flex-col gap-1.5">
-        <p className="font-ui text-xxs text-brand-gray/40 tracking-[0.15em] uppercase">Aperçu du dos</p>
-        <div
-          className="flex flex-col items-center justify-center gap-2 rounded-[2px] border border-brand-gray/15 px-4 py-5"
-          style={{ background: bg, color: ink }}
-          aria-live="polite"
-        >
-          <MiniQr color={ink} />
-          {current
-            ? <span className="font-ui font-bold text-sm leading-tight text-center">{current.text}</span>
-            : <span className="font-ui text-xs italic" style={{ opacity: 0.5 }}>sans accroche</span>}
-        </div>
-      </div>
     </div>
   );
 }
