@@ -87,9 +87,14 @@ function ProductGallery({ color, taglineId }: { color: TshirtColor; taglineId: s
               />
               {baked && (
                 <div
-                  key={`${colorKey}-${taglineId}`}
-                  className="absolute animate-fade-in [backface-visibility:hidden] [&_svg]:block [&_svg]:w-full [&_svg]:h-auto"
-                  style={{ top: tagPos.top, left: tagPos.left, transform: 'translateX(-50%)', width: `${tagWidthPct.toFixed(1)}%` }}
+                  className="absolute [backface-visibility:hidden] [&_svg]:block [&_svg]:w-full [&_svg]:h-auto"
+                  style={{
+                    top: tagPos.top,
+                    // Centrage SANS transform (le transform promeut un calque qui échappe au
+                    // masquage de la face arrière → l'accroche « traînait » pendant le flip).
+                    left: `calc(${tagPos.left} - ${(tagWidthPct / 2).toFixed(2)}%)`,
+                    width: `${tagWidthPct.toFixed(1)}%`,
+                  }}
                 >
                   <svg viewBox={`${baked.bbox.x1} ${baked.bbox.y1} ${(baked.bbox.x2 - baked.bbox.x1).toFixed(2)} ${(baked.bbox.y2 - baked.bbox.y1).toFixed(2)}`}>
                     <path d={baked.path} fill={isDark ? '#f2f2f2' : '#1a1a1a'} />
