@@ -6,6 +6,7 @@ import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { SHOP_IMAGES_READY } from '@/lib/constants';
 import { BrandMark } from '@/app/components/ui/BrandMark';
+import { captureEvent } from '@/lib/posthog-client';
 
 // Visuel produit de la hero — affiché seulement quand un mockup existe (flag +
 // onError). Tant que false : rendu null → l'accueil reste exactement comme avant.
@@ -92,7 +93,13 @@ function LandingContent() {
   const [memberName, setMemberName]   = useState('');
   const [qrError, setQrError]         = useState('');
 
+  // Arrivée depuis le tee démo/héros (QR → /?src=tee) : hero « miroir » + tracking.
+  const fromTee = searchParams.get('src') === 'tee';
+
   useEffect(() => {
+    // Le visiteur vient de scanner le tee démo : on trace le geste (funnel scan → boutique).
+    if (searchParams.get('src') === 'tee') captureEvent('tee_demo_scanned', { source: 'tee' });
+
     // Compat legacy : t-shirts imprimés avec QR pointant sur /?id=<UUID>.
     // Les nouveaux QR utilisent les URLs courtes /r/<code>. On valide le format
     // UUID avant de rediriger pour ne pas envoyer le visiteur sur un /profil/xxx
@@ -180,7 +187,7 @@ function LandingContent() {
               <p className="font-ui text-sm text-red-400/80 text-center">{qrError}</p>
             </div>
           )}
-          {scannerName && hasMemberId ? (
+          {!fromTee && scannerName && hasMemberId ? (
             <div className="flex flex-col gap-2">
               <h1 className="font-display text-2xl md:text-3xl font-light leading-snug">
                 Vous êtes de retour,<br />
@@ -202,14 +209,30 @@ function LandingContent() {
             </div>
           ) : (
             <div className="flex flex-col gap-4">
-              <h1 className="font-display text-2xl md:text-3xl lg:text-4xl font-light leading-snug tracking-[0.02em]">
-                Un QR.<br />
-                <span className="text-brand-gray/50">Une rencontre.</span>
-              </h1>
-              <p className="font-ui text-sm lg:text-base font-light text-brand-gray/50 leading-relaxed">
-                Un t-shirt, un QR code au dos.<br />
-                On vous remarque dans la vraie vie — et on vous écrit, une seule fois.
-              </p>
+              {fromTee ? (
+                <>
+                  {/* Hero « miroir » : le visiteur vient JUSTE d'exécuter le geste central. */}
+                  <h1 className="font-display text-2xl md:text-3xl lg:text-4xl font-light leading-snug tracking-[0.02em]">
+                    Vous venez de<br />
+                    <span className="text-brand-gray/50">scanner un t-shirt.</span>
+                  </h1>
+                  <p className="font-ui text-sm lg:text-base font-light text-brand-gray/50 leading-relaxed">
+                    C&apos;est exactement ça, l&apos;idée. Croisez quelqu&apos;un qui le porte,
+                    scannez, écrivez-lui — une seule fois.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <h1 className="font-display text-2xl md:text-3xl lg:text-4xl font-light leading-snug tracking-[0.02em]">
+                    Un QR.<br />
+                    <span className="text-brand-gray/50">Une rencontre.</span>
+                  </h1>
+                  <p className="font-ui text-sm lg:text-base font-light text-brand-gray/50 leading-relaxed">
+                    Un t-shirt, un QR code au dos.<br />
+                    On vous remarque dans la vraie vie — et on vous écrit, une seule fois.
+                  </p>
+                </>
+              )}
               {/* Instance MOBILE/tablette : reste exactement en flux, entre la copie et
                   la triade. Sur lg, c'est l'instance de la colonne de gauche qui prend le relais. */}
               <ProductHero className="w-full max-w-[240px] mx-auto lg:hidden" />
@@ -227,7 +250,7 @@ function LandingContent() {
         {/* CTA principal — visible par défaut, entrée CSS (stagger-3) comme ses
             voisins. Jamais gaté par le JS : c'est l'élément de conversion clé. */}
         <div className="w-full flex flex-col gap-3 animate-stagger-3">
-          {scannerName && hasMemberId ? (
+          {!fromTee && scannerName && hasMemberId ? (
             <Link href="/unlock"
               className="animate-shimmer w-full py-4 px-6 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.3em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 block text-center"
               style={{ minHeight: '44px' }}

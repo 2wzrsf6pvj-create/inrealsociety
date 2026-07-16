@@ -4,6 +4,7 @@
 export type AnalyticsEvent =
   // Acquisition (côté scanner)
   | 'profile_viewed'
+  | 'tee_demo_scanned'          // arrivée sur l'accueil via ?src=tee (scan du tee démo/héros)
   | 'scan_submitted'
   | 'message_submitted'
   | 'message_blocked_conversation_limit'
