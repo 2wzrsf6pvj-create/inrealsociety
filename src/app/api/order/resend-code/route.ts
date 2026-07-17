@@ -17,7 +17,10 @@ import { audit } from '@/lib/audit';
 import { APP_URL } from '@/lib/constants';
 
 const schema = z.object({
-  email: z.string().email().max(320),
+  // `.toLowerCase()` : orders.email est stocké en minuscules (cf. checkout). Sans
+  // normaliser ici, un renvoi tapé avec une autre casse ne matchait aucune commande
+  // et renvoyait le {ok:true} anti-énumération → acheteur légitime sans code, en silence.
+  email: z.string().email().max(320).toLowerCase(),
 });
 
 export async function POST(req: NextRequest) {

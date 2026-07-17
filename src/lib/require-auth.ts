@@ -38,6 +38,32 @@ export async function requireAuth(
 }
 
 /**
+ * Récupère l'utilisateur authentifié S'IL est présent, sans JAMAIS rejeter.
+ * Pour les routes PUBLIQUES qui adaptent leur comportement quand l'acheteur est
+ * connecté (ex. lier un rachat au bon membre) tout en restant ouvertes aux
+ * anonymes. Résilient : toute erreur (env absente, session illisible) → null,
+ * jamais de throw qui casserait le flux public.
+ */
+export async function getOptionalUser(req: NextRequest): Promise<User | null> {
+  try {
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) { return req.cookies.get(name)?.value; },
+          set() {}, remove() {},
+        },
+      },
+    );
+    const { data: { user } } = await supabase.auth.getUser();
+    return user ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Vérifie que le memberId appartient bien au user authentifié.
  * Retourne le member.id ou une NextResponse 403.
  */

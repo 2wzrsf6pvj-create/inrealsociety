@@ -10,13 +10,17 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import Stripe from 'stripe';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { getOptionalUser } from '@/lib/require-auth';
 import { checkPublicRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
 import { QR_STYLES, DEFAULT_QR_STYLE } from '@/lib/constants';
 import { isValidTaglineId } from '@/lib/taglines';
 import { TSHIRT_PRICE_CENTS } from '@/lib/constants';
 
 const schema = z.object({
-  email:       z.string().email().max(320),
+  // `.toLowerCase()` : orders.email sert de clé de lookup (renvoi de code, match
+  // membre au webhook). Stocké en minuscules → un renvoi/rachat tapé « Bob@X.com »
+  // vs « bob@x.com » ne rate plus la commande. Cohérent avec le check auto-parrainage.
+  email:       z.string().email().max(320).toLowerCase(),
   tshirtColor: z.enum(['dark', 'light']),
   tshirtSize:  z.enum(['S', 'M', 'L', 'XL', 'XXL']),
   qrStyle:     z.enum(QR_STYLES).default(DEFAULT_QR_STYLE),
@@ -56,6 +60,20 @@ export async function POST(req: NextRequest) {
     if (!appUrl) {
       console.error('[api/shop/checkout] NEXT_PUBLIC_APP_URL non défini');
       return NextResponse.json({ error: 'Configuration serveur manquante.' }, { status: 500 });
+    }
+
+    // ─── Rachat par un membre EXISTANT : lie la commande à son profil ──────
+    // Si l'acheteur est CONNECTÉ (session serveur, jamais un id envoyé par le
+    // client — sinon usurpation), on résout son membre et on le passe au webhook
+    // via metadata.userId (= member.id, ce que lit handleCheckoutCompleted). Ça
+    // fiabilise le rachat sans dépendre du match par email (un email de checkout
+    // ≠ email de membre laissait le 2e tee orphelin). Anonyme / non-membre → rien.
+    let buyerMemberId: string | null = null;
+    const buyer = await getOptionalUser(req);
+    if (buyer) {
+      const { data: m } = await supabaseAdmin
+        .from('members').select('id').eq('auth_user_id', buyer.id).maybeSingle();
+      buyerMemberId = m?.id ?? null;
     }
 
     // ─── Valide le parrainage avant d'accorder la remise ──────────────────
@@ -142,6 +160,9 @@ export async function POST(req: NextRequest) {
         tshirtColor,
         tshirtSize,
         qrStyle,
+        // Présent seulement pour un rachat connecté → le webhook imprime vers ce
+        // membre (member.id), sans dépendre du match par email.
+        ...(buyerMemberId ? { userId: buyerMemberId } : {}),
       },
 
       success_url: `${appUrl}/shop/success?session={CHECKOUT_SESSION_ID}`,

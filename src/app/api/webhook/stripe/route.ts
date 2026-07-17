@@ -21,7 +21,7 @@ import { audit } from '@/lib/audit';
 import { fulfillOrder } from '@/lib/fulfillment';
 import { generateUniqueShortCode } from '@/lib/short-code';
 import { cancelPrintfulOrder } from '@/lib/printful-status';
-import { subscriptionMemberUpdate } from '@/lib/subscription';
+import { subscriptionMemberUpdate, isActiveSubscriptionStatus } from '@/lib/subscription';
 
 type TshirtColor = 'dark' | 'light';
 
@@ -205,8 +205,10 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
   // email→membre n'attribue pas à tort.
   let fulfillMemberId: string | null = userId ?? null;
   if (!fulfillMemberId && email) {
+    // Match insensible à la casse : members.email (email d'auth Supabase) est en
+    // minuscules ; on normalise l'email du checkout pour ne pas rater le rachat.
     const { data: m } = await supabaseAdmin
-      .from('members').select('id').eq('email', email).maybeSingle();
+      .from('members').select('id').eq('email', email.toLowerCase()).maybeSingle();
     fulfillMemberId = m?.id ?? null;
   }
 
@@ -483,12 +485,26 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription): Prom
   // Stripe réessaie en boucle. maybeSingle renvoie null proprement.
   const { data: member } = await supabaseAdmin
     .from('members')
-    .select('id')
+    .select('id, stripe_subscription_id')
     .eq('stripe_customer_id', customerId)
     .maybeSingle();
 
   if (!member) {
     console.warn('[webhook] Subscription change pour customer inconnu:', customerId);
+    return;
+  }
+
+  // Garde id-match : ne laisser DOWNGRADER que si l'event concerne l'abonnement
+  // COURANT du membre. Stripe ne garantit pas l'ordre des events, et un client peut
+  // avoir 2 abos (course au checkout) → un event de downgrade pour un abo
+  // étranger/ancien rétrograderait à tort un membre dont l'abo courant est actif ET
+  // nullerait son stripe_subscription_id → invisible au cron de réconciliation
+  // (qui filtre `stripe_subscription_id IS NOT NULL`). Un UPGRADE (active) reste
+  // appliqué : il (r)établit CET abo comme courant.
+  if (!isActiveSubscriptionStatus(subscription.status)
+      && member.stripe_subscription_id
+      && subscription.id !== member.stripe_subscription_id) {
+    console.log('[webhook] Downgrade ignoré : event pour un abo non-courant', subscription.id, 'vs', member.stripe_subscription_id);
     return;
   }
 
