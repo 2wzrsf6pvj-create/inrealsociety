@@ -52,7 +52,9 @@ function SuccessContent() {
         if (cancelled) return;
         if (data.code && typeof data.code === 'string' && data.code.length >= 6) {
           setCode(data.code);
-          localStorage.setItem('pending_activation_code', data.code);
+          // NB : on ne persiste PAS le code en localStorage — c'est une capability
+          // (bind du tee à un compte) et l'ancienne écriture `pending_activation_code`
+          // n'était jamais relue → stockage mort d'un code semi-sensible sur l'appareil.
           captureEvent('activation_code_revealed');
           setStatus('ok');
           return;

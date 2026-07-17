@@ -183,7 +183,7 @@ function CommandeContent() {
                 ? [shipment?.carrier, shipment?.shipDate ? `le ${fmtDate(shipment.shipDate)}` : null].filter(Boolean).join(' · ') || undefined
                 : 'Vous recevrez le suivi ici dès l’expédition.'}
             >
-              {shipped && shipment?.trackingUrl && (
+              {shipped && shipment?.trackingUrl && /^https?:\/\//i.test(shipment.trackingUrl) && (
                 <a href={shipment.trackingUrl} target="_blank" rel="noopener noreferrer"
                   className="mt-1 inline-flex font-ui text-xs text-brand-white/70 underline underline-offset-4 hover:text-brand-white transition-colors">
                   Suivre le colis →

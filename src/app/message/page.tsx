@@ -138,8 +138,16 @@ function MessageForm() {
         }
         if (data.code === 'already_messaged') {
           captureEvent('message_blocked_already_messaged', { member_id: memberId });
+          // Assainit à la SOURCE : on ne garde que le chemin interne (même origine),
+          // comme ProfilClient. Évite toute redirection hors-app même si la valeur
+          // localStorage était altérée. Les usages en aval poussent le chemin tel quel.
           const prior = localStorage.getItem(`conversation_${memberId}`);
-          if (prior) setConversationUrl(prior);
+          if (prior) {
+            try {
+              const u = new URL(prior, window.location.origin);
+              if (u.origin === window.location.origin) setConversationUrl(u.pathname + u.search);
+            } catch { /* valeur corrompue → ignorée */ }
+          }
           setAlreadyMessaged(true); setSending(false); return;
         }
         throw new Error(errorMsg);
@@ -161,9 +169,12 @@ function MessageForm() {
         localStorage.setItem('scannerName', formatted);
       }
 
-      const url = `${window.location.origin}/conversation/${data.messageId}`;
-      localStorage.setItem(`conversation_${memberId}`, url);
-      setConversationUrl(url);
+      // conversationUrl porte un CHEMIN interne (cohérent avec l'assainissement à la
+      // relecture localStorage) → router.push reçoit toujours un path, jamais une URL
+      // absolue. Le localStorage garde l'URL complète (relue + assainie en amont).
+      const convPath = `/conversation/${data.messageId}`;
+      localStorage.setItem(`conversation_${memberId}`, `${window.location.origin}${convPath}`);
+      setConversationUrl(convPath);
       haptic('success'); // signal envoyé — confirmation tactile du moment clé
 
     } catch (err) {
@@ -259,7 +270,7 @@ function MessageForm() {
         </p>
         <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
         {conversationUrl && (
-          <button onClick={() => router.push(conversationUrl.replace(window.location.origin, ''))}
+          <button onClick={() => router.push(conversationUrl)}
             className="w-full max-w-xs py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all"
             style={{ minHeight: '44px' }}>
             Voir la conversation
@@ -309,7 +320,7 @@ function MessageForm() {
         </div>
         <div className="w-full flex flex-col gap-3">
           <p className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Votre fil de conversation</p>
-          <button onClick={() => router.push(conversationUrl.replace(window.location.origin, ''))}
+          <button onClick={() => router.push(conversationUrl)}
             className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200"
             style={{ minHeight: '44px' }}
           >

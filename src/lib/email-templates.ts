@@ -47,14 +47,17 @@ export function emailNewsletter(params: { contentHtml: string; unsubscribeUrl: s
   return layout(`
     ${params.contentHtml}
     <p style="font-family:system-ui,sans-serif;font-size:11px;color:rgba(255,255,255,0.3);text-align:center;margin-top:40px;">
-      <a href="${params.unsubscribeUrl}" style="color:rgba(255,255,255,0.4);text-decoration:underline;">Se désinscrire</a>
+      <a href="${escapeHtml(params.unsubscribeUrl)}" style="color:rgba(255,255,255,0.4);text-decoration:underline;">Se désinscrire</a>
     </p>
   `);
 }
 
 function cta(label: string, url: string): string {
+  // escapeHtml aussi sur l'URL : aujourd'hui toutes les URLs sont construites serveur
+  // (APP_URL + UUID/code/token, jamais d'input libre), mais on ferme la porte à un
+  // futur appelant qui passerait une URL dérivée d'input → attribut-breakout dans le HTML.
   return `
-    <a href="${url}" style="display:block;background:#fff;color:#000;text-align:center;padding:16px;font-family:system-ui,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.25em;text-transform:uppercase;text-decoration:none;margin-top:32px;">
+    <a href="${escapeHtml(url)}" style="display:block;background:#fff;color:#000;text-align:center;padding:16px;font-family:system-ui,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.25em;text-transform:uppercase;text-decoration:none;margin-top:32px;">
       ${escapeHtml(label)}
     </a>
   `;
@@ -168,11 +171,11 @@ export function emailBienvenue(params: {
       </p>
       <div style="border:1px solid rgba(255,255,255,0.1);padding:24px;margin-bottom:16px;">
         <p style="font-family:system-ui,sans-serif;font-size:10px;letter-spacing:0.2em;color:rgba(255,255,255,0.3);text-transform:uppercase;margin:0 0 12px;">Votre tableau de bord</p>
-        <a href="${params.dashboardUrl}" style="color:#fff;font-family:system-ui,sans-serif;font-size:13px;word-break:break-all;">${params.dashboardUrl}</a>
+        <a href="${escapeHtml(params.dashboardUrl)}" style="color:#fff;font-family:system-ui,sans-serif;font-size:13px;word-break:break-all;">${escapeHtml(params.dashboardUrl)}</a>
       </div>
       <div style="border:1px solid rgba(255,255,255,0.1);padding:24px;margin-bottom:8px;">
         <p style="font-family:system-ui,sans-serif;font-size:10px;letter-spacing:0.2em;color:rgba(255,255,255,0.3);text-transform:uppercase;margin:0 0 12px;">URL de votre QR code</p>
-        <a href="${params.profileUrl}" style="color:#fff;font-family:system-ui,sans-serif;font-size:13px;word-break:break-all;">${params.profileUrl}</a>
+        <a href="${escapeHtml(params.profileUrl)}" style="color:#fff;font-family:system-ui,sans-serif;font-size:13px;word-break:break-all;">${escapeHtml(params.profileUrl)}</a>
       </div>
       ${cta('Accéder à mon tableau de bord', params.dashboardUrl)}
     `),
