@@ -81,10 +81,10 @@ export async function GET(req: NextRequest) {
       supabaseAdmin.from('silent_views').select('*').eq('member_id', member.id).order('created_at', { ascending: true }),
       supabaseAdmin.from('push_subscriptions').select('endpoint, message_id, created_at').eq('member_id', member.id),
       supabaseAdmin.from('audit_logs').select('*').eq('member_id', member.id).order('created_at', { ascending: false }).limit(1000),
-      supabaseAdmin.from('orders').select('*').eq('email', member.email).order('created_at', { ascending: true }),
+      supabaseAdmin.from('orders').select('*').eq('email', (member.email ?? '').toLowerCase()).order('created_at', { ascending: true }),
       supabaseAdmin.from('orders').select('*').in('activation_code', activationCodes).order('created_at', { ascending: true }),
       supabaseAdmin.from('referrals').select('*').eq('referrer_id', member.id),
-      supabaseAdmin.from('newsletter_subscribers').select('*').eq('email', member.email),
+      supabaseAdmin.from('newsletter_subscribers').select('*').eq('email', (member.email ?? '').toLowerCase()),
       supabaseAdmin.from('feedback').select('*').eq('member_id', member.id).order('created_at', { ascending: true }),
     ]);
 

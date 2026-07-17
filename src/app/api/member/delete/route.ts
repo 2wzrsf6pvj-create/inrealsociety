@@ -95,7 +95,39 @@ export async function DELETE(req: NextRequest) {
       'member.activated',
     ];
 
-    const deletes = [
+    // ─── 1. Effacement PII NON-CASCADE — DOIT réussir ───────────────────────
+    // Ces lignes ne sont PAS purgées par le cascade de `members` : les orders sont
+    // conservées (compta 10 ans) avec seulement l'email anonymisé, et
+    // newsletter_subscribers n'a aucune FK vers members. Si l'un de ces effacements
+    // échoue, l'email BRUT (PII) survivrait. On ABORT alors en 500 AVANT de supprimer
+    // le membre/compte auth → l'utilisateur peut réessayer plutôt que de recevoir un
+    // faux « compte supprimé » pendant que sa PII persiste. Emails en lowercase
+    // (orders/newsletter stockent en minuscules — cf. checkout/newsletter).
+    const emailLc = member.email?.toLowerCase() ?? null;
+    const piiOps = [
+      ...(activationCodes.length
+        ? [supabaseAdmin.from('orders').update({ email: ANONYMIZED_EMAIL }).in('activation_code', activationCodes)]
+        : []),
+      ...(emailLc ? [
+        supabaseAdmin.from('orders').update({ email: ANONYMIZED_EMAIL }).eq('email', emailLc),
+        supabaseAdmin.from('newsletter_subscribers').delete().eq('email', emailLc),
+      ] : []),
+    ];
+    const piiResults = await Promise.all(piiOps);
+    const piiFailed = piiResults.filter(r => r.error);
+    if (piiFailed.length) {
+      console.error('[member/delete] Effacement PII non-cascade échoué:', piiFailed.map(r => r.error?.message));
+      return NextResponse.json(
+        { error: 'La suppression n\'a pas pu être complétée entièrement. Réessayez.' },
+        { status: 500 },
+      );
+    }
+
+    // ─── 2. Nettoyages cascade-backed (best-effort) ─────────────────────────
+    // Toutes ces tables sont FK vers members (CASCADE ou SET NULL) → même si un
+    // delete explicite échoue, la suppression du membre (plus bas) les purge. On
+    // efface explicitement pour l'immédiateté ; les erreurs sont loguées, non bloquantes.
+    const cascadeOps = [
       supabaseAdmin.from('messages').delete().eq('member_id', member.id),
       supabaseAdmin.from('scans').delete().eq('member_id', member.id),
       supabaseAdmin.from('silent_views').delete().eq('member_id', member.id),
@@ -107,30 +139,18 @@ export async function DELETE(req: NextRequest) {
       supabaseAdmin.from('feedback').delete().eq('member_id', member.id),
       supabaseAdmin.from('blocks').delete().eq('member_id', member.id),
       supabaseAdmin.from('activation_codes').update({ member_id: null }).eq('member_id', member.id),
-      // Orders : conservées mais email anonymisé (minimisation). On couvre les deux
-      // liens — codes d'activation ET email d'auth — pour ne laisser aucune commande
-      // identifiante derrière, même si le checkout a utilisé un autre email.
-      ...(activationCodes.length
-        ? [supabaseAdmin.from('orders').update({ email: ANONYMIZED_EMAIL }).in('activation_code', activationCodes)]
-        : []),
-      // Newsletter (keyée par email) — pas d'obligation de rétention → erasure art. 17.
-      ...(member.email ? [
-        supabaseAdmin.from('newsletter_subscribers').delete().eq('email', member.email),
-        supabaseAdmin.from('orders').update({ email: ANONYMIZED_EMAIL }).eq('email', member.email),
-      ] : []),
     ];
-
-    const results = await Promise.all(deletes);
-    const failed = results.filter(r => r.error);
-    if (failed.length) {
-      console.error('[member/delete] Échec suppression partielle:', failed.map(r => r.error?.message));
+    const cascadeResults = await Promise.all(cascadeOps);
+    const cascadeFailed = cascadeResults.filter(r => r.error);
+    if (cascadeFailed.length) {
+      console.error('[member/delete] Nettoyage cascade partiel (rattrapé par le cascade du membre):', cascadeFailed.map(r => r.error?.message));
     }
 
     // Trace la suppression dans un audit séparé (sans memberId puisque le profil
     // n'existe plus juste après — permet au support d'avoir une trace).
     audit({
       action:   'member.deleted',
-      metadata: { deletedMemberId: member.id, partialErrors: failed.length },
+      metadata: { deletedMemberId: member.id, partialErrors: cascadeFailed.length },
     });
 
     // ─── Supprime le membre ─────────────────────────────────────────────

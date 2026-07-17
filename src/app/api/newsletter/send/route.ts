@@ -51,33 +51,63 @@ function secretMatches(provided: string | null, expected: string | undefined): b
 
 const norm = (e: string) => e.trim().toLowerCase();
 
+// Récupère TOUS les emails d'une requête, page par page. PostgREST plafonne le
+// nombre de lignes (`db-max-rows`, souvent 1000) : un `.select()` simple TRONQUE
+// silencieusement au-delà. Critique pour les listes d'OPT-OUT — une troncature y
+// ferait passer un désinscrit dans l'audience (envoi marketing non consenti = RGPD).
+// On boucle jusqu'à épuisement.
+type EmailRow = { email: string | null };
+type PagedQuery = { range: (from: number, to: number) => PromiseLike<{ data: EmailRow[] | null; error: unknown }> };
+async function pageEmails(build: () => PagedQuery): Promise<string[]> {
+  const PAGE = 1000;
+  const out: string[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await build().range(from, from + PAGE - 1);
+    if (error) throw error;
+    if (!data || data.length === 0) break;
+    for (const r of data) if (r.email) out.push(r.email);
+    if (data.length < PAGE) break;
+  }
+  return out;
+}
+
 export async function POST(req: NextRequest) {
   if (!secretMatches(req.headers.get('x-internal-secret'), process.env.INTERNAL_SECRET)) {
     return NextResponse.json({ error: 'Non autorisé.' }, { status: 401 });
   }
 
-  const body = schema.safeParse(await req.json());
+  // try/catch : un corps malformé/vide fait rejeter req.json() → sans ça, 500 nu.
+  let json: unknown;
+  try {
+    json = await req.json();
+  } catch {
+    return NextResponse.json({ error: 'Corps de requête invalide.' }, { status: 400 });
+  }
+  const body = schema.safeParse(json);
   if (!body.success) {
     return NextResponse.json({ error: 'Données invalides.' }, { status: 400 });
   }
   const { key, subject, html, dryRun } = body.data;
 
-  // ─── Audience (consentis − opt-out) ───────────────────────────────────────
-  const [nlSubscribed, nlUnsub, mConsent, mNoConsent] = await Promise.all([
-    supabaseAdmin.from('newsletter_subscribers').select('email').is('unsubscribed_at', null),
-    supabaseAdmin.from('newsletter_subscribers').select('email').not('unsubscribed_at', 'is', null),
-    supabaseAdmin.from('members').select('email').eq('marketing_consent', true).not('email', 'is', null),
-    supabaseAdmin.from('members').select('email').eq('marketing_consent', false).not('email', 'is', null),
-  ]);
+  // ─── Audience (consentis − opt-out) — TOUTES les listes paginées ──────────
+  let nlSubscribed: string[], nlUnsub: string[], mConsent: string[], mNoConsent: string[];
+  try {
+    [nlSubscribed, nlUnsub, mConsent, mNoConsent] = await Promise.all([
+      pageEmails(() => supabaseAdmin.from('newsletter_subscribers').select('email').is('unsubscribed_at', null) as unknown as PagedQuery),
+      pageEmails(() => supabaseAdmin.from('newsletter_subscribers').select('email').not('unsubscribed_at', 'is', null) as unknown as PagedQuery),
+      pageEmails(() => supabaseAdmin.from('members').select('email').eq('marketing_consent', true).not('email', 'is', null) as unknown as PagedQuery),
+      pageEmails(() => supabaseAdmin.from('members').select('email').eq('marketing_consent', false).not('email', 'is', null) as unknown as PagedQuery),
+    ]);
+  } catch (err) {
+    console.error('[newsletter/send] audience fetch failed:', err);
+    return NextResponse.json({ error: 'Erreur de calcul d\'audience.' }, { status: 500 });
+  }
 
   const optedOut = new Set<string>();
-  for (const r of [...(nlUnsub.data ?? []), ...(mNoConsent.data ?? [])]) {
-    if (r.email) optedOut.add(norm(r.email));
-  }
+  for (const email of [...nlUnsub, ...mNoConsent]) optedOut.add(norm(email));
   const audience = new Set<string>();
-  for (const r of [...(nlSubscribed.data ?? []), ...(mConsent.data ?? [])]) {
-    if (!r.email) continue;
-    const e = norm(r.email);
+  for (const email of [...nlSubscribed, ...mConsent]) {
+    const e = norm(email);
     if (!optedOut.has(e)) audience.add(e);
   }
   const recipients = Array.from(audience);
