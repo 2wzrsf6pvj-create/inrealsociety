@@ -7,9 +7,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { requireAuth, isHttpError } from '@/lib/require-auth';
 import { checkAuthRateLimit, rateLimitHeaders } from '@/lib/ratelimit';
 import { generateUniqueShortCode } from '@/lib/short-code';
-import { QR_STYLES } from '@/lib/constants';
-import { isValidTaglineId } from '@/lib/taglines';
-import { fulfillOrder } from '@/lib/fulfillment';
+import { fulfillOrder, orderQrStoragePath } from '@/lib/fulfillment';
 import { audit } from '@/lib/audit';
 import { sendEmail, emailBienvenue } from '@/lib/email-templates';
 import { APP_URL } from '@/lib/constants';
@@ -22,11 +20,9 @@ const schema = z.object({
   // §8/9 : consentement OBLIGATOIRE à l'activation. z.literal(true) → une requête
   // sans acceptation explicite (false/absent) est rejetée (preuve juridique).
   acceptedTerms:  z.literal(true),
-  // Forme du QR : dernière chance de changer le choix du checkout avant impression.
-  qrStyle:        z.enum(QR_STYLES).optional(),
-  // Accroche : id de bibliothèque, null (QR seul) ou absent (ne pas changer le choix
-  // du checkout). On distingue null (« retirer l'accroche ») de undefined (« laisser »).
-  taglineId:      z.string().max(64).refine((v) => isValidTaglineId(v), 'Accroche inconnue').nullish(),
+  // NB : la forme du QR et l'accroche sont VERROUILLÉES au checkout (le tee est
+  // imprimé au paiement). Plus de « dernière chance » ici — ces champs ne sont
+  // plus acceptés.
 });
 
 export async function POST(req: NextRequest) {
@@ -46,14 +42,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Données invalides.' }, { status: 400 });
     }
 
-    const { name, pitch, instagram, activationCode, qrStyle, taglineId } = body.data;
+    const { name, pitch, instagram, activationCode } = body.data;
 
-    // ─── Génère un code court unique pour l'URL du QR code ─────────────────
-    let shortCode: string | null = null;
-    try {
-      shortCode = await generateUniqueShortCode();
-    } catch (scErr) {
-      console.warn('[api/member/create] Short code generation failed:', scErr);
+    // ─── Récupère la commande liée AVANT de créer le membre ────────────────
+    // Deux infos y sont clés :
+    //  1. `short_code` RÉSERVÉ au paiement (FULFILL_ON_PAYMENT) : le tee est déjà
+    //     imprimé avec CE code → le membre doit en HÉRITER, sinon le QR physique
+    //     pointerait vers un autre profil. `null` = pas réservé (ancien modèle) →
+    //     on en génère un neuf.
+    //  2. `printful_order_id` : si présent, le tee est déjà imprimé (au paiement)
+    //     → on ne réimprime pas, on pointe juste le QR digital du membre.
+    const { data: order } = await supabaseAdmin
+      .from('orders')
+      .select('id, tshirt_color, tshirt_size, printful_order_id, status, short_code')
+      .eq('activation_code', activationCode)
+      .maybeSingle();
+
+    // Code court : hérité de la commande (réservé), sinon généré à la volée.
+    const inheritedShortCode = (order?.short_code as string | null) ?? null;
+    let shortCode: string | null = inheritedShortCode;
+    if (!shortCode) {
+      try {
+        shortCode = await generateUniqueShortCode();
+      } catch (scErr) {
+        console.warn('[api/member/create] Short code generation failed:', scErr);
+      }
     }
 
     // ─── Création atomique : consomme le code + crée le membre en une transaction
@@ -77,10 +90,14 @@ export async function POST(req: NextRequest) {
     let { data, error: rpcError } = await callCreate(shortCode);
 
     // Collision short_code (TOCTOU SELECT-puis-INSERT sur l'index unique) →
-    // régénère un code et réessaie une fois, plutôt que de renvoyer un 500.
+    // régénère un code et réessaie une fois. MAIS seulement si le code a été
+    // GÉNÉRÉ : un code HÉRITÉ (réservé, déjà imprimé sur le tee) ne doit jamais
+    // être remplacé en silence — le QR physique deviendrait orphelin. Une collision
+    // sur un code hérité est quasi-impossible (unicité vérifiée à la réservation) ;
+    // on la laisse alors remonter en erreur pour traitement support.
     const isUniqueViolation = (e: typeof rpcError) =>
       !!e && (e.code === '23505' || /duplicate key|unique/i.test(e.message ?? ''));
-    if (isUniqueViolation(rpcError)) {
+    if (isUniqueViolation(rpcError) && !inheritedShortCode) {
       try { shortCode = await generateUniqueShortCode(); } catch { shortCode = null; }
       ({ data, error: rpcError } = await callCreate(shortCode));
     }
@@ -133,32 +150,25 @@ export async function POST(req: NextRequest) {
         .catch(err => console.error('[api/member/create] Welcome email failed:', err));
     }
 
-    // ─── Déclenche fulfillment Printful (non-bloquant) ────────────────────
-    // Cherche l'order lié à ce code d'activation. Si pas trouvé (membre créé
-    // sans achat — e.g. invité), on ignore. Si l'order est déjà fulfilled,
-    // fulfillOrder retourne alreadyFulfilled=true (idempotent).
-    if (result.member_id) {
+    // ─── Fulfillment / QR digital du membre (non-bloquant) ────────────────
+    // `order` a été chargé plus haut. Trois cas :
+    //  a. Pas de commande (membre invité sans achat) → rien.
+    //  b. Commande payée DÉJÀ imprimée (printful_order_id, cas FULFILL_ON_PAYMENT) :
+    //     le membre a hérité du short_code réservé → on pointe simplement son QR
+    //     digital vers le fichier déjà uploadé (même code, même contenu). Pas de
+    //     réimpression.
+    //  c. Commande payée NON encore imprimée (ancien modèle, ou échec au webhook) :
+    //     filet → on imprime maintenant (fulfillOrder, idempotent).
+    if (result.member_id && order && order.status === 'paid') {
+      const tshirtColor = (order.tshirt_color === 'light') ? 'light' : 'dark';
       try {
-        const { data: order } = await supabaseAdmin
-          .from('orders')
-          .select('id, tshirt_color, tshirt_size, printful_order_id, status')
-          .eq('activation_code', activationCode)
-          .single();
-
-        if (order && order.status === 'paid' && !order.printful_order_id) {
-          // Dernière chance de changer la forme du QR avant impression : si le
-          // client en a choisi une au register, on l'écrit sur l'order AVANT que
-          // fulfillOrder ne relise l'order (il lit qr_style). Non encore fulfilled
-          // (garde ci-dessus) → modifiable.
-          if (qrStyle) {
-            await supabaseAdmin.from('orders').update({ qr_style: qrStyle }).eq('id', order.id);
-          }
-          // Idem pour l'accroche. `undefined` = ne pas toucher au choix du checkout ;
-          // `null` = le client a explicitement retiré l'accroche (QR seul).
-          if (taglineId !== undefined) {
-            await supabaseAdmin.from('orders').update({ tagline_id: taglineId }).eq('id', order.id);
-          }
-          const tshirtColor = (order.tshirt_color === 'light') ? 'light' : 'dark';
+        if (order.printful_order_id) {
+          // Cas b : pointer le QR digital vers le fichier de la commande.
+          const path = orderQrStoragePath(order.id, tshirtColor);
+          const { data: { publicUrl } } = supabaseAdmin.storage.from('qrcodes').getPublicUrl(path);
+          await supabaseAdmin.from('members').update({ qr_code_url: publicUrl }).eq('id', result.member_id);
+        } else {
+          // Cas c : impression à l'activation (filet).
           const fulfillResult = await fulfillOrder({
             orderId:     order.id,
             memberId:    result.member_id,
@@ -181,14 +191,13 @@ export async function POST(req: NextRequest) {
           }
         }
       } catch (fulfillErr) {
-        // Ne JAMAIS bloquer l'inscription pour un problème Printful — l'utilisateur
-        // a payé, son profil est créé, le support peut re-déclencher le fulfillment
-        // manuellement si besoin.
+        // Ne JAMAIS bloquer l'inscription pour un problème Printful/Storage —
+        // l'utilisateur a payé, son profil est créé, le cron rejouera si besoin.
         console.error('[api/member/create] Fulfillment exception:', fulfillErr);
         audit({
           action:   'order.fulfillment_failed',
           memberId: result.member_id,
-          metadata: { reason: fulfillErr instanceof Error ? fulfillErr.message : String(fulfillErr), trigger: 'member_create' },
+          metadata: { orderId: order.id, reason: fulfillErr instanceof Error ? fulfillErr.message : String(fulfillErr), trigger: 'member_create' },
         });
       }
     }

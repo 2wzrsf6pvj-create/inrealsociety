@@ -25,18 +25,34 @@ export async function GET(
     return NextResponse.redirect(new URL('/?error=rate_limited', _req.url));
   }
 
-  // Lookup du membre par short_code
+  const appUrl = APP_URL;
+
+  // Lookup du membre par short_code (maybeSingle : 0 ligne = pas encore activé,
+  // cas NORMAL depuis qu'on imprime AU PAIEMENT — single y émettait une erreur).
   const { data: member } = await supabaseAdmin
     .from('members')
     .select('id')
     .eq('short_code', code)
-    .single();
+    .maybeSingle();
 
-  if (!member) {
-    return NextResponse.redirect(new URL('/?error=qr_not_found', _req.url));
+  if (member) {
+    // Redirige vers la page profil du membre
+    return NextResponse.redirect(`${appUrl}/profil/${member.id}`);
   }
 
-  // Redirige vers la page profil du membre
-  const appUrl = APP_URL;
-  return NextResponse.redirect(`${appUrl}/profil/${member.id}`);
+  // Pas de membre : le code est-il RÉSERVÉ sur une commande payée (tee imprimé,
+  // profil pas encore activé) ? Alors on montre une page « bientôt » plutôt qu'une
+  // erreur — le porteur a reçu son tee mais n'a pas encore créé son profil.
+  const { data: order } = await supabaseAdmin
+    .from('orders')
+    .select('id')
+    .eq('short_code', code)
+    .eq('status', 'paid')
+    .maybeSingle();
+
+  if (order) {
+    return NextResponse.redirect(`${appUrl}/tee/en-attente`);
+  }
+
+  return NextResponse.redirect(new URL('/?error=qr_not_found', _req.url));
 }

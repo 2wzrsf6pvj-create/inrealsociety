@@ -20,9 +20,15 @@ function randomCode(length: number): string {
 }
 
 /**
- * Génère un short_code unique pour un membre.
+ * Génère un short_code unique pour un membre OU une commande.
  * Tente d'abord avec 2 caractères (29^2 = 841 combinaisons),
  * puis allonge progressivement si collision.
+ *
+ * ⚠️ Unicité GLOBALE : le code peut être réservé sur une commande
+ * (orders.short_code, au paiement) AVANT d'exister sur un membre
+ * (members.short_code, à l'activation). On vérifie donc les DEUX tables, sinon
+ * une réservation de commande pourrait entrer en collision avec un code membre
+ * (ou l'inverse) et le QR imprimé pointerait vers le mauvais profil.
  *
  * @returns Le code court unique (ex: 'u8', 'k3f', 'ab7x')
  */
@@ -31,17 +37,16 @@ export async function generateUniqueShortCode(): Promise<string> {
     for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
       const code = randomCode(length);
 
-      // Vérifie l'unicité dans la BDD. maybeSingle (pas single) : 0 ligne = code
-      // libre, le cas NORMAL — single y émet une erreur PGRST116 qui polluait les
-      // logs à chaque code unique.
-      const { data } = await supabaseAdmin
-        .from('members')
-        .select('id')
-        .eq('short_code', code)
-        .maybeSingle();
+      // Vérifie l'unicité dans les DEUX tables. maybeSingle (pas single) : 0 ligne
+      // = code libre, le cas NORMAL — single y émet une erreur PGRST116 qui
+      // polluait les logs à chaque code unique.
+      const [{ data: memberHit }, { data: orderHit }] = await Promise.all([
+        supabaseAdmin.from('members').select('id').eq('short_code', code).maybeSingle(),
+        supabaseAdmin.from('orders').select('id').eq('short_code', code).maybeSingle(),
+      ]);
 
-      // Pas de collision → le code est disponible
-      if (!data) return code;
+      // Pas de collision (ni membre ni commande) → le code est disponible
+      if (!memberHit && !orderHit) return code;
     }
     // Toutes les tentatives à cette longueur ont échoué → on allonge
   }

@@ -22,6 +22,7 @@ const PUBLIC_PAGES = new Set([
   '/auth/confirm',      // confirmation OTP token_hash (reset cross-device, signup)
   '/auth/forgot-password',
   '/auth/reset-password',
+  '/tee/en-attente',    // scan d'un tee imprimé mais profil pas encore activé — public, noindex
   '/demo-message',      // page démo (aperçu « message reçu » pour screenshot) — noindex, à retirer
   '/demo-notif',        // page démo (aperçu notif écran verrouillé pour screenshot) — noindex, à retirer
 ]);

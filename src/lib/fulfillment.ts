@@ -81,9 +81,19 @@ function coerceSize(raw: string | null | undefined): TshirtSize {
   return (VALID_SIZES.includes(raw ?? '') ? raw : 'M') as TshirtSize;
 }
 
+/** Chemin de stockage du QR d'une commande imprimée AVANT activation (pas encore
+ *  de membre). Déterministe → l'activation peut recomposer l'URL publique pour la
+ *  pointer sur `members.qr_code_url` sans nouvelle génération. */
+export function orderQrStoragePath(orderId: string, color: TshirtColor): string {
+  return `orders/${orderId}/qr-${color}.svg`;
+}
+
 interface FulfillmentParams {
   orderId:     string;
-  memberId:    string;
+  // Optionnel : présent = fulfillment lié à un membre (rachat, ou activation en
+  // mode `FULFILL_ON_PAYMENT=false`). Absent/null = impression AU PAIEMENT, avant
+  // toute activation → le QR encode `orders.short_code` (réservé au webhook).
+  memberId?:   string | null;
   tshirtColor: TshirtColor;
   tshirtSize:  string;   // brut (S/M/L/XL/XXL) ; coercé en interne, défaut M
 }
@@ -135,7 +145,7 @@ export async function fulfillOrder({ orderId, memberId, tshirtColor, tshirtSize 
   // ─── 1. Idempotence : skip si déjà fulfilled ───────────────────────────────
   const { data: order, error: orderErr } = await supabaseAdmin
     .from('orders')
-    .select('id, stripe_session_id, printful_order_id, status, qr_style, tagline_id')
+    .select('id, stripe_session_id, printful_order_id, status, qr_style, tagline_id, short_code')
     .eq('id', orderId)
     .single();
 
@@ -151,35 +161,65 @@ export async function fulfillOrder({ orderId, memberId, tshirtColor, tshirtSize 
   const shipping = getShippingDetails(session);
   if (!shipping) return { ok: false, reason: 'no_shipping_details' };
 
-  // ─── 3. Récupère le short_code du membre pour l'URL QR ─────────────────────
-  const { data: member } = await supabaseAdmin
-    .from('members')
-    .select('id, short_code')
-    .eq('id', memberId)
-    .single();
-
-  if (!member) return { ok: false, reason: 'member_not_found' };
-
   const appUrl = process.env.NEXT_PUBLIC_APP_URL;
   if (!appUrl) return { ok: false, reason: 'no_app_url' };
 
-  // H3 : garantir un short_code AVANT d'imprimer le QR. Sinon, si la génération
-  // a échoué à la création du membre, le QR figerait l'URL longue (/profil/UUID)
-  // sur le t-shirt physique → QR plus dense, risque de mauvais scan. On en
-  // génère + persiste un à la volée (cohérent avec /r/[code]).
-  let shortCode = member.short_code as string | null;
-  if (!shortCode) {
-    try {
-      const candidate = await generateUniqueShortCode();
-      const { error: scErr } = await supabaseAdmin
-        .from('members').update({ short_code: candidate }).eq('id', memberId);
-      if (!scErr) shortCode = candidate;
-      else console.error('[fulfillment] short_code persist failed:', scErr.message);
-    } catch (e) {
-      console.error('[fulfillment] short_code generation failed:', e);
+  // ─── 3. Résout le short_code encodé dans le QR + où stocker le fichier ──────
+  // Deux chemins :
+  //  A. AVEC membre (rachat, ou activation en FULFILL_ON_PAYMENT=false) : le code
+  //     vit sur le membre ; on le garantit (H3) et on stocke sous <memberId>/.
+  //  B. SANS membre (impression au paiement) : le code est réservé sur la
+  //     commande (orders.short_code) ; on stocke sous orders/<orderId>/ et on ne
+  //     touche PAS `members` (il n'existe pas encore).
+  let shortCode: string | null;
+  let filePath: string;
+  if (memberId) {
+    const { data: member } = await supabaseAdmin
+      .from('members')
+      .select('id, short_code')
+      .eq('id', memberId)
+      .single();
+
+    if (!member) return { ok: false, reason: 'member_not_found' };
+
+    // H3 : garantir un short_code AVANT d'imprimer le QR. Sinon, si la génération
+    // a échoué à la création du membre, le QR figerait l'URL longue (/profil/UUID)
+    // sur le t-shirt physique → QR plus dense, risque de mauvais scan. On en
+    // génère + persiste un à la volée (cohérent avec /r/[code]).
+    shortCode = member.short_code as string | null;
+    if (!shortCode) {
+      try {
+        const candidate = await generateUniqueShortCode();
+        const { error: scErr } = await supabaseAdmin
+          .from('members').update({ short_code: candidate }).eq('id', memberId);
+        if (!scErr) shortCode = candidate;
+        else console.error('[fulfillment] short_code persist failed:', scErr.message);
+      } catch (e) {
+        console.error('[fulfillment] short_code generation failed:', e);
+      }
     }
+    filePath = `${memberId}/qr-${tshirtColor}.svg`;
+  } else {
+    // Impression au paiement : le code doit être réservé sur la commande. Si absent
+    // (réservation ratée au webhook), on en réserve un ici pour ne pas figer une URL
+    // longue sur le tee — le futur membre héritera de CE code.
+    shortCode = order.short_code as string | null;
+    if (!shortCode) {
+      try {
+        const candidate = await generateUniqueShortCode();
+        const { error: scErr } = await supabaseAdmin
+          .from('orders').update({ short_code: candidate }).eq('id', orderId).is('short_code', null);
+        if (!scErr) shortCode = candidate;
+        else console.error('[fulfillment] order short_code persist failed:', scErr.message);
+      } catch (e) {
+        console.error('[fulfillment] order short_code generation failed:', e);
+      }
+    }
+    if (!shortCode) return { ok: false, reason: 'no_short_code' };
+    filePath = orderQrStoragePath(orderId, tshirtColor);
   }
 
+  // Sans membre, on n'a pas de repli /profil/<uuid> → shortCode est garanti ci-dessus.
   const qrDataUrl = shortCode
     ? buildShortUrl(shortCode)
     : `${appUrl}/profil/${memberId}`;
@@ -210,8 +250,6 @@ export async function fulfillOrder({ orderId, memberId, tshirtColor, tshirtSize 
       `URL encodée : ${qrDataUrl}. Configurer SHORT_DOMAIN raccourcit l'URL et rend la portée.`,
     );
   }
-  const filePath = `${memberId}/qr-${tshirtColor}.svg`;
-
   const { error: uploadError } = await supabaseAdmin.storage
     .from('qrcodes')
     .upload(filePath, qr.buffer, { contentType: 'image/svg+xml', upsert: true });
@@ -220,7 +258,12 @@ export async function fulfillOrder({ orderId, memberId, tshirtColor, tshirtSize 
 
   const { data: { publicUrl } } = supabaseAdmin.storage.from('qrcodes').getPublicUrl(filePath);
 
-  await supabaseAdmin.from('members').update({ qr_code_url: publicUrl }).eq('id', memberId);
+  // Le QR digital du membre (dashboard) : uniquement en chemin « avec membre ».
+  // Sans membre (impression au paiement), l'activation pointera qr_code_url vers
+  // CE fichier (même short_code, même contenu) — cf. api/member/create.
+  if (memberId) {
+    await supabaseAdmin.from('members').update({ qr_code_url: publicUrl }).eq('id', memberId);
+  }
 
   // ─── 4b. Monogramme )( poitrine — IDENTIQUE pour tous les porteurs ─────────
   // Contrairement au QR (unique par membre), il ne dépend que du thème du tee.

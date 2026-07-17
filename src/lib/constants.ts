@@ -50,6 +50,17 @@ export const FULFILLMENT_PROVIDER: 'printful' | 'gelato' =
  *  pour revenir au dos seul, sans toucher au code. */
 export const PRINT_FRONT_LOGO = true;
 
+/** Quand déclencher l'impression POD.
+ *  - `true` (défaut) : dès le PAIEMENT. On réserve le short_code du QR sur la
+ *    commande (orders.short_code) et on imprime tout de suite. L'acheteur reçoit
+ *    TOUJOURS son t-shirt, même s'il n'active jamais son profil ; le QR mène alors
+ *    à une page « profil pas encore activé ». À l'activation, le membre hérite du
+ *    short_code réservé → le QR déjà imprimé pointe vers son profil.
+ *  - `false` : ancien modèle — impression déclenchée seulement à l'ACTIVATION
+ *    (création du profil). Un acheteur qui n'active pas ne reçoit rien.
+ *  Rollback sans redéploiement : poser `FULFILL_ON_PAYMENT=false` en env. */
+export const FULFILL_ON_PAYMENT: boolean = process.env.FULFILL_ON_PAYMENT !== 'false';
+
 /** Prix du t-shirt — source UNIQUE côté app (affichage + `orders.amount` initial).
  *  ⚠️ Le montant réellement débité vient du Stripe Price (STRIPE_PRICE_ID) ; le
  *  webhook réécrit `orders.amount` avec le vrai total (`session.amount_total`,

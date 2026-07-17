@@ -15,10 +15,11 @@ import Stripe from 'stripe';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { generateSecureCode } from '@/lib/generate-code';
 import { sendEmail, emailActivation, emailPremium, emailPaymentFailed } from '@/lib/email-templates';
-import { APP_URL } from '@/lib/constants';
+import { APP_URL, FULFILL_ON_PAYMENT } from '@/lib/constants';
 import { captureServerEvent } from '@/lib/posthog-server';
 import { audit } from '@/lib/audit';
 import { fulfillOrder } from '@/lib/fulfillment';
+import { generateUniqueShortCode } from '@/lib/short-code';
 import { cancelPrintfulOrder } from '@/lib/printful-status';
 import { subscriptionMemberUpdate } from '@/lib/subscription';
 
@@ -197,13 +198,11 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
     // page /commande ou le self-service resend ; le support a la trace d'audit.
   }
 
-  // ─── 2. Fulfillment (membre existant) ────────────────────────────────
+  // ─── 2. Fulfillment ───────────────────────────────────────────────────
   // Résout le membre par userId (achat connecté) OU, à défaut, par email
-  // (rachat d'un membre existant — shop/checkout ne met pas de userId). Pour un
-  // NOUVEAU client, aucun membre ne matche encore (il n'a pas de profil) → le
-  // fulfillment sera déclenché par /api/member/create après création du profil.
-  // L'email du checkout est celui de l'acheteur (il en a besoin pour le code),
-  // donc le match email→membre n'attribue pas à tort.
+  // (rachat d'un membre existant — shop/checkout ne met pas de userId). L'email du
+  // checkout est celui de l'acheteur (il en a besoin pour le code), donc le match
+  // email→membre n'attribue pas à tort.
   let fulfillMemberId: string | null = userId ?? null;
   if (!fulfillMemberId && email) {
     const { data: m } = await supabaseAdmin
@@ -211,22 +210,57 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
     fulfillMemberId = m?.id ?? null;
   }
 
-  if (fulfillMemberId) {
-    const result = await fulfillOrder({ orderId: existingOrder.id, memberId: fulfillMemberId, tshirtColor, tshirtSize });
-    if (result.ok) {
-      audit({
-        action:   'order.fulfilled',
-        memberId: fulfillMemberId,
-        metadata: { orderId: existingOrder.id, printfulOrderId: result.printfulOrderId, alreadyFulfilled: result.alreadyFulfilled, trigger: 'webhook' },
-      });
-    } else {
-      audit({
-        action:   'order.fulfillment_failed',
-        memberId: fulfillMemberId,
-        metadata: { orderId: existingOrder.id, reason: result.reason, trigger: 'webhook' },
-      });
-      console.error('[webhook] Fulfillment failed:', result.reason);
+  // Un échec Printful ne doit PAS 500 le webhook (Stripe rejouerait, retomberait
+  // sur status≠pending et sortirait tôt → jamais retenté ici). On fail-soft : le
+  // cron `fulfillment-reconcile` rejouera. D'où le try/catch + audit.
+  try {
+    if (fulfillMemberId) {
+      // MEMBRE EXISTANT (rachat) : on imprime vers son profil, comme avant.
+      const result = await fulfillOrder({ orderId: existingOrder.id, memberId: fulfillMemberId, tshirtColor, tshirtSize });
+      auditFulfillment(result, existingOrder.id, fulfillMemberId, 'webhook');
+    } else if (FULFILL_ON_PAYMENT) {
+      // NOUVEAU CLIENT : pas encore de profil. On RÉSERVE un short_code sur la
+      // commande et on imprime tout de suite. À l'activation, le membre héritera
+      // de ce code → le QR imprimé pointera vers son profil. Sans le flag, on ne
+      // fait rien ici : l'impression aura lieu à l'activation (ancien modèle).
+      const reserved = await generateUniqueShortCode();
+      // Guard `.is('short_code', null)` : idempotent si un chemin concurrent a déjà réservé.
+      await supabaseAdmin
+        .from('orders').update({ short_code: reserved })
+        .eq('id', existingOrder.id).is('short_code', null);
+      const result = await fulfillOrder({ orderId: existingOrder.id, tshirtColor, tshirtSize });
+      auditFulfillment(result, existingOrder.id, null, 'webhook_prepaid');
     }
+  } catch (fulfillErr) {
+    console.error('[webhook] Fulfillment exception:', fulfillErr);
+    audit({
+      action:   'order.fulfillment_failed',
+      metadata: { orderId: existingOrder.id, reason: fulfillErr instanceof Error ? fulfillErr.message : String(fulfillErr), trigger: 'webhook' },
+    });
+  }
+}
+
+// Émet la trace d'audit d'un fulfillment (succès/échec) — factorisé entre le
+// chemin « membre existant » et « nouveau client (prépayé) ».
+function auditFulfillment(
+  result: Awaited<ReturnType<typeof fulfillOrder>>,
+  orderId: string,
+  memberId: string | null,
+  trigger: string,
+): void {
+  if (result.ok) {
+    audit({
+      action:   'order.fulfilled',
+      ...(memberId ? { memberId } : {}),
+      metadata: { orderId, printfulOrderId: result.printfulOrderId, alreadyFulfilled: result.alreadyFulfilled, trigger },
+    });
+  } else {
+    audit({
+      action:   'order.fulfillment_failed',
+      ...(memberId ? { memberId } : {}),
+      metadata: { orderId, reason: result.reason, trigger },
+    });
+    console.error('[webhook] Fulfillment failed:', result.reason);
   }
 }
 

@@ -1,13 +1,16 @@
 // GET /api/cron/fulfillment-reconcile
 // Filet (M3-3) : un fulfillment Printful échoué (Printful down au moment du
 // webhook OU de member/create) laissait une commande PAYÉE sans t-shirt, jamais
-// retentée — re-soumettre member/create tombe sur `already_exists` et zappe le
-// fulfillment. Ce cron repère les orders `paid` sans `printful_order_id`, résout
-// le membre via `activation_code` (orders n'a pas de member_id), et rejoue
+// retentée. Ce cron repère les orders `paid` sans `printful_order_id` et rejoue
 // `fulfillOrder` (idempotent via external_id Printful).
 //
-// Skip si le code n'est pas encore lié à un membre : l'acheteur a payé mais pas
-// encore activé son code → le fulfillment se fera naturellement à l'inscription.
+// Deux cas de résolution :
+//   - Commande RÉSERVÉE (orders.short_code présent, modèle « imprimer au
+//     paiement ») → on rejoue SANS membre, même si le profil n'est pas encore
+//     activé. C'est tout l'intérêt : le tee part sans attendre l'activation.
+//   - Sinon, on résout le membre via `activation_code` (ancien modèle « imprimer
+//     à l'activation »). Skip si pas encore activé → l'impression se fera à
+//     l'inscription.
 //
 // Protégé par CRON_SECRET (Vercel Cron envoie Authorization: Bearer).
 
@@ -39,10 +42,9 @@ export async function GET(req: NextRequest) {
   for (let batch = 0; batch < MAX_BATCHES; batch++) {
     const { data: orders, error } = await supabaseAdmin
       .from('orders')
-      .select('id, activation_code, tshirt_color, tshirt_size')
+      .select('id, activation_code, tshirt_color, tshirt_size, short_code')
       .eq('status', 'paid')
       .is('printful_order_id', null)
-      .not('activation_code', 'is', null)
       .gt('id', lastId)
       .order('id', { ascending: true })
       .limit(BATCH_SIZE);
@@ -59,29 +61,42 @@ export async function GET(req: NextRequest) {
 
       // Résout le membre via le code d'activation (la RPC create_member_with_code
       // pose activation_codes.member_id à la création — migration 014 §4).
-      const { data: codeRow } = await supabaseAdmin
-        .from('activation_codes')
-        .select('member_id')
-        .eq('code', o.activation_code)
-        .maybeSingle();
+      let memberId: string | null = null;
+      if (o.activation_code) {
+        const { data: codeRow } = await supabaseAdmin
+          .from('activation_codes')
+          .select('member_id')
+          .eq('code', o.activation_code)
+          .maybeSingle();
+        memberId = codeRow?.member_id ?? null;
+      }
 
-      if (!codeRow?.member_id) { skipped++; continue; } // pas encore activé → plus tard
+      // On peut imprimer si : un membre est activé (rachat / ancien modèle) OU un
+      // short_code est réservé sur la commande (modèle « imprimer au paiement »,
+      // profil pas forcément activé). Sinon : ni l'un ni l'autre → on attend
+      // l'activation (ancien modèle sans réservation).
+      if (!memberId && !o.short_code) { skipped++; continue; }
 
       const tshirtColor = o.tshirt_color === 'light' ? 'light' : 'dark';
       try {
-        const result = await fulfillOrder({ orderId: o.id, memberId: codeRow.member_id, tshirtColor, tshirtSize: o.tshirt_size });
+        const result = await fulfillOrder({
+          orderId:     o.id,
+          memberId,                       // null → chemin sans-membre (via order.short_code)
+          tshirtColor,
+          tshirtSize:  o.tshirt_size,
+        });
         if (result.ok && !result.alreadyFulfilled) {
           fulfilled++;
           audit({
             action:   'order.fulfilled',
-            memberId: codeRow.member_id,
+            ...(memberId ? { memberId } : {}),
             metadata: { orderId: o.id, printfulOrderId: result.printfulOrderId, trigger: 'cron_reconcile' },
           });
         } else if (!result.ok) {
           failed++;
           audit({
             action:   'order.fulfillment_failed',
-            memberId: codeRow.member_id,
+            ...(memberId ? { memberId } : {}),
             metadata: { orderId: o.id, reason: result.reason, trigger: 'cron_reconcile' },
           });
           console.error('[cron/fulfillment-reconcile] failed', o.id, result.reason);
