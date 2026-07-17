@@ -27,7 +27,7 @@ export default function CGVPage() {
             Conditions Générales de Vente
           </h1>
           <p className="font-ui text-sm text-brand-gray/50 tracking-wide">
-            Version en vigueur — Dernière mise à jour : avril 2025
+            Version en vigueur — Dernière mise à jour : juillet 2026
           </p>
         </div>
 
@@ -59,9 +59,12 @@ export default function CGVPage() {
             via la technique DTFlex (Direct to Film), sur le modèle Stanley/Stella Creator 2.0 (coton bio).
           </p>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
-            Chaque vêtement comporte un QR code unique, crypté et lié au profil personnel de l&apos;Acheteur,
-            généré spécifiquement pour sa commande. Ce QR code constitue un élément de personnalisation
-            au sens de l&apos;article L221-28 du Code de la consommation.
+            Chaque vêtement comporte un QR code unique, crypté, généré spécifiquement pour la commande de
+            l&apos;Acheteur. Ce QR code se lie au profil personnel de l&apos;Acheteur lorsque ce dernier active
+            son profil ; tant que l&apos;Acheteur n&apos;a pas créé son profil, le QR code renvoie vers une page
+            indiquant que le profil n&apos;est pas encore activé. Qu&apos;il soit activé ou non, ce QR code,
+            unique et généré pour la commande, constitue un élément de personnalisation au sens de
+            l&apos;article L221-28 du Code de la consommation.
           </p>
         </section>
 
