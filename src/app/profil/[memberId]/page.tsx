@@ -40,11 +40,7 @@ export async function generateMetadata({ params }: Props) {
 }
 
 export default async function ProfilPage({ params, searchParams }: Props) {
-  const [member, firstScanAt] = await Promise.all([
-    getPublicMember(params.memberId),
-    getFirstScanAt(params.memberId),
-  ]);
-
+  const member = await getPublicMember(params.memberId);
   if (!member) notFound();
 
   // Détecte si le visiteur est le propriétaire de ce profil. member.auth_user_id
@@ -57,6 +53,11 @@ export default async function ProfilPage({ params, searchParams }: Props) {
       isOwner = await isProfileOwner(params.memberId, user.id);
     }
   } catch {}
+
+  // `firstScanAt` n'est utilisé que dans la vue propriétaire → on ne le récupère et
+  // ne le sérialise QUE pour le propriétaire. Avant, il était calculé pour tous et
+  // envoyé dans le HTML même à un scanneur anonyme (exposition inutile d'un timestamp).
+  const firstScanAt = isOwner ? await getFirstScanAt(params.memberId) : null;
 
   // Aperçu « vis ton premier scan » : le porteur voit son profil tel qu'un
   // scanneur le voit. Réservé au propriétaire (sinon ignoré → vue scanneur).

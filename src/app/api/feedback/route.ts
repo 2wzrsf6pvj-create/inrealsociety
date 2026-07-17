@@ -38,14 +38,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Message requis pour un feedback app.' }, { status: 400 });
     }
 
-    // Empêche les doublons de feedback conversation (1 par message)
+    // Empêche les doublons de feedback conversation (1 par message). Chemin rapide ;
+    // le vrai garde anti-course est l'index unique partiel (migration 051), traité
+    // via le 23505 ci-dessous. maybeSingle : 0 ligne = cas normal (pas d'erreur/406).
     if (type === 'conversation' && messageId) {
       const { data: existing } = await supabaseAdmin
         .from('feedback')
         .select('id')
         .eq('type', 'conversation')
         .eq('message_id', messageId)
-        .single();
+        .maybeSingle();
 
       if (existing) {
         return NextResponse.json({ ok: true, alreadySubmitted: true });
@@ -61,7 +63,14 @@ export async function POST(req: NextRequest) {
       metadata:   { ip },
     });
 
-    if (insertError) throw insertError;
+    if (insertError) {
+      // Course perdue sur l'index unique partiel (deux soumissions quasi simultanées
+      // pour le même message) → c'est un doublon, pas une erreur serveur.
+      if (insertError.code === '23505') {
+        return NextResponse.json({ ok: true, alreadySubmitted: true });
+      }
+      throw insertError;
+    }
 
     return NextResponse.json({ ok: true });
 

@@ -44,10 +44,16 @@ export async function GET(req: NextRequest) {
     }
   );
 
-  const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
-
-  if (error) {
-    console.error('[auth/confirm]', error.message);
+  // try/catch : verifyOtp peut LANCER (panne réseau Supabase) et pas seulement
+  // retourner { error }. Sans ça → 500 nu au lieu du redirect gracieux vers login.
+  try {
+    const { error } = await supabase.auth.verifyOtp({ type, token_hash: tokenHash });
+    if (error) {
+      console.error('[auth/confirm]', error.message);
+      return NextResponse.redirect(`${origin}/auth/login?error=auth_failed`);
+    }
+  } catch (err) {
+    console.error('[auth/confirm] exception:', err);
     return NextResponse.redirect(`${origin}/auth/login?error=auth_failed`);
   }
 

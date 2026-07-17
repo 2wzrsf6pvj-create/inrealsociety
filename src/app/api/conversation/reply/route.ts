@@ -18,7 +18,9 @@ import { isBlocked, isDeviceBanned } from '@/lib/blocks';
 
 const schema = z.object({
   messageId: z.string().uuid(),      // ID du message racine (le premier)
-  content:   z.string().min(1).max(2000),
+  // `.trim()` AVANT `.min(1)` : un contenu 100 % espaces (« &nbsp;&nbsp; ») passait
+  // `min(1)` puis devenait '' à l'insert → bulle vide qui consomme un créneau du cap.
+  content:   z.string().trim().min(1).max(2000),
   author:    z.enum(['scanner', 'member']),
 });
 

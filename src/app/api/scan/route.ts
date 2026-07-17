@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { sendEmail, emailNouveauScan } from '@/lib/email-templates';
-import { checkScanRateLimit, isNewScan, getIp, rateLimitHeaders } from '@/lib/ratelimit';
+import { checkScanRateLimit, isNewScan, releaseScanDedup, getIp, rateLimitHeaders } from '@/lib/ratelimit';
 import { audit } from '@/lib/audit';
 import { captureServerEvent } from '@/lib/posthog-server';
 
@@ -107,7 +107,12 @@ export async function POST(req: NextRequest) {
       p_location:     location,
     });
 
-    if (scanError) throw scanError;
+    if (scanError) {
+      // L'écriture a échoué alors que `isNewScan` a déjà consommé le créneau de
+      // dédup → on le libère pour qu'un retry ne soit pas vu « doublon » et perdu.
+      await releaseScanDedup(memberId, ip);
+      throw scanError;
+    }
 
     // ─── Audit ────────────────────────────────────────────────────────────
     audit({

@@ -245,6 +245,21 @@ export async function isNewScan(memberId: string, ip: string): Promise<boolean> 
   }
 }
 
+/**
+ * Libère le créneau de déduplication d'un scan. À appeler quand l'ÉCRITURE du scan
+ * a échoué APRÈS que `isNewScan` a déjà consommé le créneau : sans ça, le marqueur
+ * de dédup reste posé 30 min et tout retry est vu « doublon » → le scan est perdu
+ * (sous-comptage + email manqué). Best-effort : une panne de reset ne casse rien.
+ */
+export async function releaseScanDedup(memberId: string, ip: string): Promise<void> {
+  if (!ip || ip === 'anonymous') return;
+  try {
+    await limitScanDedup().resetUsedTokens(`${memberId}:${ip}`);
+  } catch {
+    // Reset best-effort : au pire le créneau expire naturellement (30 min).
+  }
+}
+
 /** Extrait l'IP réelle depuis les headers Next.js / Vercel.
  *
  * ⚠️ Sécurité : `x-real-ip` D'ABORD. Sur Vercel c'est l'IP réelle du pair, posée

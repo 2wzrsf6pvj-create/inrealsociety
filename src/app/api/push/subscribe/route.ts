@@ -30,6 +30,19 @@ const schema = z.object({
   memberId:  z.string().uuid().optional(),
 }).refine(d => d.messageId || d.memberId, { message: 'messageId ou memberId requis' });
 
+// L'endpoint est stocké puis POSTé par webpush.sendNotification → on n'accepte que
+// les hôtes des vrais services de push (sinon un endpoint arbitraire = primitive
+// SSRF sortante). Suffixes larges pour couvrir toutes les régions/navigateurs.
+const ALLOWED_PUSH_HOST_SUFFIXES = ['googleapis.com', 'mozilla.com', 'windows.com', 'apple.com'];
+function isAllowedPushEndpoint(endpoint: string): boolean {
+  try {
+    const host = new URL(endpoint).hostname.toLowerCase();
+    return ALLOWED_PUSH_HOST_SUFFIXES.some(s => host === s || host.endsWith('.' + s));
+  } catch {
+    return false;
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const ip = getIp(req);
@@ -44,12 +57,27 @@ export async function POST(req: NextRequest) {
     }
     const { subscription, messageId, memberId } = body.data;
 
+    // N'accepte que les endpoints des vrais services de push (anti-SSRF sortant).
+    if (!isAllowedPushEndpoint(subscription.endpoint)) {
+      return NextResponse.json({ error: 'Endpoint de push non supporté.' }, { status: 400 });
+    }
+
     // Abonnement niveau membre → réservé au porteur authentifié (anti-fuite).
     if (memberId) {
       const auth = await requireAuth(req);
       if (isHttpError(auth)) return auth;
       const own = await requireOwnership(auth.user.id, memberId);
       if (isHttpError(own)) return own;
+    } else {
+      // Chemin PUBLIC (thread) : ne pas laisser un appel non-authentifié RÉÉCRIRE un
+      // abonnement déjà lié à un MEMBRE (le hijack via onConflict:'endpoint' aurait
+      // repointé member_id→null + message_id vers un thread choisi). On refuse
+      // silencieusement d'écraser un scope membre existant.
+      const { data: existing } = await supabaseAdmin
+        .from('push_subscriptions').select('member_id').eq('endpoint', subscription.endpoint).maybeSingle();
+      if (existing?.member_id) {
+        return NextResponse.json({ ok: true });
+      }
     }
 
     const { error } = await supabaseAdmin.from('push_subscriptions').upsert({

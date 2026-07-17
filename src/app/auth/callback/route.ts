@@ -31,10 +31,17 @@ export async function GET(req: NextRequest) {
     }
   );
 
-  const { error } = await supabase.auth.exchangeCodeForSession(code);
-
-  if (error) {
-    console.error('[auth/callback]', error.message);
+  // try/catch : exchangeCodeForSession peut LANCER (panne réseau Supabase, état
+  // interne malformé) et pas seulement retourner { error }. Sans ça → 500 nu au
+  // lieu du redirect gracieux vers login.
+  try {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) {
+      console.error('[auth/callback]', error.message);
+      return NextResponse.redirect(`${origin}/auth/login?error=auth_failed`);
+    }
+  } catch (err) {
+    console.error('[auth/callback] exception:', err);
     return NextResponse.redirect(`${origin}/auth/login?error=auth_failed`);
   }
 
