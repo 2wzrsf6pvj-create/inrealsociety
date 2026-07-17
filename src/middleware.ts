@@ -22,6 +22,8 @@ const PUBLIC_PAGES = new Set([
   '/auth/confirm',      // confirmation OTP token_hash (reset cross-device, signup)
   '/auth/forgot-password',
   '/auth/reset-password',
+  '/demo-message',      // page démo (aperçu « message reçu » pour screenshot) — noindex, à retirer
+  '/demo-notif',        // page démo (aperçu notif écran verrouillé pour screenshot) — noindex, à retirer
 ]);
 
 const PUBLIC_PAGE_PREFIXES = [

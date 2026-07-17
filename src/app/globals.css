@@ -267,6 +267,25 @@ button, a {
 }
 
 /* ─────────────────────────────────────────
+   NOTIF DROP — la notification « arrive » sur l'écran verrouillé (hero accueil).
+   Délai : l'écran reste VIDE ~0,9 s (juste l'heure) puis la notif tombe avec un
+   léger dépassement (cubic-bezier overshoot), comme une vraie notification push.
+   `both` : pendant le délai, l'élément tient l'état 0 % (invisible) → pas de flash.
+   ───────────────────────────────────────── */
+@keyframes notifDrop {
+  0%   { opacity: 0; transform: translateY(-55%) scale(0.96); }
+  60%  { opacity: 1; }
+  100% { opacity: 1; transform: translateY(0)     scale(1);   }
+}
+.animate-notif-drop {
+  animation: notifDrop 0.7s 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+/* Reduced-motion : pas de mouvement ni de délai — la notif est simplement présente. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-notif-drop { animation: none !important; }
+}
+
+/* ─────────────────────────────────────────
    TYPING DOTS — indicateur "en attente de réponse" (conversation)
    ───────────────────────────────────────── */
 @keyframes typingDot {

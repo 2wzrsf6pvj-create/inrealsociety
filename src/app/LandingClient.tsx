@@ -1,87 +1,18 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { BrandMark } from '@/app/components/ui/BrandMark';
+import { PhoneNotif } from '@/app/components/ui/PhoneNotif';
 import { captureEvent } from '@/lib/posthog-client';
 
-// Visuel produit de la hero — affiché seulement quand un mockup existe (flag +
-// onError). Tant que false : rendu null → l'accueil reste exactement comme avant.
-// `className` porte le dimensionnement/visibilité : le mobile garde son instance en
-// flux (lg:hidden), le desktop en a une dédiée dans la colonne de gauche (hidden lg:block).
+// Visuel du héros = le « moment de réception » : un téléphone (écran verrouillé) qui
+// reçoit la notification IRS. On montre l'INSTANT que le produit crée, pas le t-shirt
+// (la maquette produit vit dans la BOUTIQUE). `className` porte le dimensionnement :
+// mobile en flux (lg:hidden), desktop dans la colonne de gauche (hidden lg:block).
 function ProductHero({ className = '' }: { className?: string }) {
-  const [missing, setMissing] = useState(false);
-  // Emplacement du VISUEL D'USAGE (scène IRL — image/vidéo, ex. générée IA) :
-  // public/shop/hero-scene.png. Tant qu'il n'existe pas → repli sur le placeholder SVG.
-  // La MAQUETTE produit (tee-hero.png) est désormais dans la BOUTIQUE (/shop), pas ici.
-  const showPhoto = !missing;
-  return (
-    <div className={`relative aspect-square animate-stagger-2 ${className}`}>
-      {showPhoto ? (
-        <Image
-          src="/shop/hero-scene.png"
-          alt="Quelqu'un remarque et scanne un t-shirt In Real Society dans la rue"
-          fill sizes="(min-width: 1024px) 340px, 240px" className="object-cover rounded-[2px]"
-          onError={() => setMissing(true)} priority
-        />
-      ) : (
-        /* Placeholder produit en attendant les vraies photos : le t-shirt vu de DOS, avec
-           le QR (le vrai print arrière) et l'accroche dessous — l'accroche produit. Tee noir
-           + QR blanc = le rendu réel (print monochrome). Remplacé par la photo dès SHOP_IMAGES_READY. */
-        <div className="absolute inset-0 rounded-[2px] border border-brand-gray/12 bg-brand-dark overflow-hidden flex flex-col items-center justify-center gap-3">
-          <div className="absolute inset-0" style={{ background: 'radial-gradient(circle at 50% 38%, rgba(255,255,255,0.045), transparent 68%)' }} />
-          <span className="absolute top-3 right-3 font-ui text-[0.55rem] text-brand-accent/70 tracking-[0.2em] uppercase">Édition limitée</span>
-
-          {/* T-shirt vu de DOS (silhouette réaliste) + QR imprimé au centre du dos */}
-          <div className="relative w-[80%] max-w-[248px] aspect-square flex items-center justify-center">
-            <svg viewBox="0 0 200 200" className="w-full h-full" fill="none" aria-hidden="true">
-              <defs>
-                <linearGradient id="teeFabric" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0" stopColor="#1e1e1e" />
-                  <stop offset="0.55" stopColor="#161616" />
-                  <stop offset="1" stopColor="#101010" />
-                </linearGradient>
-              </defs>
-              {/* corps du t-shirt (dos) : épaules tombantes, emmanchures, manches courtes, ourlet.
-                  Encolure DOS = arc peu profond (contrairement au décolleté de face). */}
-              <path
-                d="M74,40
-                   C 84,47 116,47 126,40
-                   L 150,38 L 178,64 C 172,72 166,74 160,74 L 150,66
-                   C 152,104 152,150 151,176 L 49,176
-                   C 48,150 48,104 50,66 L 40,74 C 34,74 28,72 22,64 L 50,38 Z"
-                fill="url(#teeFabric)" stroke="rgba(255,255,255,0.18)" strokeWidth="1.3" strokeLinejoin="round"
-              />
-              {/* bande de propreté dos (parementure) sous le col */}
-              <path d="M78,42 C 90,49 110,49 122,42" fill="none" stroke="rgba(255,255,255,0.20)" strokeWidth="1.4" strokeLinecap="round" />
-              <path d="M84,49 L 116,49" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="1" strokeLinecap="round" />
-              {/* ombres de plis : coutures de manche + creux sous les bras */}
-              <path d="M55,64 C 58,96 58,140 57,174" fill="none" stroke="rgba(0,0,0,0.35)" strokeWidth="1.1" strokeLinecap="round" />
-              <path d="M145,64 C 142,96 142,140 143,174" fill="none" stroke="rgba(0,0,0,0.35)" strokeWidth="1.1" strokeLinecap="round" />
-              <path d="M156,70 L 150,64" fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth="1" strokeLinecap="round" />
-              <path d="M44,70 L 50,64" fill="none" stroke="rgba(0,0,0,0.3)" strokeWidth="1" strokeLinecap="round" />
-              {/* ourlet bas */}
-              <path d="M49,171 L 151,171" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
-            </svg>
-            {/* QR (print réel du dos) + accroche, centré sur le haut du dos */}
-            <div className="absolute" style={{ top: '30%', left: '50%', transform: 'translateX(-50%)', width: '44%' }}>
-              <Image
-                src="/shop/tee-back-print.png"
-                alt="QR code imprimé au dos du t-shirt"
-                width={264} height={319}
-                className="w-full h-auto opacity-95"
-                priority
-              />
-            </div>
-          </div>
-
-          <p className="font-ui text-xxs text-brand-gray/50 tracking-[0.22em] uppercase">Stanley/Stella Creator 2.0</p>
-        </div>
-      )}
-    </div>
-  );
+  return <PhoneNotif animate className={`animate-stagger-2 ${className}`} />;
 }
 
 
@@ -177,7 +108,7 @@ function LandingContent() {
 
         {/* Colonne GAUCHE (desktop only) — le visuel produit. */}
         {!(scannerName && hasMemberId) && (
-          <ProductHero className="hidden lg:block w-[340px] shrink-0" />
+          <ProductHero className="hidden lg:block w-[250px] shrink-0" />
         )}
 
         {/* Colonne DROITE (= la colonne unique du mobile). */}
@@ -237,7 +168,7 @@ function LandingContent() {
               )}
               {/* Instance MOBILE/tablette : reste exactement en flux, entre la copie et
                   la triade. Sur lg, c'est l'instance de la colonne de gauche qui prend le relais. */}
-              <ProductHero className="w-full max-w-[240px] mx-auto lg:hidden" />
+              <ProductHero className="w-full max-w-[208px] mx-auto lg:hidden" />
               <div className="flex items-center justify-center gap-4 lg:justify-start">
                 <span className="font-ui text-xs text-brand-gray/55 tracking-[0.15em] uppercase">Anonyme</span>
                 <span className="text-brand-gray/15">·</span>
