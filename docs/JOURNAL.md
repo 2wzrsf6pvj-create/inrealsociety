@@ -48,10 +48,11 @@ contenu au défilement ; « Sans swipe » passe sur deux lignes sur mobile.
   une seule source et facturés TTC (`tax_behavior: 'inclusive'`) : sans cela,
   selon un réglage du compte Stripe, les « 5 € » affichés pouvaient devenir
   6 € débités.
-- **PR #10 ouverte** — CI : le job Playwright installe Chromium sans
-  `apt-get` (`--with-deps` retiré). L'image des runners GitHub a déjà les
-  bibliothèques ; apt n'ajoutait que des polices et a fait dépasser 15 min au
-  job de la #7.
+- **PR #10 fusionnée** (`4e9b506`) — CI : le job Playwright installe
+  Chromium sans `apt-get` (`--with-deps` retiré). L'image des runners GitHub a
+  déjà les bibliothèques ; apt n'ajoutait que des polices et a fait dépasser
+  15 min au job de la #7. Mesuré : installation 6 min → 12 s, job complet
+  7 min 24 s → 1 min 32 s.
 
 ### À faire — côté Clément (s'ajoute à la liste précédente)
 - [ ] Appliquer **055** après 053 et 054 (même procédure ; avec la CLI, le
