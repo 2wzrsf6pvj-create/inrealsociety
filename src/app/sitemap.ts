@@ -1,10 +1,6 @@
 import type { MetadataRoute } from 'next';
-import { supabaseAdmin } from '@/lib/supabase-admin';
 
-// Revalide chaque heure — équilibre fraîcheur / coût Supabase.
-export const revalidate = 3600;
-
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+export default function sitemap(): MetadataRoute.Sitemap {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://inrealsociety.com';
   const now = new Date();
 
@@ -18,21 +14,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/mentions-legales`, lastModified: now, changeFrequency: 'yearly',  priority: 0.2 },
   ];
 
-  // Profils publics actifs — limite à 5000 pour rester sous la limite Google (50k urls / sitemap).
-  // Les membres en pause sont exclus pour ne pas exposer de profil inactif.
-  const { data: members } = await supabaseAdmin
-    .from('members')
-    .select('id, updated_at')
-    .eq('is_paused', false)
-    .order('updated_at', { ascending: false })
-    .limit(5000);
-
-  const memberPages: MetadataRoute.Sitemap = (members ?? []).map(m => ({
-    url:             `${baseUrl}/profil/${m.id}`,
-    lastModified:    new Date(m.updated_at),
-    changeFrequency: 'weekly' as const,
-    priority:        0.7,
-  }));
-
-  return [...staticPages, ...memberPages];
+  // Les profils des porteurs n'y figurent PAS : on découvre un profil en scannant
+  // un t-shirt, dans la vraie vie. Les lister permettait de récupérer tous les
+  // porteurs et de leur écrire à distance (et Google les indexait). Les pages
+  // profil portent en plus `robots: noindex` (cf. profil/[memberId]/page.tsx).
+  return staticPages;
 }

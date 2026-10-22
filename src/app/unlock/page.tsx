@@ -3,8 +3,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { BrandMark } from '@/app/components/ui/BrandMark';
-
-const NAME_REGEX = /^[a-zA-ZÀ-ÿ\s\-']{1,30}$/;
+import { isValidFirstName } from '@/lib/validators';
 
 // UUID v4 regex pour valider le memberId
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -31,7 +30,8 @@ export default function UnlockPage() {
 
   const validate = (value: string): string => {
     if (!value.trim()) return "L'audace commence par donner son prénom.";
-    if (!NAME_REGEX.test(value.trim())) return 'Lettres uniquement, merci.';
+    // Même règle que le serveur (/api/scan) : un prénom refusé y serait ignoré.
+    if (!isValidFirstName(value.trim())) return 'Lettres uniquement, merci.';
     return '';
   };
 

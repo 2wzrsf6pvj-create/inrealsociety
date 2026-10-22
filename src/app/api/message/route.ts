@@ -9,6 +9,7 @@ import { checkMessageRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit'
 import { audit } from '@/lib/audit';
 import { SCAN_WINDOW_MS, MAX_CONVERSATIONS, QUICK_REPLIES as QUICK_REPLIES_LIST } from '@/lib/constants';
 import { moderateContent } from '@/lib/moderation';
+import { isValidFirstName } from '@/lib/validators';
 import { getSenderToken, createSenderToken, setSenderTokenCookie } from '@/lib/sender-token';
 import { isBlocked, isDeviceBanned } from '@/lib/blocks';
 import { getActiveConversationsCount } from '@/lib/inbox';
@@ -162,12 +163,18 @@ export async function POST(req: NextRequest) {
     // (`isKnownQuickReply` = contenu ∈ liste figée). Le flag client `isQuickReply`
     // ne doit JAMAIS conditionner la modération : sinon `{content:"<abus>",
     // isQuickReply:true}` la contournait entièrement (message livré non modéré).
+    // Le contact aussi est affiché au porteur (tableau de bord, email) : texte libre
+    // modéré comme le message, sinon une insulte y passait sans filtre.
+    // Le prénom doit en plus avoir un format de prénom (cf. isValidFirstName).
     const isKnownQuickReply = QUICK_REPLIES.has(content.trim());
-    const trimmedName = senderName?.trim() || '';
+    const rawName = senderName?.trim() || '';
+    const trimmedName = isValidFirstName(rawName) ? rawName : '';
+    const trimmedContact = senderContact?.trim() || '';
     const passthrough = { flagged: false, source: 'regex' as const, categories: [] };
-    const [moderation, nameModeration] = await Promise.all([
+    const [moderation, nameModeration, contactModeration] = await Promise.all([
       isKnownQuickReply ? Promise.resolve(passthrough) : moderateContent(content),
       trimmedName ? moderateContent(trimmedName) : Promise.resolve(passthrough),
+      trimmedContact ? moderateContent(trimmedContact) : Promise.resolve(passthrough),
     ]);
     const cleanName: string | null = (trimmedName && !nameModeration.flagged) ? trimmedName : null;
 
@@ -177,12 +184,19 @@ export async function POST(req: NextRequest) {
     // (regex) ne le verrouille pas à vie sur le geste central du produit. L'audit
     // garde la trace de la tentative (sender_token → harcèlement en série) et le
     // rate-limit plafonne les ré-essais abusifs. Le porteur ne reçoit rien.
-    if (moderation.flagged) {
+    // Un contact signalé bloque tout le message (contrairement au prénom, qu'on
+    // peut simplement retirer) : il peut être exigé par le porteur.
+    if (moderation.flagged || contactModeration.flagged) {
+      const flaggedBy = moderation.flagged ? moderation : contactModeration;
       audit({
         action:   'message.moderated',
         memberId,
         ip,
-        metadata: { isQuickReply: isKnownQuickReply, senderToken, moderationSource: moderation.source, categories: moderation.categories },
+        metadata: {
+          isQuickReply: isKnownQuickReply, senderToken,
+          field: moderation.flagged ? 'content' : 'contact',
+          moderationSource: flaggedBy.source, categories: flaggedBy.categories,
+        },
       });
       const res = NextResponse.json({ ok: true, moderated: true });
       setSenderTokenCookie(res, senderToken); // device identifié pour la reformulation

@@ -7,6 +7,8 @@ import { sendEmail, emailNouveauScan } from '@/lib/email-templates';
 import { checkScanRateLimit, isNewScan, releaseScanDedup, getIp, rateLimitHeaders } from '@/lib/ratelimit';
 import { audit } from '@/lib/audit';
 import { captureServerEvent } from '@/lib/posthog-server';
+import { moderateContent } from '@/lib/moderation';
+import { isValidFirstName } from '@/lib/validators';
 
 const schema = z.object({
   memberId:    z.string().uuid(),
@@ -86,11 +88,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true, duplicate: true });
     }
 
-    // ─── Reverse geocoding (non-bloquant) ──────────────────────────────
-    let location: string | null = null;
-    if (latitude != null && longitude != null) {
-      location = await reverseGeocode(latitude, longitude);
-    }
+    // ─── Reverse geocoding (non-bloquant) + prénom du passant ────────────
+    // Le prénom est affiché au porteur (email « … vient de voir votre profil »,
+    // tableau de bord) et ce point d'accès est public : format prénom imposé ici
+    // (le client se contourne), puis modération. Invalide ou signalé → ignoré, le
+    // scan reste enregistré, sans prénom. Les deux appels réseau en parallèle.
+    const rawName = scannerName?.trim() || '';
+    const [location, nameAccepted] = await Promise.all([
+      latitude != null && longitude != null ? reverseGeocode(latitude, longitude) : Promise.resolve(null),
+      isValidFirstName(rawName) ? moderateContent(rawName).then((m) => !m.flagged) : Promise.resolve(false),
+    ]);
+    const cleanName = nameAccepted ? rawName : null;
 
     // ─── Enregistrement atomique (insert scan + incrément scan_count) ──────
     // Coordonnées arrondies à 3 décimales (~110 m) avant stockage : on garde
@@ -101,7 +109,7 @@ export async function POST(req: NextRequest) {
     const round3 = (n: number) => Math.round(n * 1000) / 1000;
     const { error: scanError } = await supabaseAdmin.rpc('record_scan', {
       p_member_id:    memberId,
-      p_scanner_name: scannerName || null,
+      p_scanner_name: cleanName,
       p_latitude:     latitude != null ? round3(latitude) : null,
       p_longitude:    longitude != null ? round3(longitude) : null,
       p_location:     location,
@@ -119,7 +127,7 @@ export async function POST(req: NextRequest) {
       action:   'scan.recorded',
       memberId,
       ip,
-      metadata: { scannerName },
+      metadata: { scannerName: cleanName, nameDropped: !!rawName && !cleanName },
     });
 
     // ─── Rétention (P0) : event keyé sur le PORTEUR (distinctId = member_id) ──
@@ -136,7 +144,7 @@ export async function POST(req: NextRequest) {
       const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/${member.id}`;
       const { subject, html } = emailNouveauScan({
         memberName:   member.name,
-        scannerName:  scannerName ?? undefined,  // .nullish() → null possible, le template attend string|undefined
+        scannerName:  cleanName ?? undefined,  // le template attend string|undefined
         dashboardUrl,
       });
       sendEmail({ to: member.email, subject, html }).catch((err) => console.error('[api/scan] Échec envoi email:', err));

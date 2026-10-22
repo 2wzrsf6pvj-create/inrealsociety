@@ -7,9 +7,14 @@ import ProfilClient from './ProfilClient';
 
 interface Props { params: { memberId: string }; searchParams: { preview?: string } }
 
+// Un profil se découvre en scannant un t-shirt, pas sur un moteur de recherche :
+// jamais indexé (prénom, photo, Instagram d'un porteur). Les balises de partage
+// restent, pour l'aperçu quand le porteur partage lui-même son lien.
+const NOINDEX = { index: false, follow: false } as const;
+
 export async function generateMetadata({ params }: Props) {
   const member = await getPublicMember(params.memberId);
-  if (!member) return { title: 'In Real Society' };
+  if (!member) return { title: 'In Real Society', robots: NOINDEX };
 
   // OG/Twitter explicites pour garantir le partage social viral.
   // L'image dynamique est générée par /profil/[id]/opengraph-image.tsx (edge).
@@ -18,8 +23,9 @@ export async function generateMetadata({ params }: Props) {
   const ogImage    = `${profileUrl}/opengraph-image`;
 
   return {
-    title:       `${member.name} — In Real Society`,
+    title:       member.name,   // le gabarit du layout ajoute « — In Real Society »
     description: member.pitch,
+    robots:      NOINDEX,
     alternates:  { canonical: profileUrl },
     openGraph: {
       type:        'profile',

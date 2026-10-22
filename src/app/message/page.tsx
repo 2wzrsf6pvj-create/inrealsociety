@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { captureEvent } from '@/lib/posthog-client';
-import { isValidEmail, isInstagramHandle } from '@/lib/validators';
+import { isValidEmail, isInstagramHandle, isValidFirstName } from '@/lib/validators';
 import { haptic } from '@/lib/haptics';
 import SunToggle from '@/app/components/ui/SunToggle';
 
@@ -164,7 +164,7 @@ function MessageForm() {
       // Persiste le prénom (formaté) → personnalise le profil au retour et
       // pré-remplit un prochain message.
       const cleanName = senderName.trim();
-      if (cleanName) {
+      if (cleanName && isValidFirstName(cleanName)) {
         const formatted = cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
         localStorage.setItem('scannerName', formatted);
       }
@@ -351,6 +351,8 @@ function MessageForm() {
   // ok (champ optionnel sauf si requis, géré par le garde de sendMessage).
   const _c = contact.trim();
   const contactLooksValid = _c === '' || isValidEmail(_c) || isInstagramHandle(_c) || isInstagramHandle('@' + _c);
+  // Même règle que le serveur : un prénom hors format y est ignoré (message anonyme).
+  const nameLooksValid = senderName.trim() === '' || isValidFirstName(senderName.trim());
 
   // Champs définis une fois — placés selon que le contact est requis (blocker en
   // tête) ou seulement recommandé (personnalisation en bas).
@@ -363,12 +365,17 @@ function MessageForm() {
       <p id="msg-name-hint" className="font-ui text-xs text-brand-gray/65 leading-relaxed mb-1">
         Pour qu&apos;il sache qui l&apos;a remarqué. Sinon, vous restez anonyme.
       </p>
-      <input id="msg-name" aria-describedby="msg-name-hint" type="text" placeholder="Anonyme par défaut" value={senderName} maxLength={50}
+      <input id="msg-name" aria-describedby="msg-name-hint" type="text" placeholder="Anonyme par défaut" value={senderName} maxLength={30}
         autoComplete="given-name"
         onChange={(e) => setSenderName(e.target.value)}
         className="w-full bg-transparent border-b border-brand-gray/20 focus:border-brand-white/50 text-brand-white font-ui font-light text-base py-3 outline-none transition-colors placeholder:text-brand-gray/45"
         style={{ minHeight: '44px' }}
       />
+      {!nameLooksValid && (
+        <p className="font-ui text-xs text-[#C5A059]/85 leading-relaxed mt-1 animate-fade-in">
+          Lettres uniquement : sinon, votre message partira en anonyme.
+        </p>
+      )}
     </div>
   );
 

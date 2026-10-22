@@ -28,6 +28,8 @@ const UUID = '11111111-1111-4111-8111-111111111111';
 
 // Bornes `.gte()` reçues par le compte du plafond (fenêtre glissante).
 const countWindow: { col: string; since: string }[] = [];
+// Lignes insérées dans `messages` (cas qui vont jusqu'à l'insertion).
+const inserted: Record<string, unknown>[] = [];
 
 // Construit l'implémentation de supabaseAdmin.from selon le scénario.
 function wireSupabase({ member, firstScanAt, activeConvs }: {
@@ -46,10 +48,16 @@ function wireSupabase({ member, firstScanAt, activeConvs }: {
     }
     if (table === 'messages') {
       // .eq().eq().is('parent_id').is('blocked_at').gte('created_at') → count
-      return { select: () => ({ eq: () => ({ eq: () => ({ is: () => ({ is: () => ({ gte: (col: string, since: string) => {
-        countWindow.push({ col, since });
-        return Promise.resolve({ count: activeConvs ?? 0, error: null });
-      } }) }) }) }) }) };
+      return {
+        select: () => ({ eq: () => ({ eq: () => ({ is: () => ({ is: () => ({ gte: (col: string, since: string) => {
+          countWindow.push({ col, since });
+          return Promise.resolve({ count: activeConvs ?? 0, error: null });
+        } }) }) }) }) }),
+        insert: (row: Record<string, unknown>) => {
+          inserted.push(row);
+          return { select: () => ({ single: () => Promise.resolve({ data: { id: 'msg-1' }, error: null }) }) };
+        },
+      };
     }
     if (table === 'blocks') {
       return { select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: () =>
@@ -65,7 +73,7 @@ function makeReq(body: Record<string, unknown>): NextRequest {
 }
 
 describe('POST /api/message — contrat des codes d\'erreur', () => {
-  beforeEach(() => { vi.clearAllMocks(); countWindow.length = 0; });
+  beforeEach(() => { vi.clearAllMocks(); countWindow.length = 0; inserted.length = 0; });
 
   it('membre en pause → 403 code=paused', async () => {
     wireSupabase({ member: { id: UUID, name: 'A', email: 'a@b.c', is_paused: true, plan: 'free' } });
@@ -145,5 +153,43 @@ describe('POST /api/message — contrat des codes d\'erreur', () => {
     const data = await res.json();
     expect(data.moderated).toBe(true);
     expect(data.messageId).toBeUndefined(); // rien inséré → pas d'id
+  });
+
+  // Le contact est affiché au porteur : il est modéré comme le message. Signalé →
+  // tout le message est refusé (pas d'insertion), comme un contenu signalé.
+  it('contact signalé → 200 { moderated:true }, PAS d\'insertion', async () => {
+    (moderateContent as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({ flagged: false, source: 'regex', categories: [] })              // message
+      .mockResolvedValueOnce({ flagged: true,  source: 'regex', categories: ['harassment'] }); // contact
+    wireSupabase({
+      member: { id: UUID, name: 'A', email: 'a@b.c', is_paused: false, plan: 'free' },
+      firstScanAt: null, activeConvs: 0,
+    });
+    const res = await POST(makeReq({ memberId: UUID, content: 'salut', senderContact: 'contact insultant' }));
+    expect(res.status).toBe(200);
+    expect((await res.json()).moderated).toBe(true);
+    expect(moderateContent).toHaveBeenCalledWith('contact insultant');
+    expect(inserted).toHaveLength(0);
+  });
+
+  it('prénom hors format (chiffres, phrase) → ignoré : message envoyé en anonyme', async () => {
+    wireSupabase({
+      member: { id: UUID, name: 'A', email: null, is_paused: false, plan: 'free' },
+      firstScanAt: null, activeConvs: 0,
+    });
+    const res = await POST(makeReq({ memberId: UUID, content: 'salut', senderName: 'Léa 06 12 34 56 78' }));
+    expect(res.status).toBe(200);
+    expect(inserted).toHaveLength(1);
+    expect(inserted[0].sender_name).toBeNull();
+    expect(moderateContent).not.toHaveBeenCalledWith('Léa 06 12 34 56 78');
+  });
+
+  it('prénom valide → conservé', async () => {
+    wireSupabase({
+      member: { id: UUID, name: 'A', email: null, is_paused: false, plan: 'free' },
+      firstScanAt: null, activeConvs: 0,
+    });
+    await POST(makeReq({ memberId: UUID, content: 'salut', senderName: 'Jean-Baptiste' }));
+    expect(inserted[0].sender_name).toBe('Jean-Baptiste');
   });
 });
