@@ -322,8 +322,8 @@ describe.skipIf(!ENABLED)('Tunnel achat → impression → activation → scan �
     const res = await scan.POST(req('/api/scan', { body: { memberId, scannerName: 'Léa', latitude: 48.85661, longitude: 2.35222 } }));
     expect(await res.json()).toEqual({ ok: true });
     expect(sql(`SELECT scan_count FROM members WHERE id = '${memberId}'`)).toBe('1');
-    // Géoloc arrondie à 3 décimales avant stockage (minimisation RGPD)
-    expect(sql(`SELECT latitude || ',' || longitude FROM scans WHERE member_id = '${memberId}'`)).toBe('48.857,2.352');
+    // Minimisation RGPD : aucune coordonnée stockée, seule la ville peut l'être
+    expect(sql(`SELECT count(*) FROM scans WHERE member_id = '${memberId}' AND latitude IS NULL AND longitude IS NULL`)).toBe('1');
   });
 
   it('9. message : délivré une fois par appareil, puis renvoi vers la conversation', async () => {
@@ -589,5 +589,37 @@ describe.skipIf(!ENABLED)('Email du passant : les réponses ne partent qu’apr�
     expect((await memberReply('À bientôt peut-être.')).status).toBe(200);
     expect(toScanner()).toHaveLength(3);
     expect(toScanner()[2].html).toContain('À bientôt peut-être.');
+  });
+});
+
+// ─── Purge hebdomadaire (058) : conversations éteintes, preuves RGPD bornées ──
+describe.skipIf(!ENABLED)('Purge : conversations 12 mois après le dernier message, preuves RGPD 5 ans', () => {
+  const wearer = { authId: crypto.randomUUID(), memberId: crypto.randomUUID() };
+  const stale = { root: crypto.randomUUID(), reply: crypto.randomUUID() };
+  const alive = { root: crypto.randomUUID(), reply: crypto.randomUUID() };
+
+  beforeAll(() => {
+    sql(`INSERT INTO auth.users (id, email, email_confirmed_at) VALUES ('${wearer.authId}', 'p-${wearer.authId}@example.com', now())`);
+    sql(`INSERT INTO members (id, auth_user_id, name, email) VALUES ('${wearer.memberId}', '${wearer.authId}', 'Purge', 'p-${wearer.authId}@example.com')`);
+    // Éteinte : racine et réponse vieilles de 13 mois (+ sa vérification d'email)
+    sql(`INSERT INTO messages (id, member_id, content, author, created_at) VALUES ('${stale.root}', '${wearer.memberId}', 'Ancienne', 'scanner', now() - interval '13 months')`);
+    sql(`INSERT INTO messages (id, member_id, parent_id, content, author, created_at) VALUES ('${stale.reply}', '${wearer.memberId}', '${stale.root}', 'Réponse', 'member', now() - interval '13 months')`);
+    sql(`INSERT INTO contact_verifications (message_id, email, token_hash) VALUES ('${stale.root}', 'x@example.com', 'h-${stale.root}')`);
+    // Vivante : racine de 13 mois, dernière réponse il y a un mois
+    sql(`INSERT INTO messages (id, member_id, content, author, created_at) VALUES ('${alive.root}', '${wearer.memberId}', 'Ancienne mais vivante', 'scanner', now() - interval '13 months')`);
+    sql(`INSERT INTO messages (id, member_id, parent_id, content, author, created_at) VALUES ('${alive.reply}', '${wearer.memberId}', '${alive.root}', 'Récente', 'member', now() - interval '1 month')`);
+    // Preuves RGPD : 6 ans (purgée) et 4 ans (gardée)
+    sql(`INSERT INTO audit_logs (action, member_id, created_at) VALUES ('member.activated', '${wearer.memberId}', now() - interval '6 years'), ('member.activated', '${wearer.memberId}', now() - interval '4 years')`);
+  });
+
+  it('la conversation éteinte part avec ses réponses et sa vérification ; la vivante reste', () => {
+    expect(Number(sql(`SELECT conversations_deleted FROM cleanup_old_data()`))).toBeGreaterThanOrEqual(1);
+    expect(sql(`SELECT count(*) FROM messages WHERE id IN ('${stale.root}', '${stale.reply}')`)).toBe('0');
+    expect(sql(`SELECT count(*) FROM contact_verifications WHERE message_id = '${stale.root}'`)).toBe('0');
+    expect(sql(`SELECT count(*) FROM messages WHERE id IN ('${alive.root}', '${alive.reply}')`)).toBe('2');
+  });
+
+  it('preuve de consentement : gardée 5 ans, purgée au-delà', () => {
+    expect(sql(`SELECT count(*) FROM audit_logs WHERE member_id = '${wearer.memberId}' AND action = 'member.activated'`)).toBe('1');
   });
 });

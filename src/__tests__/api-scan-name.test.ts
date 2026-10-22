@@ -3,7 +3,7 @@
 // imposé côté serveur, puis modération. Invalide ou signalé : ignoré, le scan
 // est enregistré sans prénom.
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import type { NextRequest } from 'next/server';
 
 vi.mock('@/lib/ratelimit', () => ({
@@ -73,5 +73,36 @@ describe('POST /api/scan — prénom du passant', () => {
   it('sans prénom → scan anonyme', async () => {
     await scan(null);
     expect(recordedName()).toBeNull();
+  });
+});
+
+// Le passant accepte de partager sa « ville approximative » : seule une position
+// arrondie (~1 km) part chez OpenStreetMap, et seule la ville est gardée.
+describe('POST /api/scan — géolocalisation : la ville seulement', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (supabaseAdmin.from as ReturnType<typeof vi.fn>).mockReturnValue({
+      select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: MEMBER, error: null }) }) }),
+    });
+    (supabaseAdmin.rpc as ReturnType<typeof vi.fn>).mockResolvedValue({ error: null });
+  });
+  afterEach(() => { vi.unstubAllGlobals(); });
+
+  it('position arrondie envoyée, aucune coordonnée stockée, ville sans quartier', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true, json: async () => ({ address: { suburb: 'Saint-Germain-des-Prés', city: 'Paris' } }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const req = { json: async () => ({ memberId: MEMBER.id, scannerName: null, latitude: 48.856614, longitude: 2.3522219 }) } as unknown as NextRequest;
+    await POST(req);
+
+    const url = fetchMock.mock.calls[0][0] as string;
+    expect(url).toContain('lat=48.86&lon=2.35');
+    expect(url).not.toContain('48.8566');
+
+    const args = (supabaseAdmin.rpc as ReturnType<typeof vi.fn>).mock.calls[0][1];
+    expect(args.p_latitude).toBeNull();
+    expect(args.p_longitude).toBeNull();
+    expect(args.p_location).toBe('Paris');
   });
 });

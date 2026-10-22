@@ -179,23 +179,49 @@ export default function CGVPage() {
           </p>
         </section>
 
-        {/* Article 8 — Données personnelles */}
+        {/* Article 8 — Modération (règlement européen sur les services numériques, art. 14) */}
         <section className="flex flex-col gap-3">
           <h2 className="font-ui text-sm font-bold tracking-[0.2em] uppercase text-brand-white">
-            Article 8 — Données personnelles
+            Article 8 — Modération et signalements
           </h2>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
-            Les données collectées (nom, adresse, email) sont utilisées exclusivement pour le traitement
-            de la commande et la livraison. Elles sont transmises à Printful et Stripe dans ce seul
-            but. L&apos;Acheteur dispose d&apos;un droit d&apos;accès, de rectification et de suppression de ses
-            données conformément au RGPD, en contactant le Vendeur à hello@inrealsociety.com.
+            Les messages, prénoms et contacts laissés par les personnes qui écrivent aux porteurs sont
+            analysés automatiquement avant transmission (outil de modération d&apos;OpenAI et règles
+            internes). Un contenu jugé abusif (menaces, harcèlement, insultes, contenus sexuels ou
+            haineux) n&apos;est pas transmis.
+          </p>
+          <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
+            Un porteur peut signaler un message reçu : le message est aussitôt masqué et l&apos;équipe est
+            prévenue. L&apos;appareil à l&apos;origine de messages signalés par trois porteurs différents ne peut
+            plus écrire sur la plateforme. Un porteur peut aussi bloquer la personne qui lui écrit.
+          </p>
+          <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
+            Toute personne, même sans compte, peut signaler un profil depuis la page de ce profil
+            (« Signaler ce profil ») ou en écrivant à hello@inrealsociety.com. L&apos;équipe examine chaque
+            signalement et peut suspendre un profil ou bloquer un appareil contraire aux présentes
+            conditions ou à la loi. Une décision de modération peut être contestée à la même adresse.
           </p>
         </section>
 
-        {/* Article 9 — Droit applicable */}
+        {/* Article 9 — Données personnelles */}
         <section className="flex flex-col gap-3">
           <h2 className="font-ui text-sm font-bold tracking-[0.2em] uppercase text-brand-white">
-            Article 9 — Droit applicable et litiges
+            Article 9 — Données personnelles
+          </h2>
+          <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
+            Les données nécessaires à la commande (nom, adresse, email) sont transmises à Printful et
+            Stripe pour la fabrication, la livraison et le paiement. L&apos;ensemble des traitements (profil,
+            scans, messages) et les droits de chacun sont décrits dans la{' '}
+            <Link href="/confidentialite" className="underline underline-offset-4 hover:text-brand-white">
+              politique de confidentialité
+            </Link>. Pour exercer ces droits : hello@inrealsociety.com.
+          </p>
+        </section>
+
+        {/* Article 10 — Droit applicable */}
+        <section className="flex flex-col gap-3">
+          <h2 className="font-ui text-sm font-bold tracking-[0.2em] uppercase text-brand-white">
+            Article 10 — Droit applicable et litiges
           </h2>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
             Les présentes CGV sont soumises au droit français. En cas de litige, une solution amiable

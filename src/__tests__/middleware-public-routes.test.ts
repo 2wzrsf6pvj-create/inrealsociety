@@ -33,6 +33,7 @@ describe('middleware — parcours du passant anonyme', () => {
     '/message',
     `/conversation/${ID}`,
     `/api/conversation/${ID}/thread`,
+    '/api/profile/report',
     '/tee/en-attente',
   ])('%s reste accessible sans compte', async (path) => {
     expect(await redirectOf(path)).toBeNull();

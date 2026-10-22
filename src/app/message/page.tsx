@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef, Suspense } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { captureEvent } from '@/lib/posthog-client';
 import { isValidEmail, isInstagramHandle, isValidFirstName } from '@/lib/validators';
@@ -426,7 +427,10 @@ function MessageForm() {
         <h2 className="font-display text-2xl md:text-3xl font-light tracking-[0.04em]">Un signal discret.</h2>
         <p className="font-ui text-sm font-light text-brand-gray/65 leading-relaxed">À {memberName}, qui pourra vous répondre directement.</p>
         <p className="font-ui text-xxs text-brand-gray/50 leading-relaxed">
-          Réservé aux 18 ans et plus : en envoyant un message, vous confirmez avoir l&apos;âge requis.
+          Réservé aux 18 ans et plus : en envoyant un message, vous confirmez avoir l&apos;âge requis.{' '}
+          <Link href="/confidentialite" className="underline underline-offset-2 hover:text-brand-white/80 transition-colors">
+            Vos données
+          </Link>
         </p>
       </div>
 

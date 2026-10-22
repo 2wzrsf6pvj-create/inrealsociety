@@ -17,6 +17,7 @@ function getInitials(name: string): string {
 import { SCAN_WINDOW_MS } from '@/lib/constants';
 import type { MemberPlan } from '@/lib/types';
 import { BrandMark } from '@/app/components/ui/BrandMark';
+import ReportProfile from './ReportProfile';
 
 function useCountdown(firstScanAt: string | null, plan?: MemberPlan) {
   const safePlan = (plan === 'premium' ? 'premium' : 'free') as keyof typeof SCAN_WINDOW_MS;
@@ -414,6 +415,18 @@ export default function ProfilClient({
         >
           {preview ? '← quitter l’aperçu' : isOwner ? '← retour au dashboard' : '← retour'}
         </Link>
+
+        {/* Passant : ses données (géolocalisation, message) et le signalement. */}
+        {!isOwner && (
+          <div className="w-full flex flex-col items-center">
+            <ReportProfile memberId={member.id} />
+            <Link href="/confidentialite"
+              className="font-ui text-xxs text-brand-gray/50 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white/80 transition-colors py-2"
+              style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}>
+              Vos données
+            </Link>
+          </div>
+        )}
       </div>
     </main>
   );

@@ -1,11 +1,12 @@
 // GET /api/cron/cleanup
 // Endpoint protégé par CRON_SECRET (Vercel Cron envoie Authorization: Bearer).
-// Appelle la fonction Postgres cleanup_old_data() qui purge :
-//  - audit_logs > 12 mois
+// Appelle la fonction Postgres cleanup_old_data() (migration 058) qui purge :
+//  - audit_logs > 12 mois (traces d'abus : 24 mois ; preuves RGPD : 5 ans)
 //  - activation_codes non utilisés > 90 jours
 //  - scans > 24 mois
 //  - silent_views > 24 mois
 //  - push_subscriptions > 90 jours (subs scanner orphelines)
+//  - conversations dont le dernier message a plus de 12 mois
 
 export const dynamic = 'force-dynamic';
 
@@ -19,6 +20,7 @@ interface CleanupResult {
   scans_deleted:              number;
   silent_views_deleted:       number;
   push_subscriptions_deleted: number;
+  conversations_deleted:      number;
 }
 
 export async function GET(req: NextRequest) {

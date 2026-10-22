@@ -38,6 +38,7 @@ const PUBLIC_ROUTES = [
   'api/feedback',   // feedback conversation — accessible aux scanners anonymes
   'api/conversation/[messageId]/thread', // rattrapage thread (capability = messageId UUID)
   'api/contact/verify', // lien de confirmation de l'email du passant (capability = jeton aléatoire)
+  'api/profile/report', // signalement d'un profil par n'importe qui (DSA), rate-limité
 ];
 
 /** Routes protégées par un secret header (pas par session) */
