@@ -30,7 +30,7 @@ export default function ConfidentialitePage() {
             Politique de confidentialité
           </h1>
           <p className="font-ui text-sm text-brand-gray/50 tracking-wide">
-            Conforme au RGPD (Règlement UE 2016/679) — Dernière mise à jour : 2026
+            Conforme au RGPD (Règlement UE 2016/679) — Dernière mise à jour : octobre 2026
           </p>
         </div>
 
@@ -150,6 +150,19 @@ export default function ConfidentialitePage() {
             chiffrement TLS en transit, RLS (Row-Level Security) sur la base de données,
             rate limiting, modération automatique, audit logs des actions sensibles, séparation
             des secrets et des données utilisateurs.
+          </p>
+        </section>
+
+        <section className="flex flex-col gap-3">
+          <h2 className="font-ui text-sm font-bold tracking-[0.2em] uppercase text-brand-white">
+            9 — Mineurs
+          </h2>
+          <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
+            Le service est réservé aux personnes de 18 ans ou plus : le porteur le déclare à l&apos;activation
+            de son profil, la personne qui écrit le confirme en envoyant son message. Nous ne collectons pas
+            sciemment de données concernant des mineurs. Si vous pensez qu&apos;un mineur utilise le service,
+            écrivez à <span className="text-brand-white/70">hello@inrealsociety.com</span> : nous supprimerons
+            les données concernées.
           </p>
         </section>
 

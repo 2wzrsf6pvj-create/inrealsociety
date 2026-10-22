@@ -20,6 +20,8 @@ const schema = z.object({
   // §8/9 : consentement OBLIGATOIRE à l'activation. z.literal(true) → une requête
   // sans acceptation explicite (false/absent) est rejetée (preuve juridique).
   acceptedTerms:  z.literal(true),
+  // Service réservé aux 18 ans et plus : déclaration explicite, comme les CGV.
+  isAdult:        z.literal(true),
   // NB : la forme du QR et l'accroche sont VERROUILLÉES au checkout (le tee est
   // imprimé au paiement). Plus de « dernière chance » ici — ces champs ne sont
   // plus acceptés.
@@ -136,7 +138,7 @@ export async function POST(req: NextRequest) {
         audit({
           action:   'member.activated',
           memberId: result.member_id,
-          metadata: { activationCode, termsAcceptedAt: nowIso, serviceWaiverAt: nowIso },
+          metadata: { activationCode, termsAcceptedAt: nowIso, serviceWaiverAt: nowIso, adultDeclaredAt: nowIso },
         });
       }
     }

@@ -413,6 +413,9 @@ function MessageForm() {
       <div className="text-center flex flex-col gap-2 animate-stagger-1">
         <h2 className="font-display text-2xl md:text-3xl font-light tracking-[0.04em]">Un signal discret.</h2>
         <p className="font-ui text-sm font-light text-brand-gray/65 leading-relaxed">À {memberName}. Il pourra vous répondre directement.</p>
+        <p className="font-ui text-xxs text-brand-gray/50 leading-relaxed">
+          Réservé aux 18 ans et plus : en envoyant un message, vous confirmez avoir l&apos;âge requis.
+        </p>
       </div>
 
       {isPreview && (
