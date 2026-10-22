@@ -27,6 +27,7 @@ const PUBLIC_PAGES = new Set([
   '/demo-notif',        // page démo (aperçu notif écran verrouillé pour screenshot) — noindex, à retirer
   '/robots.txt',        // lu par les moteurs, anonymes : sans ça, redirigé vers la connexion
   '/sitemap.xml',       // pages publiques seulement (aucun profil de porteur)
+  '/opengraph-image',   // image d'aperçu des liens partagés, lue par les robots des messageries
   '/contact/confirme',  // arrivée du lien de confirmation d'email du passant — noindex
 ]);
 

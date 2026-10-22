@@ -3,8 +3,10 @@ import { BrandMark } from '@/app/components/ui/BrandMark';
 import { CONTACT_EMAIL, PREMIUM_PERKS, PREMIUM_PRICE_LABEL, PREMIUM_WITHDRAWAL_DAYS } from '@/lib/constants';
 
 export const metadata = {
-  title: 'Conditions Générales de Vente — In Real Society',
+  // Le gabarit du layout ajoute « — In Real Society ».
+  title: 'Conditions Générales de Vente',
   description: 'Conditions Générales de Vente de la marque In Real Society.',
+  alternates: { canonical: '/cgv' },
 };
 
 export default function CGVPage() {

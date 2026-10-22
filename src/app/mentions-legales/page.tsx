@@ -2,8 +2,10 @@ import Link from 'next/link';
 import { BrandMark } from '@/app/components/ui/BrandMark';
 
 export const metadata = {
-  title: 'Mentions légales — In Real Society',
+  // Le gabarit du layout ajoute « — In Real Society ».
+  title: 'Mentions légales',
   description: 'Mentions légales du site inrealsociety.com (LCEN art. 6).',
+  alternates: { canonical: '/mentions-legales' },
 };
 
 // ⚠️ À COMPLÉTER avant la mise en prod :

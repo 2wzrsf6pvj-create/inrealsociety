@@ -2,8 +2,10 @@ import ManageConsentButton from './ManageConsentButton';
 import { BrandMark } from '@/app/components/ui/BrandMark';
 
 export const metadata = {
-  title: 'Politique de confidentialité — In Real Society',
+  // Le gabarit du layout ajoute « — In Real Society ».
+  title: 'Politique de confidentialité',
   description: 'Politique de confidentialité et traitement des données personnelles d\'In Real Society.',
+  alternates: { canonical: '/confidentialite' },
 };
 
 // ⚠️ À COMPLÉTER avant la mise en prod :

@@ -17,6 +17,17 @@ const lTy = -PAREN_LEFT_BBOX.y1 * s;
 const rTx = lw + GAP - PAREN_RIGHT_BBOX.x1 * s;
 const rTy = -PAREN_RIGHT_BBOX.y1 * s;
 
+/** Le même logo en SVG autonome (images générées, ex. l'image d'aperçu des liens
+ *  partagés), à la hauteur demandée. */
+export function brandMarkSvg(fill: string, height: number): { svg: string; width: number; height: number } {
+  const width = (W / H) * height;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W.toFixed(2)} ${H}" width="${width.toFixed(1)}" height="${height}" fill="${fill}">`
+    + `<g transform="translate(${lTx.toFixed(2)} ${lTy.toFixed(2)}) scale(${s.toFixed(4)})"><path d="${PAREN_LEFT_PATH}"/></g>`
+    + `<g transform="translate(${rTx.toFixed(2)} ${rTy.toFixed(2)}) scale(${s.toFixed(4)})"><path d="${PAREN_RIGHT_PATH}"/></g>`
+    + `<circle cx="${(W / 2).toFixed(2)}" cy="${H / 2}" r="${(0.07 * H).toFixed(2)}"/></svg>`;
+  return { svg, width, height };
+}
+
 /**
  * Le logo ( • ). `label` → rôle img + aria-label (usage signifiant, ex. lien accueil) ;
  * sans label → décoratif (aria-hidden). La taille suit la `font-size` du parent (1em),

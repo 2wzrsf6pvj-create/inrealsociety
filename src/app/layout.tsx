@@ -9,6 +9,7 @@ import ConsentBanner from './components/ConsentBanner';
 import ServiceWorkerRegistration from './components/ServiceWorkerRegistration';
 import SunScope from './components/ui/SunScope';
 import PageTransition from './components/ui/PageTransition';
+import { APP_URL } from '@/lib/constants';
 import './globals.css';
 
 const cormorant = Cormorant_Garamond({
@@ -27,6 +28,9 @@ const montserrat = Montserrat({
 });
 
 export const metadata: Metadata = {
+  // Adresse officielle : les URL relatives (images d'aperçu, canoniques) en
+  // dérivent. Sans elle, Next prenait l'adresse technique du déploiement Vercel.
+  metadataBase: new URL(APP_URL),
   title: {
     default:  'In Real Society — The IRL Social Club',
     template: '%s — In Real Society',
@@ -35,7 +39,6 @@ export const metadata: Metadata = {
   openGraph: {
     title:       'In Real Society',
     description: 'Le premier vêtement conçu pour les rencontres dans la vraie vie.',
-    url:         'https://inrealsociety.com',
     siteName:    'In Real Society',
     locale:      'fr_FR',
     type:        'website',

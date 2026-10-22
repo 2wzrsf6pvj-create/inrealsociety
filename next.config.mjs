@@ -7,6 +7,15 @@ const withBundleAnalyzer = bundleAnalyzer({
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  webpack(config, { isServer, webpack }) {
+    // Sentry dans le navigateur : les erreurs seulement (choix de Clément). Le
+    // code de suivi de performance est retiré du bundle client — moins de
+    // JavaScript et de calcul sur chaque page. Le serveur garde son tracing.
+    if (!isServer) {
+      config.plugins.push(new webpack.DefinePlugin({ __SENTRY_TRACING__: false }));
+    }
+    return config;
+  },
   images: {
     remotePatterns: [
       {

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { MANIFESTO_BLOCKS } from '../constants/manifesto';
 import AnimatedBlock from '../components/ui/AnimatedBlock';
 import { BrandMark } from '@/app/components/ui/BrandMark';
+import { OG_IMAGE } from '@/lib/constants';
 // --- TYPAGE STRICT ---
 type ManifestoBlock = {
   label: string | null;
@@ -12,23 +13,20 @@ type ManifestoBlock = {
 
 // --- RÉFÉRENCEMENT (SEO) & PARTAGE ---
 export const metadata = {
-  title: 'In Real Society | Le vêtement de rencontre IRL',
+  // Le gabarit du layout ajoute « — In Real Society ».
+  title: 'Manifeste',
   description: 'Zéro algorithme. Une seule promesse : chaque scan que vous recevrez sera une véritable intersection du destin.',
+  // Image du site (app/opengraph-image). L'ancienne pointait vers
+  // /images/og-image.jpg, qui n'existe pas.
   openGraph: {
-    title: 'In Real Society',
+    title: 'Manifeste — In Real Society',
     description: 'Le premier vêtement conçu pour les rencontres dans la vraie vie.',
-    url: 'https://inrealsociety.com',
+    images: [OG_IMAGE],
     siteName: 'In Real Society',
-    images: [
-      {
-        url: '/images/og-image.jpg',
-        width: 1200,
-        height: 630,
-      },
-    ],
     locale: 'fr_FR',
     type: 'website',
   },
+  alternates: { canonical: '/manifeste' },
 };
 
 export default function ManifestePage() {
