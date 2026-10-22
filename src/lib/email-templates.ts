@@ -360,6 +360,55 @@ export function emailActivation(params: {
   };
 }
 
+/** Alerte à l'équipe (ADMIN_ALERT_EMAIL) : un porteur a signalé un message.
+ *  `outcome` null = le signalement n'a pas pu être enregistré (voir les logs). */
+export function emailReportAlert(params: {
+  memberName:  string | null;
+  memberId:    string;
+  content:     string;
+  senderToken: string | null;
+  outcome:     { reporters: number; banned: boolean } | null;
+  threshold:   number;
+}): { subject: string; html: string } {
+  const { outcome, threshold } = params;
+  const token = params.senderToken ? escapeHtml(params.senderToken) : null;
+  const excerpt = escapeHtml(params.content.length > 500 ? `${params.content.slice(0, 500)}…` : params.content);
+  const status = !outcome
+    ? 'Signalement non enregistré (erreur) : voir les logs. Le message est tout de même masqué.'
+    : outcome.banned
+      ? `Appareil banni automatiquement de toute la plateforme (${outcome.reporters} porteurs l'ont signalé).`
+      : token
+        ? `Pas encore banni : ${outcome.reporters} porteur(s) sur ${threshold}.`
+        : 'Appareil inconnu (message ancien) : pas de bannissement possible.';
+  const row = (label: string, value: string) => `
+    <tr>
+      <td style="font-family:system-ui,sans-serif;font-size:12px;color:rgba(255,255,255,0.4);padding:6px 16px 6px 0;vertical-align:top;white-space:nowrap;">${label}</td>
+      <td style="font-family:system-ui,sans-serif;font-size:13px;color:rgba(255,255,255,0.85);padding:6px 0;line-height:1.5;">${value}</td>
+    </tr>`;
+  const sql = token ? `
+      <p style="font-family:system-ui,sans-serif;font-size:11px;color:rgba(255,255,255,0.4);margin:24px 0 8px;">SQL (Supabase → SQL Editor)</p>
+      <pre style="font-family:monospace;font-size:11px;color:rgba(255,255,255,0.75);background:#111;padding:12px;white-space:pre-wrap;margin:0;">-- Bannir à la main
+INSERT INTO banned_devices (sender_token, reason) VALUES ('${token}', 'manuel') ON CONFLICT DO NOTHING;
+-- Lever le bannissement
+DELETE FROM banned_devices WHERE sender_token = '${token}';</pre>` : '';
+  return {
+    subject: outcome?.banned ? 'Signalement : appareil banni automatiquement' : 'Signalement : un porteur a signalé un message',
+    html: layout(`
+      <h1 style="font-size:22px;font-weight:300;margin:0 0 16px;text-align:center;">Message signalé</h1>
+      <p style="font-family:system-ui,sans-serif;font-size:13px;color:rgba(255,255,255,0.5);text-align:center;line-height:1.8;margin:0 0 24px;">
+        Le message est masqué pour le porteur.
+      </p>
+      <table role="presentation" style="width:100%;border-collapse:collapse;">
+        ${row('Porteur', `${escapeHtml(params.memberName ?? '—')} <span style="color:rgba(255,255,255,0.35);">(${escapeHtml(params.memberId)})</span>`)}
+        ${row('Message', `« ${excerpt} »`)}
+        ${row('Appareil', token ?? 'inconnu')}
+        ${row('Suite', escapeHtml(status))}
+      </table>
+      ${sql}
+    `),
+  };
+}
+
 // ─── Envoi générique Resend ───────────────────────────────────────────────────
 
 export async function sendEmail(params: {

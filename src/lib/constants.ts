@@ -29,6 +29,11 @@ export const MAX_CONVERSATIONS = {
  *  après 3 messages, un porteur gratuit ne pouvait plus jamais être contacté. */
 export const CONVERSATION_WINDOW_DAYS = 7;
 
+/** Un appareil (sender_token) signalé par ce nombre de porteurs DIFFÉRENTS est
+ *  banni automatiquement de toute la plateforme (banned_devices). Plusieurs
+ *  porteurs, pour qu'un signalement isolé ou abusif ne suffise pas. */
+export const REPORT_BAN_THRESHOLD = 3;
+
 // ─── Conversation thread ───────────────────────────────────────────────────────
 
 /** Nombre max de messages dans un thread (message racine inclus). Garde le côté

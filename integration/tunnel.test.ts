@@ -45,6 +45,7 @@ Object.assign(process.env, {
   PRINTFUL_VARIANT_ID:           '4012',
   SHORT_DOMAIN:                  'https://inreal.me',
   CRON_SECRET:                   'cron-integration-secret',
+  ADMIN_ALERT_EMAIL:             'alertes@example.com',
 });
 
 // ─── Faux services externes ───────────────────────────────────────────────────
@@ -435,5 +436,63 @@ describe.skipIf(!ENABLED)('Relance : payé mais jamais activé', () => {
     const before = remindersTo().length;
     await runCron();
     expect(remindersTo().length).toBe(before);
+  });
+});
+
+// ─── Signalements → bannissement automatique ──────────────────────────────────
+describe.skipIf(!ENABLED)('Signalements : un appareil signalé par 3 porteurs est banni', () => {
+  let report:  typeof import('@/app/api/report/route');
+  let message: typeof import('@/app/api/message/route');
+  const device  = crypto.randomUUID();   // jeton irs_sender du harceleur
+  const wearers = [0, 1, 2, 3].map(() => ({ authId: crypto.randomUUID(), memberId: crypto.randomUUID() }));
+  const msgIds: string[] = [];
+  const alerts = () => sent.emails.filter(e => e.to[0] === 'alertes@example.com');
+
+  beforeAll(async () => {
+    report  = await import('@/app/api/report/route');
+    message = await import('@/app/api/message/route');
+    for (const w of wearers) {
+      sql(`INSERT INTO auth.users (id, email, email_confirmed_at) VALUES ('${w.authId}', 'p-${w.authId}@example.com', now())`);
+      sql(`INSERT INTO members (id, auth_user_id, name, email) VALUES ('${w.memberId}', '${w.authId}', 'Porteur', 'p-${w.authId}@example.com')`);
+    }
+    // Le même appareil écrit aux trois premiers porteurs.
+    for (const w of wearers.slice(0, 3)) {
+      const id = crypto.randomUUID();
+      msgIds.push(id);
+      sql(`INSERT INTO messages (id, member_id, content, sender_token) VALUES ('${id}', '${w.memberId}', 'message insultant', '${device}')`);
+    }
+  });
+
+  const reportAs = (i: number) => {
+    currentUser = { id: wearers[i].authId, email: `p-${wearers[i].authId}@example.com` };
+    return report.POST(req('/api/report', { body: { messageId: msgIds[i], memberId: wearers[i].memberId } }));
+  };
+
+  it('2 porteurs signalent : messages masqués, alerte envoyée, appareil pas encore banni', async () => {
+    const before = alerts().length;
+    expect((await reportAs(0)).status).toBe(200);
+    expect((await reportAs(1)).status).toBe(200);
+    expect(sql(`SELECT moderated FROM messages WHERE id = '${msgIds[0]}'`)).toBe('t');
+    expect(sql(`SELECT count(*) FROM banned_devices WHERE sender_token = '${device}'`)).toBe('0');
+    expect(alerts().length).toBe(before + 2);
+    expect(alerts().at(-1)!.html).toContain('message insultant');
+  });
+
+  it('un porteur qui signale de nouveau le même appareil ne compte qu’une fois', async () => {
+    expect((await reportAs(1)).status).toBe(200);
+    expect(sql(`SELECT count(*) FROM message_reports WHERE sender_token = '${device}'`)).toBe('2');
+  });
+
+  it('3e porteur : appareil banni, il ne peut plus écrire à personne', async () => {
+    expect((await reportAs(2)).status).toBe(200);
+    expect(sql(`SELECT count(*) FROM banned_devices WHERE sender_token = '${device}'`)).toBe('1');
+    expect(alerts().at(-1)!.subject).toContain('banni');
+
+    const res = await message.POST(req('/api/message', {
+      body:   { memberId: wearers[3].memberId, content: 'Belle audace.' },
+      cookie: `irs_sender=${device}`,
+    }));
+    expect(res.status).toBe(403);   // même réponse que « indisponible » : le ban n'est pas révélé
+    expect(sql(`SELECT count(*) FROM messages WHERE member_id = '${wearers[3].memberId}'`)).toBe('0');
   });
 });

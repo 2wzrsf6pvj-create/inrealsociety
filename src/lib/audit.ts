@@ -34,6 +34,8 @@ export type AuditAction =
   | 'order.fulfilled'
   | 'push.subscribed'
   | 'message.reported'
+  | 'message.report_failed'
+  | 'device.auto_banned'
   | 'conversation.blocked'
   | 'conversation.unblocked';
 
