@@ -54,9 +54,11 @@ export default function ConfidentialitePage() {
           <ul className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed list-disc pl-5 flex flex-col gap-2">
             <li><strong>Compte et profil :</strong> email, mot de passe (chiffré), prénom/pseudo, pitch, lien Instagram (optionnel), photo (optionnelle).</li>
             <li><strong>Achat :</strong> email, adresse de livraison, taille et couleur du t-shirt, identifiants Stripe (paiement, abonnement).</li>
-            <li><strong>Activité :</strong> scans reçus, géolocalisation approximative au scan (si autorisée), messages envoyés et reçus.</li>
+            <li><strong>Activité :</strong> scans reçus, ville du scan (si le passant l&apos;autorise), messages envoyés et reçus.</li>
+            <li><strong>Passant (sans compte) :</strong> votre message et, si vous les laissez, votre prénom et votre contact (email ou @instagram). Un email laissé ne sert qu&apos;après sa confirmation par le lien que nous vous envoyons. Si vous partagez votre ville, la position de votre appareil, arrondie à environ 1 km, sert uniquement à trouver le nom de la ville : seule la ville est conservée.</li>
             <li><strong>Technique :</strong> adresse IP (rate limiting, logs de sécurité), user-agent, identifiants de session.</li>
             <li><strong>Sécurité (côté scanneur) :</strong> un jeton anonyme déposé sur votre appareil (cookie), sans lien avec votre identité, qui permet à un porteur de vous bloquer en cas d&apos;abus.</li>
+            <li><strong>Signalements :</strong> le motif d&apos;un signalement de message ou de profil et, si vous le laissez, votre contact.</li>
             <li><strong>Analytique (avec consentement) :</strong> pages vues, événements de conversion (PostHog, Cloud EU).</li>
           </ul>
         </section>
@@ -66,9 +68,9 @@ export default function ConfidentialitePage() {
             3 — Finalités et bases légales
           </h2>
           <ul className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed list-disc pl-5 flex flex-col gap-2">
-            <li><strong>Exécution du contrat (art. 6.1.b RGPD) :</strong> création du compte, gestion des commandes, envoi du t-shirt, gestion de l&apos;abonnement premium.</li>
-            <li><strong>Intérêt légitime (art. 6.1.f) :</strong> sécurité du service (rate limiting, audit logs, modération), blocage des comportements abusifs (anti-harcèlement), prévention de la fraude.</li>
-            <li><strong>Consentement (art. 6.1.a) :</strong> mesure d&apos;audience (PostHog), cookies non essentiels.</li>
+            <li><strong>Exécution du contrat (art. 6.1.b RGPD) :</strong> création du compte, gestion des commandes, envoi du t-shirt, gestion de l&apos;abonnement premium, transmission des messages entre passant et porteur.</li>
+            <li><strong>Intérêt légitime (art. 6.1.f) :</strong> sécurité du service (rate limiting, audit logs, modération), traitement des signalements, blocage des comportements abusifs (anti-harcèlement), prévention de la fraude.</li>
+            <li><strong>Consentement (art. 6.1.a) :</strong> mesure d&apos;audience (PostHog), cookies non essentiels, ville du scan.</li>
             <li><strong>Obligation légale (art. 6.1.c) :</strong> conservation des factures (10 ans).</li>
           </ul>
         </section>
@@ -81,6 +83,8 @@ export default function ConfidentialitePage() {
             Vos données sont traitées par les sous-traitants suivants, tous soumis à des accords de protection des données :
           </p>
           <ul className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed list-disc pl-5 flex flex-col gap-2">
+            <li><strong>Le porteur du t-shirt</strong> reçoit le message du passant et, s&apos;il les laisse, son prénom, son contact et la ville du scan.</li>
+            <li><strong>L&apos;équipe In Real Society</strong> reçoit les messages et profils signalés, pour les examiner.</li>
             <li><strong>Supabase</strong> (UE) — hébergement base de données et authentification.</li>
             <li><strong>Stripe</strong> (Irlande/USA) — traitement des paiements. Décision d&apos;adéquation UE-USA (Data Privacy Framework).</li>
             <li><strong>Resend</strong> (USA) — envoi des emails transactionnels (DPF).</li>
@@ -88,6 +92,7 @@ export default function ConfidentialitePage() {
             <li><strong>OpenAI</strong> (USA) — modération de contenu des messages (DPF, données non utilisées pour l&apos;entraînement).</li>
             <li><strong>Printful</strong> (Lettonie) — impression et expédition des t-shirts.</li>
             <li><strong>Upstash Redis</strong> (UE) — rate limiting.</li>
+            <li><strong>OpenStreetMap</strong> (Fondation OpenStreetMap, Royaume-Uni) — nom de la ville à partir d&apos;une position arrondie à environ 1 km, seulement si le passant partage sa ville.</li>
             <li><strong>Sentry</strong> (USA, optionnel) — détection des erreurs techniques.</li>
             <li><strong>Vercel</strong> (USA) — hébergement de l&apos;application.</li>
           </ul>
@@ -99,9 +104,11 @@ export default function ConfidentialitePage() {
           </h2>
           <ul className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed list-disc pl-5 flex flex-col gap-2">
             <li>Compte et profil : tant que le compte est actif. Suppression sur demande.</li>
-            <li>Scans et vues : 24 mois. Messages : conservés tant que le compte est actif (supprimés avec le compte).</li>
+            <li>Scans et vues : 24 mois. Conversations : 12 mois après le dernier message, ou jusqu&apos;à la suppression du compte si elle intervient avant.</li>
             <li>Données de commande et facturation : 10 ans (obligation comptable).</li>
-            <li>Logs techniques (audit, rate limiting) : 12 mois.</li>
+            <li>Logs techniques (audit, rate limiting) : 12 mois. Traces d&apos;abus et signalements : 24 mois.</li>
+            <li>Preuves de consentement et d&apos;exercice de vos droits (acceptation des CGV, déclaration d&apos;âge, consentement marketing, export ou suppression de compte) : 5 ans.</li>
+            <li>Jeton d&apos;un appareil bloqué ou banni pour abus : tant que la mesure est en vigueur.</li>
             <li>Analytics (PostHog) : 13 mois (recommandation CNIL).</li>
           </ul>
         </section>

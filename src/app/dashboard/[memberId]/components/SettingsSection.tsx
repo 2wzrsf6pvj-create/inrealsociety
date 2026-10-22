@@ -53,7 +53,8 @@ function PremiumBlock({ member }: { member: Member }) {
           </p>
           <button onClick={handleAction} disabled={loading}
             className="w-full py-2.5 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.15em] uppercase text-brand-gray/50 hover:border-brand-gray/30 hover:text-brand-white/80 transition-colors rounded-[2px] disabled:opacity-40">
-            {loading ? 'Chargement...' : 'Gérer mon abonnement'}
+            {/* « Résilier » explicite : résiliation en ligne (Code de la consommation, L215-1-1). */}
+            {loading ? 'Chargement...' : 'Gérer ou résilier mon abonnement'}
           </button>
         </div>
       ) : (

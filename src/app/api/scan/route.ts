@@ -17,14 +17,21 @@ const schema = z.object({
   longitude:   z.number().min(-180).max(180).optional(),
 });
 
-/** Reverse geocoding via Nominatim (OpenStreetMap) — gratuit, pas de clé API */
+/** Coordonnées arrondies à 2 décimales (~1 km) : assez pour trouver la ville. */
+const roundForCity = (n: number) => Math.round(n * 100) / 100;
+
+/**
+ * Nom de la ville via Nominatim (OpenStreetMap) — gratuit, pas de clé API.
+ * Le passant a accepté de partager sa « ville approximative » : seule une position
+ * arrondie (~1 km) quitte le serveur, et seule la ville est gardée.
+ */
 async function reverseGeocode(lat: number, lng: number): Promise<string | null> {
   try {
     // Timeout dur : Nominatim est dans le chemin de la requête de scan. Sans ça,
     // un service externe lent/bloqué fait traîner (voire timeout plateforme) la
     // réponse de scan. 2,5 s suffisent ; au-delà on renonce à la géoloc (non-bloquant).
     const res = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=14&addressdetails=1`,
+      `https://nominatim.openstreetmap.org/reverse?format=json&lat=${roundForCity(lat)}&lon=${roundForCity(lng)}&zoom=10&addressdetails=1`,
       { headers: { 'User-Agent': 'InRealSociety/1.0' }, signal: AbortSignal.timeout(2500) }
     );
     if (!res.ok) return null;
@@ -32,13 +39,7 @@ async function reverseGeocode(lat: number, lng: number): Promise<string | null> 
     const addr = data.address;
     if (!addr) return null;
 
-    // Construit un nom lisible : "quartier, ville" ou juste "ville"
-    const parts = [
-      addr.suburb || addr.neighbourhood || addr.quarter,
-      addr.city || addr.town || addr.village || addr.municipality,
-    ].filter(Boolean);
-
-    return parts.length ? parts.join(', ') : (addr.state || addr.country || null);
+    return addr.city || addr.town || addr.village || addr.municipality || addr.state || addr.country || null;
   } catch {
     return null;
   }
@@ -101,17 +102,15 @@ export async function POST(req: NextRequest) {
     const cleanName = nameAccepted ? rawName : null;
 
     // ─── Enregistrement atomique (insert scan + incrément scan_count) ──────
-    // Coordonnées arrondies à 3 décimales (~110 m) avant stockage : on garde
-    // l'info de quartier (cf. `location`) sans pinpointer un lieu précis —
-    // minimisation RGPD, cohérent avec la politique « géoloc approximative ».
+    // Seule la ville est conservée : aucune coordonnée n'est stockée
+    // (minimisation RGPD ; record_scan les ignore aussi depuis la 058).
     // record_scan (migration 034) fait l'insert + l'incrément dans une seule
     // transaction → plus de dérive possible de scan_count.
-    const round3 = (n: number) => Math.round(n * 1000) / 1000;
     const { error: scanError } = await supabaseAdmin.rpc('record_scan', {
       p_member_id:    memberId,
       p_scanner_name: cleanName,
-      p_latitude:     latitude != null ? round3(latitude) : null,
-      p_longitude:    longitude != null ? round3(longitude) : null,
+      p_latitude:     null,
+      p_longitude:    null,
       p_location:     location,
     });
 

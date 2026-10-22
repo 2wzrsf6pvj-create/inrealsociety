@@ -390,6 +390,51 @@ export function emailActivation(params: {
 
 /** Alerte à l'équipe (ADMIN_ALERT_EMAIL) : un porteur a signalé un message.
  *  `outcome` null = le signalement n'a pas pu être enregistré (voir les logs). */
+/** Ligne « libellé : valeur » des alertes à l'équipe (valeur déjà échappée). */
+function alertRow(label: string, value: string): string {
+  return `
+    <tr>
+      <td style="font-family:system-ui,sans-serif;font-size:12px;color:rgba(255,255,255,0.4);padding:6px 16px 6px 0;vertical-align:top;white-space:nowrap;">${label}</td>
+      <td style="font-family:system-ui,sans-serif;font-size:13px;color:rgba(255,255,255,0.85);padding:6px 0;line-height:1.5;">${value}</td>
+    </tr>`;
+}
+
+/**
+ * Alerte à l'équipe : un profil a été signalé (règlement européen sur les services
+ * numériques : tout hébergeur offre un moyen simple de signaler un contenu).
+ * Rien n'est masqué automatiquement : l'équipe décide, SQL fourni.
+ */
+export function emailProfileReportAlert(params: {
+  memberName: string | null;
+  memberId:   string;
+  profileUrl: string;
+  reason:     string;
+  contact:    string | null;
+}): { subject: string; html: string } {
+  const id = escapeHtml(params.memberId);
+  const url = escapeHtml(params.profileUrl);
+  return {
+    subject: 'Signalement : un profil a été signalé',
+    html: layout(`
+      <h1 style="font-size:22px;font-weight:300;margin:0 0 16px;text-align:center;">Profil signalé</h1>
+      <p style="font-family:system-ui,sans-serif;font-size:13px;color:rgba(255,255,255,0.5);text-align:center;line-height:1.8;margin:0 0 24px;">
+        Rien n'est masqué automatiquement : à vous de décider.
+      </p>
+      <table role="presentation" style="width:100%;border-collapse:collapse;">
+        ${alertRow('Porteur', `${escapeHtml(params.memberName ?? '—')} <span style="color:rgba(255,255,255,0.35);">(${id})</span>`)}
+        ${alertRow('Profil', `<a href="${url}" style="color:#fff;word-break:break-all;">${url}</a>`)}
+        ${alertRow('Motif', `« ${escapeHtml(params.reason)} »`)}
+        ${alertRow('Contact', params.contact ? escapeHtml(params.contact) : 'non fourni')}
+      </table>
+      <p style="font-family:system-ui,sans-serif;font-size:11px;color:rgba(255,255,255,0.4);margin:24px 0 8px;">SQL (Supabase → SQL Editor)</p>
+      <pre style="font-family:monospace;font-size:11px;color:rgba(255,255,255,0.75);background:#111;padding:12px;white-space:pre-wrap;margin:0;">-- Suspendre le profil (le porteur ne peut pas lever la suspension)
+UPDATE members SET suspended_at = now(), is_paused = true WHERE id = '${id}';
+-- Lever la suspension
+UPDATE members SET suspended_at = NULL, is_paused = false WHERE id = '${id}';</pre>
+    `),
+  };
+}
+
 export function emailReportAlert(params: {
   memberName:  string | null;
   memberId:    string;
@@ -408,11 +453,6 @@ export function emailReportAlert(params: {
       : token
         ? `Pas encore banni : ${outcome.reporters} porteur(s) sur ${threshold}.`
         : 'Appareil inconnu (message ancien) : pas de bannissement possible.';
-  const row = (label: string, value: string) => `
-    <tr>
-      <td style="font-family:system-ui,sans-serif;font-size:12px;color:rgba(255,255,255,0.4);padding:6px 16px 6px 0;vertical-align:top;white-space:nowrap;">${label}</td>
-      <td style="font-family:system-ui,sans-serif;font-size:13px;color:rgba(255,255,255,0.85);padding:6px 0;line-height:1.5;">${value}</td>
-    </tr>`;
   const sql = token ? `
       <p style="font-family:system-ui,sans-serif;font-size:11px;color:rgba(255,255,255,0.4);margin:24px 0 8px;">SQL (Supabase → SQL Editor)</p>
       <pre style="font-family:monospace;font-size:11px;color:rgba(255,255,255,0.75);background:#111;padding:12px;white-space:pre-wrap;margin:0;">-- Bannir à la main
@@ -427,10 +467,10 @@ DELETE FROM banned_devices WHERE sender_token = '${token}';</pre>` : '';
         Le message est masqué pour le porteur.
       </p>
       <table role="presentation" style="width:100%;border-collapse:collapse;">
-        ${row('Porteur', `${escapeHtml(params.memberName ?? '—')} <span style="color:rgba(255,255,255,0.35);">(${escapeHtml(params.memberId)})</span>`)}
-        ${row('Message', `« ${excerpt} »`)}
-        ${row('Appareil', token ?? 'inconnu')}
-        ${row('Suite', escapeHtml(status))}
+        ${alertRow('Porteur', `${escapeHtml(params.memberName ?? '—')} <span style="color:rgba(255,255,255,0.35);">(${escapeHtml(params.memberId)})</span>`)}
+        ${alertRow('Message', `« ${excerpt} »`)}
+        ${alertRow('Appareil', token ?? 'inconnu')}
+        ${alertRow('Suite', escapeHtml(status))}
       </table>
       ${sql}
     `),

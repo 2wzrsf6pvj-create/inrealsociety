@@ -61,6 +61,15 @@ SELECT relrowsecurity AS rls,
        has_table_privilege('anon', 'contact_verifications', 'SELECT') AS anon_select
 FROM pg_class WHERE relname = 'contact_verifications';
 
+\echo '=== 058 — purge des conversations, réservée à service_role (attendu: 1 ligne  t | f) ==='
+SELECT 'conversations_deleted' = ANY(p.proargnames) AS purge_conversations,
+       has_function_privilege('authenticated', 'cleanup_old_data()', 'EXECUTE') AS authd_execute
+FROM pg_proc p WHERE p.proname = 'cleanup_old_data';
+
+\echo '=== 058 — record_scan ne stocke plus de coordonnées (attendu: t) ==='
+SELECT prosrc NOT LIKE '%INSERT INTO scans (member_id, scanner_name, latitude%' AS city_only
+FROM pg_proc WHERE proname = 'record_scan';
+
 \echo '=== Rappel : RLS activée sur les tables sensibles (attendu: tous t) ==='
 SELECT relname, relrowsecurity
 FROM pg_class

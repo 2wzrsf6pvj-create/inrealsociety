@@ -44,6 +44,7 @@ const PUBLIC_PAGE_PREFIXES = [
 const PUBLIC_API_EXACT = new Set([
   '/api/message',        // envoi message scanner anonyme
   '/api/contact/verify', // lien de confirmation de l'email du passant (jeton, rate-limité)
+  '/api/profile/report', // signalement d'un profil par n'importe qui (DSA), rate-limité
   '/api/scan',
   '/api/order-code',
   '/api/order/status',       // suivi de commande public (lookup par code d'activation)
