@@ -279,7 +279,7 @@ export default function ProfilClient({
             </p>
             {!scannerName && (
               <p className="font-ui text-sm font-light text-brand-gray/75 text-center leading-relaxed tracking-wide">
-                Ce vêtement signifie que son porteur est ouvert<br />à une conversation. Vous avez le contrôle.
+                Ce vêtement est une invitation à la conversation. Vous avez le contrôle.
               </p>
             )}
           </div>
@@ -318,31 +318,35 @@ export default function ProfilClient({
           </div>
         ) : !isExpired && (
           <div className="w-full flex flex-col gap-3 animate-stagger-4">
-            {convUrl && (
+            {convUrl ? (
+              /* Déjà écrit : un seul message par appareil (le serveur refuse le
+                 second), la suite se passe dans la conversation. */
               <Link href={convUrl}
-                className="w-full py-3 border border-brand-white/20 text-center font-ui text-sm font-light tracking-[0.15em] hover:border-brand-white/40 transition-colors"
-                style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 text-center block"
+                style={{ minHeight: '44px' }}
               >
                 Retrouver votre conversation
               </Link>
-            )}
+            ) : (
+              <>
+                {/* #4 — contact requis annoncé en amont (évite la surprise sur la
+                    page message). En aperçu aussi pour que le porteur le voie. */}
+                {member.require_contact && (
+                  <p className="font-ui text-xxs text-[#C5A059]/80 tracking-[0.05em] text-center leading-relaxed">
+                    Ce membre demande un @instagram ou un email pour pouvoir répondre.
+                  </p>
+                )}
 
-            {/* #4 — contact requis annoncé en amont (évite la surprise sur la
-                page message). En aperçu aussi pour que le porteur le voie. */}
-            {member.require_contact && (
-              <p className="font-ui text-xxs text-[#C5A059]/80 tracking-[0.05em] text-center leading-relaxed">
-                Ce membre demande un @instagram ou un email pour pouvoir répondre.
-              </p>
+                <Link
+                  onClick={() => { if (!preview) sendScan(); }}
+                  href={`/message?to=${member.id}&name=${encodeURIComponent(member.name)}${member.require_contact ? '&rc=1' : ''}${preview ? '&preview=1' : ''}`}
+                  className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 text-center block"
+                  style={{ minHeight: '44px' }}
+                >
+                  Lui envoyer un message
+                </Link>
+              </>
             )}
-
-            <Link
-              onClick={() => { if (!preview) sendScan(); }}
-              href={`/message?to=${member.id}&name=${encodeURIComponent(member.name)}${member.require_contact ? '&rc=1' : ''}${preview ? '&preview=1' : ''}`}
-              className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 text-center block"
-              style={{ minHeight: '44px' }}
-            >
-              {convUrl ? 'Envoyer un autre message' : 'Lui envoyer un message'}
-            </Link>
 
             {instagramHandle && (
               <div className="flex flex-col items-center gap-1">
@@ -365,8 +369,8 @@ export default function ProfilClient({
         {askLocation && !isExpired && (
           <div className="w-full bg-[#080808] border border-brand-gray/15 rounded-[2px] px-4 py-3 flex flex-col gap-2.5 animate-fade-in">
             <p className="font-ui text-sm text-brand-gray/75 leading-relaxed text-center">
-              Partager ta ville approximative à <span className="text-brand-white/85">{member.name}</span> ?
-              <br /><span className="text-brand-gray/60">Jamais ta position exacte.</span>
+              Partager votre ville approximative avec <span className="text-brand-white/85">{member.name}</span>{' '}?
+              <br /><span className="text-brand-gray/60">Jamais votre position exacte.</span>
             </p>
             <div className="flex items-center gap-2">
               <button onClick={shareLocation}

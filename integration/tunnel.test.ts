@@ -326,16 +326,19 @@ describe.skipIf(!ENABLED)('Tunnel achat → impression → activation → scan �
     expect(sql(`SELECT latitude || ',' || longitude FROM scans WHERE member_id = '${memberId}'`)).toBe('48.857,2.352');
   });
 
-  it('9. message : délivré une fois par appareil, puis « à lui de répondre »', async () => {
+  it('9. message : délivré une fois par appareil, puis renvoi vers la conversation', async () => {
     const first = await message.POST(req('/api/message', { body: { memberId, content: 'Belle audace.', senderName: 'Léa' } }));
     expect(first.status).toBe(200);
     const deviceCookie = first.headers.get('set-cookie')?.split(';')[0] ?? '';
     expect(deviceCookie).toMatch(/^irs_sender=/);
+    const firstId = (await first.json()).messageId;
     expect(sql(`SELECT count(*) FROM messages WHERE member_id = '${memberId}' AND parent_id IS NULL`)).toBe('1');
 
     const again = await message.POST(req('/api/message', { body: { memberId, content: 'Encore moi' }, cookie: deviceCookie }));
     expect(again.status).toBe(409);
-    expect((await again.json()).code).toBe('already_messaged');
+    const refused = await again.json();
+    expect(refused.code).toBe('already_messaged');
+    expect(refused.conversationId).toBe(firstId);   // même sans le lien en localStorage
   });
 
   it('10. remboursement total : commande remboursée, profil suspendu et verrouillé', async () => {
@@ -529,6 +532,8 @@ describe.skipIf(!ENABLED)('Email du passant : les réponses ne partent qu’apr�
     currentUser = { id: wearer.authId, email: `w-${wearer.authId}@example.com` };
     return reply.POST(req('/api/conversation/reply', { body: { messageId, content, author: 'member' } }));
   };
+  const scannerReply = (content: string) =>
+    reply.POST(req('/api/conversation/reply', { body: { messageId, content, author: 'scanner' }, cookie: `irs_sender=${device}` }));
   const click = (t: string) => verify.GET(req(`/api/contact/verify?token=${t}`, { method: 'GET' }));
 
   it('le passant laisse son email : un lien de confirmation lui est envoyé', async () => {
@@ -545,9 +550,21 @@ describe.skipIf(!ENABLED)('Email du passant : les réponses ne partent qu’apr�
     expect(sql(`SELECT count(*) FROM contact_verifications WHERE token_hash = '${token}'`)).toBe('0');   // jamais en clair
   });
 
+  it('chacun son tour : le passant ne peut pas écrire deux fois de suite', async () => {
+    const res = await scannerReply('Tu as vu mon message ?');
+    expect(res.status).toBe(409);
+    expect((await res.json()).code).toBe('not_your_turn');
+  });
+
   it('le porteur répond avant la confirmation : rien ne part vers cette adresse', async () => {
     expect((await memberReply('Merci, ça me touche.')).status).toBe(200);
     expect(toScanner()).toHaveLength(1);   // toujours le seul lien de confirmation
+  });
+
+  it('chacun son tour : le porteur non plus', async () => {
+    const res = await memberReply('Tu es là ?');
+    expect(res.status).toBe(409);
+    expect((await res.json()).code).toBe('not_your_turn');
   });
 
   it('lien invalide → page « lien invalide »', async () => {
@@ -567,7 +584,8 @@ describe.skipIf(!ENABLED)('Email du passant : les réponses ne partent qu’apr�
     expect(toScanner()).toHaveLength(2);
   });
 
-  it('réponse suivante : envoyée directement', async () => {
+  it('réponse suivante, après celle du passant : envoyée directement', async () => {
+    expect((await scannerReply('Avec plaisir.')).status).toBe(200);
     expect((await memberReply('À bientôt peut-être.')).status).toBe(200);
     expect(toScanner()).toHaveLength(3);
     expect(toScanner()[2].html).toContain('À bientôt peut-être.');

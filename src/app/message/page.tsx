@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useRef, Suspense } from 'react';
-import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { captureEvent } from '@/lib/posthog-client';
 import { isValidEmail, isInstagramHandle, isValidFirstName } from '@/lib/validators';
 import { haptic } from '@/lib/haptics';
 import SunToggle from '@/app/components/ui/SunToggle';
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Conversion scanneur → porteur. Le scanneur vient de vivre le moment fort
 // (signal envoyé / profil très demandé / fenêtre ratée) : c'est l'instant idéal
@@ -140,11 +141,15 @@ function MessageForm() {
         }
         if (data.code === 'already_messaged') {
           captureEvent('message_blocked_already_messaged', { member_id: memberId });
-          // Assainit à la SOURCE : on ne garde que le chemin interne (même origine),
-          // comme ProfilClient. Évite toute redirection hors-app même si la valeur
-          // localStorage était altérée. Les usages en aval poussent le chemin tel quel.
+          // Le serveur renvoie la conversation de ce device ; à défaut, le lien
+          // gardé en localStorage. Assaini à la SOURCE : on ne garde que le chemin
+          // interne (même origine), comme ProfilClient. Évite toute redirection
+          // hors-app même si la valeur localStorage était altérée. Les usages en
+          // aval poussent le chemin tel quel.
           const prior = localStorage.getItem(`conversation_${memberId}`);
-          if (prior) {
+          if (typeof data.conversationId === 'string' && UUID_RE.test(data.conversationId)) {
+            setConversationUrl(`/conversation/${data.conversationId}`);
+          } else if (prior) {
             try {
               const u = new URL(prior, window.location.origin);
               if (u.origin === window.location.origin) setConversationUrl(u.pathname + u.search);
@@ -269,7 +274,7 @@ function MessageForm() {
         <p className="font-display text-2xl font-light">C&apos;est déjà lancé.</p>
         <p className="font-ui text-sm text-brand-gray/65 leading-relaxed">
           Vous avez déjà écrit à {memberName}.<br />
-          Un seul message — c&apos;est à elle/lui de répondre maintenant.
+          La suite se passe dans votre conversation.
         </p>
         <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
         {conversationUrl && (
@@ -362,8 +367,7 @@ function MessageForm() {
   // Même règle que le serveur : un prénom hors format y est ignoré (message anonyme).
   const nameLooksValid = senderName.trim() === '' || isValidFirstName(senderName.trim());
 
-  // Champs définis une fois — placés selon que le contact est requis (blocker en
-  // tête) ou seulement recommandé (personnalisation en bas).
+  // Prénom et contact, en tête du formulaire (cf. plus bas).
   const nameField = (
     <div className="flex flex-col gap-1">
       <label htmlFor="msg-name" className="font-ui text-xs text-brand-gray/60 tracking-[0.2em] uppercase">
@@ -371,7 +375,7 @@ function MessageForm() {
         <span className="normal-case tracking-normal ml-1 text-brand-white/60">(optionnel)</span>
       </label>
       <p id="msg-name-hint" className="font-ui text-xs text-brand-gray/65 leading-relaxed mb-1">
-        Pour qu&apos;il sache qui l&apos;a remarqué. Sinon, vous restez anonyme.
+        Pour que {memberName} sache qui lui écrit. Sinon, vous restez anonyme.
       </p>
       <input id="msg-name" aria-describedby="msg-name-hint" type="text" placeholder="Anonyme par défaut" value={senderName} maxLength={30}
         autoComplete="given-name"
@@ -398,7 +402,7 @@ function MessageForm() {
       <p id="msg-contact-hint" className="font-ui text-xs text-brand-gray/65 leading-relaxed mb-1">
         {contactRequired
           ? 'Ce membre n’accepte que les messages avec un contact.'
-          : 'Sans contact, il ne pourra pas vous répondre.'}
+          : `Sans contact, vous ne saurez pas quand ${memberName} vous répond.`}
       </p>
       <input id="msg-contact" aria-describedby="msg-contact-hint" ref={contactRef} type="text" inputMode="email" autoCapitalize="none" autoCorrect="off"
         placeholder={contactRequired ? '@instagram ou email' : 'Anonyme par défaut'} value={contact} maxLength={200}
@@ -410,7 +414,7 @@ function MessageForm() {
           ni à un @handle — un contact mal tapé = le porteur ne peut pas répondre. */}
       {!contactLooksValid && (
         <p className="font-ui text-xs text-[#C5A059]/85 leading-relaxed mt-1 animate-fade-in">
-          Cela ne ressemble pas à un @instagram ou un email — il ne pourra peut-être pas vous répondre.
+          Cela ne ressemble pas à un @instagram ou un email : vérifiez-le pour ne pas manquer sa réponse.
         </p>
       )}
     </div>
@@ -420,7 +424,7 @@ function MessageForm() {
     <div className="flex flex-col gap-6 w-full">
       <div className="text-center flex flex-col gap-2 animate-stagger-1">
         <h2 className="font-display text-2xl md:text-3xl font-light tracking-[0.04em]">Un signal discret.</h2>
-        <p className="font-ui text-sm font-light text-brand-gray/65 leading-relaxed">À {memberName}. Il pourra vous répondre directement.</p>
+        <p className="font-ui text-sm font-light text-brand-gray/65 leading-relaxed">À {memberName}, qui pourra vous répondre directement.</p>
         <p className="font-ui text-xxs text-brand-gray/50 leading-relaxed">
           Réservé aux 18 ans et plus : en envoyant un message, vous confirmez avoir l&apos;âge requis.
         </p>
@@ -435,8 +439,12 @@ function MessageForm() {
         </div>
       )}
 
-      {/* Contact REQUIS = blocker → en tête, qu'on le remplisse avant de taper. */}
-      {contactRequired && <div className="animate-stagger-2">{contactField}</div>}
+      {/* Prénom et contact AVANT tout envoi : les réponses rapides partent en un
+          tap, et sans contact le passant ne sait pas quand on lui répond. */}
+      <div className="flex flex-col gap-5 animate-stagger-2">
+        {nameField}
+        {contactField}
+      </div>
 
       {/* Réponse rapide — chemin 1-tap, mis en avant EN PREMIER (friction minimale). */}
       <div className="flex flex-col gap-2 animate-stagger-2">
@@ -489,13 +497,11 @@ function MessageForm() {
         </button>
       </div>
 
-      {/* Personnalisation — prénom (toujours) + contact (s'il n'est pas déjà requis en tête). */}
-      <div className="w-full h-px bg-brand-gray/10" />
-      <div className="flex flex-col gap-5 animate-stagger-4">
-        <p className="font-ui text-xxs text-brand-gray/55 tracking-[0.2em] uppercase text-center">Personnaliser</p>
-        {nameField}
-        {!contactRequired && contactField}
-      </div>
+      <button onClick={() => memberId ? router.push(`/profil/${memberId}`) : router.push('/')}
+        className="font-ui text-xs text-brand-gray/50 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white/80 transition-colors py-3 self-center"
+        style={{ minHeight: '44px' }}>
+        ← retour au profil
+      </button>
     </div>
   );
 }
@@ -515,11 +521,6 @@ export default function MessagePage() {
             <p className="font-ui text-xxs text-brand-gray/55 tracking-[0.25em] uppercase">Un instant</p>
           </div>
         }><MessageForm /></Suspense>
-        <Link href="/"
-          className="font-ui text-xs text-brand-gray/50 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white/80 transition-colors py-3"
-          style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}>
-          ← retour
-        </Link>
       </div>
     </main>
   );

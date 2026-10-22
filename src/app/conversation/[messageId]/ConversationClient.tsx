@@ -115,7 +115,7 @@ function PushPrompt({ pushAsked, pushGranted, pushLoading, onSubscribe, hasConta
       <button onClick={onSubscribe} disabled={pushLoading}
         className="w-full py-3 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.1em] hover:border-brand-gray/35 transition-colors disabled:opacity-40"
         style={{ minHeight: '44px' }}>
-        {pushLoading ? 'Activation...' : 'Me notifier quand il répond'}
+        {pushLoading ? 'Activation...' : 'Me notifier de sa réponse'}
       </button>
     </div>
   );

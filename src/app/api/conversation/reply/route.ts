@@ -112,6 +112,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Cette conversation a atteint sa limite.', code: 'thread_limit' }, { status: 403 });
     }
 
+    // Tour de parole : chacun son tour, comme l'affiche le client. Sans ce verrou,
+    // un appel direct à l'API enchaînait les messages jusqu'au plafond avant toute
+    // réponse. Le message racine est toujours du scanner.
+    const { data: lastMsg } = await supabaseAdmin
+      .from('messages')
+      .select('author')
+      .eq('parent_id', messageId)
+      .eq('moderated', false)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+    if ((lastMsg?.author ?? 'scanner') === author) {
+      return NextResponse.json(
+        { error: 'Attendez sa réponse avant d’écrire à nouveau.', code: 'not_your_turn' },
+        { status: 409 },
+      );
+    }
+
     // Modération (scanner anonyme inclus) — comme le message racine.
     const moderation = await moderateContent(content);
 
