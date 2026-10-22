@@ -30,6 +30,16 @@ export function getSenderToken(req: NextRequest): string | null {
   return isValidSenderToken(raw) ? raw : null;
 }
 
+/**
+ * Le visiteur est-il sur l'appareil d'où le passant a écrit ? Lui seul répond en
+ * son nom (cf. /api/conversation/reply) ; le lien seul ne permet que de lire.
+ * Message ancien sans jeton : on ne peut pas vérifier, on tolère (comme l'API).
+ */
+export function isOriginDevice(rootToken: string | null | undefined, deviceToken: string | null | undefined): boolean {
+  if (!rootToken) return true;
+  return isValidSenderToken(deviceToken) && deviceToken === rootToken;
+}
+
 /** Pose le cookie de jeton sur la réponse (httpOnly, 1 an). */
 export function setSenderTokenCookie(res: NextResponse, token: string): void {
   res.cookies.set(SENDER_TOKEN_COOKIE, token, {

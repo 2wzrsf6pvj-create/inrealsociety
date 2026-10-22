@@ -214,11 +214,14 @@ function ChatBubble({ content, date, isRight, animate }: {
 export default function ConversationClient({
   message: initialMessage,
   isOwner = false,
+  originDevice = true,
   thread: initialThread = [],
   blocked: initialBlocked = false,
 }: {
   message: ConversationMessage;
   isOwner?: boolean;
+  /** Appareil d'où le passant a écrit (cookie) : lui seul répond en son nom. */
+  originDevice?: boolean;
   thread?: ThreadReply[];
   blocked?: boolean;
 }) {
@@ -482,6 +485,20 @@ export default function ConversationClient({
                 {isOwner && (
                   <><br /><br />Si la conversation a du potentiel, proposez un canal direct (Instagram, numéro) dans votre dernier message.</>
                 )}
+              </p>
+            </div>
+          ) : !isOwner && !originDevice ? (
+            /* Lien ouvert ailleurs : le passant sur un autre appareil, ou le porteur déconnecté */
+            <div className="flex flex-col gap-3 py-2">
+              <p className="font-ui text-xs text-brand-gray/55 leading-relaxed">
+                Vous avez écrit ce message ? Pour répondre, ouvrez cette page sur l&apos;appareil d&apos;où vous l&apos;avez envoyé.
+              </p>
+              <p className="font-ui text-xs text-brand-gray/55 leading-relaxed">
+                Vous êtes {memberName} ?{' '}
+                <Link href={`/auth/login?redirect=${encodeURIComponent(`/conversation/${message.id}`)}`}
+                  className="text-brand-white/80 underline underline-offset-4 hover:text-brand-white transition-colors">
+                  Connectez-vous pour répondre
+                </Link>.
               </p>
             </div>
           ) : isMyTurn ? (
