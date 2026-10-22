@@ -66,8 +66,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Sans --with-deps : l'image Ubuntu des runners GitHub a déjà les bibliothèques
+      # système de Chromium (Chrome y est préinstallé). Le apt-get de --with-deps
+      # n'ajoutait que des polices et des mises à jour, et a bloqué plus de 15 min
+      # sur un miroir Ubuntu lent. Si une bibliothèque venait à manquer, le lancement
+      # du navigateur échoue avec un message explicite : remettre --with-deps.
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install chromium
 
       - name: Run Playwright tests
         run: npm run test:e2e
