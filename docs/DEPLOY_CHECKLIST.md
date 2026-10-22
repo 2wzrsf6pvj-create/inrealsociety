@@ -52,7 +52,12 @@ node scripts/build-fresh-setup.mjs --check  # aussi vérifié par vitest (fresh-
 ```
 > Ne PAS utiliser `cat supabase/migrations/0*.sql` (ordre naïf → échec 001).
 
-### Base EXISTANTE (prod déjà à 032)
+### Base EXISTANTE — recommandé : Supabase CLI
+Voir **[SUPABASE_CLI.md](SUPABASE_CLI.md)** : une fois l'historique marqué
+(`migration repair`, sans rien rejouer), `npx supabase db push` n'applique que
+les migrations manquantes et la base garde la trace de ce qui est appliqué.
+
+### Base EXISTANTE — à la main (prod déjà à 032)
 Appliquer **uniquement les nouvelles** dans l'ordre :
 ```bash
 for f in 033_rls_hardening_views 034_record_scan 035_secure_create_member_rpc 036_cleanup_push_subscriptions \

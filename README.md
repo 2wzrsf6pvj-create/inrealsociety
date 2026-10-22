@@ -55,12 +55,11 @@ expliquant où récupérer la clé.
 
 ### 3. Appliquer les migrations Supabase
 
-Depuis [supabase/migrations/](supabase/migrations/), appliquer **dans l'ordre numérique**
-via le SQL editor du dashboard Supabase ou la CLI :
-
-```bash
-supabase db push
-```
+- **Base neuve** : coller [scripts/fresh-setup.sql](scripts/fresh-setup.sql) dans le
+  SQL editor (l'ordre numérique naïf échoue : `001` dépend de tables créées en `015`).
+- **Base existante** : Supabase CLI, après avoir marqué l'historique — voir
+  [docs/SUPABASE_CLI.md](docs/SUPABASE_CLI.md) (⚠️ un `supabase db push` sans
+  `migration repair` préalable tenterait de rejouer toutes les migrations).
 
 Migrations critiques :
 - `015_schema_complet.sql` : schéma de référence
