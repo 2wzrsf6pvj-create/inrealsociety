@@ -51,6 +51,11 @@ WHERE schemaname = 'storage' AND tablename = 'objects' AND cmd IN ('INSERT', 'UP
 \echo '=== 054 — suspension : colonne + contrainte « suspendu ⇒ en pause » (attendu: 1 ligne) ==='
 SELECT conname FROM pg_constraint WHERE conname = 'members_suspended_implies_paused';
 
+\echo '=== 056 — signalements : table, RLS, aucun accès client (attendu: 1 ligne  t | f) ==='
+SELECT relrowsecurity AS rls,
+       has_table_privilege('authenticated', 'message_reports', 'SELECT') AS authd_select
+FROM pg_class WHERE relname = 'message_reports';
+
 \echo '=== Rappel : RLS activée sur les tables sensibles (attendu: tous t) ==='
 SELECT relname, relrowsecurity
 FROM pg_class
