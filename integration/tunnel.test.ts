@@ -50,6 +50,9 @@ Object.assign(process.env, {
 // ─── Faux services externes ───────────────────────────────────────────────────
 const realFetch = globalThis.fetch;
 const sent = {
+  // Préfixe propre à l'exécution : les ids de session simulés restent uniques
+  // quand on relance le test sur la même base.
+  run:      Date.now().toString(36),
   printful: [] as { body: Record<string, unknown> }[],
   emails:   [] as { to: string[]; subject: string; html: string }[],
   uploads:  [] as string[],
@@ -106,7 +109,7 @@ vi.mock('stripe', () => {
     checkout = { sessions: {
       create: async (params: Record<string, unknown>) => {
         sent.stripeSessions.push(params);
-        const id = `cs_test_${sent.stripeSessions.length}`;
+        const id = `cs_test_${sent.run}_${sent.stripeSessions.length}`;
         return { id, url: `https://checkout.stripe.com/c/pay/${id}` };
       },
       retrieve: async (id: string) => ({
@@ -172,6 +175,7 @@ describe.skipIf(!ENABLED)('Tunnel achat → impression → activation → scan �
   const BUYER = { id: crypto.randomUUID(), email: `buyer-${Date.now()}@example.com` };
   let checkout: typeof import('@/app/api/shop/checkout/route');
   let webhook:  typeof import('@/app/api/webhook/stripe/route');
+  let orderCode: typeof import('@/app/api/order-code/route');
   let activate: typeof import('@/app/api/activate/route');
   let create:   typeof import('@/app/api/member/create/route');
   let update:   typeof import('@/app/api/member/update/route');
@@ -189,12 +193,14 @@ describe.skipIf(!ENABLED)('Tunnel achat → impression → activation → scan �
   const completed = () => stripeEvent('checkout.session.completed', {
     id: sessionId, mode: 'payment', payment_intent: paymentIntent, amount_total: 5900,
     customer_email: BUYER.email, customer_details: { email: BUYER.email },
+    collected_information: { shipping_details: SHIPPING },
     metadata: { orderId, tshirtColor: 'dark', tshirtSize: 'L', qrStyle: 'rounded' },
   });
 
   beforeAll(async () => {
     checkout      = await import('@/app/api/shop/checkout/route');
     webhook       = await import('@/app/api/webhook/stripe/route');
+    orderCode     = await import('@/app/api/order-code/route');
     activate      = await import('@/app/api/activate/route');
     create        = await import('@/app/api/member/create/route');
     update        = await import('@/app/api/member/update/route');
@@ -214,7 +220,7 @@ describe.skipIf(!ENABLED)('Tunnel achat → impression → activation → scan �
 
     const session = sent.stripeSessions.at(-1)!;
     orderId   = (session.metadata as Record<string, string>).orderId;
-    sessionId = `cs_test_${sent.stripeSessions.length}`;
+    sessionId = `cs_test_${sent.run}_${sent.stripeSessions.length}`;
     expect(sql(`SELECT status || '|' || tshirt_size || '|' || stripe_session_id FROM orders WHERE id = '${orderId}'`))
       .toBe(`pending|L|${sessionId}`);
   });
@@ -233,9 +239,21 @@ describe.skipIf(!ENABLED)('Tunnel achat → impression → activation → scan �
     code = activationCode;
     shortCode = reserved;
 
-    // Email d'activation avec le code
+    // Email d'activation avec le code et le récapitulatif de la commande
     expect(sent.emails.at(-1)?.to).toEqual([BUYER.email]);
-    expect(sent.emails.at(-1)?.html).toContain(code);
+    const html = sent.emails.at(-1)!.html;
+    expect(html).toContain(code);
+    expect(html).toContain('T-shirt Noir · L');
+    expect(html).toContain('QR seul, sans accroche');
+    expect(html).toMatch(/59,00\s€ TTC/);
+    expect(html).toContain('Jeanne Test, 1 rue de Rivoli, 75001 Paris, France');
+
+    // Page de confirmation : code et récapitulatif, sans donnée personnelle
+    const page = await (await orderCode.GET(req(`/api/order-code?session=${sessionId}`, { method: 'GET' }))).json();
+    expect(page.code).toBe(code);
+    expect(page.recap).toMatchObject({ article: 'T-shirt Noir · L', tagline: null, shipping: null, address: null });
+    expect(page.recap.total).toMatch(/^59,00\s€$/);
+    expect(JSON.stringify(page)).not.toContain(BUYER.email);
 
     // Printful : bon variant, adresse de livraison, QR au dos + logo poitrine
     const order = sent.printful.at(-1)!.body as { external_id: string; recipient: { city: string }; items: { files: { type: string; url: string }[] }[] };
@@ -365,7 +383,7 @@ describe.skipIf(!ENABLED)('Relance : payé mais jamais activé', () => {
     // Achat réel par les routes, puis plus rien : le profil n'est jamais créé.
     await checkout.POST(req('/api/shop/checkout', { body: { email, tshirtColor: 'light', tshirtSize: 'M', taglineId: null } }));
     orderId = (sent.stripeSessions.at(-1)!.metadata as Record<string, string>).orderId;
-    const sessionId = `cs_test_${sent.stripeSessions.length}`;
+    const sessionId = `cs_test_${sent.run}_${sent.stripeSessions.length}`;
     await webhook.POST(stripeEvent('checkout.session.completed', {
       id: sessionId, mode: 'payment', payment_intent: `pi_idle_${Date.now()}`, amount_total: 5400,
       customer_email: email, customer_details: { email },

@@ -1,6 +1,7 @@
 // app/api/order-code/route.ts
 // GET /api/order-code?session=xxx
-// Retourne le code d'activation d'une commande payée (poll par /shop/success).
+// Retourne le code d'activation d'une commande payée (poll par /shop/success),
+// avec le récapitulatif de la commande.
 // Preuve de paiement = la BDD (status='paid' + code, posés par le webhook signé),
 // pas un appel Stripe. Ne révèle pas un code déjà consommé.
 
@@ -8,6 +9,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { checkPublicRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
+import { buildOrderRecap } from '@/lib/order-recap';
 
 const querySchema = z.object({
   session: z.string().min(1).max(200),
@@ -43,13 +45,22 @@ export async function GET(req: NextRequest) {
   // le code (le front poll) — pas une erreur (evite les 406 dans les logs Supabase).
   const { data } = await supabaseAdmin
     .from('orders')
-    .select('activation_code, status')
+    .select('activation_code, status, tshirt_color, tshirt_size, tagline_id, amount')
     .eq('stripe_session_id', sessionId)
     .maybeSingle();
 
   if (!data || data.status !== 'paid' || !data.activation_code) {
     return NextResponse.json({ code: null });
   }
+
+  // Récapitulatif affiché sur la page de confirmation. Rien de personnel (ni email,
+  // ni adresse) ; `amount` est le total réel, réécrit par le webhook au paiement.
+  const recap = buildOrderRecap({
+    color:      data.tshirt_color,
+    size:       data.tshirt_size,
+    taglineId:  data.tagline_id,
+    totalCents: data.amount,
+  });
 
   // Ne ré-affiche pas un code déjà consommé : un acheteur qui revient sur la page
   // succès après avoir activé son profil verrait sinon un code « actionnable »
@@ -61,8 +72,8 @@ export async function GET(req: NextRequest) {
     .eq('code', data.activation_code)
     .maybeSingle();
   if (codeRow?.used) {
-    return NextResponse.json({ code: null });
+    return NextResponse.json({ code: null, recap });
   }
 
-  return NextResponse.json({ code: data.activation_code });
+  return NextResponse.json({ code: data.activation_code, recap });
 }

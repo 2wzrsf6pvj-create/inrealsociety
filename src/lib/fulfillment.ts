@@ -119,7 +119,7 @@ function getVariantId(color: TshirtColor, size: TshirtSize): number {
   return parseInt(perSize || legacy || '0', 10);
 }
 
-function getShippingDetails(session: Stripe.Checkout.Session): PrintfulAddress | null {
+export function getShippingDetails(session: Stripe.Checkout.Session): PrintfulAddress | null {
   // API 2026+ : l'adresse de livraison est sous collected_information.shipping_details.
   // Fallbacks : ancien champ top-level (API < 2025), puis customer_details
   // (facturation) en dernier recours. Lire directement session.shipping_details
