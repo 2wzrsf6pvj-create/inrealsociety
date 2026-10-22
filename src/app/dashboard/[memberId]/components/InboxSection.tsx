@@ -3,7 +3,7 @@
 import React, { useState, useRef } from 'react';
 import Link from 'next/link';
 import { captureEvent } from '@/lib/posthog-client';
-import { MAX_CONVERSATIONS } from '@/lib/constants';
+import { MAX_CONVERSATIONS, CONVERSATION_WINDOW_DAYS } from '@/lib/constants';
 import type { Message } from '@/lib/types';
 import { timeAgo } from './utils';
 
@@ -54,11 +54,12 @@ function UpgradeBanner({ memberId, source, headline, sublabel }: {
 
 // ─── Inbox (Messages) ─────────────────────────────────────────────────────────
 
-export default function InboxSection({ messages: initialMessages, memberId, plan, activeConversations, totalConversations }: {
+export default function InboxSection({ messages: initialMessages, memberId, plan, recentConversations, totalConversations }: {
   messages: Message[];
   memberId: string;
   plan: 'free' | 'premium';
-  activeConversations: number;
+  // Conversations qui occupent le plafond : fenêtre glissante, hors bloquées.
+  recentConversations: number;
   totalConversations: number;
 }) {
   const [messages, setMessages]         = useState(initialMessages);
@@ -73,8 +74,8 @@ export default function InboxSection({ messages: initialMessages, memberId, plan
   // dans ce sous-arbre) — vrai aujourd'hui.
   const initialCount = useRef(initialMessages.length).current;
   // Pagination basée sur le total AFFICHÉ (totalConversations = racine, bloquées
-  // incluses) — pas sur activeConversations (hors bloquées, qui pilote le plafond
-  // premium). Sinon les conv bloquées masqueraient "Voir plus".
+  // incluses) — pas sur recentConversations (fenêtre glissante hors bloquées, qui
+  // pilote le plafond premium). Sinon les conv bloquées masqueraient "Voir plus".
   const hasMore = messages.length < totalConversations;
 
   const loadMore = async () => {
@@ -138,8 +139,8 @@ export default function InboxSection({ messages: initialMessages, memberId, plan
   }
 
   const limit       = MAX_CONVERSATIONS[plan];
-  const showWarning = plan === 'free' && limit !== Infinity && activeConversations >= 2;
-  const atLimit     = plan === 'free' && limit !== Infinity && activeConversations >= limit;
+  const showWarning = plan === 'free' && limit !== Infinity && recentConversations >= 2;
+  const atLimit     = plan === 'free' && limit !== Infinity && recentConversations >= limit;
 
   return (
     <div className="w-full flex flex-col gap-2">
@@ -147,8 +148,8 @@ export default function InboxSection({ messages: initialMessages, memberId, plan
         <UpgradeBanner
           memberId={memberId}
           source="inbox_conversation_limit"
-          headline={atLimit ? 'Limite atteinte' : `${activeConversations}/${limit} conversations`}
-          sublabel={atLimit ? 'Plus aucun message ne peut t’atteindre. Passe premium pour débloquer.' : 'Passe premium pour des conversations illimitées.'}
+          headline={atLimit ? 'Limite atteinte' : `${recentConversations}/${limit} conversations sur ${CONVERSATION_WINDOW_DAYS} jours`}
+          sublabel={atLimit ? `Un créneau se libère ${CONVERSATION_WINDOW_DAYS} jours après chaque conversation. Passe premium pour lever la limite.` : 'Passe premium pour des conversations illimitées.'}
         />
       )}
       {messages.map((msg, i) => {

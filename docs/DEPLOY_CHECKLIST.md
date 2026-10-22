@@ -8,7 +8,7 @@
 
 ## 1. Migrations SQL — ordre & application
 
-Les migrations sont numérotées et **doivent s'appliquer dans l'ordre** (`supabase/migrations/001 … 053`).
+Les migrations sont numérotées et **doivent s'appliquer dans l'ordre** (`supabase/migrations/001 … 054`).
 
 ### Nouveautés de ce lot de durcissement
 | # | Effet | Critique ? |
@@ -33,13 +33,14 @@ Les migrations sont numérotées et **doivent s'appliquer dans l'ordre** (`supab
 | `051` | index unique `feedback(message_id)` (conversation) | 🟠 une seule note par thread (anti-course) |
 | `052` | DROP policy + `REVOKE INSERT, DELETE` sur `members` / `referrals` | 🔴 ferme la création de membre premium par POST direct (clé anon + session) |
 | `053` | `REVOKE EXECUTE … FROM authenticated` sur les RPC DEFINER (`record_scan`, `create_member_with_code`, `accounts_pending_profile`, `cleanup_old_data`) + default privileges fail-safe + `messages` sans écriture client + plus d'upload direct Storage | 🔴 ferme la fuite d'emails, le vol de short_code imprimé et les scans forgés **par n'importe quelle session signup** |
+| `054` | `members.suspended_at` + CHECK « suspendu ⇒ en pause » | 🟠 **à appliquer AVANT le déploiement du code** qui s'en sert : le webhook de remboursement suspend le profil activé par le code remboursé |
 
 ### Base NEUVE (staging / nouveau projet) — recommandé (Option A)
-⚠️ **L'ordre 001→053 naïf ÉCHOUE** : `001_enable_rls` fait `ALTER TABLE members …`
+⚠️ **L'ordre 001→054 naïf ÉCHOUE** : `001_enable_rls` fait `ALTER TABLE members …`
 alors que `members` n'est créée qu'en `015`. L'ordre correct est **015 D'ABORD**,
-puis 001-014, puis 016-053.
+puis 001-014, puis 016-054.
 
-Utiliser le bundle pré-généré **et validé** (53/53 migrations — schéma identique, grants et policies compris, à l'application une par une ; vérifié sur PG16) :
+Utiliser le bundle pré-généré **et validé** (54/54 migrations — schéma identique, grants et policies compris, à l'application une par une ; vérifié sur PG16) :
 ```
 scripts/fresh-setup.sql   ← à coller intégralement dans le Supabase SQL Editor d'un
                             projet NEUF (auth + storage + rôles déjà présents) → Run.
@@ -65,7 +66,7 @@ for f in 033_rls_hardening_views 034_record_scan 035_secure_create_member_rpc 03
          046_abuse_controls_and_activation_consent 047_one_root_message_per_device \
          048_order_qr_style 049_order_tagline 050_order_short_code \
          051_feedback_unique_conversation 052_close_members_referrals_insert \
-         053_close_definer_rpcs_to_authenticated; do
+         053_close_definer_rpcs_to_authenticated 054_member_suspension; do
   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -1 -f "supabase/migrations/$f.sql"
 done
 # 021 a été édité (guard idempotent) : sûr à ré-exécuter si tu veux l'aligner.

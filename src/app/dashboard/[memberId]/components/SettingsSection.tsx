@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase-browser';
 import { captureEvent, resetIdentity } from '@/lib/posthog-client';
 import type { Member } from '@/lib/types';
+import { MAX_CONVERSATIONS, CONVERSATION_WINDOW_DAYS } from '@/lib/constants';
 import SectionDivider from '@/app/components/ui/SectionDivider';
 
 // ─── Premium Block ────────────────────────────────────────────────────────────
@@ -60,7 +61,7 @@ function PremiumBlock({ member }: { member: Member }) {
           <div className="flex flex-col gap-2">
             {[
               'Fenêtre scanner étendue à 48h (au lieu de 24h)',
-              'Conversations illimitées (au lieu de 3)',
+              `Conversations illimitées (au lieu de ${MAX_CONVERSATIONS.free} sur ${CONVERSATION_WINDOW_DAYS} jours)`,
               'Badge ✦ visible sur votre profil',
               'Stats avancées à venir',
             ].map(item => (
@@ -330,6 +331,8 @@ function DeleteAccountButton() {
 
 export default function SettingsSection({ member }: { member: Member }) {
   const [isPaused,    setIsPaused]    = useState(member.is_paused);
+  // Suspension opérateur (054) : la pause est verrouillée, seul le support la lève.
+  const suspended = !!member.suspended_at;
   const [requireContact, setRequireContact] = useState(member.require_contact ?? false);
   const [marketingConsent, setMarketingConsent] = useState(member.marketing_consent ?? false);
   // saved/error sont PAR CHAMP : un succès sur un toggle ne doit pas effacer
@@ -395,16 +398,18 @@ export default function SettingsSection({ member }: { member: Member }) {
           <div className="flex flex-col gap-0.5">
             <p className="font-ui text-sm text-brand-white/80">Mettre en pause</p>
             <p className="font-ui text-xs text-brand-gray/50 leading-relaxed">
-              Votre profil sera masqué. Les scanneurs verront &ldquo;Ce membre est indisponible&rdquo;.
+              {suspended
+                ? <>Profil suspendu suite au remboursement de votre commande. Écrivez à <a href="mailto:hello@inrealsociety.com" className="text-brand-white/70 underline underline-offset-2">hello@inrealsociety.com</a> pour le réactiver.</>
+                : <>Votre profil sera masqué. Les scanneurs verront &ldquo;Ce membre est indisponible&rdquo;.</>}
             </p>
           </div>
           <button
             onClick={togglePause}
-            disabled={saving}
+            disabled={saving || suspended}
             role="switch"
             aria-checked={isPaused}
             aria-label="Mettre le profil en pause"
-            className={`w-10 h-5 rounded-full transition-colors flex-shrink-0 relative ${isPaused ? 'bg-red-500/80' : 'bg-brand-gray/20'}`}
+            className={`w-10 h-5 rounded-full transition-colors flex-shrink-0 relative disabled:opacity-40 ${isPaused ? 'bg-red-500/80' : 'bg-brand-gray/20'}`}
           >
             <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${isPaused ? 'left-5' : 'left-0.5'}`} />
           </button>
