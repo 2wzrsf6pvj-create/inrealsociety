@@ -71,6 +71,10 @@ async function supabaseFetch(input: RequestInfo | URL, init?: RequestInit): Prom
     sent.uploads.push(url.pathname.replace('/storage/v1/object/', ''));
     return new Response(JSON.stringify({ Key: url.pathname }), { status: 200, headers: { 'content-type': 'application/json' } });
   }
+  // Suppression du compte Supabase Auth (fin de /api/member/delete).
+  if (url.pathname.startsWith('/auth/v1/admin/users/')) {
+    return new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } });
+  }
   throw new Error(`supabaseFetch : route non simulée ${url.pathname}`);
 }
 
@@ -103,10 +107,33 @@ const SHIPPING = {
   name: 'Jeanne Test',
   address: { line1: '1 rue de Rivoli', line2: null, city: 'Paris', state: null, country: 'FR', postal_code: '75001' },
 };
+// Abonnements premium connus du faux Stripe, pilotés par le test.
+const stripeState = {
+  customers: 0,
+  subs:      [] as { id: string; customer: string; status: string }[],
+  cancelled: [] as string[],
+  failCancel: false,
+};
 vi.mock('stripe', () => {
   class StripeError extends Error { statusCode = 400; }
   class Stripe {
     static errors = { StripeError };
+    customers = { create: async () => ({ id: `cus_test${sent.run}${++stripeState.customers}` }) };
+    subscriptions = {
+      list: async ({ customer }: { customer: string }) => ({ data: stripeState.subs.filter(s => s.customer === customer) }),
+      retrieve: async (id: string) => {
+        const sub = stripeState.subs.find(s => s.id === id);
+        if (!sub) throw Object.assign(new Error('No such subscription'), { code: 'resource_missing' });
+        return sub;
+      },
+      cancel: async (id: string) => {
+        if (stripeState.failCancel) throw new Error('Stripe injoignable');
+        const sub = stripeState.subs.find(s => s.id === id)!;
+        sub.status = 'canceled';
+        stripeState.cancelled.push(id);
+        return sub;
+      },
+    };
     checkout = { sessions: {
       create: async (params: Record<string, unknown>) => {
         sent.stripeSessions.push(params);
@@ -701,5 +728,116 @@ describe.skipIf(!ENABLED)('Parrainage : code dédié, ancien lien toujours valab
   it('code inconnu, ou le parrain qui se parraine lui-même : pas de parrain', async () => {
     expect(await buy(`filleul-d-${Date.now()}@example.com`, { referral: 'abcdefghjk' })).toBe('aucun');
     expect(await buy(parrainEmail, { referral: code })).toBe('aucun');
+  });
+});
+
+// ─── Premium : CGV, emails une seule fois, suppression qui résilie ───────────
+describe.skipIf(!ENABLED)('Premium : CGV avant paiement, emails une seule fois, compte supprimé = abonnement résilié', () => {
+  let subscribe: typeof import('@/app/api/subscription/checkout/route');
+  let webhook:   typeof import('@/app/api/webhook/stripe/route');
+  let remove:    typeof import('@/app/api/member/delete/route');
+  const wearer = { authId: crypto.randomUUID(), memberId: crypto.randomUUID() };
+  const email = `prem-${wearer.authId}@example.com`;
+  const toWearer = (subject: string) => sent.emails.filter(e => e.to[0] === email && e.subject.includes(subject));
+  const member = (cols: string) => sql(`SELECT concat_ws('|', ${cols}) FROM members WHERE id = '${wearer.memberId}'`);
+  const subId = `sub_test${sent.run}`;
+  const END = 1795341600; // 22 novembre 2026, 10 h UTC
+  let customerId = '';
+  const subscription = (fields: Record<string, unknown>) => ({
+    id: subId, customer: customerId, status: 'active', cancel_at: null, cancel_at_period_end: false, items: { data: [] }, ...fields,
+  });
+
+  beforeAll(async () => {
+    subscribe = await import('@/app/api/subscription/checkout/route');
+    webhook   = await import('@/app/api/webhook/stripe/route');
+    remove    = await import('@/app/api/member/delete/route');
+    process.env.STRIPE_PREMIUM_PRICE_ID = 'price_test_premium';
+    sql(`INSERT INTO auth.users (id, email, email_confirmed_at) VALUES ('${wearer.authId}', '${email}', now())`);
+    sql(`INSERT INTO members (id, auth_user_id, name, email) VALUES ('${wearer.memberId}', '${wearer.authId}', 'Camille', '${email}')`);
+  });
+
+  it('CGV non cochées : 400, aucune page de paiement', async () => {
+    currentUser = { id: wearer.authId, email };
+    const before = sent.stripeSessions.length;
+    const res = await subscribe.POST(req('/api/subscription/checkout', { body: {} }));
+    expect(res.status).toBe(400);
+    expect((await res.json()).code).toBe('terms_required');
+    expect(sent.stripeSessions.length).toBe(before);
+  });
+
+  it('CGV cochées : paiement ouvert, acceptation datée sur la session et sur l\'abonnement', async () => {
+    const res = await subscribe.POST(req('/api/subscription/checkout', { body: { acceptedTerms: true } }));
+    expect(res.status).toBe(200);
+    const params = sent.stripeSessions.at(-1) as { mode: string; metadata: Record<string, string>; subscription_data: { metadata: Record<string, string> } };
+    expect(params.mode).toBe('subscription');
+    expect(params.metadata.termsAcceptedAt).toBeTruthy();
+    expect(params.subscription_data.metadata.termsAcceptedAt).toBe(params.metadata.termsAcceptedAt);
+    customerId = member('stripe_customer_id');
+    expect(customerId).toMatch(/^cus_/);
+  });
+
+  it('abonnement annoncé avant la fin du checkout, puis rejeu : premium, un seul email de bienvenue', async () => {
+    stripeState.subs.push({ id: subId, customer: customerId, status: 'active' });
+    const completed = () => stripeEvent('checkout.session.completed', {
+      id: `cs_prem_${sent.run}`, mode: 'subscription', subscription: subId, customer: customerId, metadata: { memberId: wearer.memberId },
+    });
+    expect((await webhook.POST(stripeEvent('customer.subscription.updated', subscription({})))).status).toBe(200);
+    expect((await webhook.POST(completed())).status).toBe(200);
+    expect((await webhook.POST(completed())).status).toBe(200);
+    expect(member('plan, stripe_subscription_id')).toBe(`premium|${subId}`);
+    const welcome = toWearer('bienvenue dans le cercle premium');
+    expect(welcome).toHaveLength(1);
+    expect(welcome[0].html).toContain('remboursé en entier');
+  });
+
+  it('nouveau clic sur « Passer premium » : déjà abonné, signalé comme tel', async () => {
+    const res = await subscribe.POST(req('/api/subscription/checkout', { body: { acceptedTerms: true } }));
+    expect(res.status).toBe(400);
+    expect((await res.json()).code).toBe('already_subscribed');
+  });
+
+  it('résiliation programmée : date de fin posée, confirmation envoyée une seule fois', async () => {
+    const cancelled = () => stripeEvent('customer.subscription.updated', subscription({
+      cancel_at: END, cancel_at_period_end: true, items: { data: [{ current_period_end: END }] },
+    }));
+    expect((await webhook.POST(cancelled())).status).toBe(200);
+    expect((await webhook.POST(cancelled())).status).toBe(200);
+    expect(member(`plan, to_char(plan_expires_at AT TIME ZONE 'UTC', 'YYYY-MM-DD')`)).toBe('premium|2026-11-22');
+    const confirmation = toWearer('votre résiliation est enregistrée');
+    expect(confirmation).toHaveLength(1);
+    expect(confirmation[0].html.replace(/\s+/g, ' ')).toContain('jusqu’au 22 novembre 2026');
+  });
+
+  it('résiliation annulée depuis le portail : la date de fin disparaît', async () => {
+    expect((await webhook.POST(stripeEvent('customer.subscription.updated', subscription({})))).status).toBe(200);
+    expect(member(`plan, coalesce(plan_expires_at::text, 'aucune')`)).toBe('premium|aucune');
+  });
+
+  it('fin de l\'abonnement, puis rejeu : gratuit, un seul email de fin', async () => {
+    stripeState.subs.find(s => s.id === subId)!.status = 'canceled';
+    const deleted = () => stripeEvent('customer.subscription.deleted', subscription({ status: 'canceled', ended_at: END }));
+    expect((await webhook.POST(deleted())).status).toBe(200);
+    expect((await webhook.POST(deleted())).status).toBe(200);
+    expect(member(`plan, coalesce(stripe_subscription_id, 'aucun')`)).toBe('free|aucun');
+    expect(toWearer('a pris fin')).toHaveLength(1);
+  });
+
+  it('suppression du compte, Stripe injoignable : 502, le compte reste', async () => {
+    // Réabonné, mais le webhook n'est pas encore passé : la base ignore l'abonnement.
+    stripeState.subs.push({ id: `${subId}b`, customer: customerId, status: 'active' });
+    stripeState.failCancel = true;
+    const res = await remove.DELETE(req('/api/member/delete', { method: 'DELETE' }));
+    expect(res.status).toBe(502);
+    expect((await res.json()).error).toContain('votre compte n\'a pas été supprimé');
+    expect(member('name')).toBe('Camille');
+  });
+
+  it('suppression du compte : tout abonnement actif du client est résilié, confirmé par email', async () => {
+    stripeState.failCancel = false;
+    const res = await remove.DELETE(req('/api/member/delete', { method: 'DELETE' }));
+    expect(res.status).toBe(200);
+    expect(stripeState.cancelled).toEqual([`${subId}b`]);
+    expect(toWearer('votre abonnement premium est résilié')).toHaveLength(1);
+    expect(sql(`SELECT count(*) FROM members WHERE id = '${wearer.memberId}'`)).toBe('0');
   });
 });

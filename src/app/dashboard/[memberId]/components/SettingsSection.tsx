@@ -5,27 +5,59 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase-browser';
 import { captureEvent, resetIdentity } from '@/lib/posthog-client';
 import type { Member } from '@/lib/types';
-import { MAX_CONVERSATIONS, CONVERSATION_WINDOW_DAYS } from '@/lib/constants';
+import { useRouter } from 'next/navigation';
+import { PREMIUM_PERKS, PREMIUM_PRICE_LABEL, PREMIUM_WITHDRAWAL_DAYS } from '@/lib/constants';
+import { formatDayFr } from '@/lib/dates';
 import SectionDivider from '@/app/components/ui/SectionDivider';
 
 // ─── Premium Block ────────────────────────────────────────────────────────────
 
 function PremiumBlock({ member }: { member: Member }) {
-  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const [loading, setLoading]   = useState(false);
+  const [accepted, setAccepted] = useState(false);
+  const [error, setError]       = useState('');
   const isPremium = member.plan === 'premium';
 
   const handleAction = async () => {
+    // Acceptation EXPLICITE des CGV avant paiement, comme à la boutique (article 8 :
+    // renouvellement, résiliation, rétractation). Le serveur l'exige aussi.
+    if (!isPremium && !accepted) {
+      setError('Veuillez accepter les Conditions Générales de Vente pour continuer.');
+      return;
+    }
     setLoading(true);
+    setError('');
     if (!isPremium) {
       captureEvent('upgrade_clicked', { member_id: member.id, plan: 'free', source: 'settings_premium_block' });
     }
     try {
-      const endpoint = isPremium ? '/api/subscription/portal' : '/api/subscription/checkout';
-      const res = await fetch(endpoint, { method: 'POST' });
-      const data = await res.json();
-      if (data.url) window.location.href = data.url;
+      const res = isPremium
+        ? await fetch('/api/subscription/portal', { method: 'POST' })
+        : await fetch('/api/subscription/checkout', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ acceptedTerms: true }),
+          });
+      const data = await res.json().catch(() => ({}));
+      if (data.url) {
+        window.location.href = data.url;
+        return;
+      }
+      if (data.code === 'already_subscribed') {
+        // Paiement passé, confirmation de Stripe pas encore arrivée : le serveur
+        // vient de recaler l'abonnement → on recharge, le bloc passe en « actif ».
+        router.refresh();
+      } else {
+        // Avant, toute erreur était ignorée : le bouton ne faisait rien.
+        setError(res.status < 500 && data.error
+          ? data.error
+          : isPremium
+            ? 'Impossible d’ouvrir la gestion de l’abonnement. Réessayez dans un instant.'
+            : 'Impossible d’ouvrir la page de paiement. Réessayez dans un instant.');
+      }
     } catch {
-      // ignore
+      setError('Erreur réseau. Réessayez.');
     }
     setLoading(false);
   };
@@ -37,7 +69,7 @@ function PremiumBlock({ member }: { member: Member }) {
   }, [isPremium, member.id]);
 
   return (
-    <div className={`w-full border rounded-[2px] p-4 flex flex-col gap-3 ${isPremium ? 'bg-[#0a0a08] border-[#C5A059]/20' : 'bg-[#080808] border-brand-gray/10'}`}>
+    <div id="premium" className={`w-full border rounded-[2px] p-4 flex flex-col gap-3 scroll-mt-6 ${isPremium ? 'bg-[#0a0a08] border-[#C5A059]/20' : 'bg-[#080808] border-brand-gray/10'}`}>
       <div className="flex items-center gap-3 w-full">
         <div className="flex-1 h-px bg-brand-gray/10" />
         <span className={`font-ui text-xs tracking-[0.18em] uppercase ${isPremium ? 'text-[#C5A059]/60' : 'text-brand-gray/55'}`}>
@@ -46,38 +78,53 @@ function PremiumBlock({ member }: { member: Member }) {
         <div className="flex-1 h-px bg-brand-gray/10" />
       </div>
 
+      <ul className="flex flex-col gap-2">
+        {PREMIUM_PERKS.map(item => (
+          <li key={item} className="flex items-start gap-2">
+            <span className="font-ui text-xs text-[#C5A059]/50 mt-0.5">✦</span>
+            <span className="font-ui text-xs text-brand-gray/50">{item}</span>
+          </li>
+        ))}
+      </ul>
+
       {isPremium ? (
         <div className="flex flex-col gap-2">
-          <p className="font-ui text-xs md:text-sm text-brand-gray/50 leading-relaxed">
-            Vous bénéficiez de la fenêtre 48h, des conversations illimitées et du badge ✦ sur votre profil.
-          </p>
+          {member.plan_expires_at && (
+            <p className="font-ui text-xs text-[#C5A059]/70 leading-relaxed">
+              Résiliation enregistrée : votre premium reste actif jusqu’au {formatDayFr(member.plan_expires_at)}.
+            </p>
+          )}
           <button onClick={handleAction} disabled={loading}
             className="w-full py-2.5 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.15em] uppercase text-brand-gray/50 hover:border-brand-gray/30 hover:text-brand-white/80 transition-colors rounded-[2px] disabled:opacity-40">
             {/* « Résilier » explicite : résiliation en ligne (Code de la consommation, L215-1-1). */}
-            {loading ? 'Chargement...' : 'Gérer ou résilier mon abonnement'}
+            {loading ? 'Chargement...' : member.plan_expires_at ? 'Gérer mon abonnement' : 'Gérer ou résilier mon abonnement'}
           </button>
+          {error && <p className="font-ui text-xs text-red-400" role="alert">{error}</p>}
         </div>
       ) : (
         <div className="flex flex-col gap-3">
-          <div className="flex flex-col gap-2">
-            {[
-              'Fenêtre scanner étendue à 48h (au lieu de 24h)',
-              `Conversations illimitées (au lieu de ${MAX_CONVERSATIONS.free} sur ${CONVERSATION_WINDOW_DAYS} jours)`,
-              'Badge ✦ visible sur votre profil',
-              'Stats avancées à venir',
-            ].map(item => (
-              <div key={item} className="flex items-start gap-2">
-                <span className="font-ui text-xs text-[#C5A059]/50 mt-0.5">✦</span>
-                <span className="font-ui text-xs text-brand-gray/50">{item}</span>
-              </div>
-            ))}
-          </div>
+          <label htmlFor="premium-cgv-accept" className="flex items-start gap-3 cursor-pointer py-1">
+            <input
+              id="premium-cgv-accept"
+              type="checkbox"
+              checked={accepted}
+              onChange={e => { setAccepted(e.target.checked); setError(''); }}
+              className="mt-0.5 h-4 w-4 shrink-0 accent-[#C5A059] cursor-pointer"
+            />
+            <span className="font-ui text-xxs md:text-xs text-brand-gray/55 leading-relaxed">
+              J&apos;ai lu et j&apos;accepte les{' '}
+              <Link href="/cgv#premium" className="underline underline-offset-2 hover:text-brand-white/80 transition-colors">
+                Conditions Générales de Vente
+              </Link>, dont l&apos;article 8 sur l&apos;abonnement.
+            </span>
+          </label>
           <button onClick={handleAction} disabled={loading}
             className="animate-shimmer w-full py-3 bg-[#C5A059] text-brand-black font-ui font-bold text-sm tracking-[0.25em] uppercase rounded-[1px] hover:bg-[#d4af6a] active:scale-[0.98] transition-all duration-200 disabled:opacity-50">
-            {loading ? 'Chargement...' : 'Passer premium — 2,99€/mois'}
+            {loading ? 'Chargement...' : `Passer premium — ${PREMIUM_PRICE_LABEL}/mois`}
           </button>
-          <p className="font-ui text-xxs text-brand-gray/50 text-center">
-            Sans engagement · Annulable à tout moment
+          {error && <p className="font-ui text-xs text-red-400" role="alert">{error}</p>}
+          <p className="font-ui text-xxs text-brand-gray/50 text-center leading-relaxed">
+            Sans engagement · Résiliable à tout moment · Changement d&apos;avis sous {PREMIUM_WITHDRAWAL_DAYS} jours : remboursement intégral
           </p>
         </div>
       )}
@@ -289,8 +336,10 @@ function DeleteAccountButton() {
         return;
       }
       // Réponse non-2xx : sans ça le bouton restait bloqué sur « Suppression... »
-      // indéfiniment, sans message. On débloque et on signale.
-      setError('La suppression a échoué. Réessayez.');
+      // indéfiniment, sans message. On débloque et on signale (le message du
+      // serveur quand il en donne un : résiliation du premium impossible, etc.).
+      const data = await res.json().catch(() => ({}));
+      setError(data.error && res.status !== 500 ? data.error : 'La suppression a échoué. Réessayez.');
       setDeleting(false);
     } catch {
       setError('Erreur réseau. Réessayez.');

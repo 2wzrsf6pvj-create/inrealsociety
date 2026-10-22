@@ -14,15 +14,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { generateSecureCode } from '@/lib/generate-code';
-import { sendEmail, emailActivation, emailPremium, emailPaymentFailed } from '@/lib/email-templates';
+import { sendEmail, emailActivation, emailPaymentFailed } from '@/lib/email-templates';
 import { APP_URL, FULFILL_ON_PAYMENT } from '@/lib/constants';
-import { captureServerEvent } from '@/lib/posthog-server';
 import { audit } from '@/lib/audit';
 import { fulfillOrder, getShippingDetails } from '@/lib/fulfillment';
 import { buildOrderRecap, type OrderRecap } from '@/lib/order-recap';
 import { generateUniqueShortCode } from '@/lib/short-code';
 import { cancelPrintfulOrder } from '@/lib/printful-status';
 import { subscriptionMemberUpdate, isActiveSubscriptionStatus } from '@/lib/subscription';
+import { activatePremium, applyScheduledEnd, endPremium, PREMIUM_SETTINGS_URL } from '@/lib/premium';
 
 type TshirtColor = 'dark' | 'light';
 
@@ -456,8 +456,8 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<void
     return;
   }
 
-  const dashboardUrl = `${APP_URL}/dashboard`;
-  const { subject, html } = emailPaymentFailed({ name: member.name, dashboardUrl, attemptNumber });
+  // Le bouton qui permet de changer de carte est dans les réglages.
+  const { subject, html } = emailPaymentFailed({ name: member.name, dashboardUrl: PREMIUM_SETTINGS_URL, attemptNumber });
 
   const sent = await sendEmail({ to: member.email, subject, html });
   if (!sent) console.error('[webhook] Échec envoi email payment_failed pour', member.email);
@@ -466,7 +466,7 @@ async function handleInvoicePaymentFailed(invoice: Stripe.Invoice): Promise<void
 // ─── Handlers abonnement premium ─────────────────────────────────────────────
 
 async function handleSubscriptionCheckout(session: Stripe.Checkout.Session): Promise<void> {
-  const memberId      = session.metadata?.memberId;
+  const memberId       = session.metadata?.memberId;
   const subscriptionId = session.subscription as string;
   const customerId     = session.customer as string;
 
@@ -475,53 +475,11 @@ async function handleSubscriptionCheckout(session: Stripe.Checkout.Session): Pro
     return;
   }
 
-  // Idempotence : sur un retry Stripe, ce membre a déjà CET abonnement → on ne
-  // ré-update pas, on ne ré-envoie pas l'email de bienvenue et on n'émet pas un
-  // 2e event analytics.
-  const { data: current } = await supabaseAdmin
-    .from('members')
-    .select('stripe_subscription_id')
-    .eq('id', memberId)
-    .maybeSingle();
-  if (current?.stripe_subscription_id === subscriptionId) {
-    console.log('[webhook] Subscription checkout déjà traité pour', memberId);
-    return;
-  }
-
-  await supabaseAdmin
-    .from('members')
-    .update({
-      plan:                    'premium',
-      stripe_customer_id:      customerId,
-      stripe_subscription_id:  subscriptionId,
-      plan_expires_at:         null,
-    })
-    .eq('id', memberId);
-
-  // Email de bienvenue premium
-  const { data: upgradedMember } = await supabaseAdmin
-    .from('members')
-    .select('name, email')
-    .eq('id', memberId)
-    .single();
-
-  if (upgradedMember?.email) {
-    const appUrl = APP_URL;
-    const { subject, html } = emailPremium({
-      name: upgradedMember.name,
-      dashboardUrl: `${appUrl}/dashboard`,
-    });
-    // Attendu : une fonction serverless peut s'arrêter dès la réponse envoyée.
-    await sendEmail({ to: upgradedMember.email, subject, html }).catch((err) => console.error('[webhook] Échec email premium:', err));
-  }
-
-  await captureServerEvent({
-    distinctId: memberId,
-    event:      'subscription_active',
-    properties: { member_id: memberId, plan: 'premium' },
-  });
-
-  console.log('[webhook] Membre', memberId, 'upgradé en premium.');
+  // Réservé en base (lib/premium) : sur un retry Stripe, ou si
+  // customer.subscription.updated est passé avant, le membre est déjà premium sur
+  // CET abonnement → ni second email de bienvenue, ni second event analytics.
+  const activated = await activatePremium({ memberId, customerId, subscriptionId });
+  console.log('[webhook] Membre', memberId, activated ? 'upgradé en premium.' : 'déjà premium sur cet abonnement.');
 }
 
 async function handleSubscriptionChange(subscription: Stripe.Subscription): Promise<void> {
@@ -529,12 +487,14 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription): Prom
 
   // Trouve le membre par customer ID. maybeSingle (PAS single) : 0 ligne = membre
   // inconnu (course avec le checkout, customer supprimé) → single throw → 500 →
-  // Stripe réessaie en boucle. maybeSingle renvoie null proprement.
-  const { data: member } = await supabaseAdmin
+  // Stripe réessaie en boucle. maybeSingle renvoie null proprement. Une vraie
+  // erreur de lecture, elle, est levée : Stripe réessaiera.
+  const { data: member, error } = await supabaseAdmin
     .from('members')
-    .select('id, stripe_subscription_id')
+    .select('id, name, email, stripe_subscription_id')
     .eq('stripe_customer_id', customerId)
     .maybeSingle();
+  if (error) throw new Error(`[webhook] lecture du membre impossible : ${error.message}`);
 
   if (!member) {
     console.warn('[webhook] Subscription change pour customer inconnu:', customerId);
@@ -558,18 +518,18 @@ async function handleSubscriptionChange(subscription: Stripe.Subscription): Prom
   // Helper pur (cf. lib/subscription.ts) : NE lit PAS current_period_end.
   const update = subscriptionMemberUpdate(subscription);
 
-  await supabaseAdmin
-    .from('members')
-    .update(update)
-    .eq('id', member.id);
-
-  if (update.plan === 'free') {
-    await captureServerEvent({
-      distinctId: member.id,
-      event:      'subscription_cancelled',
-      properties: { member_id: member.id, reason: subscription.status },
-    });
+  if (update.plan === 'premium') {
+    // Peut arriver AVANT checkout.session.completed : l'activation (et l'email de
+    // bienvenue) se fait alors ici, une seule fois.
+    await activatePremium({ memberId: member.id, customerId, subscriptionId: subscription.id });
+    // Résiliation programmée depuis le portail (ou annulée) : date de fin et
+    // email de confirmation (L215-1-1).
+    await applyScheduledEnd(member, update.plan_expires_at);
+    console.log('[webhook] Membre', member.id, update.plan_expires_at ? `premium jusqu'au ${update.plan_expires_at}` : 'premium actif');
+    return;
   }
 
-  console.log('[webhook] Membre', member.id, update.plan === 'premium' ? 'premium actif' : 'repassé en free');
+  const endedAt = new Date(((subscription.ended_at ?? subscription.canceled_at) ?? Date.now() / 1000) * 1000);
+  const ended = await endPremium(member.id, update, { endedAt, reason: subscription.status });
+  console.log('[webhook] Membre', member.id, ended ? 'repassé en free' : 'déjà en free');
 }
