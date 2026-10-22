@@ -8,6 +8,7 @@ export const metadata: Metadata = {
     title: 'In Real Society — The IRL Social Club',
     description: 'Le premier vêtement conçu pour les rencontres dans la vraie vie.',
   },
+  alternates: { canonical: '/' },
 };
 
 export default function HomePage() {

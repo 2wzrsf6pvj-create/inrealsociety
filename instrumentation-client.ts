@@ -7,7 +7,8 @@ import * as Sentry from '@sentry/nextjs';
 Sentry.init({
   dsn:                       process.env.NEXT_PUBLIC_SENTRY_DSN,
   environment:               process.env.NODE_ENV,
-  tracesSampleRate:          process.env.NODE_ENV === 'production' ? 0.1 : 0,
+  // Pas de suivi de performance dans le navigateur (retiré du bundle, cf.
+  // next.config) : les erreurs seulement.
   replaysSessionSampleRate:  0,        // session replay désactivé (vie privée + coût)
   replaysOnErrorSampleRate:  0,
   debug:                     false,
@@ -23,5 +24,3 @@ Sentry.init({
     'Failed to fetch',
   ],
 });
-
-export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;

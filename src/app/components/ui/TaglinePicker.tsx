@@ -59,7 +59,7 @@ export default function TaglinePicker({ value, onChange }: {
               className={`px-2.5 py-1.5 rounded-[2px] border font-ui text-xxs tracking-[0.1em] transition-colors ${
                 lang === l
                   ? 'border-brand-white/60 text-brand-white'
-                  : 'border-brand-gray/15 text-brand-gray/45 hover:border-brand-gray/30'
+                  : 'border-brand-gray/15 text-brand-gray/55 hover:border-brand-gray/30'
               }`}
             >
               {TAGLINE_LANG_LABELS[l]}
@@ -79,7 +79,7 @@ export default function TaglinePicker({ value, onChange }: {
             className={`font-ui text-xs tracking-[0.12em] uppercase pb-1.5 -mb-[5px] border-b-2 transition-colors ${
               openReg === g.registre
                 ? 'border-brand-white text-brand-white'
-                : 'border-transparent text-brand-gray/40 hover:text-brand-gray/70'
+                : 'border-transparent text-brand-gray/55 hover:text-brand-gray/70'
             }`}
           >
             {SHORT[g.registre]}
@@ -89,7 +89,7 @@ export default function TaglinePicker({ value, onChange }: {
 
       {/* Niveau 2 — LE CHOIX : « QR seul » puis les accroches du registre ouvert */}
       <div className="flex flex-col gap-1.5">
-        <p className="font-ui text-xxs text-brand-gray/40 tracking-[0.15em] uppercase">Choisis ta phrase</p>
+        <p className="font-ui text-xxs text-brand-gray/55 tracking-[0.15em] uppercase">Choisis ta phrase</p>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
@@ -99,7 +99,7 @@ export default function TaglinePicker({ value, onChange }: {
             className={`rounded-[2px] border px-3 py-2 font-ui text-sm transition-all ${
               value === null
                 ? 'border-brand-white/70 bg-brand-white/10 text-brand-white'
-                : 'border-brand-gray/15 text-brand-gray/45 hover:border-brand-gray/30'
+                : 'border-brand-gray/15 text-brand-gray/55 hover:border-brand-gray/30'
             }`}
           >
             QR seul

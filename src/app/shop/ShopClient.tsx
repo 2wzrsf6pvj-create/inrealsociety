@@ -7,7 +7,7 @@ import { useSearchParams } from 'next/navigation';
 import { captureEvent } from '@/lib/posthog-client';
 import { rememberCheckoutEmail } from '@/lib/checkout-email';
 import { TSHIRT_PRICE_EUR, SHIPPING_STANDARD_CENTS, SHIPPING_EXPRESS_CENTS } from '@/lib/constants';
-import { BAKED_TAGLINES } from '@/lib/taglines.generated';
+import type { BakedTagline } from '@/lib/taglines.generated';
 import TaglinePicker from '@/app/components/ui/TaglinePicker';
 import { BrandMark } from '@/app/components/ui/BrandMark';
 import { isReferralToken } from '@/lib/referral-code';
@@ -41,6 +41,31 @@ function AbstractTee({ color }: { color: TshirtColor }) {
   );
 }
 
+// Tracé de l'accroche choisie, chargé à la demande (une petite réponse par
+// accroche, mise en cache) au lieu d'embarquer toutes les accroches dans la page.
+const taglineCache = new Map<string, Pick<BakedTagline, 'path' | 'bbox'>>();
+
+function useBakedTagline(taglineId: string | null): Pick<BakedTagline, 'path' | 'bbox'> | null {
+  const [baked, setBaked] = useState(() => (taglineId ? taglineCache.get(taglineId) ?? null : null));
+  useEffect(() => {
+    if (!taglineId) { setBaked(null); return; }
+    const cached = taglineCache.get(taglineId);
+    if (cached) { setBaked(cached); return; }
+    setBaked(null);
+    let cancelled = false;
+    fetch(`/api/shop/tagline/${encodeURIComponent(taglineId)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!data?.path || !data?.bbox) return;
+        taglineCache.set(taglineId, data);
+        if (!cancelled) setBaked(data);
+      })
+      .catch(() => { /* l'aperçu reste sans accroche ; la commande n'en dépend pas */ });
+    return () => { cancelled = true; };
+  }, [taglineId]);
+  return baked;
+}
+
 // Galerie produit : photos Printful réelles (public/shop/tee-{noir|blanc}-{dos|face}.png),
 // toggle Avant / Arrière. Sur le DOS, l'accroche choisie est incrustée EN DIRECT sous le QR
 // (le QR est déjà sur la photo). Repli sur le placeholder abstrait si une photo manque (ex.
@@ -55,7 +80,7 @@ function ProductGallery({ color, taglineId }: { color: TshirtColor; taglineId: s
   const frontSrc  = `/shop/tee-${colorKey}-face.png`;
   const hasPhotos = !missing[backSrc] && !missing[frontSrc];
 
-  const baked = taglineId ? BAKED_TAGLINES[taglineId] : null;
+  const baked = useBakedTagline(taglineId);
 
   // Position du QR relevée sur CHAQUE photo (le dos noir est un poil plus haut/à droite)
   // → l'accroche se pose pile sous le QR, quelle que soit la couleur.
@@ -357,7 +382,7 @@ export default function ShopClient() {
         style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 70%)' }} />
 
       <nav className="relative z-10 flex items-center justify-between px-6 py-6 border-b border-brand-gray/10">
-        <Link href="/" className="font-display text-xl font-light tracking-[0.1em]"><BrandMark /></Link>
+        <Link href="/" className="font-display text-xl font-light tracking-[0.1em]"><BrandMark label="In Real Society — accueil" /></Link>
         <span className="font-ui text-xs text-brand-gray/55 tracking-[0.3em] uppercase">In Real Society</span>
         {/* Emplacement réservé au bouton global « Connexion » (AuthIndicator, position
             fixe en haut à droite) — un lien ici passait dessous et se chevauchait. */}

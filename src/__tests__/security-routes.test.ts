@@ -39,6 +39,7 @@ const PUBLIC_ROUTES = [
   'api/conversation/[messageId]/thread', // rattrapage thread (capability = messageId UUID)
   'api/contact/verify', // lien de confirmation de l'email du passant (capability = jeton aléatoire)
   'api/profile/report', // signalement d'un profil par n'importe qui (DSA), rate-limité
+  'api/shop/tagline/[id]', // tracé d'une accroche pour l'aperçu de la boutique (statique, généré au build)
 ];
 
 /** Routes protégées par un secret header (pas par session) */
@@ -133,9 +134,11 @@ describe('Sécurité des routes API', () => {
       // Skip les routes sans body utilisateur à valider :
       //   * GET en lecture seule (health, messages, member/export)
       //   * DELETE/POST dérivant tout de la session (member/delete, subscription/*)
+      //   * shop/tagline/[id] : réponses statiques générées au build, seuls les
+      //     identifiants connus existent (dynamicParams = false → 404 sinon)
       if (['health', 'member/export', 'messages', 'member/delete',
            'subscription/checkout', 'subscription/portal',
-           'newsletter/unsubscribe'].includes(routeKey)) continue;
+           'newsletter/unsubscribe', 'shop/tagline/[id]'].includes(routeKey)) continue;
 
       it(`${routeKey} — devrait avoir une validation Zod ou équivalente`, () => {
         const hasZod = content.includes('z.object') || content.includes('z.string');
@@ -159,6 +162,9 @@ describe('Sécurité des routes API', () => {
       if (routeKey === 'messages') continue;
       // Health : endpoint readonly idempotent, monitoring uptime ping fréquemment
       if (routeKey === 'health') continue;
+      // Accroches : fichiers statiques générés au build, servis par le cache —
+      // aucun code ne tourne à la requête.
+      if (routeKey === 'shop/tagline/[id]') continue;
 
       it(`${routeKey} — devrait avoir du rate limiting`, () => {
         const hasRateLimit = content.includes('Ratelimit') ||

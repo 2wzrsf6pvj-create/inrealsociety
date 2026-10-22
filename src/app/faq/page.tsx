@@ -6,6 +6,7 @@ import { MAX_CONVERSATIONS, CONVERSATION_WINDOW_DAYS, TSHIRT_PRICE_EUR, SHIPPING
 export const metadata = {
   title: 'FAQ — Comment ça marche',
   description: 'Le t-shirt à QR code pour les rencontres IRL : comment ça marche, vie privée, livraison, premium. Toutes les réponses.',
+  alternates: { canonical: '/faq' },
 };
 
 // Source unique : sert l'accordéon ET le JSON-LD (rich snippets Google).

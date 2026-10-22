@@ -1,61 +1,32 @@
 'use client';
 
-// Initialise posthog-js une seule fois côté client. Capture automatique des pageviews
-// (incluant les changements de route App Router via le hook usePathname).
+// Charge PostHog seulement si le visiteur a accepté la mesure d'audience (au
+// chargement, ou au clic « Accepter » du ConsentBanner), puis capture les pages
+// vues (y compris les changements de route App Router via usePathname).
+// Sans consentement, posthog-js n'est même pas téléchargé (cf. lib/posthog-client).
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
-import posthog from 'posthog-js';
-
-const POSTHOG_KEY  = process.env.NEXT_PUBLIC_POSTHOG_KEY;
-const POSTHOG_HOST = process.env.NEXT_PUBLIC_POSTHOG_HOST || 'https://eu.i.posthog.com';
+import { capturePageview, loadAnalytics, onAnalyticsReady } from '@/lib/posthog-client';
 
 export default function PostHogProvider({ children }: { children: React.ReactNode }) {
   const pathname     = usePathname();
   const searchParams = useSearchParams();
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (!POSTHOG_KEY) return;
-    if (posthog.__loaded) return;
-
-    posthog.init(POSTHOG_KEY, {
-      api_host:           POSTHOG_HOST,
-      person_profiles:    'identified_only',
-      capture_pageview:   false,
-      capture_pageleave:  true,
-      autocapture:        true,
-      disable_session_recording: true,
-      // RGPD : AVANT consentement, ne rien envoyer NI stocker. opt_out_capturing
-      // ne bloque que capture() ; il faut aussi :
-      //  - couper le fetch de remote-config/flags (on n'en utilise pas) qui
-      //    sinon contacte PostHog dès l'init,
-      //  - couper la persistance (cookie + distinct_id) tant qu'on est opted-out.
-      // Le ConsentBanner appelle posthog.opt_in_capturing() au clic 'Accepter'.
-      opt_out_capturing_by_default:    true,
-      opt_out_persistence_by_default:  true,
-      advanced_disable_flags:          true,
-    });
-
-    // Ré-applique le consentement DÈS l'init : le ConsentBanner (enfant) tourne
-    // avant cet effet, donc son opt_in au chargement était perdu (__loaded encore
-    // falsy). Sans ça, un visiteur récurrent ayant accepté restait opted-out
-    // jusqu'à re-cliquer. Ne concerne que 'granted' (l'opt-out est déjà le défaut).
-    if (localStorage.getItem('irs_consent') === 'granted') {
-      posthog.opt_in_capturing();
-    }
+    const unsubscribe = onAnalyticsReady(() => setReady(true));
+    void loadAnalytics();
+    return unsubscribe;
   }, []);
 
   useEffect(() => {
-    if (!POSTHOG_KEY) return;
-    if (!posthog.__loaded) return;
-    if (!pathname) return;
-
+    if (!ready || !pathname) return;
     const url = searchParams?.toString()
       ? `${window.location.origin}${pathname}?${searchParams.toString()}`
       : `${window.location.origin}${pathname}`;
-
-    posthog.capture('$pageview', { $current_url: url });
-  }, [pathname, searchParams]);
+    capturePageview(url);
+  }, [ready, pathname, searchParams]);
 
   return <>{children}</>;
 }

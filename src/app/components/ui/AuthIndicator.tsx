@@ -3,7 +3,8 @@
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { createClient } from '@/lib/supabase-browser';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { hasSupabaseSessionCookie } from '@/lib/session-cookie';
 
 interface AuthState {
   loggedIn: boolean;
@@ -15,6 +16,13 @@ interface AuthState {
 // un bouton « Connexion » y est du bruit au moment d'écrire.
 const HIDDEN_PATHS = ['/dashboard', '/auth/login', '/auth/signup', '/auth/forgot-password', '/auth/reset-password', '/unlock', '/message', '/contact/confirme'];
 
+const LOGGED_OUT: AuthState = { loggedIn: false, name: null, memberId: null };
+
+// Sans cookie de session, le visiteur n'est pas connecté (le passant qui scanne,
+// le plus souvent) : inutile de lui télécharger le client Supabase (~56 ko) et
+// de l'interroger à chaque page pour afficher « Connexion ».
+const hasSessionCookie = () => hasSupabaseSessionCookie(document.cookie);
+
 function getInitials(name: string): string {
   const parts = name.trim().split(' ').filter(Boolean);
   if (parts.length === 0) return '?';
@@ -24,16 +32,19 @@ function getInitials(name: string): string {
 
 export default function AuthIndicator() {
   const pathname = usePathname();
-  const [auth, setAuth] = useState<AuthState>({ loggedIn: false, name: null, memberId: null });
+  const [auth, setAuth] = useState<AuthState>(LOGGED_OUT);
   const [loaded, setLoaded] = useState(false);
+  // Session détectée : le client Supabase est chargé une fois, puis suit la
+  // session (onAuthStateChange). Revérifié à chaque page tant qu'il n'y en a pas
+  // (la connexion pose le cookie, puis on navigue).
+  const [hasSession, setHasSession] = useState(false);
 
-  const checkAuth = useCallback(async () => {
-    const supabase = createClient();
+  const checkAuth = useCallback(async (supabase: SupabaseClient) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
 
       if (!user) {
-        setAuth({ loggedIn: false, name: null, memberId: null });
+        setAuth(LOGGED_OUT);
         setLoaded(true);
         return;
       }
@@ -50,24 +61,39 @@ export default function AuthIndicator() {
         memberId: member?.id ?? null,
       });
     } catch {
-      setAuth({ loggedIn: false, name: null, memberId: null });
+      setAuth(LOGGED_OUT);
     }
     setLoaded(true);
   }, []);
 
   useEffect(() => {
-    checkAuth();
+    if (hasSession) return;
+    if (hasSessionCookie()) {
+      setHasSession(true);
+    } else {
+      setAuth(LOGGED_OUT);
+      setLoaded(true);
+    }
+  }, [pathname, hasSession]);
 
-    // Écoute les changements d'auth (login, logout, token refresh)
-    const supabase = createClient();
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
-        checkAuth();
-      }
+  useEffect(() => {
+    if (!hasSession) return;
+    let cancelled = false;
+    let unsubscribe: (() => void) | undefined;
+    import('@/lib/supabase-browser').then(({ createClient }) => {
+      if (cancelled) return;
+      const supabase = createClient();
+      checkAuth(supabase);
+      // Écoute les changements d'auth (login, logout, token refresh)
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+        if (event === 'SIGNED_IN' || event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+          checkAuth(supabase);
+        }
+      });
+      unsubscribe = () => subscription.unsubscribe();
     });
-
-    return () => { subscription.unsubscribe(); };
-  }, [checkAuth]);
+    return () => { cancelled = true; unsubscribe?.(); };
+  }, [hasSession, checkAuth]);
 
   if (HIDDEN_PATHS.some(p => pathname.startsWith(p))) return null;
   if (!loaded) return null;
@@ -95,7 +121,6 @@ export default function AuthIndicator() {
     <Link
       href="/auth/login"
       className="fixed top-4 right-4 z-50 flex items-center gap-2 px-3 py-1.5 rounded-full border border-brand-gray/10 bg-brand-black/80 backdrop-blur-sm hover:border-brand-gray/25 transition-all duration-300"
-      aria-label="Se connecter"
     >
       <div className="w-6 h-6 rounded-full border border-brand-gray/15 flex items-center justify-center">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-brand-gray/55">

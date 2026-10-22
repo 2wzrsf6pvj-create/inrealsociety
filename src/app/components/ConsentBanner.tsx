@@ -2,46 +2,36 @@
 
 // Cookie consent banner — conforme CNIL (boutons Accepter/Refuser d'égal
 // visuel, refus aussi facile que l'acceptation, lien vers la politique de
-// confidentialité). Tant que l'utilisateur n'a pas choisi, PostHog est en
-// opt-out par défaut (configuré dans PostHogProvider).
+// confidentialité). Tant que l'utilisateur n'a pas accepté, PostHog n'est même
+// pas téléchargé (cf. lib/posthog-client) : « Accepter » le charge.
 //
 // localStorage key: irs_consent = 'granted' | 'denied'
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import posthog from 'posthog-js';
-
-const CONSENT_KEY = 'irs_consent';
+import { CONSENT_KEY, disableAnalytics, loadAnalytics } from '@/lib/posthog-client';
 
 export default function ConsentBanner() {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    // La VISIBILITÉ ne dépend que du choix stocké. Le chargement de PostHog
+    // pour un visiteur ayant déjà accepté est fait par PostHogProvider.
     const stored = localStorage.getItem(CONSENT_KEY);
-    // La VISIBILITÉ ne dépend que du choix stocké — jamais de posthog.__loaded.
-    // Les effets s'exécutent enfant→parent : ce composant tourne AVANT le
-    // posthog.init() du provider parent, donc __loaded est encore falsy ici. Le
-    // conditionner ré-affichait le bandeau à chaque hard-reload d'un utilisateur
-    // ayant déjà accepté. L'opt-in réel est (re)posé à l'init de PostHogProvider ;
-    // on le tente aussi ici au cas où PostHog serait déjà chargé.
-    if (stored === 'granted') {
-      if (posthog.__loaded) posthog.opt_in_capturing();
-      return;
-    }
-    if (stored === 'denied') return;
+    if (stored === 'granted' || stored === 'denied') return;
     setVisible(true);
   }, []);
 
   const accept = () => {
     localStorage.setItem(CONSENT_KEY, 'granted');
-    if (posthog.__loaded) posthog.opt_in_capturing();
+    void loadAnalytics();
     setVisible(false);
   };
 
   const reject = () => {
     localStorage.setItem(CONSENT_KEY, 'denied');
-    if (posthog.__loaded) posthog.opt_out_capturing();
+    disableAnalytics();
     setVisible(false);
   };
 

@@ -38,6 +38,8 @@ describe('middleware — parcours du passant anonyme', () => {
     `/api/conversation/${ID}/thread`,
     '/api/profile/report',
     '/tee/en-attente',
+    '/opengraph-image',   // image d'aperçu des liens partagés (robots des messageries)
+    '/api/shop/tagline/un-message-une-chance',
   ])('%s reste accessible sans compte', async (path) => {
     expect(await redirectOf(path)).toBeNull();
   });

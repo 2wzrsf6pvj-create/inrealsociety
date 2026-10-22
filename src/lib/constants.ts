@@ -46,6 +46,10 @@ export const PREMIUM_PERKS = [
   'Vos scans des 7 derniers jours, jour par jour',
 ] as const;
 
+/** Image d'aperçu des liens partagés (app/opengraph-image). À déclarer dans les
+ *  pages qui définissent leur propre `openGraph` : elles n'en héritent pas. */
+export const OG_IMAGE = { url: '/opengraph-image', width: 1200, height: 630, alt: 'In Real Society' };
+
 /** Adresse de contact (rétractation, support). */
 export const CONTACT_EMAIL = 'hello@inrealsociety.com';
 
