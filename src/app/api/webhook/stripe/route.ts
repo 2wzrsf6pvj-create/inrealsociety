@@ -329,16 +329,41 @@ async function handleChargeRefunded(charge: Stripe.Charge): Promise<void> {
     .eq('id', order.id);
 
   // Si le code n'a pas encore été consommé, on l'invalide en le supprimant.
-  // Si déjà utilisé : le profil existe, on ne touche pas (refund commercial,
-  // pas annulation technique — décision business à arbitrer côté support).
+  // Si déjà utilisé : il a activé un profil → on SUSPEND ce profil (054) : pause
+  // forcée que le porteur ne peut pas lever, réversible par le support. Un rachat
+  // (code jamais consommé) ne suspend donc jamais le profil d'un membre existant.
+  let suspendedMemberId: string | null = null;
   if (order.activation_code) {
     const { data: codeRow } = await supabaseAdmin
       .from('activation_codes')
-      .select('used')
+      .select('used, member_id')
       .eq('code', order.activation_code)
       .maybeSingle();
     if (codeRow && !codeRow.used) {
       await supabaseAdmin.from('activation_codes').delete().eq('code', order.activation_code);
+    } else if (codeRow?.used && codeRow.member_id) {
+      // Fail-soft : un échec ici ne doit pas 500 le webhook — l'order est déjà
+      // `refunded`, un retry Stripe sortirait tôt sans retenter. Le support
+      // dispose de la trace d'audit (member.suspension_failed).
+      const { error: suspendErr } = await supabaseAdmin
+        .from('members')
+        .update({ is_paused: true, suspended_at: new Date().toISOString() })
+        .eq('id', codeRow.member_id);
+      if (suspendErr) {
+        console.error('[webhook] refund : suspension du profil échouée', codeRow.member_id, suspendErr.message);
+        audit({
+          action:   'member.suspension_failed',
+          memberId: codeRow.member_id,
+          metadata: { orderId: order.id, reason: suspendErr.message },
+        });
+      } else {
+        suspendedMemberId = codeRow.member_id;
+        audit({
+          action:   'member.suspended',
+          memberId: codeRow.member_id,
+          metadata: { orderId: order.id, reason: 'order_refunded' },
+        });
+      }
     }
   }
 
@@ -366,6 +391,7 @@ async function handleChargeRefunded(charge: Stripe.Charge): Promise<void> {
       printfulCanceled: printfulCancel?.canceled ?? null,
       printfulCancelReason: printfulCancel?.reason ?? null,
       printfulStatus:  printfulCancel?.status ?? null,
+      suspendedMemberId,
     },
   });
 

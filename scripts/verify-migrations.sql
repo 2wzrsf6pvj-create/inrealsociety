@@ -48,6 +48,9 @@ SELECT has_table_privilege('authenticated', 'messages', 'UPDATE') AS authd_updat
 SELECT policyname, cmd FROM pg_policies
 WHERE schemaname = 'storage' AND tablename = 'objects' AND cmd IN ('INSERT', 'UPDATE');
 
+\echo '=== 054 — suspension : colonne + contrainte « suspendu ⇒ en pause » (attendu: 1 ligne) ==='
+SELECT conname FROM pg_constraint WHERE conname = 'members_suspended_implies_paused';
+
 \echo '=== Rappel : RLS activée sur les tables sensibles (attendu: tous t) ==='
 SELECT relname, relrowsecurity
 FROM pg_class

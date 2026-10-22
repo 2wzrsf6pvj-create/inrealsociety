@@ -26,6 +26,9 @@ import { moderateContent } from '@/lib/moderation';
 
 const UUID = '11111111-1111-4111-8111-111111111111';
 
+// Bornes `.gte()` reçues par le compte du plafond (fenêtre glissante).
+const countWindow: { col: string; since: string }[] = [];
+
 // Construit l'implémentation de supabaseAdmin.from selon le scénario.
 function wireSupabase({ member, firstScanAt, activeConvs }: {
   member: { id: string; name: string; email: string | null; is_paused: boolean; require_contact?: boolean; plan: string } | null;
@@ -42,9 +45,11 @@ function wireSupabase({ member, firstScanAt, activeConvs }: {
       }) }) }) };
     }
     if (table === 'messages') {
-      // .eq().eq().is('parent_id').is('blocked_at') → count
-      return { select: () => ({ eq: () => ({ eq: () => ({ is: () => ({ is: () =>
-        Promise.resolve({ count: activeConvs ?? 0, error: null }) }) }) }) }) };
+      // .eq().eq().is('parent_id').is('blocked_at').gte('created_at') → count
+      return { select: () => ({ eq: () => ({ eq: () => ({ is: () => ({ is: () => ({ gte: (col: string, since: string) => {
+        countWindow.push({ col, since });
+        return Promise.resolve({ count: activeConvs ?? 0, error: null });
+      } }) }) }) }) }) };
     }
     if (table === 'blocks') {
       return { select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: () =>
@@ -60,7 +65,7 @@ function makeReq(body: Record<string, unknown>): NextRequest {
 }
 
 describe('POST /api/message — contrat des codes d\'erreur', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => { vi.clearAllMocks(); countWindow.length = 0; });
 
   it('membre en pause → 403 code=paused', async () => {
     wireSupabase({ member: { id: UUID, name: 'A', email: 'a@b.c', is_paused: true, plan: 'free' } });
@@ -100,6 +105,20 @@ describe('POST /api/message — contrat des codes d\'erreur', () => {
     const res = await POST(makeReq({ memberId: UUID, content: 'salut' }));
     expect(res.status).toBe(403);
     expect((await res.json()).code).toBe('conversation_limit');
+  });
+
+  it('le plafond ne compte que les conversations des 7 derniers jours (fenêtre glissante)', async () => {
+    wireSupabase({
+      member: { id: UUID, name: 'A', email: 'a@b.c', is_paused: false, plan: 'free' },
+      firstScanAt: null,
+      activeConvs: 3,
+    });
+    await POST(makeReq({ memberId: UUID, content: 'salut' }));
+    expect(countWindow).toHaveLength(1);
+    expect(countWindow[0].col).toBe('created_at');
+    const ageDays = (Date.now() - Date.parse(countWindow[0].since)) / 86_400_000;
+    expect(ageDays).toBeGreaterThan(6.99);
+    expect(ageDays).toBeLessThan(7.01);
   });
 
   it('require_contact actif + aucun contact → 403 code=contact_required', async () => {

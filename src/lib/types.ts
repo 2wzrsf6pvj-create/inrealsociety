@@ -11,6 +11,9 @@ export interface Member {
   photo_url:               string | null;
   scan_count:              number;
   is_paused:               boolean;
+  // Suspension opérateur (migration 054) : implique is_paused, non levable par le
+  // porteur. Absent des lectures publiques (allowlist de colonnes).
+  suspended_at?:           string | null;
   require_contact:         boolean;
   plan:                    MemberPlan;
   stripe_customer_id:      string | null;
