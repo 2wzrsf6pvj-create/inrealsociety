@@ -57,6 +57,15 @@ Ce qui tient : tables sensibles fermées à `anon`, emails masqués par colonne
 - [ ] Lancer `scripts/verify-migrations.sql`.
 - [ ] Chercher dans les logs API Supabase des appels à `/rest/v1/rpc/accounts_pending_profile`, `create_member_with_code`, `record_scan` (tout appel avec un JWT utilisateur est suspect → évaluer une notification CNIL, 72 h).
 
+### Décisions prises
+- **Vercel bloqué** : tous les déploiements échouaient (`main` compris) car le
+  plan Hobby n'accepte que des crons quotidiens, et `fulfillment-reconcile`
+  tournait toutes les 6 h depuis le 11 juillet. Décision : **passer en
+  quotidien** (05:00 UTC) plutôt que le plan Pro → PR #2
+  (`fix/vercel-daily-cron`). Le filet de relance des commandes non imprimées
+  passe de 6 h à 24 h de délai max. À vérifier côté Clément : quel commit est
+  réellement en production sur Vercel (sans doute antérieur au 11 juillet).
+
 ### Décisions en attente
 - **Plafond de 3 conversations (gratuit)** : le code compte tous les messages
   reçus depuis toujours, alors que la FAQ annonce « 3 en simultané ». Paywall
