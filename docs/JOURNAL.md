@@ -5,6 +5,61 @@
 
 ---
 
+## 2026-10-22 (fin d'après-midi) — Parcours d'achat (UX)
+
+### Contexte
+- Clément n'est pas sûr qu'une base Supabase de production existe, ni de
+  l'état de Vercel. Décision : **Supabase et Vercel entre parenthèses** ; on
+  avance sur ce qui est sûr, dans le code. Pour lever le doute plus tard :
+  ouvrir `/api/health` sur le site en production. `"supabase":"ok"` signifie
+  qu'une base répond, `"skip"` qu'aucune n'est configurée, `"fail"` qu'elle
+  est configurée mais ne répond pas.
+
+### Analyse du parcours d'achat (boutique → paiement → activation)
+Parcours rejoué dans un navigateur mobile (390 px), captures à l'appui.
+Constats, du plus grave au moins grave, et lot qui les traite :
+
+| # | Constat | Lot |
+|---|---|---|
+| 1 | Trois témoignages nommés, **inventés**, sur la boutique (pratique commerciale trompeuse) | 1 ✅ |
+| 2 | Un acheteur qui paie sans activer son profil n'est relancé par personne, alors que son t-shirt est imprimé : les premiers scans tombent sur une page vide | 3 ✅ |
+| 3 | Mobile : prix à 1,8 écran, bouton de paiement à 2,5 écrans, aucun appel à l'action avant | 2 |
+| 4 | « Sans compte » : faux pour l'acheteur, qui crée un compte à l'activation | 1 ✅ |
+| 5 | Email saisi trois fois (boutique, Stripe, activation) | 4 |
+| 6 | Erreur d'activation « générez-en un » : aucun générateur n'existe | 1 ✅ |
+| 7 | En-tête : « Membres » passait sous le bouton « Connexion », affiché aussi sur les pages du passant qui scanne | 1 ✅ |
+| 8 | Ni la page de confirmation ni l'email ne récapitulent la commande | 4 |
+
+Relevés en passant, non traités : le bouton « Connexion » flotte au-dessus du
+contenu au défilement ; « Sans swipe » passe sur deux lignes sur mobile.
+
+### Fait
+- **PR #7 fusionnée** (`8170a8e`) — lot 1 : faux témoignages retirés,
+  « Sans swipe », message d'erreur corrigé, en-tête sans chevauchement. Son
+  job Playwright avait dépassé 15 min, bloqué au téléchargement des paquets
+  Ubuntu avant tout test ; `main` intégrée dans la branche, CI de nouveau verte.
+- **PR #8 fusionnée** (`6ce914b`) — lot 3 : le cron quotidien
+  `activation-reminder` relance aussi les **commandes payées dont le code n'a
+  jamais servi** : à J+2 puis J+7, deux fois au plus, jamais au-delà de
+  30 jours, avec le code et le lien d'activation. Migration **055** ; sans
+  elle, rien ne casse, seule cette relance ne part pas.
+- **PR #9 ouverte** — lot 2 : nom et prix en tête de colonne (1,1 écran au
+  lieu de 1,8), barre d'achat fixe sur mobile, frais de port en une seule
+  source et facturés TTC (`tax_behavior: 'inclusive'`) : sans cela, selon un
+  réglage du compte Stripe, les « 5 € » affichés pouvaient devenir 6 € débités.
+
+### À faire — côté Clément (s'ajoute à la liste précédente)
+- [ ] Appliquer **055** après 053 et 054 (même procédure ; avec la CLI, le
+      `db push` qui suit le `repair` l'applique).
+- [ ] Stripe, le jour de sa configuration : le Price du t-shirt doit être en
+      « inclusive » (TTC), sinon la TVA s'ajoute aux 49 € affichés.
+
+### Prochaine étape proposée
+- Lot 4 : email pré-rempli d'une étape à l'autre ; récapitulatif de commande
+  sur la page de confirmation et dans l'email.
+
+---
+
 ## 2026-10-22 (suite) — Fusions et décisions produit
 
 ### Fusions
