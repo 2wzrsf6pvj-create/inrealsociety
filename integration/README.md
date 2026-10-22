@@ -15,7 +15,8 @@ Ce qu'il vérifie notamment : le montant réel encaissé, l'idempotence du webho
 l'impression **au paiement** avec un code court réservé, l'**héritage** de ce code
 à l'activation (le QR imprimé pointe vers le bon profil), `record_scan` exécutable
 par `service_role`, un seul message par appareil, et la suspension verrouillée
-après remboursement (contrainte 054 comprise).
+après remboursement (contrainte 054 comprise), et la relance des acheteurs payés
+jamais activés (J+2, J+7, sans doublon — migration 055).
 
 `npm test` ne le lance pas (il exige l'infrastructure ci-dessous). En CI : job
 **« Intégration tunnel »**, sans aucun secret.

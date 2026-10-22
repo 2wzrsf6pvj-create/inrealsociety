@@ -270,6 +270,39 @@ export function emailPaymentFailed(params: {
   };
 }
 
+/** Relance d'un acheteur payé dont le profil n'est pas activé (cron, J+2 puis J+7).
+ *  Reprend le code : l'acheteur a pu perdre le premier email. */
+export function emailOrderActivationReminder(params: {
+  code:           string;
+  registerUrl:    string;
+  reminderNumber: 1 | 2;
+}): { subject: string; html: string } {
+  const safeCode = escapeHtml(params.code);
+  const first = params.reminderNumber === 1;
+  return {
+    subject: first
+      ? 'Votre t-shirt arrive — il manque votre profil'
+      : 'Votre t-shirt est peut-être déjà là — activez votre profil',
+    html: layout(`
+      <h1 style="font-size:26px;font-weight:300;letter-spacing:0.04em;margin:0 0 16px;text-align:center;">
+        ${first ? 'Votre t-shirt est en route.' : 'Il ne manque que vous.'}
+      </h1>
+      <p style="font-family:system-ui,sans-serif;font-size:13px;color:rgba(255,255,255,0.5);text-align:center;line-height:1.8;margin:0 0 32px;">
+        Tant que votre profil n'est pas activé, ceux qui scannent votre dos tombent
+        sur une page « pas encore activé ». Une minute suffit, avec ce code.
+      </p>
+      <div style="border:1px solid rgba(255,255,255,0.2);padding:28px;text-align:center;margin-bottom:8px;">
+        <p style="font-family:system-ui,sans-serif;font-size:10px;letter-spacing:0.2em;color:rgba(255,255,255,0.3);text-transform:uppercase;margin:0 0 16px;">Votre code d'activation</p>
+        <p style="font-family:monospace;font-size:30px;font-weight:700;letter-spacing:0.3em;color:#fff;margin:0;">${safeCode}</p>
+      </div>
+      ${cta('Activer mon profil', params.registerUrl)}
+      <p style="font-family:system-ui,sans-serif;font-size:11px;color:rgba(255,255,255,0.3);text-align:center;margin:20px 0 0;">
+        Déjà activé ? Ignorez ce message.
+      </p>
+    `),
+  };
+}
+
 /** Email d'activation après achat Stripe */
 export function emailActivation(params: {
   code:        string;
