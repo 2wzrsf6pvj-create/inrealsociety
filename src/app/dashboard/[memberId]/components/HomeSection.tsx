@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Member, Scan, Message } from '@/lib/types';
-import { daysActive, formatDate, getInitials, getWaitingPhrase, recentScansCount, timeAgo } from './utils';
+import { daysActive, formatDate, getInitials, getWaitingPhrase, timeAgo } from './utils';
 import { useCountUp } from './hooks';
 import { captureEvent } from '@/lib/posthog-client';
 import SectionDivider from '@/app/components/ui/SectionDivider';
@@ -26,7 +26,7 @@ function PendingConversations({ messages }: { messages: Message[] }) {
   return (
     <div className="w-full bg-[#0c0c0c] border border-brand-white/15 rounded-[2px] p-4 flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <p className="font-ui text-xs text-brand-white/80 tracking-[0.18em] uppercase">En attente de toi</p>
+        <p className="font-ui text-xs text-brand-white/80 tracking-[0.18em] uppercase">En attente de vous</p>
         <span className="font-ui text-xxs text-brand-gray/50 tabular-nums">{pending.length}</span>
       </div>
       {shown.map(m => (
@@ -184,12 +184,12 @@ function StatNumber({ value, label }: { value: number; label: string }) {
   return (
     <div className="flex flex-col items-center gap-1">
       <span className="font-display text-3xl md:text-4xl font-light tabular-nums">{display}</span>
-      <span className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase text-center leading-tight">{label}</span>
+      <span className="font-ui text-xxs text-brand-gray/55 tracking-[0.12em] uppercase text-center leading-tight">{label}</span>
     </div>
   );
 }
 
-function StatsBlock({ member, recentScans, conversations }: { member: Member; recentScans: Scan[]; conversations: number }) {
+function StatsBlock({ member, weekScans, conversations }: { member: Member; weekScans: number; conversations: number }) {
   const days   = daysActive(member.created_at);
   const noScan = member.scan_count === 0;
 
@@ -213,11 +213,11 @@ function StatsBlock({ member, recentScans, conversations }: { member: Member; re
   const stats = [
     { value: conversations,                 label: 'Conversations' },
     { value: member.scan_count,             label: 'Scans' },
-    { value: recentScansCount(recentScans), label: 'Semaine' },
+    { value: weekScans,                     label: '7 jours' },
   ];
 
   return (
-    <div className="flex items-stretch gap-6 w-full justify-center">
+    <div className="flex items-stretch gap-4 w-full justify-center">
       {stats.map((s, i) => (
         <React.Fragment key={s.label}>
           {i > 0 && <div className="w-px self-center h-8 bg-brand-gray/10" />}
@@ -270,12 +270,13 @@ function ScanChart({ data }: { data: { date: string; count: number }[] }) {
 
 // ─── Home Section (orchestrator du tab Accueil) ──────────────────────────────
 
-export default function HomeSection({ member, recentScans, scansByDay = [], messages = [], activeConversations = 0 }: {
+export default function HomeSection({ member, recentScans, scansByDay = [], weekScans = 0, messages = [], activeConversations = 0 }: {
   member: Member;
   recentScans: Scan[];
   scansByDay?: { date: string; count: number }[];
   messages?: Message[];
   activeConversations?: number;
+  weekScans?: number;
 }) {
   return (
     <>
@@ -285,7 +286,7 @@ export default function HomeSection({ member, recentScans, scansByDay = [], mess
       {/* #2 — Nudge photo pour membre actif sans photo (cold-start couvert par le guide) */}
       {!member.photo_url && member.scan_count > 0 && <PhotoNudge />}
 
-      <StatsBlock member={member} recentScans={recentScans} conversations={activeConversations} />
+      <StatsBlock member={member} weekScans={weekScans} conversations={activeConversations} />
 
       {/* Stats premium */}
       {member.plan === 'premium' && scansByDay.length > 0 && (

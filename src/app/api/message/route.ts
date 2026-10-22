@@ -247,35 +247,42 @@ export async function POST(req: NextRequest) {
       metadata: { messageId: message?.id, isQuickReply: isKnownQuickReply, senderToken },
     });
 
-    // ─── Rétention (P0) : signal reçu par le PORTEUR (distinctId = member_id) ──
-    captureServerEvent({
-      distinctId: memberId,
-      event:      'member_signal_received',
-      properties: { member_id: memberId, is_quick_reply: isKnownQuickReply, has_contact: !!senderContact?.trim() },
-    }).catch(() => {});
+    // ─── Notifications du porteur ─────────────────────────────────────────
+    // Attendues plus bas, pas en tâche de fond : une fonction serverless peut
+    // s'arrêter dès la réponse envoyée, et l'envoi se perdrait (cf. /api/report).
+    // Chacune rattrape sa propre erreur : un échec ne bloque ni les autres ni la
+    // réponse.
+    const notifications: Promise<unknown>[] = [
+      // Rétention (P0) : signal reçu par le PORTEUR (distinctId = member_id)
+      captureServerEvent({
+        distinctId: memberId,
+        event:      'member_signal_received',
+        properties: { member_id: memberId, is_quick_reply: isKnownQuickReply, has_contact: !!senderContact?.trim() },
+      }).catch(() => {}),
+    ];
 
-    // ─── Notification email ───────────────────────────────────────────────
     if (member.email) {
-      const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/${member.id}`;
       const { subject, html } = emailNouveauMessage({
-        memberName:    member.name,
-        content:       content.trim(),
-        senderContact: senderContact?.trim(),
-        senderName:    cleanName ?? undefined,
-        dashboardUrl,
+        memberName:      member.name,
+        content:         content.trim(),
+        senderContact:   senderContact?.trim(),
+        senderName:      cleanName ?? undefined,
+        conversationUrl: message?.id ? `${APP_URL}/conversation/${message.id}` : `${APP_URL}/dashboard`,
       });
-      sendEmail({ to: member.email, subject, html }).catch((err) => console.error('[api/message] Échec envoi email:', err));
+      notifications.push(
+        sendEmail({ to: member.email, subject, html }).catch((err) => console.error('[api/message] Échec envoi email:', err)),
+      );
     }
 
-    // ─── Notification push (porteur abonné au niveau membre depuis le dashboard) ──
+    // Push : porteur abonné au niveau membre depuis le dashboard
     if (message?.id) {
-      notifyMemberSubscribers({
+      notifications.push(notifyMemberSubscribers({
         memberId,
         messageId: message.id, // tag par message → les notifs s'empilent
         title: 'Nouveau signal',
         body:  content.trim().slice(0, 80),
         url:   `${APP_URL}/conversation/${message.id}`,
-      }).catch((err) => console.error('[api/message] Échec push membre:', err));
+      }).catch((err) => console.error('[api/message] Échec push membre:', err)));
     }
 
     // ─── Contact email : lien de confirmation (double opt-in) ─────────────
@@ -290,6 +297,8 @@ export async function POST(req: NextRequest) {
         console.error('[api/message] Vérification du contact impossible:', err);
       }
     }
+
+    await Promise.all(notifications);
 
     // Pose/rafraîchit le cookie de jeton device (httpOnly) — permet au porteur
     // de bloquer ce scanneur plus tard, même sur une autre conversation.

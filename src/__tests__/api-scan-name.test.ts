@@ -27,7 +27,7 @@ vi.mock('@/lib/supabase-admin', () => ({ supabaseAdmin: { from: vi.fn(), rpc: vi
 import { POST } from '@/app/api/scan/route';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { moderateContent } from '@/lib/moderation';
-import { emailNouveauScan } from '@/lib/email-templates';
+import { sendEmail, emailNouveauScan } from '@/lib/email-templates';
 
 const MEMBER = { id: '11111111-1111-4111-8111-111111111111', name: 'Camille', email: 'camille@example.com', is_paused: false };
 
@@ -73,6 +73,14 @@ describe('POST /api/scan — prénom du passant', () => {
   it('sans prénom → scan anonyme', async () => {
     await scan(null);
     expect(recordedName()).toBeNull();
+  });
+
+  it('l’email au porteur est parti avant la réponse (pas en tâche de fond)', async () => {
+    let delivered = false;
+    (sendEmail as ReturnType<typeof vi.fn>).mockImplementationOnce(() =>
+      new Promise((resolve) => setTimeout(() => { delivered = true; resolve(true); }, 20)));
+    expect((await scan('Léa')).status).toBe(200);
+    expect(delivered).toBe(true);
   });
 });
 

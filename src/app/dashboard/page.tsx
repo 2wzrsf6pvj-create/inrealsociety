@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 };
 import { createClient } from '@/lib/supabase-server';
 import { getMemberByAuthUserId } from '@/lib/supabase';
-import { getRecentScans, getScansByDay, claimOrphanedMember } from '@/lib/queries-server';
+import { getRecentScans, getScansByDay, getScanCountSince, claimOrphanedMember } from '@/lib/queries-server';
 import { getMessages, getMessagesCount, getActiveConversationsCount, getConversationsTotal, getUnreadMessagesCount } from '@/lib/inbox';
 import DashboardClient from './[memberId]/DashboardClient';
 
@@ -42,7 +42,7 @@ export default async function DashboardPage() {
     redirect('/register');
   }
 
-  const [recentScans, messages, unreadCount, activeConversations, recentConversations, totalConversations, scansByDay] = await Promise.all([
+  const [recentScans, messages, unreadCount, activeConversations, recentConversations, totalConversations, scansByDay, weekScans] = await Promise.all([
     getRecentScans(member.id, 5),
     getMessages(member.id, 10),
     getUnreadMessagesCount(member.id),
@@ -50,7 +50,8 @@ export default async function DashboardPage() {
     getActiveConversationsCount(member.id),
     getConversationsTotal(member.id),
     member.plan === 'premium' ? getScansByDay(member.id, 7) : Promise.resolve([]),
+    getScanCountSince(member.id, 7),
   ]);
 
-  return <DashboardClient member={member} recentScans={recentScans} messages={messages} unreadCount={unreadCount} activeConversations={activeConversations} recentConversations={recentConversations} totalConversations={totalConversations} scansByDay={scansByDay} />;
+  return <DashboardClient member={member} recentScans={recentScans} messages={messages} unreadCount={unreadCount} activeConversations={activeConversations} recentConversations={recentConversations} totalConversations={totalConversations} scansByDay={scansByDay} weekScans={weekScans} />;
 }

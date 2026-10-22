@@ -1,8 +1,6 @@
 // Helpers partagés entre les sections du dashboard.
 // Pas de React imports — purement utilitaire.
 
-import type { Scan } from '@/lib/types';
-
 export function getInitials(name: string): string {
   const parts = name.trim().split(' ').filter(Boolean);
   if (parts.length === 0) return '?';
@@ -29,11 +27,6 @@ export function timeAgo(iso: string): string {
   if (hours < 24) return `Il y a ${hours}h`;
   const days = Math.floor(hours / 24);
   return `Il y a ${days}j`;
-}
-
-export function recentScansCount(scans: Scan[]): number {
-  const sevenDaysAgo = Date.now() - 7 * 86400000;
-  return scans.filter(s => new Date(s.scanned_at).getTime() > sevenDaysAgo).length;
 }
 
 const WAITING_PHRASES = [

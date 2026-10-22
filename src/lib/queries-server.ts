@@ -88,8 +88,30 @@ export async function getFirstScanAt(memberId: string): Promise<string | null> {
   return data?.first_scan_at ?? null;
 }
 
+/**
+ * Début de la fenêtre « N derniers jours » du tableau de bord : minuit (UTC) du
+ * premier jour affiché. Le compteur et le graphique comptent ainsi les mêmes scans.
+ */
+export function scanWindowStart(days: number, now = new Date()): string {
+  const d = new Date(now);
+  d.setUTCHours(0, 0, 0, 0);
+  d.setUTCDate(d.getUTCDate() - (days - 1));
+  return d.toISOString();
+}
+
+/** Scans des N derniers jours (compteur de l'accueil), sans plafond. */
+export async function getScanCountSince(memberId: string, days = 7): Promise<number> {
+  const { count, error } = await supabaseAdmin
+    .from('scans')
+    .select('id', { count: 'exact', head: true })
+    .eq('member_id', memberId)
+    .gte('scanned_at', scanWindowStart(days));
+  if (error) return 0;
+  return count ?? 0;
+}
+
 export async function getScansByDay(memberId: string, days = 7): Promise<{ date: string; count: number }[]> {
-  const since = new Date(Date.now() - days * 86400000).toISOString();
+  const since = scanWindowStart(days);
   const { data, error } = await supabaseAdmin
     .from('scans')
     .select('scanned_at')

@@ -23,6 +23,7 @@ vi.mock('@/lib/moderation', () => ({
 import { POST } from '@/app/api/message/route';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { moderateContent } from '@/lib/moderation';
+import { sendEmail, emailNouveauMessage } from '@/lib/email-templates';
 
 const UUID = '11111111-1111-4111-8111-111111111111';
 
@@ -191,5 +192,28 @@ describe('POST /api/message — contrat des codes d\'erreur', () => {
     });
     await POST(makeReq({ memberId: UUID, content: 'salut', senderName: 'Jean-Baptiste' }));
     expect(inserted[0].sender_name).toBe('Jean-Baptiste');
+  });
+});
+
+// Notifications du porteur attendues avant la réponse : en serverless, un envoi
+// en tâche de fond peut se perdre quand la fonction s'arrête.
+describe('POST /api/message — notification du porteur', () => {
+  beforeEach(() => { vi.clearAllMocks(); countWindow.length = 0; inserted.length = 0; });
+
+  it('l’email au porteur est parti avant la réponse, et mène à la conversation', async () => {
+    wireSupabase({
+      member: { id: UUID, name: 'Camille', email: 'camille@example.com', is_paused: false, plan: 'free' },
+      firstScanAt: null,
+      activeConvs: 0,
+    });
+    let delivered = false;
+    (sendEmail as ReturnType<typeof vi.fn>).mockImplementation(() =>
+      new Promise((resolve) => setTimeout(() => { delivered = true; resolve(true); }, 20)));
+
+    const res = await POST(makeReq({ memberId: UUID, content: 'Belle audace.' }));
+    expect(res.status).toBe(200);
+    expect(delivered).toBe(true);
+    expect(emailNouveauMessage).toHaveBeenCalledWith(
+      expect.objectContaining({ conversationUrl: expect.stringContaining('/conversation/msg-1') }));
   });
 });

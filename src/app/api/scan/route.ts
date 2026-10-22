@@ -129,16 +129,20 @@ export async function POST(req: NextRequest) {
       metadata: { scannerName: cleanName, nameDropped: !!rawName && !cleanName },
     });
 
-    // ─── Rétention (P0) : event keyé sur le PORTEUR (distinctId = member_id) ──
-    // Mesure « le porteur est-il encore scanné N semaines après ? » dans PostHog.
-    // Fire-and-forget, seulement sur un scan NEUF (les doublons sont déjà filtrés).
-    captureServerEvent({
-      distinctId: memberId,
-      event:      'member_scanned',
-      properties: { member_id: memberId, has_location: latitude != null && longitude != null },
-    }).catch(() => {});
+    // ─── Notifications ────────────────────────────────────────────────────
+    // Attendues, pas en tâche de fond : une fonction serverless peut s'arrêter
+    // dès la réponse envoyée, et l'envoi se perdrait (cf. /api/report).
+    const notifications: Promise<unknown>[] = [
+      // Rétention (P0) : event keyé sur le PORTEUR (distinctId = member_id).
+      // Mesure « le porteur est-il encore scanné N semaines après ? » dans PostHog,
+      // seulement sur un scan NEUF (les doublons sont déjà filtrés).
+      captureServerEvent({
+        distinctId: memberId,
+        event:      'member_scanned',
+        properties: { member_id: memberId, has_location: latitude != null && longitude != null },
+      }).catch(() => {}),
+    ];
 
-    // ─── Notification email ───────────────────────────────────────────────
     if (member.email) {
       const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/${member.id}`;
       const { subject, html } = emailNouveauScan({
@@ -146,9 +150,12 @@ export async function POST(req: NextRequest) {
         scannerName:  cleanName ?? undefined,  // le template attend string|undefined
         dashboardUrl,
       });
-      sendEmail({ to: member.email, subject, html }).catch((err) => console.error('[api/scan] Échec envoi email:', err));
+      notifications.push(
+        sendEmail({ to: member.email, subject, html }).catch((err) => console.error('[api/scan] Échec envoi email:', err)),
+      );
     }
 
+    await Promise.all(notifications);
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error('[api/scan]', err);

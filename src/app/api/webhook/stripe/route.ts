@@ -511,7 +511,8 @@ async function handleSubscriptionCheckout(session: Stripe.Checkout.Session): Pro
       name: upgradedMember.name,
       dashboardUrl: `${appUrl}/dashboard`,
     });
-    sendEmail({ to: upgradedMember.email, subject, html }).catch((err) => console.error('[webhook] Échec email premium:', err));
+    // Attendu : une fonction serverless peut s'arrêter dès la réponse envoyée.
+    await sendEmail({ to: upgradedMember.email, subject, html }).catch((err) => console.error('[webhook] Échec email premium:', err));
   }
 
   await captureServerEvent({
