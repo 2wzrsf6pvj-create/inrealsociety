@@ -132,7 +132,6 @@ export function emailNouveauScan(params: {
   scannerName?: string;
   dashboardUrl: string;
 }): { subject: string; html: string } {
-  const safeName    = escapeHtml(params.memberName);
   const safeScanner = params.scannerName ? escapeHtml(params.scannerName) : null;
 
   const headline = safeScanner
