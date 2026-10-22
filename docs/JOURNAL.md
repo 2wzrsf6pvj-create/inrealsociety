@@ -5,6 +5,104 @@
 
 ---
 
+## 2026-10-22 (nuit, suite) — Performance et référencement : analyse et lots (#23, #24)
+
+### Analyse
+Mesurée avec Lighthouse en mode mobile (4G lente simulée), sur un build de
+production branché sur la base locale.
+- Toutes les pages chargeaient environ 285 ko de JavaScript compressé pour la
+  seule mise en page commune, avant leur propre code. Le tableau du build Next
+  ne compte pas cette partie.
+- La boutique chargeait environ 520 ko au total.
+
+1. **Bug : les notifications du passant ne fonctionnaient pas.**
+   - Pour tout visiteur non connecté, le middleware redirigeait `/sw.js` et
+     `/manifest.json` vers la page de connexion.
+   - Le navigateur refusait alors le service worker : le passant qui demandait
+     « Me notifier de sa réponse » n'était jamais prévenu.
+   - L'installation sur l'écran d'accueil était impossible, alors que l'iPhone
+     l'exige pour les notifications.
+2. La boutique envoyait à chaque visiteur les tracés de toutes les accroches
+   (~230 ko compressés) pour n'en afficher qu'une.
+3. PostHog (~60 ko) était chargé sur toutes les pages, même sans
+   consentement.
+4. Le client Supabase (~56 ko) était chargé sur toutes les pages pour le seul
+   bouton « Connexion ».
+5. Sentry faisait du suivi de performance dans le navigateur.
+6. Partage de liens :
+   - aucune image d'aperçu ;
+   - celle du manifeste pointait vers un fichier inexistant ;
+   - sans `metadataBase`, le domaine des images d'aperçu était celui que
+     choisit Vercel, pas l'adresse de l'app.
+7. Détails :
+   - la FAQ manquait au sitemap ;
+   - pas de données produit pour Google ;
+   - pas d'URL canoniques ;
+   - trois pages privées étaient indexables ;
+   - plusieurs titres affichaient la marque en double ;
+   - contrastes trop faibles sur la boutique.
+
+### Décisions de Clément
+- Sentry : les erreurs seulement dans le navigateur.
+- Image d'aperçu : visuel typographique de la marque, remplaçable par un
+  visuel conçu.
+
+### Fait
+- **PR #23 fusionnée** (`cd501ee`), constat 1 : `/sw.js` et
+  `/manifest.json` sont servis à tous.
+- **PR #24 fusionnée** (`efed890`), constats 2 à 7 :
+  - l'aperçu de la boutique charge l'accroche choisie, à la demande ;
+  - PostHog n'est chargé qu'après « Accepter » ;
+  - Supabase n'est chargé que si une session existe ;
+  - Sentry ne garde que les erreurs dans le navigateur ;
+  - image d'aperçu (le ( • ) et la phrase de la marque) ;
+  - `metadataBase`, URL canoniques, sitemap et données produit ;
+  - pages privées non indexées ;
+  - titres et contrastes corrigés.
+
+| Page | Performance | Affichage principal | JavaScript chargé |
+|---|---|---|---|
+| Boutique | 74 → 93 | 5,6 → 3,2 s | ~520 → 143 ko |
+| Accueil | 83 → 96 | 4,0 → 2,8 s | ~288 → 133 ko |
+| Profil | 85 → 94 | 4,1 → 3,0 s | ~296 → 140 ko |
+| FAQ | 87 → 95 | 3,9 → 2,8 s | ~285 → 129 ko |
+
+- Accessibilité de la boutique : 92 → 100.
+- Vérifié avant la fusion :
+  - 571 tests et intégration 43/43 ;
+  - lint, types, build et Playwright verts ;
+  - contrôles dans le navigateur sur un build de production.
+- Pas de migration.
+
+### À faire — côté Clément
+- [ ] Vérifier que `NEXT_PUBLIC_APP_URL` en production est le domaine
+      définitif. Les emails, les QR codes et désormais les URL canoniques et
+      l'image d'aperçu en dépendent.
+- [ ] Après la mise en ligne :
+      - partager un lien de la boutique (WhatsApp, LinkedIn) pour vérifier
+        l'aperçu ;
+      - déclarer le site et son sitemap (`/sitemap.xml`) dans Google Search
+        Console.
+- [ ] Facultatif : un visuel conçu (1200 × 630) pour remplacer l'image
+      d'aperçu typographique.
+
+### Ensuite
+- Le plus gros élément affiché reste souvent le bandeau cookies : il attend le
+  JavaScript, environ 3 s sur mobile lent. On pourra l'inclure dans le HTML de
+  la page.
+- Reste de la priorité 2 : l'économie unitaire (marge sur 49 €). Il faudra les
+  tarifs Printful de Clément.
+- Priorité 3 (inventaire du 22/10) :
+  - observabilité ;
+  - délivrabilité des emails ;
+  - app mobile ;
+  - parrainage et newsletter ;
+  - accessibilité ;
+  - mises à jour (Next.js 14, actions GitHub sur Node 20) ;
+  - petits restes.
+
+---
+
 ## 2026-10-22 (nuit) — Abonnement premium : analyse et lot (#22)
 
 ### Analyse de l'abonnement premium
