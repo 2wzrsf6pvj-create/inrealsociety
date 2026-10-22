@@ -15,6 +15,7 @@ import { isValidEmail } from '@/lib/validators';
 import { moderateContent } from '@/lib/moderation';
 import { getSenderToken } from '@/lib/sender-token';
 import { isBlocked, isDeviceBanned } from '@/lib/blocks';
+import { isContactVerified } from '@/lib/contact-verification';
 
 const schema = z.object({
   messageId: z.string().uuid(),      // ID du message racine (le premier)
@@ -153,7 +154,7 @@ export async function POST(req: NextRequest) {
 
     // Notification email :
     //   * scanner → notifie le membre sur son email (alerte dashboard)
-    //   * member → notifie le scanner sur sender_contact si c'est un email
+    //   * member → notifie le scanner sur sender_contact si c'est un email CONFIRMÉ
     if (author === 'scanner') {
       const { data: member } = await supabaseAdmin
         .from('members').select('name, email').eq('id', rootMsg.member_id).maybeSingle();
@@ -169,8 +170,10 @@ export async function POST(req: NextRequest) {
         sendEmail({ to: member.email, subject, html }).catch((err) => console.error('[conversation/reply] Échec email membre:', err));
       }
     } else if (author === 'member') {
+      // Uniquement vers une adresse confirmée par le passant (double opt-in) :
+      // sinon un passant pouvait faire écrire la plateforme à un tiers.
       const contact = rootMsg.sender_contact?.trim();
-      if (contact && isValidEmail(contact)) {
+      if (contact && isValidEmail(contact) && await isContactVerified(messageId, contact)) {
         const { data: member } = await supabaseAdmin
           .from('members').select('name').eq('id', rootMsg.member_id).maybeSingle();
 

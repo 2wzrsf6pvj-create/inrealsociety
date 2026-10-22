@@ -56,6 +56,11 @@ SELECT relrowsecurity AS rls,
        has_table_privilege('authenticated', 'message_reports', 'SELECT') AS authd_select
 FROM pg_class WHERE relname = 'message_reports';
 
+\echo '=== 057 — vérification d''email du passant : RLS, aucun accès client (attendu: 1 ligne  t | f) ==='
+SELECT relrowsecurity AS rls,
+       has_table_privilege('anon', 'contact_verifications', 'SELECT') AS anon_select
+FROM pg_class WHERE relname = 'contact_verifications';
+
 \echo '=== Rappel : RLS activée sur les tables sensibles (attendu: tous t) ==='
 SELECT relname, relrowsecurity
 FROM pg_class

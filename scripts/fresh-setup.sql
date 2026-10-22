@@ -1,7 +1,7 @@
 -- fresh-setup.sql — INSTALLATION D'UNE BASE NEUVE (Option A)
--- GÉNÉRÉ par scripts/build-fresh-setup.mjs (56 migrations) — ne pas éditer à la main.
+-- GÉNÉRÉ par scripts/build-fresh-setup.mjs (57 migrations) — ne pas éditer à la main.
 -- Ordre CORRIGÉ : 015 (schéma) EN PREMIER — 001-014 posent la RLS sur des tables
--- créées en 015, donc un ordre 001→056 naïf échoue ("table members n'existe pas").
+-- créées en 015, donc un ordre 001→057 naïf échoue ("table members n'existe pas").
 --
 -- USAGE : projet Supabase NEUF (auth + storage + rôles anon/authenticated/service_role
 -- déjà présents). Coller TOUT dans le SQL Editor → Run. IF NOT EXISTS partout.
@@ -2234,3 +2234,31 @@ CREATE INDEX IF NOT EXISTS idx_message_reports_sender_token
 -- Aucun accès anon/authenticated : seul service_role (supabaseAdmin) lit/écrit.
 ALTER TABLE message_reports ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON message_reports FROM anon, authenticated;
+
+
+-- ═══════════════════════════════════════════════════════════════
+-- ▶ 057_contact_verifications.sql
+-- ═══════════════════════════════════════════════════════════════
+-- 057_contact_verifications.sql
+-- Vérification de l'email laissé par un passant (double opt-in).
+--
+-- Avant : quand le porteur répondait, la réponse partait par email à l'adresse
+-- saisie par le passant, vérifiée ou non. Un passant pouvait taper l'adresse d'un
+-- tiers, qui recevait alors les mots du porteur et le lien de la conversation.
+-- Désormais /api/message envoie un lien de confirmation à cette adresse, et les
+-- réponses n'y partent qu'une fois l'adresse confirmée.
+--
+-- Une ligne par message racine. Le jeton n'est jamais stocké en clair : seul son
+-- SHA-256 l'est. Supprimée avec le message (purge des conversations).
+
+CREATE TABLE IF NOT EXISTS contact_verifications (
+  message_id  UUID PRIMARY KEY REFERENCES messages(id) ON DELETE CASCADE,
+  email       TEXT NOT NULL,                 -- en minuscules
+  token_hash  TEXT NOT NULL UNIQUE,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT now(),
+  verified_at TIMESTAMPTZ
+);
+
+-- Aucun accès anon/authenticated : seul service_role (supabaseAdmin) lit/écrit.
+ALTER TABLE contact_verifications ENABLE ROW LEVEL SECURITY;
+REVOKE ALL ON contact_verifications FROM anon, authenticated;

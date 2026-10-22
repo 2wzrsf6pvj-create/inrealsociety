@@ -71,6 +71,14 @@ const limitResendByEmail = () => new Ratelimit({
   prefix:  'rl:resend:email',
 });
 
+/** 3 emails de confirmation de contact par ADRESSE et par jour : sans plafond, la
+ *  page de message servirait à arroser une boîte tierce de liens de confirmation. */
+const limitContactVerifyByEmail = () => new Ratelimit({
+  redis:   getRedis(),
+  limiter: Ratelimit.slidingWindow(3, '1 d'),
+  prefix:  'rl:contact-verify:email',
+});
+
 /** Déduplication des scans : 1 comptage par (membre, IP) toutes les 30 min.
  *  Distinct du rate-limit (anti-abus) : ici on évite juste de gonfler
  *  scan_count + de spammer l'email du membre quand un scanneur recharge /profil. */
@@ -210,6 +218,19 @@ export async function checkResendEmailRateLimit(email: string): Promise<RateLimi
     };
   } catch {
     return { success: true, limit: 0, remaining: 0, reset: Date.now() };
+  }
+}
+
+/**
+ * Plafond des emails de confirmation envoyés à une même adresse (contact laissé
+ * par un passant). Échec Redis → on n'envoie pas : mieux vaut un passant sans
+ * confirmation qu'un relais d'emails non sollicités.
+ */
+export async function checkContactVerifyRateLimit(email: string): Promise<boolean> {
+  try {
+    return (await limitContactVerifyByEmail().limit(email)).success;
+  } catch {
+    return false;
   }
 }
 
