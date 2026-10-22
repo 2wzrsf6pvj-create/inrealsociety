@@ -34,7 +34,7 @@
   (durée confirmée) + suspension verrouillée au remboursement (migration 054).
   416 tests ; 054 validée sur Postgres.
 - **Migrations en prod — décidé : Supabase CLI.** Constat : application manuelle
-  (pas de `config.toml`, checklist en `psql`), d'où les dérives. **PR #4**
+  (pas de `config.toml`, checklist en `psql`), d'où les dérives. **PR #4 fusionnée** (`6ea355b`)
   (`chore/supabase-cli`) : `config.toml`, procédure `docs/SUPABASE_CLI.md`,
   README corrigé (il conseillait un `db push` qui, sans `repair`, rejouerait
   tout). Validé avec la CLI 2.121.0 sur une prod simulée : sans `repair` le
@@ -49,7 +49,7 @@
 - [ ] Logs API Supabase : appels à `accounts_pending_profile`,
       `create_member_with_code`, `record_scan` avec un JWT utilisateur ?
 - [ ] Vercel : vérifier que `main` est bien déployée en production.
-- [ ] Après fusion de #4 : `supabase link` puis `migration repair` 001→054
+- [ ] Supabase CLI (PR #4 fusionnée) : `supabase link` puis `migration repair` 001→054
       (cf. `docs/SUPABASE_CLI.md`) — ensuite, `db push` après chaque fusion.
 
 ---
