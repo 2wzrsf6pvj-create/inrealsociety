@@ -25,10 +25,10 @@ Constats, du plus grave au moins grave, et lot qui les traite :
 | 2 | Un acheteur qui paie sans activer son profil n'est relancé par personne, alors que son t-shirt est imprimé : les premiers scans tombent sur une page vide | 3 ✅ |
 | 3 | Mobile : prix à 1,8 écran, bouton de paiement à 2,5 écrans, aucun appel à l'action avant | 2 ✅ |
 | 4 | « Sans compte » : faux pour l'acheteur, qui crée un compte à l'activation | 1 ✅ |
-| 5 | Email saisi trois fois (boutique, Stripe, activation) | 4 |
+| 5 | Email saisi deux fois (boutique, activation) ; Stripe le pré-remplissait déjà, contrairement à ce que disait l'analyse | 4 ✅ |
 | 6 | Erreur d'activation « générez-en un » : aucun générateur n'existe | 1 ✅ |
 | 7 | En-tête : « Membres » passait sous le bouton « Connexion », affiché aussi sur les pages du passant qui scanne | 1 ✅ |
-| 8 | Ni la page de confirmation ni l'email ne récapitulent la commande | 4 |
+| 8 | Ni la page de confirmation ni l'email ne récapitulent la commande | 4 ✅ |
 
 Relevés en passant, non traités : le bouton « Connexion » flotte au-dessus du
 contenu au défilement ; « Sans swipe » passe sur deux lignes sur mobile.
@@ -53,16 +53,47 @@ contenu au défilement ; « Sans swipe » passe sur deux lignes sur mobile.
   déjà les bibliothèques ; apt n'ajoutait que des polices et a fait dépasser
   15 min au job de la #7. Mesuré : installation 6 min → 12 s, job complet
   7 min 24 s → 1 min 32 s.
+- **PR #11 fusionnée** (`0adc5d8`) — lot 4 : email de la boutique pré-rempli
+  à l'activation (sessionStorage, même onglet, effacé au compte créé) ;
+  récapitulatif de commande sur la page de confirmation (sans donnée
+  personnelle) et dans l'email d'activation (article, accroche, livraison,
+  total TTC, adresse, lien CGV). Un échec du récapitulatif n'empêche jamais
+  l'envoi du code. Test d'intégration : ids de session simulés uniques par
+  exécution, il se relance sur la même base.
 
 ### À faire — côté Clément (s'ajoute à la liste précédente)
 - [ ] Appliquer **055** après 053 et 054 (même procédure ; avec la CLI, le
       `db push` qui suit le `repair` l'applique).
 - [ ] Stripe, le jour de sa configuration : le Price du t-shirt doit être en
       « inclusive » (TTC), sinon la TVA s'ajoute aux 49 € affichés.
+- [ ] Faire relire l'email de confirmation avec les CGV avant le lancement
+      (confirmation de commande sur support durable, art. L221-13).
 
-### Prochaine étape proposée
-- Lot 4 : email pré-rempli d'une étape à l'autre ; récapitulatif de commande
-  sur la page de confirmation et dans l'email.
+### Pas encore analysé (inventaire du 22/10)
+Analysé jusqu'ici : sécurité de la base, plafond de conversations,
+remboursement, CI et migrations, tunnel d'achat (test d'intégration et UX).
+
+- **Priorité 1, avant tout lancement**
+  - Parcours du passant qui scanne : scan → profil → message → conversation.
+  - Sécurité des porteurs et modération : contournements, signalement,
+    blocage. Aucun âge minimum n'apparaît nulle part (CGV, confidentialité,
+    inscription, FAQ).
+  - RGPD et légal : confidentialité, conservation, géolocalisation des scans,
+    consentement ; mentions légales incomplètes (SIRET, médiateur) ; CGV ;
+    obligations d'une plateforme qui héberge des messages (DSA).
+  - État réel de la production (laissé de côté à la demande de Clément) :
+    Supabase, variables Vercel, Stripe réel, Printful, `inreal.me`, DNS email.
+- **Priorité 2**
+  - Expérience du porteur après activation : tableau de bord, notifications,
+    relances ; rétention (`docs/RETENTION.md` attend des arbitrages).
+  - Abonnement premium (2,99 €/mois) : parcours et valeur perçue.
+  - Économie unitaire : marge sur 49 € après Printful, Stripe, TVA, port.
+  - Performance et référencement : 466 ko de JavaScript au premier
+    affichage de `/shop` ; seul le t-shirt blanc a une vraie maquette.
+- **Priorité 3** : observabilité, délivrabilité des emails, app mobile,
+  parrainage, newsletter, accessibilité, mises à jour (Next.js 14, actions
+  GitHub sur Node 20), petits restes (commentaires périmés, Gelato, pages
+  démo).
 
 ---
 
