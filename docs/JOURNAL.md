@@ -5,6 +5,89 @@
 
 ---
 
+## 2026-10-22 (nuit) — Abonnement premium : analyse et lot (#22)
+
+### Analyse de l'abonnement premium
+Lu de bout en bout (paiement, webhook Stripe, réconciliation, résiliation,
+emails) et rejoué sur mobile.
+
+**Déjà en ordre** :
+- impossible de payer deux abonnements : le serveur vérifie chez Stripe avant
+  chaque paiement ;
+- délai de grâce quand un renouvellement échoue ;
+- réconciliation quotidienne, qui coupe un premium resté actif par erreur.
+
+**Constats** :
+1. Rien de juridique ne couvrait l'abonnement :
+   - les CGV ne disaient rien du prix, du renouvellement, de la résiliation ni
+     de la rétractation ;
+   - les CGV n'étaient pas acceptées avant le paiement ;
+   - l'email de bienvenue ne confirmait pas le contrat ;
+   - aucune confirmation de résiliation (L215-1-1).
+2. Suppression du compte : si l'annulation chez Stripe échouait, le compte
+   disparaissait et le prélèvement continuait chaque mois.
+3. Les boutons « Passer premium » et « Gérer ou résilier » ne réagissaient
+   pas en cas d'erreur.
+4. L'activation dépendait du seul webhook, qui ignorait les erreurs
+   d'écriture : il répondait 200 et Stripe ne réessayait pas.
+5. L'offre était mal présentée :
+   - elle promettait des « stats avancées à venir » ;
+   - « fenêtre scanner » est du jargon ;
+   - le bandeau de l'onglet Messages menait au paiement sans montrer le prix.
+6. Mise en production : le prix premium doit être réglé en TTC, et le portail
+   Stripe sur une résiliation en fin de période.
+7. La valeur perçue est mince, comme le notait déjà `RETENTION.md`.
+
+### Décisions de Clément
+- Rétractation : le premium démarre tout de suite ; qui se rétracte sous
+  14 jours est remboursé en entier.
+- Premium tel quel pour le lancement, mais corrigé. On décidera de l'enrichir
+  avec les premières données de rétention (P0).
+
+### Fait
+- **PR #22 fusionnée** (`1289f30`), constats 1 à 6 :
+  - CGV, article 8 « Abonnement premium », avec le formulaire de
+    rétractation ;
+  - CGV à cocher avant le paiement, vérifiées aussi par le serveur, avec leur
+    date d'acceptation gardée chez Stripe ;
+  - emails : la bienvenue reprend le contrat, une résiliation est confirmée
+    avec sa date de fin (affichée aussi dans les réglages), et la fin du
+    premium est annoncée ;
+  - suppression du compte : tous les abonnements sont résiliés d'abord ; si
+    Stripe ne répond pas, rien n'est supprimé ;
+  - chaque email part une seule fois, quel que soit l'ordre des événements
+    Stripe, et une écriture en échec fait réessayer Stripe ;
+  - les boutons affichent leurs erreurs ; au retour de Stripe, la page attend
+    la confirmation du paiement ;
+  - l'offre présente le graphique des 7 jours, qui existe déjà ; le bandeau
+    Messages mène à l'offre.
+- Vérifié avant la fusion : 540 tests, intégration 43/43 sur base neuve à
+  60 migrations, build. Pas de migration.
+- **Piège découvert** : sur une modification, PostgREST 12 réapplique un
+  filtre `.or()` aux valeurs déjà écrites. Une réservation réussie revient
+  donc vide. Pour une réservation, utiliser des filtres simples (`eq`, `is`)
+  ou une fonction SQL.
+
+### À faire — côté Clément
+- [ ] Stripe (`docs/MISE_EN_PRODUCTION.md`) :
+      - prix premium en « inclusive » (TTC), sinon le porteur paie 3,59 € ;
+      - portail client : résiliation à la fin de la période, mise à jour du
+        moyen de paiement autorisée.
+- [ ] Juriste :
+      - l'article 8 des CGV et l'email de bienvenue premium ;
+      - une clause sur un changement de prix en cours d'abonnement, absente
+        aujourd'hui.
+- [ ] Rétractation d'un premium : rembourser le paiement dans Stripe, puis
+      annuler l'abonnement. La procédure est dans
+      `docs/MISE_EN_PRODUCTION.md`.
+
+### Ensuite
+- Reste de la priorité 2 :
+  - économie unitaire (marge sur 49 €) : il faudra tes tarifs Printful ;
+  - performance et référencement.
+
+---
+
 ## 2026-10-22 (fin de soirée) — Expérience du porteur fusionnée (#19, #20, #21)
 
 ### Analyse de l'expérience du porteur après l'activation
