@@ -329,9 +329,9 @@ export default function ShopClient() {
       <nav className="relative z-10 flex items-center justify-between px-6 py-6 border-b border-brand-gray/10">
         <Link href="/" className="font-display text-xl font-light tracking-[0.1em]"><BrandMark /></Link>
         <span className="font-ui text-xs text-brand-gray/55 tracking-[0.3em] uppercase">In Real Society</span>
-        <Link href="/register" className="font-ui text-xs text-brand-gray/50 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white/80 transition-colors" style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}>
-          Membres
-        </Link>
+        {/* Emplacement réservé au bouton global « Connexion » (AuthIndicator, position
+            fixe en haut à droite) — un lien ici passait dessous et se chevauchait. */}
+        <span aria-hidden="true" className="w-32" />
       </nav>
 
       {/* Bandeau parrainage — affiché quand le visiteur arrive avec ?ref= */}
@@ -364,7 +364,8 @@ export default function ShopClient() {
             <span className="text-brand-gray/15">·</span>
             <span className="font-ui text-xs text-brand-gray/50 tracking-[0.2em] uppercase">Éphémère</span>
             <span className="text-brand-gray/15">·</span>
-            <span className="font-ui text-xs text-brand-gray/50 tracking-[0.2em] uppercase">Sans compte</span>
+            {/* Pas « Sans compte » : vrai pour qui scanne, faux pour l'acheteur (il crée un compte à l'activation). */}
+            <span className="font-ui text-xs text-brand-gray/50 tracking-[0.2em] uppercase">Sans swipe</span>
           </div>
         </section>
 
@@ -580,28 +581,9 @@ export default function ShopClient() {
           </div>
         </section>
 
-        {/* Témoignages */}
-        <section className="max-w-lg mx-auto py-12 border-t border-brand-gray/10">
-          <div className="flex flex-col gap-8">
-            <h2 className="font-display text-2xl md:text-3xl font-light tracking-[0.04em] text-center">
-              Ils le portent.
-            </h2>
-            <div className="flex flex-col gap-6">
-              {[
-                { quote: "J\u0027ai re\u00e7u mon premier message en terrasse. On a parl\u00e9 deux heures.", name: 'Marc, Paris' },
-                { quote: "Le concept est g\u00e9nial. Pas de swipe, pas d\u0027app. Juste un t-shirt et du courage.", name: 'Camille, Lyon' },
-                { quote: "Trois scans en une semaine. Deux conversations. Une rencontre.", name: 'Thomas, Bordeaux' },
-              ].map((t, i) => (
-                <div key={i} className="flex flex-col gap-2 px-2">
-                  <p className="font-display text-base md:text-lg font-light italic text-brand-gray/60 leading-relaxed">
-                    &ldquo;{t.quote}&rdquo;
-                  </p>
-                  <p className="font-ui text-xs text-brand-gray/55 tracking-[0.1em]">— {t.name}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        {/* Pas de section témoignages tant qu'il n'y a pas de vrais porteurs : des avis
+            inventés présentés comme réels = pratique commerciale trompeuse (Code de la
+            consommation). À réintroduire avec des retours réels et consentis. */}
 
         {/* Capture newsletter pour les visiteurs pas prêts à acheter */}
         <section className="max-w-lg mx-auto py-12 border-t border-brand-gray/10 animate-stagger-4">
