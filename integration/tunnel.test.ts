@@ -44,6 +44,7 @@ Object.assign(process.env, {
   PRINTFUL_API_TOKEN:            'printful_test',
   PRINTFUL_VARIANT_ID:           '4012',
   SHORT_DOMAIN:                  'https://inreal.me',
+  CRON_SECRET:                   'cron-integration-secret',
 });
 
 // ─── Faux services externes ───────────────────────────────────────────────────
@@ -330,5 +331,91 @@ describe.skipIf(!ENABLED)('Tunnel achat → impression → activation → scan �
     const blocked = await message.POST(req('/api/message', { body: { memberId, content: 'Coucou' }, ip: '198.51.100.9' }));
     expect(blocked.status).toBe(403);
     expect((await blocked.json()).code).toBe('paused');
+  });
+});
+
+// ─── Relance des acheteurs payés jamais activés (cron, migration 055) ─────────
+describe.skipIf(!ENABLED)('Relance : payé mais jamais activé', () => {
+  const email = `idle-${Date.now()}@example.com`;
+  let orderId = '';
+  let code = '';
+  let cron: typeof import('@/app/api/cron/activation-reminder/route');
+  let checkout: typeof import('@/app/api/shop/checkout/route');
+  let webhook: typeof import('@/app/api/webhook/stripe/route');
+
+  const runCron = async () => {
+    const res = await cron.GET(req('/api/cron/activation-reminder', {
+      method: 'GET', headers: { authorization: 'Bearer cron-integration-secret' },
+    }));
+    expect(res.status).toBe(200);
+    return (await res.json()).orders as { sent: number; failed: number; error?: string };
+  };
+  const remindersTo = () => sent.emails.filter(e => e.to[0] === email);
+  const ageOrder = (createdDaysAgo: number, lastReminderDaysAgo: number | null) => sql(
+    `UPDATE orders SET created_at = now() - interval '${createdDaysAgo} days'` +
+    (lastReminderDaysAgo === null ? '' : `, activation_reminder_at = now() - interval '${lastReminderDaysAgo} days'`) +
+    ` WHERE id = '${orderId}'`);
+
+  beforeAll(async () => {
+    cron     = await import('@/app/api/cron/activation-reminder/route');
+    checkout = await import('@/app/api/shop/checkout/route');
+    webhook  = await import('@/app/api/webhook/stripe/route');
+    currentUser = null;
+
+    // Achat réel par les routes, puis plus rien : le profil n'est jamais créé.
+    await checkout.POST(req('/api/shop/checkout', { body: { email, tshirtColor: 'light', tshirtSize: 'M', taglineId: null } }));
+    orderId = (sent.stripeSessions.at(-1)!.metadata as Record<string, string>).orderId;
+    const sessionId = `cs_test_${sent.stripeSessions.length}`;
+    await webhook.POST(stripeEvent('checkout.session.completed', {
+      id: sessionId, mode: 'payment', payment_intent: `pi_idle_${Date.now()}`, amount_total: 5400,
+      customer_email: email, customer_details: { email },
+      metadata: { orderId, tshirtColor: 'light', tshirtSize: 'M', qrStyle: 'rounded' },
+    }));
+    code = sql(`SELECT activation_code FROM orders WHERE id = '${orderId}'`);
+    expect(code).toMatch(/^[A-Z0-9]{8}$/);
+  });
+
+  it('rien avant J+2', async () => {
+    const before = remindersTo().length;          // l'email d'activation du paiement
+    await runCron();
+    expect(remindersTo().length).toBe(before);
+  });
+
+  it('1re relance à J+2, avec le code et le lien d\'activation', async () => {
+    ageOrder(3, null);
+    const before = remindersTo().length;
+    expect((await runCron()).error).toBeUndefined();
+    const mails = remindersTo().slice(before);
+    expect(mails).toHaveLength(1);
+    expect(mails[0].subject).toMatch(/il manque votre profil/);
+    expect(mails[0].html).toContain(code);
+    expect(mails[0].html).toContain(`/register?code=${code}`);
+    expect(sql(`SELECT activation_reminders_sent FROM orders WHERE id = '${orderId}'`)).toBe('1');
+  });
+
+  it('pas de doublon au run suivant', async () => {
+    const before = remindersTo().length;
+    await runCron();
+    expect(remindersTo().length).toBe(before);
+  });
+
+  it('2e relance à J+7, puis plus jamais', async () => {
+    ageOrder(8, 4);
+    const before = remindersTo().length;
+    await runCron();
+    expect(remindersTo().length).toBe(before + 1);
+    expect(sql(`SELECT activation_reminders_sent FROM orders WHERE id = '${orderId}'`)).toBe('2');
+
+    ageOrder(12, 4);
+    await runCron();
+    expect(remindersTo().length).toBe(before + 1);
+  });
+
+  it('un code déjà utilisé n\'est jamais relancé', async () => {
+    sql(`UPDATE orders SET activation_reminders_sent = 0, activation_reminder_at = NULL, created_at = now() - interval '3 days' WHERE id = '${orderId}'`);
+    sql(`UPDATE activation_codes SET used = true WHERE code = '${code}'`);
+    const before = remindersTo().length;
+    await runCron();
+    expect(remindersTo().length).toBe(before);
   });
 });
