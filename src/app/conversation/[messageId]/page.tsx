@@ -2,12 +2,14 @@
 // Page conversation — pour le scanner (voir la réponse) ET le membre (répondre).
 
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 // Lectures via supabaseAdmin : le scanner n'est jamais authentifié et la RLS
 // messages est owner-only. L'accès est protégé par le messageId non-devinable
 // (modèle lien-capability, comme les liens envoyés par email).
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { createClient } from '@/lib/supabase-server';
+import { SENDER_TOKEN_COOKIE, isOriginDevice } from '@/lib/sender-token';
 import ConversationClient from './ConversationClient';
 
 interface Props { params: { messageId: string } }
@@ -24,6 +26,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `Conversation avec ${name}`,
     description: `Échangez avec ${name} sur In Real Society.`,
+    robots: { index: false, follow: false },
   };
 }
 
@@ -54,12 +57,19 @@ export default async function ConversationPage({ params }: Props) {
     }
   } catch {}
 
+  // Le lien suffit pour lire (autre appareil, aperçu de lien d'une messagerie) ;
+  // seul l'appareil d'origine du passant répond en son nom et vaut lecture.
+  const originDevice = isOriginDevice(message.sender_token, cookies().get(SENDER_TOKEN_COOKIE)?.value);
+
   // Marque comme lu les messages que le visiteur n'a pas écrits :
   //   * membre qui visite → marque les messages du scanner (root + thread)
-  //   * scanner qui revient → marque les replies du membre dans le thread
+  //   * scanner qui revient sur son appareil → marque les replies du membre
+  //     (« Lu ✓ » côté porteur : pas pour un simple aperçu de lien)
   const now = new Date().toISOString();
   const otherAuthor = isOwner ? 'scanner' : 'member';
-  const unreadFromOther = (threadReplies ?? []).filter(r => r.author === otherAuthor && !r.read_at);
+  const unreadFromOther = isOwner || originDevice
+    ? (threadReplies ?? []).filter(r => r.author === otherAuthor && !r.read_at)
+    : [];
 
   if (unreadFromOther.length > 0) {
     await supabaseAdmin
@@ -84,5 +94,5 @@ export default async function ConversationPage({ params }: Props) {
   const blocked = !!message.blocked_at;
   (message as { sender_token?: string | null }).sender_token = null;
 
-  return <ConversationClient message={message} isOwner={isOwner} thread={threadReplies || []} blocked={blocked} />;
+  return <ConversationClient message={message} isOwner={isOwner} originDevice={originDevice} thread={threadReplies || []} blocked={blocked} />;
 }

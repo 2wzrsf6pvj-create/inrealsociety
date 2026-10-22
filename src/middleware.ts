@@ -34,6 +34,7 @@ const PUBLIC_PAGE_PREFIXES = [
   '/join/',
   '/shop/',
   '/r/',       // redirections URL courtes (QR codes t-shirts)
+  '/conversation/', // fil du passant, anonyme par conception (lien-capability, cf. la page)
 ];
 
 // Routes API publiques à match EXACT — évite qu'un préfixe trop large rende

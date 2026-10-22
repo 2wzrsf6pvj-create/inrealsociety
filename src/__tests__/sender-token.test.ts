@@ -8,6 +8,7 @@ import {
   createSenderToken,
   isValidSenderToken,
   getSenderToken,
+  isOriginDevice,
   SENDER_TOKEN_COOKIE,
 } from '@/lib/sender-token';
 
@@ -43,5 +44,13 @@ describe('sender-token', () => {
     expect(getSenderToken(absent)).toBeNull();
     expect(getSenderToken(invalid)).toBeNull();
     expect(getSenderToken(noCookies)).toBeNull();
+  });
+
+  it('isOriginDevice : seul l\'appareil d\'origine répond au nom du passant', () => {
+    const root = createSenderToken();
+    expect(isOriginDevice(root, root)).toBe(true);
+    expect(isOriginDevice(root, createSenderToken())).toBe(false); // autre appareil
+    expect(isOriginDevice(root, undefined)).toBe(false);           // lien ouvert sans cookie
+    expect(isOriginDevice(null, undefined)).toBe(true);            // message ancien sans jeton
   });
 });
