@@ -23,7 +23,7 @@ Constats, du plus grave au moins grave, et lot qui les traite :
 |---|---|---|
 | 1 | Trois témoignages nommés, **inventés**, sur la boutique (pratique commerciale trompeuse) | 1 ✅ |
 | 2 | Un acheteur qui paie sans activer son profil n'est relancé par personne, alors que son t-shirt est imprimé : les premiers scans tombent sur une page vide | 3 ✅ |
-| 3 | Mobile : prix à 1,8 écran, bouton de paiement à 2,5 écrans, aucun appel à l'action avant | 2 |
+| 3 | Mobile : prix à 1,8 écran, bouton de paiement à 2,5 écrans, aucun appel à l'action avant | 2 ✅ |
 | 4 | « Sans compte » : faux pour l'acheteur, qui crée un compte à l'activation | 1 ✅ |
 | 5 | Email saisi trois fois (boutique, Stripe, activation) | 4 |
 | 6 | Erreur d'activation « générez-en un » : aucun générateur n'existe | 1 ✅ |
@@ -43,10 +43,15 @@ contenu au défilement ; « Sans swipe » passe sur deux lignes sur mobile.
   jamais servi** : à J+2 puis J+7, deux fois au plus, jamais au-delà de
   30 jours, avec le code et le lien d'activation. Migration **055** ; sans
   elle, rien ne casse, seule cette relance ne part pas.
-- **PR #9 ouverte** — lot 2 : nom et prix en tête de colonne (1,1 écran au
-  lieu de 1,8), barre d'achat fixe sur mobile, frais de port en une seule
-  source et facturés TTC (`tax_behavior: 'inclusive'`) : sans cela, selon un
-  réglage du compte Stripe, les « 5 € » affichés pouvaient devenir 6 € débités.
+- **PR #9 fusionnée** (`5c48125`) — lot 2 : nom et prix en tête de colonne
+  (1,1 écran au lieu de 1,8), barre d'achat fixe sur mobile, frais de port en
+  une seule source et facturés TTC (`tax_behavior: 'inclusive'`) : sans cela,
+  selon un réglage du compte Stripe, les « 5 € » affichés pouvaient devenir
+  6 € débités.
+- **PR #10 ouverte** — CI : le job Playwright installe Chromium sans
+  `apt-get` (`--with-deps` retiré). L'image des runners GitHub a déjà les
+  bibliothèques ; apt n'ajoutait que des polices et a fait dépasser 15 min au
+  job de la #7.
 
 ### À faire — côté Clément (s'ajoute à la liste précédente)
 - [ ] Appliquer **055** après 053 et 054 (même procédure ; avec la CLI, le
