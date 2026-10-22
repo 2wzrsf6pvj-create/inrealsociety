@@ -5,6 +5,16 @@
 
 ---
 
+## 2026-10-22 (nuit, suite) — CI de main réparée (#25)
+
+- **PR #25 fusionnée** (`35753c7`). La CI de main avait échoué sur le commit
+  du journal : un test du QR dépassait son délai de 5 s.
+- Cause, mesurée : resvg relisait toutes les polices du système (131 Mo) à
+  chaque rendu, alors que le QR ne contient aucun texte. Le test s'en passe
+  désormais. La production n'utilise pas resvg.
+
+---
+
 ## 2026-10-22 (nuit, suite) — Performance et référencement : analyse et lots (#23, #24)
 
 ### Analyse
