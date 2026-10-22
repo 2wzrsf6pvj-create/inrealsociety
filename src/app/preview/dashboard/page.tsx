@@ -12,6 +12,7 @@
 import { notFound } from 'next/navigation';
 import DashboardClient from '../../dashboard/[memberId]/DashboardClient';
 import type { Member, Scan, Message } from '@/lib/types';
+import { CONVERSATION_WINDOW_DAYS } from '@/lib/constants';
 
 export const metadata = { title: 'Preview dashboard (dev)' };
 
@@ -64,6 +65,7 @@ export default function PreviewDashboardPage({ searchParams }: { searchParams: {
 
   const totalConversations = messages.length;
   const activeConversations = messages.filter(m => !m.blocked_at).length;
+  const recentConversations = messages.filter(m => !m.blocked_at && Date.parse(m.created_at) > Date.now() - CONVERSATION_WINDOW_DAYS * D).length;
   const unreadCount = messages.filter(m => !m.read_at && !m.blocked_at).length;
 
   return (
@@ -73,6 +75,7 @@ export default function PreviewDashboardPage({ searchParams }: { searchParams: {
       messages={messages}
       unreadCount={unreadCount}
       activeConversations={activeConversations}
+      recentConversations={recentConversations}
       totalConversations={totalConversations}
       scansByDay={scansByDay}
     />

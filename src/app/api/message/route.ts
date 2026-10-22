@@ -11,6 +11,7 @@ import { SCAN_WINDOW_MS, MAX_CONVERSATIONS, QUICK_REPLIES as QUICK_REPLIES_LIST 
 import { moderateContent } from '@/lib/moderation';
 import { getSenderToken, createSenderToken, setSenderTokenCookie } from '@/lib/sender-token';
 import { isBlocked, isDeviceBanned } from '@/lib/blocks';
+import { getActiveConversationsCount } from '@/lib/inbox';
 import { notifyMemberSubscribers } from '@/lib/push-notify';
 import { captureServerEvent } from '@/lib/posthog-server';
 import { APP_URL } from '@/lib/constants';
@@ -138,20 +139,13 @@ export async function POST(req: NextRequest) {
     }
 
     // ─── Limite de conversations actives (3 free / illimité premium) ──
-    // Compte les messages RACINE uniquement — les replies dans le thread
-    // ne multiplient pas les conversations.
+    // Messages RACINE des CONVERSATION_WINDOW_DAYS derniers jours, hors bloqués
+    // (cf. getActiveConversationsCount) — les replies ne comptent pas, et une
+    // conversation ancienne libère son créneau au lieu de l'occuper à vie.
     if (MAX_CONVERSATIONS[plan] !== Infinity) {
-      // admin : messages est owner-only → anon renverrait 0 et le plafond ne
-      // serait jamais appliqué (fail-open).
-      const { count: activeConvs } = await supabaseAdmin
-        .from('messages')
-        .select('*', { count: 'exact', head: true })
-        .eq('member_id', memberId)
-        .eq('moderated', false)
-        .is('parent_id', null)
-        .is('blocked_at', null); // une conv bloquée n'occupe pas un créneau actif
+      const activeConvs = await getActiveConversationsCount(memberId);
 
-      if ((activeConvs ?? 0) >= MAX_CONVERSATIONS[plan]) {
+      if (activeConvs >= MAX_CONVERSATIONS[plan]) {
         return NextResponse.json(
           { error: 'Nombre maximum de conversations atteint pour ce profil.', code: 'conversation_limit' },
           { status: 403 },

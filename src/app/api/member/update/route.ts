@@ -33,14 +33,25 @@ export async function PATCH(req: NextRequest) {
     }
 
     // ─── Vérifie ownership : récupère le membre lié à ce user ────────────
+    // `*` plutôt que de nommer suspended_at : si le code est déployé avant la
+    // migration 054, nommer la colonne ferait échouer TOUTE mise à jour de profil.
     const { data: member } = await supabaseAdmin
       .from('members')
-      .select('id, email')
+      .select('*')
       .eq('auth_user_id', auth.user.id)
       .single();
 
     if (!member) {
       return NextResponse.json({ error: 'Profil introuvable.' }, { status: 404 });
+    }
+
+    // Profil suspendu par l'opérateur (ex. remboursement après activation) : la
+    // pause ne se lève que côté support. La contrainte BDD (054) le garantit aussi.
+    if (member.suspended_at && body.data.is_paused === false) {
+      return NextResponse.json(
+        { error: 'Profil suspendu : contactez le support pour le réactiver.', code: 'suspended' },
+        { status: 403 },
+      );
     }
 
     const updateData: Record<string, unknown> = { ...body.data };

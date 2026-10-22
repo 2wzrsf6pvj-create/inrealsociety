@@ -69,6 +69,7 @@ export default function DashboardClient({
   messages,
   unreadCount,
   activeConversations = 0,
+  recentConversations = 0,
   totalConversations = 0,
   scansByDay = [],
 }: {
@@ -77,6 +78,8 @@ export default function DashboardClient({
   messages:             Message[];
   unreadCount:          number;
   activeConversations?: number;
+  // Conversations qui occupent le plafond (fenêtre glissante) — cf. getActiveConversationsCount.
+  recentConversations?: number;
   totalConversations?:  number;
   scansByDay?:          { date: string; count: number }[];
 }) {
@@ -204,7 +207,7 @@ export default function DashboardClient({
               messages={messages}
               memberId={member.id}
               plan={member.plan}
-              activeConversations={activeConversations}
+              recentConversations={recentConversations}
               totalConversations={totalConversations}
             />
           )}

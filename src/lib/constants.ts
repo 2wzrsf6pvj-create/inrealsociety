@@ -24,6 +24,11 @@ export const MAX_CONVERSATIONS = {
   premium: Infinity,
 } as const;
 
+/** Fenêtre glissante du plafond : une conversation est « active » si son message
+ *  racine date de moins de N jours. Avant, le compte portait sur TOUT l'historique →
+ *  après 3 messages, un porteur gratuit ne pouvait plus jamais être contacté. */
+export const CONVERSATION_WINDOW_DAYS = 7;
+
 // ─── Conversation thread ───────────────────────────────────────────────────────
 
 /** Nombre max de messages dans un thread (message racine inclus). Garde le côté
