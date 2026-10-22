@@ -10,9 +10,16 @@ import { generatePremiumQRCode, composeBackPrintSVG, type QRStyle } from '@/lib/
 
 const URL = 'https://inreal.me/u8';
 
-/** Rend le SVG sur un fond plein (couleur du tee) et tente de le décoder. */
+/** Rend le SVG sur un fond plein (couleur du tee) et tente de le décoder.
+ *  Sans les polices du système : ces SVG n'ont aucun texte (accroches en
+ *  tracés), et resvg les rechargeait toutes à chaque rendu. Sur un runner au
+ *  disque froid, le premier chargement a dépassé les 5 s du test. */
 function decode(svg: string, background: string): string | null {
-  const resvg = new Resvg(svg, { background, fitTo: { mode: 'width', value: 1000 } });
+  const resvg = new Resvg(svg, {
+    background,
+    fitTo: { mode: 'width', value: 1000 },
+    font: { loadSystemFonts: false },
+  });
   const img = resvg.render();
   const pixels = new Uint8ClampedArray(img.pixels);
   // attemptBoth : jsQR essaie aussi l'inversion → gère le tee noir (QR clair/fond sombre).
