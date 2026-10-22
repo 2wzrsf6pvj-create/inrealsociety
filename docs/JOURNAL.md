@@ -65,13 +65,18 @@ Ce qui tient : tables sensibles fermées à `anon`, emails masqués par colonne
   (`fix/vercel-daily-cron`). Le filet de relance des commandes non imprimées
   passe de 6 h à 24 h de délai max. À vérifier côté Clément : quel commit est
   réellement en production sur Vercel (sans doute antérieur au 11 juillet).
+- **CI rouge sur `main` aussi** : `next build` échouait sur 4 variables
+  inutilisées (code mort, dont le `safeName` relevé à l'analyse — jamais affiché
+  depuis l'origine, donc retiré et non réutilisé). Corrigé dans la même PR #2,
+  rebaptisée « débloque Vercel et la CI ». Build complet validé en local.
+  Ordre de fusion : **#2 puis #1** (puis merge de `main` dans #1).
 
 ### Décisions en attente
 - **Plafond de 3 conversations (gratuit)** : le code compte tous les messages
   reçus depuis toujours, alors que la FAQ annonce « 3 en simultané ». Paywall
   voulu (corriger la FAQ) ou vraie notion de conversation active ?
-- **`safeName` inutilisé** dans l'email de nouveau scan
-  (`src/lib/email-templates.ts:135`) : prénom du porteur censé apparaître ?
+- ~~**`safeName` inutilisé**~~ (`src/lib/email-templates.ts:135`) → réglé dans
+  PR #2 : code mort depuis l'origine, retiré.
 - **Remboursement d'un code déjà utilisé** : le profil reste actif
   (`handleChargeRefunded`). Décision business à arbitrer.
 
