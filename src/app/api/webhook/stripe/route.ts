@@ -18,7 +18,8 @@ import { sendEmail, emailActivation, emailPremium, emailPaymentFailed } from '@/
 import { APP_URL, FULFILL_ON_PAYMENT } from '@/lib/constants';
 import { captureServerEvent } from '@/lib/posthog-server';
 import { audit } from '@/lib/audit';
-import { fulfillOrder } from '@/lib/fulfillment';
+import { fulfillOrder, getShippingDetails } from '@/lib/fulfillment';
+import { buildOrderRecap, type OrderRecap } from '@/lib/order-recap';
 import { generateUniqueShortCode } from '@/lib/short-code';
 import { cancelPrintfulOrder } from '@/lib/printful-status';
 import { subscriptionMemberUpdate, isActiveSubscriptionStatus } from '@/lib/subscription';
@@ -103,7 +104,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
   // ─── Idempotence : vérifie si cet événement a déjà été traité ──────────
   let { data: existingOrder } = await supabaseAdmin
     .from('orders')
-    .select('id, status, activation_code')
+    .select('id, status, activation_code, tagline_id')
     .eq('stripe_session_id', sessionId)
     .maybeSingle();
 
@@ -113,7 +114,7 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
   if (!existingOrder && session.metadata?.orderId) {
     ({ data: existingOrder } = await supabaseAdmin
       .from('orders')
-      .select('id, status, activation_code')
+      .select('id, status, activation_code, tagline_id')
       .eq('id', session.metadata.orderId)
       .maybeSingle());
   }
@@ -177,9 +178,28 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
   }
 
   const appUrl = APP_URL;
+  // Récapitulatif : couleur et taille de la metadata, accroche de la commande,
+  // montants et adresse tels que Stripe les a encaissés et collectés. Il ne doit
+  // jamais bloquer l'envoi du code : la commande est déjà marquée payée, un
+  // rejeu Stripe serait ignoré → au moindre imprévu, l'email part sans lui.
+  let recap: OrderRecap | undefined;
+  try {
+    recap = buildOrderRecap({
+      color:         tshirtColor,
+      size:          tshirtSize,
+      taglineId:     existingOrder.tagline_id,
+      totalCents:    session.amount_total,
+      shippingCents: session.shipping_cost?.amount_total,
+      address:       getShippingDetails(session),
+    });
+  } catch (err) {
+    console.error('[webhook] Récapitulatif de commande impossible pour session:', sessionId, err);
+  }
+
   const { subject, html } = emailActivation({
     code,
     registerUrl: `${appUrl}/register?code=${code}`,
+    recap,
   });
 
   // sendEmail renvoie false (sans throw) en cas d'échec → on DOIT tester le

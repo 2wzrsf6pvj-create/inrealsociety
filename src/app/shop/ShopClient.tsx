@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { captureEvent } from '@/lib/posthog-client';
+import { rememberCheckoutEmail } from '@/lib/checkout-email';
 import { TSHIRT_PRICE_EUR, SHIPPING_STANDARD_CENTS, SHIPPING_EXPRESS_CENTS } from '@/lib/constants';
 import { BAKED_TAGLINES } from '@/lib/taglines.generated';
 import TaglinePicker from '@/app/components/ui/TaglinePicker';
@@ -334,6 +335,9 @@ export default function ShopClient() {
         has_tagline:  !!taglineId,
         has_referrer: !!referrerId,
       });
+      // Pré-remplira l'email du compte à l'activation (même onglet après Stripe).
+      // En minuscules, comme l'enregistre l'API (clé de rapprochement commande ↔ membre).
+      rememberCheckoutEmail(email.trim().toLowerCase());
       window.location.href = data.url;
     } catch {
       setError('Une erreur est survenue. Réessayez.');

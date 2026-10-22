@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
 import { captureEvent, identifyMember } from '@/lib/posthog-client';
+import { recallCheckoutEmail, forgetCheckoutEmail } from '@/lib/checkout-email';
 
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5 Mo
@@ -159,6 +160,16 @@ function StepAccount({ onNext, codeState }: {
   // Notice POSITIVE (≠ erreur) : « confirmez votre email ». Affiché en doré, pas
   // en rouge — c'est une étape de succès, pas un échec (évite la confusion).
   const [notice,   setNotice]   = useState('');
+  // Email de la commande, saisi en boutique dans ce même onglet : pré-rempli et
+  // modifiable. Lu après le montage (pas de sessionStorage au rendu serveur).
+  const [prefilled, setPrefilled] = useState(false);
+
+  useEffect(() => {
+    const saved = recallCheckoutEmail();
+    if (!saved) return;
+    setEmail(saved);
+    setPrefilled(true);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -175,6 +186,7 @@ function StepAccount({ onNext, codeState }: {
     });
     setLoading(false);
     if (authError) { setError(friendlyAuthError(authError.code)); return; }
+    forgetCheckoutEmail();
     captureEvent('account_created', { needs_confirmation: !data.session });
     if (!data.session) {
       setNotice('Compte créé. Confirmez votre email (vérifiez vos spams), puis revenez ici pour finaliser votre profil.');
@@ -199,9 +211,16 @@ function StepAccount({ onNext, codeState }: {
         </p>
         <div className="flex flex-col gap-1">
           <label htmlFor="register-email" className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Email</label>
-          <input id="register-email" type="email" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)}
+          <input id="register-email" type="email" autoComplete="email" value={email}
+            onChange={e => { setEmail(e.target.value); setPrefilled(false); }}
+            aria-describedby={prefilled ? 'register-email-hint' : undefined}
             className="w-full bg-transparent border-b border-brand-gray/20 focus:border-brand-white/60 font-ui font-light text-base text-brand-white py-3 outline-none transition-colors"
             style={{ minHeight: '44px' }} />
+          {prefilled && (
+            <p id="register-email-hint" className="font-ui text-xxs md:text-xs text-brand-gray/50">
+              L&apos;email de votre commande. Vous pouvez le modifier.
+            </p>
+          )}
         </div>
         <div className="flex flex-col gap-1">
           <label htmlFor="register-password" className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">

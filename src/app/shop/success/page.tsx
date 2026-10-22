@@ -5,6 +5,16 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { captureEvent } from '@/lib/posthog-client';
 import { haptic } from '@/lib/haptics';
+import type { OrderRecap } from '@/lib/order-recap';
+
+function RecapRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-4">
+      <dt className="font-ui text-xxs text-brand-gray/50 tracking-[0.15em] uppercase whitespace-nowrap">{label}</dt>
+      <dd className="font-ui text-sm text-brand-white/85 text-right">{value}</dd>
+    </div>
+  );
+}
 
 function SuccessContent() {
   const searchParams = useSearchParams();
@@ -12,6 +22,7 @@ function SuccessContent() {
   const sessionId    = searchParams.get('session') || searchParams.get('session_id');
   const [status, setStatus] = useState<'loading' | 'ok' | 'error'>('loading');
   const [code, setCode]     = useState<string | null>(null);
+  const [recap, setRecap]   = useState<OrderRecap | null>(null);
   const [copied, setCopied] = useState(false);
 
   const copyCode = async () => {
@@ -50,6 +61,7 @@ function SuccessContent() {
         if (cancelled) return;
         const data = await res.json();
         if (cancelled) return;
+        if (data.recap) setRecap(data.recap);
         if (data.code && typeof data.code === 'string' && data.code.length >= 6) {
           setCode(data.code);
           // NB : on ne persiste PAS le code en localStorage — c'est une capability
@@ -111,6 +123,14 @@ function SuccessContent() {
           }
         </p>
       </div>
+
+      {recap && (
+        <dl aria-label="Votre commande" className="w-full border border-brand-gray/15 px-5 py-4 flex flex-col gap-2 text-left">
+          <RecapRow label="Article" value={recap.article} />
+          <RecapRow label="Accroche" value={recap.tagline ? `« ${recap.tagline} »` : 'QR seul'} />
+          {recap.total && <RecapRow label="Total payé" value={`${recap.total} TTC`} />}
+        </dl>
+      )}
 
       {code && (
         <div className="w-full border border-brand-white/15 p-5 flex flex-col items-center gap-3">

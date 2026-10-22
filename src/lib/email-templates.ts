@@ -4,6 +4,7 @@
 
 import { escapeHtml } from '@/lib/escape-html';
 import { EMAIL_FROM, RESEND_API_URL, APP_URL } from '@/lib/constants';
+import type { OrderRecap } from '@/lib/order-recap';
 
 // ─── Wrapper HTML commun ──────────────────────────────────────────────────────
 
@@ -303,10 +304,40 @@ export function emailOrderActivationReminder(params: {
   };
 }
 
-/** Email d'activation après achat Stripe */
+/** Récapitulatif de commande (email d'activation). Toutes les valeurs sont
+ *  échappées : l'adresse vient de la saisie du client chez Stripe. */
+function recapBlock(r: OrderRecap): string {
+  const rows: [string, string][] = [
+    ['Article', r.article],
+    ['Accroche', r.tagline ? `« ${r.tagline} »` : 'QR seul, sans accroche'],
+  ];
+  if (r.shipping) rows.push(['Livraison', r.shipping]);
+  if (r.total)    rows.push(['Total payé', `${r.total} TTC`]);
+  if (r.address)  rows.push(['Livré à', r.address]);
+  return `
+    <div style="margin-top:40px;border-top:1px solid rgba(255,255,255,0.1);padding-top:24px;">
+      <p style="font-family:system-ui,sans-serif;font-size:10px;letter-spacing:0.2em;color:rgba(255,255,255,0.3);text-transform:uppercase;margin:0 0 12px;">Votre commande</p>
+      <table role="presentation" style="width:100%;border-collapse:collapse;">
+        ${rows.map(([label, value]) => `
+        <tr>
+          <td style="font-family:system-ui,sans-serif;font-size:12px;color:rgba(255,255,255,0.4);padding:6px 16px 6px 0;vertical-align:top;white-space:nowrap;">${escapeHtml(label)}</td>
+          <td style="font-family:system-ui,sans-serif;font-size:13px;color:rgba(255,255,255,0.85);padding:6px 0;text-align:right;line-height:1.5;">${escapeHtml(value)}</td>
+        </tr>`).join('')}
+      </table>
+      <p style="font-family:system-ui,sans-serif;font-size:11px;color:rgba(255,255,255,0.35);line-height:1.7;margin:16px 0 0;">
+        Fabriqué à la demande (2 à 5 jours), puis expédié. Commande soumise à nos
+        <a href="${APP_URL}/cgv" style="color:rgba(255,255,255,0.6);text-decoration:underline;">conditions générales de vente</a>.
+      </p>
+    </div>
+  `;
+}
+
+/** Email d'activation après achat Stripe. `recap` : récapitulatif de la commande
+ *  (absent au renvoi du code, qui ne sert qu'à le retrouver). */
 export function emailActivation(params: {
   code:        string;
   registerUrl: string;
+  recap?:      OrderRecap;
 }): { subject: string; html: string } {
   const safeCode = escapeHtml(params.code);
   return {
@@ -324,6 +355,7 @@ export function emailActivation(params: {
       <p style="font-family:system-ui,sans-serif;font-size:12px;color:rgba(255,255,255,0.4);text-align:center;margin:20px 0 0;">
         <a href="${APP_URL}/commande?code=${encodeURIComponent(params.code)}" style="color:rgba(255,255,255,0.6);text-decoration:underline;">Suivre ma commande</a>
       </p>
+      ${params.recap ? recapBlock(params.recap) : ''}
     `),
   };
 }
