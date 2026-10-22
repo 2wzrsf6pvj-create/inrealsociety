@@ -29,23 +29,28 @@
 - **Petits écarts** (commentaires périmés, pages démo, lint bloquant en CI) :
   laissés de côté pour l'instant.
 
-### En cours
-- Branche `feat/conversation-window-refund-pause` : les deux décisions ci-dessus,
-  tests compris (contrat `/api/message`, suspension route + webhook) ; 054
-  validée sur Postgres (contrainte, levée support, colonne non exposée).
-  À pousser après réintégration de `main` (régénérer `fresh-setup.sql`).
+### Fait ensuite
+- **PR #3 fusionnée** (`3e465bf`) une fois verte : plafond glissant de 7 jours
+  (durée confirmée) + suspension verrouillée au remboursement (migration 054).
+  416 tests ; 054 validée sur Postgres.
+- **Migrations en prod — décidé : Supabase CLI.** Constat : application manuelle
+  (pas de `config.toml`, checklist en `psql`), d'où les dérives. **PR #4**
+  (`chore/supabase-cli`) : `config.toml`, procédure `docs/SUPABASE_CLI.md`,
+  README corrigé (il conseillait un `db push` qui, sans `repair`, rejouerait
+  tout). Validé avec la CLI 2.121.0 sur une prod simulée : sans `repair` le
+  dry-run propose 001…054 (dangereux) ; après `repair 001→053` il ne propose que
+  054 ; `push` l'applique, le second répond « up to date ». Pas d'application
+  automatique au merge tant qu'il n'y a pas de staging.
 
-### Question ouverte — comment les migrations arrivent en prod
-Constat : pas de `supabase/config.toml` (CLI non initialisée dans le dépôt) et
-la checklist passe par `psql` → application **manuelle**, ce qui explique les
-dérives (bundle arrêté à 048, migrations à rattraper). Recommandation :
-1. Tout de suite : appliquer **053** à la main (SQL Editor), puis 054 après sa
-   fusion — toujours **avant** de compter sur le code qui s'en sert.
-2. Ensuite : adopter la Supabase CLI — `supabase link`, marquer l'existant comme
-   appliqué (`supabase migration repair --status applied …`, sans rien
-   rejouer), puis `supabase db push` après chaque fusion. La base garde alors la
-   liste de ce qui est appliqué. Pas d'application automatique au merge tant
-   qu'il n'y a pas d'environnement de staging.
+### À faire — côté Clément, dans cet ordre
+- [ ] SQL Editor : `scripts/verify-migrations.sql` → repérer ce qui manque.
+- [ ] Appliquer **053** (faille de sécurité) puis **054** à la main, relancer
+      `verify-migrations.sql` (tout « attendu »).
+- [ ] Logs API Supabase : appels à `accounts_pending_profile`,
+      `create_member_with_code`, `record_scan` avec un JWT utilisateur ?
+- [ ] Vercel : vérifier que `main` est bien déployée en production.
+- [ ] Après fusion de #4 : `supabase link` puis `migration repair` 001→054
+      (cf. `docs/SUPABASE_CLI.md`) — ensuite, `db push` après chaque fusion.
 
 ---
 
