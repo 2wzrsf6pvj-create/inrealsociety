@@ -5,6 +5,70 @@
 
 ---
 
+## 2026-10-22 (soir) — Sécurité des porteurs (priorité 1)
+
+### Constats
+Lecture du parcours du passant (scan → profil → message → conversation), côté
+sécurité :
+1. **Profils découvrables sans scanner** : le plan du site listait tous les
+   profils, lisible par toute personne connectée. Pour un visiteur anonyme,
+   Google compris, il était redirigé vers la connexion, tout comme
+   `robots.txt`. Les pages profil étaient indexables, et les premiers codes QR
+   ne faisaient que 2 caractères, faciles à parcourir un par un. La fenêtre
+   pour écrire s'ouvre pour tout le monde dès qu'un profil est affiché.
+2. **Champs non modérés** : le prénom du passant s'affichait en gras dans
+   l'email « … vient de voir votre profil », sans filtre. Un scan se
+   déclenche à distance, jusqu'à 48 fois par jour par adresse IP. Le contact
+   des messages n'était pas modéré non plus.
+3. **Signalements sans suite** : message masqué et ligne dans le journal,
+   personne prévenu, bannissement à la main en SQL.
+4. **Aucun âge minimum**, nulle part.
+5. **Contact email du passant non vérifié** : les réponses du porteur y
+   partent, même si c'est l'adresse d'un tiers.
+6. **Limites connues** :
+   - blocage par cookie, contourné en navigation privée ;
+   - 3 messages de spam occupent les 3 créneaux d'un porteur gratuit pendant
+     7 jours.
+
+### Décisions de Clément
+Profils introuvables sans scan ; 18 ans minimum ; alerte et bannissement
+automatique au 3e porteur ; vérification de l'email du passant.
+
+### Fait
+- **PR #12 fusionnée** (`573bb8c`), lot 1 :
+  - prénom (format imposé côté serveur, puis modération) et contact modérés ;
+  - profils retirés du plan du site et marqués `noindex` ;
+  - `robots.txt` et plan du site rendus publics ;
+  - codes QR de 5 caractères minimum, avec la même taille de QR.
+- **PR #13 fusionnée** (`9b817be`), lot 2 : migration **056** (table
+  `message_reports`). Chaque signalement envoie une alerte à
+  `ADMIN_ALERT_EMAIL`, et un appareil signalé par 3 porteurs différents est
+  banni de toute la plateforme. Scénario testé sur une vraie base.
+- **PR #14 fusionnée** (`f201dec`), lot 3 : 18 ans minimum. Case exigée à
+  l'activation, mention sur la page de message, CGV, confidentialité, FAQ.
+- Avant de fusionner, les 3 PR ont été vérifiées ensemble : 468 tests,
+  intégration 18/18, build.
+
+### À faire — côté Clément (s'ajoute aux listes précédentes)
+- [ ] Appliquer **056**, après 053, 054 et 055.
+- [ ] Vercel : renseigner `ADMIN_ALERT_EMAIL`, l'adresse qui reçoit les
+      alertes de signalement.
+- [ ] Vérifier qu'Upstash est configuré : sans lui, les scans et les messages
+      renvoient une erreur serveur.
+- [ ] Faire relire les clauses d'âge (CGV, confidentialité) avec le reste des
+      textes juridiques.
+
+### Ensuite
+- **Lot 4** : vérification de l'email du passant.
+- Puis : expérience du passant (UX), RGPD et juridique, liste de
+  vérifications de la production.
+- Déjà notés pour l'UX :
+  - les champs prénom et contact sont placés sous le bouton « Envoyer » ;
+  - « Il pourra vous répondre » quel que soit le genre du porteur ;
+  - une carte de géolocalisation s'affiche à l'arrivée.
+
+---
+
 ## 2026-10-22 (fin d'après-midi) — Parcours d'achat (UX)
 
 ### Contexte
