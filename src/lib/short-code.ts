@@ -1,6 +1,10 @@
 // src/lib/short-code.ts
 // Génère des codes courts uniques pour les URLs de QR code.
-// Commence à 2 caractères, allonge automatiquement en cas de collision.
+// Commence à 5 caractères (30^5 ≈ 24 millions de codes), allonge en cas de
+// collision. Avant : 2 caractères, soit quelques centaines de codes qu'on
+// pouvait tous essayer pour trouver les profils sans croiser personne.
+// La taille du QR ne change pas : « https://inreal.me/ » + 2 à 6 caractères
+// tient dans la même version (3, soit 29×29 modules en correction H).
 //
 // Alphabet : a-z 0-9 (minuscules uniquement, pas d'ambiguïté visuelle)
 // Exclusions : 0/o, 1/l/i pour éviter la confusion à la lecture.
@@ -8,8 +12,8 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { APP_URL } from '@/lib/constants';
 
-const ALPHABET = 'abcdefghjkmnpqrstuvwxyz2345678'; // 29 chars, sans ambiguïtés
-const MIN_LENGTH = 2;
+const ALPHABET = 'abcdefghjkmnpqrstuvwxyz2345678'; // 30 chars, sans ambiguïtés
+const MIN_LENGTH = 5;
 const MAX_LENGTH = 6;
 const MAX_ATTEMPTS = 20;
 

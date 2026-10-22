@@ -25,6 +25,8 @@ const PUBLIC_PAGES = new Set([
   '/tee/en-attente',    // scan d'un tee imprimé mais profil pas encore activé — public, noindex
   '/demo-message',      // page démo (aperçu « message reçu » pour screenshot) — noindex, à retirer
   '/demo-notif',        // page démo (aperçu notif écran verrouillé pour screenshot) — noindex, à retirer
+  '/robots.txt',        // lu par les moteurs, anonymes : sans ça, redirigé vers la connexion
+  '/sitemap.xml',       // pages publiques seulement (aucun profil de porteur)
 ]);
 
 const PUBLIC_PAGE_PREFIXES = [
