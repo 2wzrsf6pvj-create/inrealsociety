@@ -178,6 +178,41 @@ export function emailNouveauScan(params: {
         Vos chemins se sont peut-être croisés.<br/>La suite dépend d'eux.
       </p>
       ${cta('Voir mon tableau de bord', params.dashboardUrl)}
+      <p style="font-family:system-ui,sans-serif;font-size:11px;color:rgba(255,255,255,0.3);text-align:center;line-height:1.6;margin:24px 0 0;">
+        Un seul email par jour : les scans suivants vous attendent dans votre tableau de bord.
+      </p>
+    `),
+  };
+}
+
+/**
+ * Plafond gratuit atteint : quelqu'un n'a pas pu écrire au porteur. Une fois par
+ * semaine au plus (claim_cap_email, migration 059). Rien sur la personne refusée.
+ */
+export function emailConversationLimit(params: {
+  name:         string;
+  maxConversations: number;
+  windowDays:   number;
+  dashboardUrl: string;
+}): { subject: string; html: string } {
+  const safeName = escapeHtml(params.name);
+  return {
+    subject: `${params.name}, quelqu'un a essayé de vous écrire.`,
+    html: layout(`
+      <h1 style="font-size:22px;font-weight:300;margin:0 0 24px;text-align:center;line-height:1.4;">
+        Quelqu'un a essayé de vous écrire, ${safeName}.
+      </h1>
+      <p style="font-family:system-ui,sans-serif;font-size:13px;color:rgba(255,255,255,0.5);text-align:center;line-height:1.8;margin:0 0 16px;">
+        Vous avez déjà ${params.maxConversations} conversations ouvertes sur ${params.windowDays} jours :
+        son message n'a pas pu partir. Un créneau se libère ${params.windowDays} jours après chaque conversation.
+      </p>
+      <p style="font-family:system-ui,sans-serif;font-size:13px;color:rgba(197,160,89,0.8);text-align:center;line-height:1.8;margin:0 0 32px;">
+        Avec le premium, les conversations sont illimitées.
+      </p>
+      ${cta('Voir mes conversations', params.dashboardUrl)}
+      <p style="font-family:system-ui,sans-serif;font-size:11px;color:rgba(255,255,255,0.3);text-align:center;line-height:1.6;margin:24px 0 0;">
+        Cet email part une fois par semaine au plus.
+      </p>
     `),
   };
 }

@@ -149,7 +149,7 @@ export default function InboxSection({ messages: initialMessages, memberId, plan
           memberId={memberId}
           source="inbox_conversation_limit"
           headline={atLimit ? 'Limite atteinte' : `${recentConversations}/${limit} conversations sur ${CONVERSATION_WINDOW_DAYS} jours`}
-          sublabel={atLimit ? `Un créneau se libère ${CONVERSATION_WINDOW_DAYS} jours après chaque conversation. Passe premium pour lever la limite.` : 'Passe premium pour des conversations illimitées.'}
+          sublabel={atLimit ? `Un créneau se libère ${CONVERSATION_WINDOW_DAYS} jours après chaque conversation. Passez premium pour lever la limite.` : 'Passez premium pour des conversations illimitées.'}
         />
       )}
       {messages.map((msg, i) => {

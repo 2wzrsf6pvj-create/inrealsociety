@@ -45,6 +45,21 @@ async function reverseGeocode(lat: number, lng: number): Promise<string | null> 
   }
 }
 
+/**
+ * Réserve l'email « nouveau scan » du jour. Sans la migration 059 (ou en cas
+ * d'erreur), on envoie comme avant : mieux vaut un email de trop qu'aucun.
+ */
+async function claimScanEmail(memberId: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabaseAdmin.rpc('claim_scan_email', { p_member_id: memberId });
+    if (error) throw new Error(error.message);
+    return data === true;
+  } catch (err) {
+    console.error('[api/scan] claim_scan_email indisponible (migration 059 ?) :', err);
+    return true;
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const body = schema.safeParse(await req.json());
@@ -143,7 +158,9 @@ export async function POST(req: NextRequest) {
       }).catch(() => {}),
     ];
 
-    if (member.email) {
+    // Un email au premier scan de la journée seulement (choix de Clément,
+    // migration 059) ; les suivants sont dans le tableau de bord.
+    if (member.email && await claimScanEmail(memberId)) {
       const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/${member.id}`;
       const { subject, html } = emailNouveauScan({
         memberName:   member.name,

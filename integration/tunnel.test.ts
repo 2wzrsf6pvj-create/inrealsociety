@@ -623,3 +623,40 @@ describe.skipIf(!ENABLED)('Purge : conversations 12 mois après le dernier messa
     expect(sql(`SELECT count(*) FROM audit_logs WHERE member_id = '${wearer.memberId}' AND action = 'member.activated'`)).toBe('1');
   });
 });
+
+// ─── Emails du porteur limités (059) ─────────────────────────────────────────
+describe.skipIf(!ENABLED)('Emails du porteur : un par jour pour les scans, un par semaine pour le plafond', () => {
+  let scan:    typeof import('@/app/api/scan/route');
+  let message: typeof import('@/app/api/message/route');
+  const wearer = { authId: crypto.randomUUID(), memberId: crypto.randomUUID() };
+  const email = `lim-${wearer.authId}@example.com`;
+  const toWearer = () => sent.emails.filter(e => e.to[0] === email);
+
+  beforeAll(async () => {
+    scan    = await import('@/app/api/scan/route');
+    message = await import('@/app/api/message/route');
+    sql(`INSERT INTO auth.users (id, email, email_confirmed_at) VALUES ('${wearer.authId}', '${email}', now())`);
+    sql(`INSERT INTO members (id, auth_user_id, name, email) VALUES ('${wearer.memberId}', '${wearer.authId}', 'Camille', '${email}')`);
+  });
+
+  it('deux scans le même jour : les deux comptent, un seul email', async () => {
+    for (const ip of ['198.51.100.1', '198.51.100.2']) {
+      expect((await scan.POST(req('/api/scan', { body: { memberId: wearer.memberId }, ip }))).status).toBe(200);
+    }
+    expect(sql(`SELECT scan_count FROM members WHERE id = '${wearer.memberId}'`)).toBe('2');
+    expect(toWearer()).toHaveLength(1);
+  });
+
+  it('plafond gratuit atteint : le porteur est prévenu une fois, pas à chaque refus', async () => {
+    for (let i = 0; i < 3; i++) {
+      sql(`INSERT INTO messages (member_id, content, author) VALUES ('${wearer.memberId}', 'Conversation ${i}', 'scanner')`);
+    }
+    const before = toWearer().length;
+    for (const ip of ['198.51.100.3', '198.51.100.4']) {
+      const res = await message.POST(req('/api/message', { body: { memberId: wearer.memberId, content: 'Belle audace.' }, ip }));
+      expect((await res.json()).code).toBe('conversation_limit');
+    }
+    expect(toWearer().length - before).toBe(1);
+    expect(toWearer().at(-1)!.subject).toContain('quelqu\'un a essayé de vous écrire');
+  });
+});
