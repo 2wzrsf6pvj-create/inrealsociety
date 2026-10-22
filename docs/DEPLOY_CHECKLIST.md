@@ -143,8 +143,10 @@ plus exécuter `create_member_with_code` (service_role oui).
   taille du fallback** `PRINTFUL_VARIANT_ID_{DARK|LIGHT}` → le client reçoit la mauvaise
   taille. Renseigner les 10 depuis le catalogue Printful avant toute vente réelle.
 
-### 🟡 Rate-limit (sinon routes limitées → 500 ; dédup scan → fail-open)
-- `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
+### 🔴 Rate-limit (sinon QR codes, scans et messages → 500)
+- `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` — les limiteurs publics
+  échouent fermés : sans Upstash, `/r/<code>` (QR imprimés), `/api/scan`,
+  `/api/message`, `/api/profile/report`… répondent 500 (vérifié en local).
 
 ### 🟡 Observabilité (sinon les échecs paid-non-livré restent invisibles)
 - `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN`
