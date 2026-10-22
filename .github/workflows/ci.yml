@@ -29,8 +29,9 @@ jobs:
         run: npm ci
 
       - name: Lint
+        # Bloquant : `next build` rejette de toute façon les erreurs ESLint — mieux
+        # vaut les voir ici, nommées, que dans un build et un déploiement Vercel cassés.
         run: npm run lint
-        continue-on-error: true  # passé en strict après nettoyage des warnings existants
 
       - name: Typecheck
         run: npx tsc --noEmit
