@@ -41,6 +41,21 @@
   dry-run propose 001…054 (dangereux) ; après `repair 001→053` il ne propose que
   054 ; `push` l'applique, le second répond « up to date ». Pas d'application
   automatique au merge tant qu'il n'y a pas de staging.
+- **PR #5 fusionnée** (`8e8dfe6`) : lint **bloquant** en CI (il tournait en
+  `continue-on-error` ; 4 erreurs avaient cassé `next build` et Vercel).
+- **PR #6 fusionnée** (`10c1649`) : **test d'intégration du tunnel d'achat**
+  contre une vraie base. Approche choisie faute de clés Stripe test / projet
+  Supabase de test / Docker : les vraies routes (checkout → webhook paiement →
+  `/r/<code>` → activation → scan → message → webhook remboursement) contre
+  Postgres + PostgREST avec les migrations du dépôt ; Stripe, Printful, Resend,
+  stockage, session Auth et Upstash simulés. 10 étapes ; nouveau job CI
+  « Intégration tunnel » (postgres:16 + PostgREST v12.2.3), **sans secret**,
+  ~1 min. Vérifié qu'il attrape une régression d'héritage du code court et un
+  `REVOKE` de `record_scan` à `service_role`. Lancer en local :
+  `integration/README.md`.
+- Reste possible plus tard : le vrai E2E Stripe test mode
+  (`e2e/tunnel.spec.ts`), qui exige un projet Supabase de test et des clés
+  Stripe test en secrets GitHub.
 
 ### À faire — côté Clément, dans cet ordre
 - [ ] SQL Editor : `scripts/verify-migrations.sql` → repérer ce qui manque.
