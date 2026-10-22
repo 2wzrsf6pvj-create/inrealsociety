@@ -5,6 +5,72 @@
 
 ---
 
+## 2026-10-22 (soirée) — Lot UX passant fusionné, analyse RGPD et juridique
+
+### Fait
+- **PR #17 fusionnée** (`578f9e3`), lot UX passant (constats 2 à 7 de
+  l'entrée précédente) :
+  - prénom et contact en tête de la page d'envoi, avant les réponses
+    rapides, qui partent en un tap ;
+  - « Retrouver votre conversation » remplace l'impasse « Envoyer un autre
+    message » ;
+  - chacun son tour, imposé par le serveur ;
+  - porteur non genré ; vouvoiement, sauf les accroches « devenir porteur ».
+
+### Analyse RGPD et juridique
+**Déjà en ordre** :
+- PostHog n'envoie et ne stocke rien avant consentement (serveurs UE) ;
+- Sentry sans enregistrement de session ni IP ;
+- suppression et export de compte complets ;
+- purges hebdomadaires conformes aux durées annoncées (scans 24 mois,
+  journaux 12 mois).
+
+**Constats** :
+1. Mentions légales et politique de confidentialité à trous : forme
+   juridique, siège, SIRET/RCS, TVA, téléphone, directeur de publication.
+   Aucun médiateur de la consommation, obligatoire pour vendre aux
+   particuliers.
+2. **Risque juridique** : les CGV excluent le droit de rétractation au motif
+   du QR code unique. L'exception vise les biens faits selon les
+   spécifications du client ; un code imposé par le vendeur risque de ne pas
+   suffire. Si elle tombe : 14 jours, portés à 12 mois faute d'information
+   correcte. La boutique ne l'affiche pas avant le paiement (seulement dans
+   les CGV).
+3. Géolocalisation :
+   - la position exacte du passant part chez OpenStreetMap, absent de la
+     politique ;
+   - les coordonnées stockées (environ 110 m) ne servent nulle part ;
+   - la carte dit « ville », alors que le porteur voit le quartier.
+4. Aucun lien vers la politique de confidentialité là où le passant donne ses
+   données (profil, page d'envoi).
+5. Abonnement premium : « Gérer mon abonnement » ne dit pas « résilier »,
+   alors que la loi exige une résiliation en ligne explicite.
+6. Règlement européen sur les services numériques : aucun moyen de signaler
+   un profil ; la modération n'est pas décrite dans les CGV.
+7. La politique ne dit pas que le porteur reçoit les données du passant, ne
+   cite ni OpenStreetMap, ni la vérification d'email, ni les alertes de
+   signalement. Les preuves de consentement sont gardées sans limite, alors
+   qu'elle annonce 12 mois pour les journaux.
+
+### Décisions de Clément
+- Le porteur ne voit que la **ville** du passant ; les coordonnées ne sont
+  plus stockées.
+- **« Signaler ce profil »** : lien et formulaire, alerte à
+  `ADMIN_ALERT_EMAIL`.
+- Conversations supprimées **12 mois après le dernier message**.
+
+### À faire — côté Clément
+- [ ] Fournir les informations légales (constat 1) et choisir un médiateur
+      de la consommation.
+- [ ] Faire relire par un juriste : l'exception au droit de rétractation
+      (constat 2), les CGV et la politique de confidentialité.
+
+### Ensuite
+- Lot RGPD : décisions ci-dessus, et constats 3 à 7.
+- Puis la liste de vérifications de la production.
+
+---
+
 ## 2026-10-22 (soir, suite) — Lot 4 fusionné, parcours du passant
 
 ### Fait
