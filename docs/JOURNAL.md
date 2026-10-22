@@ -5,6 +5,58 @@
 
 ---
 
+## 2026-10-22 (soir, suite) — Lot 4 fusionné, parcours du passant
+
+### Fait
+- **PR #16 fusionnée** (`6dc5b7b`), correctif bloquant : la conversation
+  s'ouvre pour le passant, qui n'a pas de compte (constat 1 ci-dessous).
+  - Seul l'appareil d'où il a écrit peut répondre en son nom.
+  - Ailleurs, la page explique quoi faire, y compris au porteur déconnecté :
+    « Connectez-vous pour répondre ».
+- **PR #15 fusionnée** (`ce63c6f`), lot 4 : l'email du passant est vérifié
+  (double confirmation) avant de recevoir les réponses du porteur.
+  Migration **057**.
+- Avant de fusionner, #15 et #16 ont été vérifiées ensemble : 491 tests,
+  intégration 24/24, build. Après fusion, main est identique à la combinaison
+  testée.
+- CI de main après #12, #13 et #14 : un échec au build, dû au téléchargement
+  d'une police Google (réseau, pas le code). Vert à la relance.
+
+### Analyse du parcours du passant (scan → profil → message → conversation)
+Parcours rejoué sur mobile (390 px), avec Supabase branché en local.
+
+| # | Constat | Suite |
+|---|---|---|
+| 1 | **Bloquant** : la page conversation renvoyait le passant vers la connexion, depuis le premier commit. Tous les liens étaient touchés : bouton après l'envoi, « Retrouver votre conversation », email, notification. Invisible en local et en CI, où le middleware laisse tout passer sans clés Supabase | #16 ✅ |
+| 2 | Prénom et contact sous le bouton « Envoyer », hors de l'écran sur téléphone. Or l'email est presque le seul moyen d'être prévenu sur iPhone. Texte d'aide inexact : « Sans contact, il ne pourra pas vous répondre » | lot UX passant |
+| 3 | Retour sur le profil : le bouton principal « Envoyer un autre message » mène à un refus (un seul message par appareil) | lot UX passant |
+| 4 | Porteur toujours au masculin : « Il pourra vous répondre », « Me notifier quand il répond », « À lui de répondre » | lot UX passant |
+| 5 | Tutoiement et vouvoiement mélangés : carte de localisation, page du t-shirt pas encore activé | lot UX passant |
+| 6 | L'alternance n'est pas imposée par le serveur : 4 messages d'affilée possibles en appelant l'API | lot UX passant |
+| 7 | Détails : « ? » seul sur sa ligne, deux liens « Retour » empilés | lot UX passant |
+
+### Décisions de Clément
+- Fusion de #16, puis de #15.
+- Prénom et contact au-dessus du bouton « Envoyer ».
+- Vouvoiement côté passant, sauf l'accroche « Et si c'était toi qu'on
+  scannait ? ».
+
+### À faire — côté Clément (s'ajoute aux listes précédentes)
+- [ ] Appliquer **057**, après 056. Sans elle, les messages partent, mais
+      aucune réponse ne part par email au passant.
+- [ ] Upstash est **indispensable** : vérifié en local, sans lui, la
+      redirection des QR codes (`/r/…`) et l'envoi d'un message répondent en
+      erreur 500.
+- Constat sûr : un projet Vercel est relié au dépôt, qui déploie une
+  préversion de chaque PR. S'il déploie aussi `main` en production, chaque
+  fusion part en production : appliquer les migrations avant.
+
+### Ensuite
+- Lot UX passant (constats 2 à 7).
+- Puis RGPD et juridique, et la liste de vérifications de la production.
+
+---
+
 ## 2026-10-22 (soir) — Sécurité des porteurs (priorité 1)
 
 ### Constats
