@@ -70,6 +70,9 @@ Ce qui tient : tables sensibles fermées à `anon`, emails masqués par colonne
   depuis l'origine, donc retiré et non réutilisé). Corrigé dans la même PR #2,
   rebaptisée « débloque Vercel et la CI ». Build complet validé en local.
   Ordre de fusion : **#2 puis #1** (puis merge de `main` dans #1).
+- **PR #2 fusionnée** (squash `0a6c002`) une fois verte : build GitHub,
+  Playwright et déploiement Vercel OK — premier déploiement Vercel réussi
+  depuis le 11 juillet. `main` réintégrée dans #1 (sans conflit).
 
 ### Décisions en attente
 - **Plafond de 3 conversations (gratuit)** : le code compte tous les messages
