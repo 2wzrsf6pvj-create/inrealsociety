@@ -5,6 +5,88 @@
 
 ---
 
+## 2026-10-22 (fin de soirée) — Expérience du porteur fusionnée (#19, #20, #21)
+
+### Analyse de l'expérience du porteur après l'activation
+Rejouée sur mobile : tableau de bord avec données fictives, les 9 emails
+rendus.
+1. Des notifications pouvaient se perdre :
+   - elles partaient en tâche de fond, sans attendre leur envoi, alors qu'une
+     fonction Vercel peut s'arrêter dès la réponse envoyée ;
+   - étaient concernés les emails de scan, de message, de réponse, de
+     bienvenue et de premium, et les notifications push.
+2. Plafond gratuit (3 conversations sur 7 jours) : le porteur n'était pas
+   prévenu quand un passant était refusé.
+3. Un email par scan : seul le même téléphone était filtré pendant 30 minutes.
+   À une soirée, le porteur recevait des dizaines d'emails.
+4. Compteur « Semaine » faux : il comptait parmi les scans chargés pour la
+   liste « Derniers scans ». Sur mobile, les libellés des compteurs
+   débordaient.
+5. Le lien de parrainage contenait l'identifiant du profil. Le partager
+   donnait l'adresse directe du profil, sans passer par le t-shirt.
+6. Détails :
+   - l'email « nouveau message » menait au tableau de bord ;
+   - « En attente de toi » au milieu du vouvoiement ;
+   - la marque était écrite de deux façons ;
+   - l'email premium promettait des « stats avancées à venir ».
+7. Rétention (`RETENTION.md`) : la carte des scans prévue reposait sur les
+   coordonnées, que le lot RGPD a supprimées. Elle deviendra une carte des
+   villes.
+
+### Corrections de l'analyse
+- Constat 2 : le compteur existait déjà dans l'onglet Messages (« 2/3
+  conversations sur 7 jours », puis « Limite atteinte »). Seul l'email
+  manquait.
+- Constat 4 : le compteur plafonnait à 5, pas à 10, car le tableau de bord ne
+  charge que 5 scans. La correction est la même.
+
+### Décisions de Clément
+- Plafond atteint : un email au porteur, une fois par semaine au plus.
+- Email de nouveau scan : au premier scan de la journée seulement.
+- Parrainage : un code dédié dans le lien.
+
+### Fait
+- **PR #19 fusionnée** (`cb3c4c7`), constats 1, 4 et 6, sans arbitrage :
+  - les notifications partent avant la réponse, et chaque envoi rattrape sa
+    propre erreur ;
+  - le compteur « 7 jours » compte en base, sur la même fenêtre que le
+    graphique premium ;
+  - l'email « nouveau message » mène à la conversation ;
+  - les emails sont signés « In Real Society », et le vouvoiement est rétabli.
+- **PR #20 fusionnée** (`3729d51`), constats 2 et 3 :
+  - un email de scan par jour au plus (heure de Paris) ;
+  - « Quelqu'un a essayé de vous écrire », une fois par semaine au plus ;
+  - migration **059**.
+- **PR #21 fusionnée** (`4f4dd36`), constat 5 :
+  - le lien devient `/join/<code>`, avec un code de 10 caractères ;
+  - les anciens liens donnent toujours la remise ;
+  - migration **060**.
+- Vérifié avant les fusions : 522 tests, intégration 34/34 sur base neuve à
+  60 migrations, build. Après chaque fusion, la branche suivante a été remise à
+  jour sans changer son contenu testé.
+
+### À faire — côté Clément
+- [ ] Appliquer les migrations **059** puis **060**
+      (`docs/MISE_EN_PRODUCTION.md`). Sans elles, rien ne casse :
+      - les emails de scan partent comme avant ;
+      - l'email de plafond ne part pas ;
+      - le tableau de bord garde l'ancien lien de parrainage, qui donne
+        toujours la remise.
+- [ ] Rétention (`RETENTION.md`, § 7) : trancher, à l'intuition, la cause
+      principale d'abandon.
+      - (a) Ils arrêtent de porter le t-shirt.
+      - (b) Ils le portent, mais résilient le premium.
+
+      Les mesures déjà en place (P0) trancheront avec les données.
+
+### Ensuite
+- Reste de la priorité 2 :
+  - abonnement premium : parcours et valeur perçue ;
+  - économie unitaire (marge sur 49 €) ;
+  - performance et référencement.
+
+---
+
 ## 2026-10-22 (soirée, suite) — Lot RGPD fusionné, liste de mise en production
 
 ### Fait
