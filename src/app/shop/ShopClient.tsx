@@ -442,7 +442,7 @@ export default function ShopClient() {
 
             {/* Accroche imprimée sous le QR — le hameçon qui donne envie de scanner.
                 L'aperçu est désormais dans la galerie (vue Arrière), plus de carte séparée. */}
-            <TaglinePicker value={taglineId} onChange={setTaglineId} tshirtColor={tshirtColor} />
+            <TaglinePicker value={taglineId} onChange={setTaglineId} />
 
             {/* Infos produit */}
             <div className="flex flex-col gap-4">

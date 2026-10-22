@@ -15,8 +15,6 @@ import {
   type TaglineRegistre, type TaglineLang,
 } from '@/lib/taglines';
 
-type TeeColor = 'dark' | 'light';
-
 // Libellés COURTS pour les onglets (les longs débordent sur mobile).
 const SHORT: Record<TaglineRegistre, string> = {
   'drague':         'Drague',
@@ -27,10 +25,9 @@ const SHORT: Record<TaglineRegistre, string> = {
   'amitie':         'Amitié',
 };
 
-export default function TaglinePicker({ value, onChange, tshirtColor }: {
+export default function TaglinePicker({ value, onChange }: {
   value: string | null;
   onChange: (id: string | null) => void;
-  tshirtColor?: TeeColor;
 }) {
   const current = getTagline(value);
   // Langue de l'accroche IMPRIMÉE. Ouvre sur la langue de la sélection courante (ex.

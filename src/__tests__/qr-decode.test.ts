@@ -7,7 +7,6 @@ import { describe, it, expect } from 'vitest';
 import { Resvg } from '@resvg/resvg-js';
 import jsQR from 'jsqr';
 import { generatePremiumQRCode, composeBackPrintSVG, type QRStyle } from '@/lib/generate-qr-svg';
-import { TAGLINES } from '@/lib/taglines';
 
 const URL = 'https://inreal.me/u8';
 
