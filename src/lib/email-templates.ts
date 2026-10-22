@@ -19,7 +19,7 @@ function layout(content: string): string {
       </div>
       ${content}
       <p style="font-family:system-ui,sans-serif;font-size:11px;color:rgba(255,255,255,0.15);text-align:center;margin-top:48px;">
-        InRealSociety · The IRL Social Club
+        In Real Society · The IRL Social Club
       </p>
     </div>
   `.trim();
@@ -87,7 +87,8 @@ export function emailNouveauMessage(params: {
   content:       string;
   senderContact?: string;
   senderName?:   string;
-  dashboardUrl:  string;
+  /** La conversation elle-même : on y lit et on y répond en un clic. */
+  conversationUrl: string;
 }): { subject: string; html: string } {
   const safeName = escapeHtml(params.memberName);
   // Étiquette expéditeur : prénom + contact si les deux, sinon l'un ou l'autre.
@@ -103,7 +104,7 @@ export function emailNouveauMessage(params: {
       <h1 style="font-size:26px;font-weight:300;letter-spacing:0.04em;margin:0 0 8px;text-align:center;">Un signal pour vous,</h1>
       <h2 style="font-size:26px;font-weight:600;letter-spacing:0.04em;margin:0 0 32px;text-align:center;">${safeName}.</h2>
       ${quoteBlock(params.content, sender)}
-      ${cta('Voir mes messages', params.dashboardUrl)}
+      ${cta('Lire et répondre', params.conversationUrl)}
     `),
   };
 }
@@ -189,7 +190,7 @@ export function emailBienvenue(params: {
 }): { subject: string; html: string } {
   const safeName = escapeHtml(params.name);
   return {
-    subject: `${params.name}, votre profil InRealSociety est actif.`,
+    subject: `${params.name}, votre profil In Real Society est actif.`,
     html: layout(`
       <h1 style="font-size:28px;font-weight:300;letter-spacing:0.05em;margin:0 0 16px;text-align:center;">
         Bienvenue, ${safeName}.
@@ -261,7 +262,7 @@ export function emailPremium(params: {
           ✦ Fenêtre scanner étendue à 48h<br/>
           ✦ Conversations illimitées<br/>
           ✦ Badge ✦ visible sur votre profil<br/>
-          ✦ Stats avancées à venir
+          ✦ Vos scans des 7 derniers jours, jour par jour
         </p>
       </div>
       ${cta('Voir mon tableau de bord', params.dashboardUrl)}
@@ -369,7 +370,7 @@ export function emailActivation(params: {
 }): { subject: string; html: string } {
   const safeCode = escapeHtml(params.code);
   return {
-    subject: "Votre code d'activation InRealSociety.",
+    subject: "Votre code d'activation In Real Society.",
     html: layout(`
       <h1 style="font-size:28px;font-weight:300;letter-spacing:0.04em;margin:0 0 16px;text-align:center;">Votre vêtement arrive.</h1>
       <p style="font-family:system-ui,sans-serif;font-size:13px;color:rgba(255,255,255,0.5);text-align:center;line-height:1.8;margin:0 0 40px;">

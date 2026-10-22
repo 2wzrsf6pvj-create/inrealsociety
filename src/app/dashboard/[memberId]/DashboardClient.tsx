@@ -72,6 +72,7 @@ export default function DashboardClient({
   recentConversations = 0,
   totalConversations = 0,
   scansByDay = [],
+  weekScans = 0,
 }: {
   member:               Member;
   recentScans:          Scan[];
@@ -82,6 +83,8 @@ export default function DashboardClient({
   recentConversations?: number;
   totalConversations?:  number;
   scansByDay?:          { date: string; count: number }[];
+  /** Scans des 7 derniers jours (même fenêtre que le graphique premium). */
+  weekScans?:           number;
 }) {
   const [tab, setTab]     = useState<Tab>('home');
   const [toast, setToast] = useState('');
@@ -199,7 +202,7 @@ export default function DashboardClient({
         {/* Tab content with transition */}
         <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`} className="w-full animate-stagger-1" key={tab}>
           {tab === 'home' && (
-            <HomeSection member={member} recentScans={recentScans} scansByDay={scansByDay} messages={messages} activeConversations={activeConversations} />
+            <HomeSection member={member} recentScans={recentScans} scansByDay={scansByDay} weekScans={weekScans} messages={messages} activeConversations={activeConversations} />
           )}
 
           {tab === 'inbox' && (

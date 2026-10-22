@@ -78,6 +78,7 @@ export default function PreviewDashboardPage({ searchParams }: { searchParams: {
       recentConversations={recentConversations}
       totalConversations={totalConversations}
       scansByDay={scansByDay}
+      weekScans={scansByDay.reduce((sum, d) => sum + d.count, 0)}
     />
   );
 }

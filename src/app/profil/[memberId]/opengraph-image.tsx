@@ -6,7 +6,7 @@ import { ImageResponse } from 'next/og';
 import { getPublicMember } from '@/lib/supabase';
 
 export const runtime = 'edge';
-export const alt = 'InRealSociety — Profil';
+export const alt = 'In Real Society — Profil';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
 
@@ -24,7 +24,7 @@ export default async function OGImage({
 }) {
   const member = await getPublicMember(params.memberId);
 
-  const name    = member?.name  ?? 'InRealSociety';
+  const name    = member?.name  ?? 'In Real Society';
   const pitch   = member?.pitch ?? 'The IRL Social Club';
   const initials = getInitials(name);
 

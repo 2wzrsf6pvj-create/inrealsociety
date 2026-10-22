@@ -159,33 +159,39 @@ export async function POST(req: NextRequest) {
 
     if (insertErr) throw insertErr;
 
-    // Realtime fire-and-forget — diffuse aux clients abonnés au canal du thread
-    // (scanner anon inclus, via broadcast public).
+    // Notifications attendues avant de répondre, pas en tâche de fond : une
+    // fonction serverless peut s'arrêter dès la réponse envoyée (cf. /api/report).
+    const notifications: Promise<unknown>[] = [];
+
+    // Realtime — diffuse aux clients abonnés au canal du thread (scanner anon
+    // inclus, via broadcast public).
     if (newMsg?.id) {
-      broadcastThreadMessage(messageId, {
+      notifications.push(broadcastThreadMessage(messageId, {
         id:         newMsg.id,
         content:    content.trim(),
         author,
         created_at: new Date().toISOString(),
-      }).catch(() => {});
+      }).catch(() => {}));
     }
 
     // Notification email :
     //   * scanner → notifie le membre sur son email (alerte dashboard)
     //   * member → notifie le scanner sur sender_contact si c'est un email CONFIRMÉ
+
     if (author === 'scanner') {
       const { data: member } = await supabaseAdmin
         .from('members').select('name, email').eq('id', rootMsg.member_id).maybeSingle();
 
       if (member?.email) {
-        const dashboardUrl = `${APP_URL}/conversation/${messageId}`;
         const { subject, html } = emailNouveauMessage({
-          memberName:    member.name,
-          content:       content.trim(),
-          senderContact: rootMsg.sender_contact,
-          dashboardUrl,
+          memberName:      member.name,
+          content:         content.trim(),
+          senderContact:   rootMsg.sender_contact,
+          conversationUrl: `${APP_URL}/conversation/${messageId}`,
         });
-        sendEmail({ to: member.email, subject, html }).catch((err) => console.error('[conversation/reply] Échec email membre:', err));
+        notifications.push(
+          sendEmail({ to: member.email, subject, html }).catch((err) => console.error('[conversation/reply] Échec email membre:', err)),
+        );
       }
     } else if (author === 'member') {
       // Uniquement vers une adresse confirmée par le passant (double opt-in) :
@@ -200,26 +206,29 @@ export async function POST(req: NextRequest) {
           reply:      content.trim(),
           convUrl:    `${APP_URL}/conversation/${messageId}`,
         });
-        sendEmail({ to: contact, subject, html }).catch((err) => console.error('[conversation/reply] Échec email scanner:', err));
+        notifications.push(
+          sendEmail({ to: contact, subject, html }).catch((err) => console.error('[conversation/reply] Échec email scanner:', err)),
+        );
       }
     }
 
-    // Push fire-and-forget — notifie l'AUTRE côté, sur le bon scope :
+    // Push — notifie l'AUTRE côté, sur le bon scope :
     //   * member répond  → le scanneur (abonné au thread via messageId).
     //   * scanner répond → le PORTEUR (abonné au niveau membre depuis le dashboard —
     //     il n'est PAS abonné au thread ; sans ça il ne recevait que l'email).
     const pushBody = content.trim().slice(0, 80);
     const pushUrl  = `${APP_URL}/conversation/${messageId}`;
     if (author === 'member') {
-      notifyThreadSubscribers({
+      notifications.push(notifyThreadSubscribers({
         messageId, title: 'Nouveau message — réponse du membre', body: pushBody, url: pushUrl,
-      }).catch((err) => console.error('[conversation/reply] Échec push thread:', err));
+      }).catch((err) => console.error('[conversation/reply] Échec push thread:', err)));
     } else {
-      notifyMemberSubscribers({
+      notifications.push(notifyMemberSubscribers({
         memberId: rootMsg.member_id, messageId, title: 'Nouveau message', body: pushBody, url: pushUrl,
-      }).catch((err) => console.error('[conversation/reply] Échec push membre:', err));
+      }).catch((err) => console.error('[conversation/reply] Échec push membre:', err)));
     }
 
+    await Promise.all(notifications);
     return NextResponse.json({ ok: true, moderated: false, replyId: newMsg?.id });
 
   } catch (err) {

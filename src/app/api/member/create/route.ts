@@ -143,12 +143,14 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // ─── Email de bienvenue (non-bloquant) ──────────────────────────────
+    // ─── Email de bienvenue ─────────────────────────────────────────────
+    // Un échec n'empêche pas l'activation, mais l'envoi est attendu : une
+    // fonction serverless peut s'arrêter dès la réponse envoyée (cf. /api/report).
     if (result.member_id && auth.user.email) {
       const dashboardUrl = `${APP_URL}/dashboard`;
       const profileUrl   = `${APP_URL}/profil/${result.member_id}`;
       const { subject, html } = emailBienvenue({ name, dashboardUrl, profileUrl });
-      sendEmail({ to: auth.user.email, subject, html })
+      await sendEmail({ to: auth.user.email, subject, html })
         .catch(err => console.error('[api/member/create] Welcome email failed:', err));
     }
 
