@@ -29,16 +29,16 @@ export default function TeeEnAttentePage() {
             Ce porteur n&apos;a pas<br />encore activé son profil.
           </h1>
           <p className="font-ui text-sm font-light text-brand-gray/50 leading-relaxed">
-            Le t-shirt existe, le profil arrive. Reviens scanner un peu plus tard —
-            il sera peut-être là.
+            Le t-shirt existe, le profil arrive. Revenez scanner un peu plus tard :
+            il sera peut-être en ligne.
           </p>
         </div>
 
         {/* Rappel discret pour le porteur qui scanne son propre tee. */}
         <div className="w-full pt-2 border-t border-brand-gray/10 flex flex-col items-center gap-2">
-          <p className="font-ui text-xxs text-brand-gray/45 tracking-[0.15em] uppercase">C&apos;est ton t-shirt ?</p>
+          <p className="font-ui text-xxs text-brand-gray/45 tracking-[0.15em] uppercase">C&apos;est votre t-shirt ?</p>
           <p className="font-ui text-xs font-light text-brand-gray/50 leading-relaxed">
-            Active ton profil depuis le lien reçu par email après ta commande.
+            Activez votre profil depuis le lien reçu par email après votre commande.
           </p>
           <Link
             href="/faq"

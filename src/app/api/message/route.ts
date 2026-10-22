@@ -96,15 +96,20 @@ export async function POST(req: NextRequest) {
     // « re-essais infinis » est assuré par le rate-limit, pas par ce compteur.
     // Un rescan rouvre la fenêtre mais ne redonne pas un message racine.
     if (existingToken) {
-      const { count: priorRoots } = await supabaseAdmin
+      const { data: priorRoot } = await supabaseAdmin
         .from('messages')
-        .select('*', { count: 'exact', head: true })
+        .select('id')
         .eq('member_id', memberId)
         .eq('sender_token', existingToken)
-        .is('parent_id', null);
-      if ((priorRoots ?? 0) > 0) {
+        .is('parent_id', null)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (priorRoot) {
+        // conversationId : la conversation de CE device (même jeton), pour l'y
+        // renvoyer même si son lien n'est plus en localStorage.
         return NextResponse.json(
-          { error: 'Vous avez déjà envoyé un message à ce profil. À lui de répondre.', code: 'already_messaged' },
+          { error: 'Vous avez déjà écrit à ce membre : la suite se passe dans votre conversation.', code: 'already_messaged', conversationId: priorRoot.id },
           { status: 409 },
         );
       }
