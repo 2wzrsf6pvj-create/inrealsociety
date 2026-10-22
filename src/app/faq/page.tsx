@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { headers } from 'next/headers';
 import FaqAccordion, { type FaqGroup } from './FaqAccordion';
-import { MAX_CONVERSATIONS, CONVERSATION_WINDOW_DAYS } from '@/lib/constants';
+import { MAX_CONVERSATIONS, CONVERSATION_WINDOW_DAYS, TSHIRT_PRICE_EUR, SHIPPING_STANDARD_CENTS, SHIPPING_EXPRESS_CENTS } from '@/lib/constants';
 
 export const metadata = {
   title: 'FAQ — Comment ça marche',
@@ -42,7 +42,7 @@ const FAQ_GROUPS: FaqGroup[] = [
       { q: 'C’est quel t-shirt ?',
         a: 'Un Stanley/Stella Creator 2.0 en coton bio, coupe droite, avec le QR code premium imprimé dans le dos (impression DTF durable). En noir ou blanc, du S au XXL.' },
       { q: 'Combien ça coûte ?',
-        a: '49 € le t-shirt. La livraison est à part : 5 € en standard ou 12 € en express, choisie à l’étape de paiement.' },
+        a: `${TSHIRT_PRICE_EUR} € le t-shirt. La livraison est à part : ${SHIPPING_STANDARD_CENTS / 100} € en standard ou ${SHIPPING_EXPRESS_CENTS / 100} € en express, choisie à l’étape de paiement.` },
       { q: 'Quels sont les délais de livraison ?',
         a: 'Production à la demande (2 à 5 jours), puis expédition (5 à 10 jours en standard, 2 à 4 en express). Vous pouvez suivre votre commande à tout moment depuis « Ma commande ».' },
       { q: 'Comment j’active mon profil ?',

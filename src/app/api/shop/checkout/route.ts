@@ -14,7 +14,7 @@ import { getOptionalUser } from '@/lib/require-auth';
 import { checkPublicRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
 import { QR_STYLES, DEFAULT_QR_STYLE } from '@/lib/constants';
 import { isValidTaglineId } from '@/lib/taglines';
-import { TSHIRT_PRICE_CENTS } from '@/lib/constants';
+import { TSHIRT_PRICE_CENTS, SHIPPING_STANDARD_CENTS, SHIPPING_EXPRESS_CENTS } from '@/lib/constants';
 
 const schema = z.object({
   // `.toLowerCase()` : orders.email sert de clé de lookup (renvoi de code, match
@@ -130,12 +130,16 @@ export async function POST(req: NextRequest) {
         ? { discounts: [{ coupon: process.env.STRIPE_REFERRAL_COUPON_ID }] }
         : {}),
 
+      // tax_behavior « inclusive » : le port affiché (« 5€ ») est TTC, comme le t-shirt.
+      // Non précisé, Stripe appliquerait le réglage par défaut du compte et pourrait
+      // ajouter la TVA par-dessus (5 € affichés → 6 € débités).
       shipping_options: [
         {
           shipping_rate_data: {
             type:         'fixed_amount',
             display_name: 'Livraison standard',
-            fixed_amount: { amount: 500, currency: 'eur' },
+            fixed_amount: { amount: SHIPPING_STANDARD_CENTS, currency: 'eur' },
+            tax_behavior: 'inclusive',
             delivery_estimate: {
               minimum: { unit: 'business_day', value: 5 },
               maximum: { unit: 'business_day', value: 10 },
@@ -146,7 +150,8 @@ export async function POST(req: NextRequest) {
           shipping_rate_data: {
             type:         'fixed_amount',
             display_name: 'Livraison express',
-            fixed_amount: { amount: 1200, currency: 'eur' },
+            fixed_amount: { amount: SHIPPING_EXPRESS_CENTS, currency: 'eur' },
+            tax_behavior: 'inclusive',
             delivery_estimate: {
               minimum: { unit: 'business_day', value: 2 },
               maximum: { unit: 'business_day', value: 4 },

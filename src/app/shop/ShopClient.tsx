@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { captureEvent } from '@/lib/posthog-client';
-import { TSHIRT_PRICE_EUR } from '@/lib/constants';
+import { TSHIRT_PRICE_EUR, SHIPPING_STANDARD_CENTS, SHIPPING_EXPRESS_CENTS } from '@/lib/constants';
 import { BAKED_TAGLINES } from '@/lib/taglines.generated';
 import TaglinePicker from '@/app/components/ui/TaglinePicker';
 import { BrandMark } from '@/app/components/ui/BrandMark';
@@ -15,6 +15,8 @@ type TshirtSize  = 'S' | 'M' | 'L' | 'XL' | 'XXL';
 
 const SIZES: TshirtSize[] = ['S', 'M', 'L', 'XL', 'XXL'];
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const SHIPPING_STANDARD_EUR = SHIPPING_STANDARD_CENTS / 100;
+const SHIPPING_EXPRESS_EUR  = SHIPPING_EXPRESS_CENTS / 100;
 
 // ─── Galerie produit ──────────────────────────────────────────────────────────
 // Placeholder abstrait (logo ( • )) — fallback tant qu'aucune vraie image n'est
@@ -275,6 +277,29 @@ export default function ShopClient() {
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState('');
   const [referrerId, setReferrerId]   = useState<string | null>(null);
+  // Barre d'achat mobile : visible tant que le formulaire de commande n'est PAS à
+  // l'écran. `true` au départ (rendu serveur) → pas de barre avant l'hydratation.
+  const formRef = useRef<HTMLFormElement>(null);
+  const [formInView, setFormInView] = useState(true);
+
+  useEffect(() => {
+    const el = formRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const io = new IntersectionObserver(([entry]) => setFormInView(entry.isIntersecting));
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  // CTA de la barre : amène au formulaire (email + CGV restent obligatoires avant
+  // Stripe) et place le curseur dans le champ email.
+  const goToForm = () => {
+    captureEvent('shop_sticky_cta_clicked', { tshirt_color: tshirtColor, tshirt_size: tshirtSize, has_tagline: !!taglineId });
+    const input = document.getElementById('buy-email') as HTMLInputElement | null;
+    if (!input) return;
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    input.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
+    input.focus({ preventScroll: true });
+  };
 
   useEffect(() => {
     // Capte le parrain depuis ?ref= ou depuis localStorage (page /join)
@@ -319,7 +344,7 @@ export default function ShopClient() {
   const colorLabel = tshirtColor === 'dark' ? 'Noir' : 'Blanc';
 
   return (
-    <main className="relative bg-brand-black text-brand-white min-h-screen overflow-hidden">
+    <main className="relative bg-brand-black text-brand-white min-h-screen overflow-hidden pb-24 lg:pb-0">
 
       <div className="absolute top-[-10%] left-[-10%] w-[40rem] h-[40rem] rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%)' }} />
@@ -381,8 +406,25 @@ export default function ShopClient() {
               <ProductGallery color={tshirtColor} taglineId={taglineId} />
             </div>
 
-            {/* Colonne achat — sélecteurs + accroche + infos + formulaire */}
+            {/* Colonne achat — nom/prix, sélecteurs, accroche, infos, formulaire */}
             <div className="flex flex-col gap-8 lg:w-1/2">
+
+            {/* Nom + prix EN TÊTE : sur mobile, juste sous la photo. Avant, le prix
+                n'apparaissait qu'après ~2 écrans, derrière le choix de l'accroche. */}
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col gap-1">
+                <h2 className="font-display text-2xl md:text-3xl font-light tracking-[0.04em]">
+                  T-shirt In Real Society
+                </h2>
+                <p className="font-ui text-xs md:text-sm text-brand-gray/50">
+                  Stanley/Stella Creator 2.0 · {colorLabel} · QR code imprimé dans le dos
+                </p>
+              </div>
+              <div className="flex flex-col items-end gap-1 shrink-0">
+                <span className="font-display text-3xl font-light">{TSHIRT_PRICE_EUR}€</span>
+                <span className="font-ui text-xxs text-brand-gray/55 whitespace-nowrap">TTC · livraison dès {SHIPPING_STANDARD_EUR}€</span>
+              </div>
+            </div>
 
             {/* Sélecteur couleur */}
             <div className="flex flex-col gap-2">
@@ -445,20 +487,8 @@ export default function ShopClient() {
                 L'aperçu est désormais dans la galerie (vue Arrière), plus de carte séparée. */}
             <TaglinePicker value={taglineId} onChange={setTaglineId} />
 
-            {/* Infos produit */}
+            {/* Infos produit (nom + prix : en tête de colonne) */}
             <div className="flex flex-col gap-4">
-              <div className="flex items-start justify-between">
-                <div className="flex flex-col gap-1">
-                  <h2 className="font-display text-2xl md:text-3xl font-light tracking-[0.04em]">
-                    T-shirt In Real Society
-                  </h2>
-                  <p className="font-ui text-xs md:text-sm text-brand-gray/50">
-                    Stanley/Stella Creator 2.0 · {colorLabel} · QR code imprimé dans le dos
-                  </p>
-                </div>
-                <span className="font-display text-3xl font-light">{TSHIRT_PRICE_EUR}€</span>
-              </div>
-
               <div className="flex flex-col gap-2 py-4 border-t border-b border-brand-gray/10">
                 {[
                   'T-shirt coton bio Stanley/Stella Creator 2.0',
@@ -488,7 +518,7 @@ export default function ShopClient() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-ui text-xxs text-brand-gray/50 tracking-[0.15em] uppercase">Frais</span>
-                  <span className="font-ui text-xs text-brand-gray/60">5€ standard · 12€ express</span>
+                  <span className="font-ui text-xs text-brand-gray/60">{SHIPPING_STANDARD_EUR}€ standard · {SHIPPING_EXPRESS_EUR}€ express</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-ui text-xxs text-brand-gray/50 tracking-[0.15em] uppercase">Zones</span>
@@ -496,7 +526,7 @@ export default function ShopClient() {
                 </div>
               </div>
 
-              <form onSubmit={handleBuy} className="flex flex-col gap-3">
+              <form ref={formRef} onSubmit={handleBuy} className="flex flex-col gap-3">
                 <div className="flex flex-col gap-1">
                   <label htmlFor="buy-email" className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Votre email</label>
                   <p id="buy-email-hint" className="font-ui text-xxs md:text-xs text-brand-gray/50 leading-relaxed">
@@ -607,6 +637,34 @@ export default function ShopClient() {
           </div>
         </footer>
       </div>
+
+      {/* Barre d'achat fixe — mobile/tablette uniquement, masquée quand le formulaire
+          est à l'écran. Sous le bandeau cookies (z-[100]) tant qu'il est affiché. */}
+      {!formInView && (
+        <div
+          role="region"
+          aria-label="Commander"
+          className="fixed inset-x-0 bottom-0 z-40 lg:hidden border-t border-brand-gray/15 bg-brand-black/95 backdrop-blur-sm px-6 pt-3 animate-fade-in"
+          style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}
+        >
+          <div className="max-w-lg mx-auto flex items-center justify-between gap-4">
+            <div className="flex flex-col">
+              <span className="font-display text-2xl font-light leading-none">{TSHIRT_PRICE_EUR}€</span>
+              <span className="font-ui text-xxs text-brand-gray/55 mt-1 whitespace-nowrap">
+                {colorLabel} · {tshirtSize} · livraison dès {SHIPPING_STANDARD_EUR}€
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={goToForm}
+              className="px-6 py-3 bg-brand-white text-brand-black font-ui font-bold text-xs tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200"
+              style={{ minHeight: '44px' }}
+            >
+              Commander
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
