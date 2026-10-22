@@ -127,6 +127,34 @@ export function emailReponse(params: {
   };
 }
 
+/** Confirmation de l'email laissé par un passant : tant qu'il n'a pas cliqué,
+ *  aucune réponse du porteur ne part vers cette adresse. Aucun contenu du
+ *  message ici : l'adresse peut être celle d'un tiers. */
+export function emailContactVerification(params: {
+  memberName: string;
+  verifyUrl:  string;
+  ttlDays:    number;
+}): { subject: string; html: string } {
+  const safeName = escapeHtml(params.memberName);
+  return {
+    subject: 'Confirmez votre adresse pour recevoir la réponse',
+    html: layout(`
+      <h1 style="font-size:22px;font-weight:300;margin:0 0 24px;text-align:center;line-height:1.4;">
+        Confirmez votre adresse.
+      </h1>
+      <p style="font-family:system-ui,sans-serif;font-size:13px;color:rgba(255,255,255,0.5);text-align:center;line-height:1.8;margin:0;">
+        Vous avez écrit à <strong style="color:#fff;font-weight:600;">${safeName}</strong> sur In Real Society
+        et laissé cette adresse pour être prévenu de sa réponse.
+      </p>
+      ${cta('Confirmer mon adresse', params.verifyUrl)}
+      <p style="font-family:system-ui,sans-serif;font-size:11px;color:rgba(255,255,255,0.35);text-align:center;line-height:1.7;margin:24px 0 0;">
+        Lien valable ${params.ttlDays} jours.<br/>
+        Ce n'est pas vous ? Ignorez cet email : aucune réponse ne vous sera envoyée.
+      </p>
+    `),
+  };
+}
+
 /** Email envoyé au membre quand son profil est scanné */
 export function emailNouveauScan(params: {
   memberName:   string;

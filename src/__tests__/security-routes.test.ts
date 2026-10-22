@@ -37,6 +37,7 @@ const PUBLIC_ROUTES = [
   'api/newsletter/unsubscribe', // lien de désinscription cliqué depuis un email
   'api/feedback',   // feedback conversation — accessible aux scanners anonymes
   'api/conversation/[messageId]/thread', // rattrapage thread (capability = messageId UUID)
+  'api/contact/verify', // lien de confirmation de l'email du passant (capability = jeton aléatoire)
 ];
 
 /** Routes protégées par un secret header (pas par session) */

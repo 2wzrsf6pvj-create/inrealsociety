@@ -27,6 +27,7 @@ const PUBLIC_PAGES = new Set([
   '/demo-notif',        // page démo (aperçu notif écran verrouillé pour screenshot) — noindex, à retirer
   '/robots.txt',        // lu par les moteurs, anonymes : sans ça, redirigé vers la connexion
   '/sitemap.xml',       // pages publiques seulement (aucun profil de porteur)
+  '/contact/confirme',  // arrivée du lien de confirmation d'email du passant — noindex
 ]);
 
 const PUBLIC_PAGE_PREFIXES = [
@@ -42,6 +43,7 @@ const PUBLIC_PAGE_PREFIXES = [
 // /api/messages, l'inbox authentifiée).
 const PUBLIC_API_EXACT = new Set([
   '/api/message',        // envoi message scanner anonyme
+  '/api/contact/verify', // lien de confirmation de l'email du passant (jeton, rate-limité)
   '/api/scan',
   '/api/order-code',
   '/api/order/status',       // suivi de commande public (lookup par code d'activation)

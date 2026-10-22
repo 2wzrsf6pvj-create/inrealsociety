@@ -8,7 +8,7 @@
 
 ## 1. Migrations SQL — ordre & application
 
-Les migrations sont numérotées et **doivent s'appliquer dans l'ordre** (`supabase/migrations/001 … 056`).
+Les migrations sont numérotées et **doivent s'appliquer dans l'ordre** (`supabase/migrations/001 … 057`).
 
 ### Nouveautés de ce lot de durcissement
 | # | Effet | Critique ? |
@@ -36,13 +36,14 @@ Les migrations sont numérotées et **doivent s'appliquer dans l'ordre** (`supab
 | `054` | `members.suspended_at` + CHECK « suspendu ⇒ en pause » | 🟠 **à appliquer AVANT le déploiement du code** qui s'en sert : le webhook de remboursement suspend le profil activé par le code remboursé |
 | `055` | `orders.activation_reminders_sent` / `activation_reminder_at` + index partiel | 🟠 relance des acheteurs payés jamais activés (J+2, J+7) par le cron `activation-reminder`. Sans elle, cette partie du cron est ignorée (la relance des comptes continue) |
 | `056` | table `message_reports` (une ligne par porteur et par appareil signalé) + RLS sans accès client | 🟠 bannissement automatique d'un appareil signalé par 3 porteurs différents. Sans elle, un signalement masque toujours le message, mais n'est ni compté ni suivi d'un bannissement |
+| `057` | table `contact_verifications` (lien de confirmation de l'email laissé par un passant, jeton haché) + RLS sans accès client | 🟠 les réponses d'un porteur ne partent par email qu'à une adresse confirmée. **À appliquer AVANT le déploiement du code** : sans elle, aucune réponse ne part plus par email (la confirmation ne peut pas être créée) |
 
 ### Base NEUVE (staging / nouveau projet) — recommandé (Option A)
-⚠️ **L'ordre 001→056 naïf ÉCHOUE** : `001_enable_rls` fait `ALTER TABLE members …`
+⚠️ **L'ordre 001→057 naïf ÉCHOUE** : `001_enable_rls` fait `ALTER TABLE members …`
 alors que `members` n'est créée qu'en `015`. L'ordre correct est **015 D'ABORD**,
-puis 001-014, puis 016-056.
+puis 001-014, puis 016-057.
 
-Utiliser le bundle pré-généré **et validé** (56/56 migrations — schéma identique, grants et policies compris, à l'application une par une ; vérifié sur PG16) :
+Utiliser le bundle pré-généré **et validé** (57/57 migrations — schéma identique, grants et policies compris, à l'application une par une ; vérifié sur PG16) :
 ```
 scripts/fresh-setup.sql   ← à coller intégralement dans le Supabase SQL Editor d'un
                             projet NEUF (auth + storage + rôles déjà présents) → Run.
@@ -69,7 +70,7 @@ for f in 033_rls_hardening_views 034_record_scan 035_secure_create_member_rpc 03
          048_order_qr_style 049_order_tagline 050_order_short_code \
          051_feedback_unique_conversation 052_close_members_referrals_insert \
          053_close_definer_rpcs_to_authenticated 054_member_suspension \
-         055_order_activation_reminders 056_message_reports; do
+         055_order_activation_reminders 056_message_reports 057_contact_verifications; do
   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -1 -f "supabase/migrations/$f.sql"
 done
 # 021 a été édité (guard idempotent) : sûr à ré-exécuter si tu veux l'aligner.

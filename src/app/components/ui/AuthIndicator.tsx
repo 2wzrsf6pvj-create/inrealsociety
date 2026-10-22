@@ -13,7 +13,7 @@ interface AuthState {
 
 // + pages réservées au passant qui scanne (/unlock, /message) : il n'a pas de compte,
 // un bouton « Connexion » y est du bruit au moment d'écrire.
-const HIDDEN_PATHS = ['/dashboard', '/auth/login', '/auth/signup', '/auth/forgot-password', '/auth/reset-password', '/unlock', '/message'];
+const HIDDEN_PATHS = ['/dashboard', '/auth/login', '/auth/signup', '/auth/forgot-password', '/auth/reset-password', '/unlock', '/message', '/contact/confirme'];
 
 function getInitials(name: string): string {
   const parts = name.trim().split(' ').filter(Boolean);

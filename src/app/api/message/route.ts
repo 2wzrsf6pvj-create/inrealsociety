@@ -9,7 +9,8 @@ import { checkMessageRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit'
 import { audit } from '@/lib/audit';
 import { SCAN_WINDOW_MS, MAX_CONVERSATIONS, QUICK_REPLIES as QUICK_REPLIES_LIST } from '@/lib/constants';
 import { moderateContent } from '@/lib/moderation';
-import { isValidFirstName } from '@/lib/validators';
+import { isValidFirstName, isValidEmail } from '@/lib/validators';
+import { startContactVerification } from '@/lib/contact-verification';
 import { getSenderToken, createSenderToken, setSenderTokenCookie } from '@/lib/sender-token';
 import { isBlocked, isDeviceBanned } from '@/lib/blocks';
 import { getActiveConversationsCount } from '@/lib/inbox';
@@ -272,9 +273,22 @@ export async function POST(req: NextRequest) {
       }).catch((err) => console.error('[api/message] Échec push membre:', err));
     }
 
+    // ─── Contact email : lien de confirmation (double opt-in) ─────────────
+    // Les réponses du porteur ne partiront à cette adresse qu'une fois confirmée
+    // (cf. contact-verification). Un échec ici n'empêche pas l'envoi du message.
+    let contactVerification: 'sent' | 'none' = 'none';
+    if (message?.id && isValidEmail(trimmedContact)) {
+      try {
+        const sent = await startContactVerification({ messageId: message.id, email: trimmedContact, memberName: member.name });
+        if (sent) contactVerification = 'sent';
+      } catch (err) {
+        console.error('[api/message] Vérification du contact impossible:', err);
+      }
+    }
+
     // Pose/rafraîchit le cookie de jeton device (httpOnly) — permet au porteur
     // de bloquer ce scanneur plus tard, même sur une autre conversation.
-    const res = NextResponse.json({ ok: true, moderated: false, messageId: message?.id });
+    const res = NextResponse.json({ ok: true, moderated: false, messageId: message?.id, contactVerification });
     setSenderTokenCookie(res, senderToken);
     return res;
 

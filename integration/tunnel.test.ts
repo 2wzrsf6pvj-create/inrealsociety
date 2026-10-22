@@ -143,6 +143,7 @@ vi.mock('@/lib/ratelimit', () => {
   return {
     checkPublicRateLimit: ok, checkAuthRateLimit: ok, checkMessageRateLimit: ok,
     checkScanRateLimit: ok, checkResendEmailRateLimit: ok,
+    checkContactVerifyRateLimit: async () => true,
     isNewScan: async () => true, releaseScanDedup: async () => {},
     getIp: (req: Request) => req.headers.get('x-forwarded-for') ?? 'anonymous',
     rateLimitHeaders: () => ({}),
@@ -501,5 +502,74 @@ describe.skipIf(!ENABLED)('Signalements : un appareil signalé par 3 porteurs es
     }));
     expect(res.status).toBe(403);   // même réponse que « indisponible » : le ban n'est pas révélé
     expect(sql(`SELECT count(*) FROM messages WHERE member_id = '${wearers[3].memberId}'`)).toBe('0');
+  });
+});
+
+// ─── Email du passant : réponses seulement après confirmation ────────────────
+describe.skipIf(!ENABLED)('Email du passant : les réponses ne partent qu’après confirmation', () => {
+  let message: typeof import('@/app/api/message/route');
+  let reply:   typeof import('@/app/api/conversation/reply/route');
+  let verify:  typeof import('@/app/api/contact/verify/route');
+  const wearer = { authId: crypto.randomUUID(), memberId: crypto.randomUUID() };
+  const scannerEmail = `passant-${Date.now()}@example.com`;
+  const device = crypto.randomUUID();
+  let messageId = '';
+  let token = '';
+  const toScanner = () => sent.emails.filter(e => e.to[0] === scannerEmail);
+
+  beforeAll(async () => {
+    message = await import('@/app/api/message/route');
+    reply   = await import('@/app/api/conversation/reply/route');
+    verify  = await import('@/app/api/contact/verify/route');
+    sql(`INSERT INTO auth.users (id, email, email_confirmed_at) VALUES ('${wearer.authId}', 'w-${wearer.authId}@example.com', now())`);
+    sql(`INSERT INTO members (id, auth_user_id, name, email) VALUES ('${wearer.memberId}', '${wearer.authId}', 'Camille', 'w-${wearer.authId}@example.com')`);
+  });
+
+  const memberReply = (content: string) => {
+    currentUser = { id: wearer.authId, email: `w-${wearer.authId}@example.com` };
+    return reply.POST(req('/api/conversation/reply', { body: { messageId, content, author: 'member' } }));
+  };
+  const click = (t: string) => verify.GET(req(`/api/contact/verify?token=${t}`, { method: 'GET' }));
+
+  it('le passant laisse son email : un lien de confirmation lui est envoyé', async () => {
+    const res = await message.POST(req('/api/message', {
+      body:   { memberId: wearer.memberId, content: 'Belle audace.', senderContact: scannerEmail },
+      cookie: `irs_sender=${device}`,
+    }));
+    const data = await res.json();
+    expect(data.contactVerification).toBe('sent');
+    messageId = data.messageId;
+    expect(toScanner()).toHaveLength(1);
+    token = /token=([A-Za-z0-9_-]{43})/.exec(toScanner()[0].html)![1];
+    expect(sql(`SELECT count(*) FROM contact_verifications WHERE message_id = '${messageId}' AND verified_at IS NULL`)).toBe('1');
+    expect(sql(`SELECT count(*) FROM contact_verifications WHERE token_hash = '${token}'`)).toBe('0');   // jamais en clair
+  });
+
+  it('le porteur répond avant la confirmation : rien ne part vers cette adresse', async () => {
+    expect((await memberReply('Merci, ça me touche.')).status).toBe(200);
+    expect(toScanner()).toHaveLength(1);   // toujours le seul lien de confirmation
+  });
+
+  it('lien invalide → page « lien invalide »', async () => {
+    expect((await click('x'.repeat(43))).headers.get('location')).toContain('/contact/confirme?statut=invalide');
+  });
+
+  it('confirmation : la réponse déjà écrite part aussitôt', async () => {
+    const location = (await click(token)).headers.get('location')!;
+    expect(location).toContain('statut=ok');
+    expect(location).toContain(`conversation=${messageId}`);
+    expect(toScanner()).toHaveLength(2);
+    expect(toScanner()[1].html).toContain('Merci, ça me touche.');
+  });
+
+  it('second clic : confirmé, rien de plus n’est envoyé', async () => {
+    expect((await click(token)).headers.get('location')).toContain('statut=ok');
+    expect(toScanner()).toHaveLength(2);
+  });
+
+  it('réponse suivante : envoyée directement', async () => {
+    expect((await memberReply('À bientôt peut-être.')).status).toBe(200);
+    expect(toScanner()).toHaveLength(3);
+    expect(toScanner()[2].html).toContain('À bientôt peut-être.');
   });
 });

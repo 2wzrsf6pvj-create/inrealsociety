@@ -65,6 +65,8 @@ function MessageForm() {
   const [windowHours, setWindowHours] = useState(24);
   const [limitReached, setLimitReached] = useState(false);
   const [conversationUrl, setConversationUrl] = useState<string | null>(null);
+  // Email laissé en contact : un lien de confirmation vient de partir (double opt-in).
+  const [verifyEmailSent, setVerifyEmailSent] = useState(false);
   const [copied, setCopied]       = useState(false);
   // Membre en pause OU device bloqué : le serveur renvoie le même code 'paused'
   // (volontaire — ne pas révéler le blocage). Écran terminal neutre.
@@ -174,6 +176,7 @@ function MessageForm() {
       // absolue. Le localStorage garde l'URL complète (relue + assainie en amont).
       const convPath = `/conversation/${data.messageId}`;
       localStorage.setItem(`conversation_${memberId}`, `${window.location.origin}${convPath}`);
+      setVerifyEmailSent(data.contactVerification === 'sent');
       setConversationUrl(convPath);
       haptic('success'); // signal envoyé — confirmation tactile du moment clé
 
@@ -317,6 +320,11 @@ function MessageForm() {
           <p className="font-ui text-sm font-light text-brand-gray/65 leading-relaxed">
             {memberName} peut vous répondre directement ici.
           </p>
+          {verifyEmailSent && (
+            <p className="font-ui text-xs text-[#C5A059]/85 leading-relaxed">
+              Pour recevoir sa réponse par email, confirmez votre adresse : nous venons de vous écrire.
+            </p>
+          )}
         </div>
         <div className="w-full flex flex-col gap-3">
           <p className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Votre fil de conversation</p>
