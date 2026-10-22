@@ -25,6 +25,29 @@ SELECT 'anon'   AS role, has_function_privilege('anon',
 SELECT 'service_role' AS role, has_function_privilege('service_role',
   'create_member_with_code(uuid,text,text,text,text,text,text)', 'EXECUTE') AS can_execute;
 
+\echo '=== 053 — aucune fonction SECURITY DEFINER exécutable par anon/authenticated, sauf get_own_member (attendu: 0 ligne) ==='
+-- ⚠️ Tester `authenticated`, pas seulement anon : Supabase lui accorde EXECUTE
+-- nominativement (default privileges) — un REVOKE FROM public ne l'enlève pas.
+SELECT p.proname,
+       has_function_privilege('anon',          p.oid, 'EXECUTE') AS anon,
+       has_function_privilege('authenticated', p.oid, 'EXECUTE') AS authenticated
+FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace
+WHERE n.nspname = 'public' AND p.prosecdef
+  AND p.proname <> 'get_own_member'
+  AND (has_function_privilege('anon', p.oid, 'EXECUTE')
+       OR has_function_privilege('authenticated', p.oid, 'EXECUTE'));
+
+\echo '=== 053 — get_own_member reste appelable par authenticated (attendu: t) ==='
+SELECT has_function_privilege('authenticated', 'get_own_member()', 'EXECUTE') AS can_execute;
+
+\echo '=== 053 — messages non modifiable côté client (attendu: f, f) ==='
+SELECT has_table_privilege('authenticated', 'messages', 'UPDATE') AS authd_update,
+       has_table_privilege('authenticated', 'messages', 'INSERT') AS authd_insert;
+
+\echo '=== 053 — pas d''upload direct dans les buckets (attendu: 0 ligne) ==='
+SELECT policyname, cmd FROM pg_policies
+WHERE schemaname = 'storage' AND tablename = 'objects' AND cmd IN ('INSERT', 'UPDATE');
+
 \echo '=== Rappel : RLS activée sur les tables sensibles (attendu: tous t) ==='
 SELECT relname, relrowsecurity
 FROM pg_class

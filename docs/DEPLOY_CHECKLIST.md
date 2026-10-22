@@ -8,7 +8,7 @@
 
 ## 1. Migrations SQL — ordre & application
 
-Les migrations sont numérotées et **doivent s'appliquer dans l'ordre** (`supabase/migrations/001 … 035`).
+Les migrations sont numérotées et **doivent s'appliquer dans l'ordre** (`supabase/migrations/001 … 053`).
 
 ### Nouveautés de ce lot de durcissement
 | # | Effet | Critique ? |
@@ -28,20 +28,26 @@ Les migrations sont numérotées et **doivent s'appliquer dans l'ordre** (`supab
 | `046` | `banned_devices` (ban global device) + `members.terms_accepted_at`/`service_waiver_at` (consentement activation) + `cleanup_old_data()` (rétention 24 mois des traces d'abus, exemption `member.activated`) | 🟠 anti-harcèlement en série + preuve de consentement bien/service + minimisation RGPD différenciée |
 | `047` | index UNIQUE partiel `messages(member_id, sender_token) WHERE parent_id IS NULL` | 🟠 rend atomique la règle « un seul message par device » (anti-TOCTOU). ⚠️ dédupliquer d'abord si base existante (cf. commentaire migration) |
 | `048` | `orders.qr_style` (TEXT NOT NULL DEFAULT 'rounded' + CHECK) | feature : le client choisit la forme du QR à l'achat. `ADD COLUMN` avec default = safe sur base live |
+| `049` | `orders.tagline_id` (accroche imprimée sous le QR) | feature : **requis par le checkout** (insert de la colonne) |
+| `050` | `orders.short_code` + index unique partiel | feature : **requis par l'impression au paiement** (`FULFILL_ON_PAYMENT`) |
+| `051` | index unique `feedback(message_id)` (conversation) | 🟠 une seule note par thread (anti-course) |
+| `052` | DROP policy + `REVOKE INSERT, DELETE` sur `members` / `referrals` | 🔴 ferme la création de membre premium par POST direct (clé anon + session) |
+| `053` | `REVOKE EXECUTE … FROM authenticated` sur les RPC DEFINER (`record_scan`, `create_member_with_code`, `accounts_pending_profile`, `cleanup_old_data`) + default privileges fail-safe + `messages` sans écriture client + plus d'upload direct Storage | 🔴 ferme la fuite d'emails, le vol de short_code imprimé et les scans forgés **par n'importe quelle session signup** |
 
 ### Base NEUVE (staging / nouveau projet) — recommandé (Option A)
-⚠️ **L'ordre 001→048 naïf ÉCHOUE** : `001_enable_rls` fait `ALTER TABLE members …`
+⚠️ **L'ordre 001→053 naïf ÉCHOUE** : `001_enable_rls` fait `ALTER TABLE members …`
 alors que `members` n'est créée qu'en `015`. L'ordre correct est **015 D'ABORD**,
-puis 001-014, puis 016-048.
+puis 001-014, puis 016-053.
 
-Utiliser le bundle pré-généré **et validé** (48/48 migrations appliquées sur PG18) :
+Utiliser le bundle pré-généré **et validé** (53/53 migrations — schéma identique, grants et policies compris, à l'application une par une ; vérifié sur PG16) :
 ```
 scripts/fresh-setup.sql   ← à coller intégralement dans le Supabase SQL Editor d'un
                             projet NEUF (auth + storage + rôles déjà présents) → Run.
 ```
 Régénérer le bundle après ajout d'une migration :
 ```bash
-# ordre : 015 puis le reste numérique (voir le script de génération dans l'historique git)
+node scripts/build-fresh-setup.mjs          # 015 puis le reste numérique, verbatim
+node scripts/build-fresh-setup.mjs --check  # aussi vérifié par vitest (fresh-setup-sync.test.ts)
 ```
 > Ne PAS utiliser `cat supabase/migrations/0*.sql` (ordre naïf → échec 001).
 
@@ -52,7 +58,9 @@ for f in 033_rls_hardening_views 034_record_scan 035_secure_create_member_rpc 03
          040_audit_retain_consent 041_security_scan_count_and_consent 042_members_select_allowlist \
          043_newsletter_campaigns 044_profile_completion_reminders 045_fix_members_update_and_cleanup \
          046_abuse_controls_and_activation_consent 047_one_root_message_per_device \
-         048_order_qr_style; do
+         048_order_qr_style 049_order_tagline 050_order_short_code \
+         051_feedback_unique_conversation 052_close_members_referrals_insert \
+         053_close_definer_rpcs_to_authenticated; do
   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -1 -f "supabase/migrations/$f.sql"
 done
 # 021 a été édité (guard idempotent) : sûr à ré-exécuter si tu veux l'aligner.

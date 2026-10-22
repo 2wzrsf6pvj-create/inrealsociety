@@ -1,7 +1,7 @@
 -- fresh-setup.sql — INSTALLATION D'UNE BASE NEUVE (Option A)
--- Généré + VALIDÉ : 48/48 migrations appliquées proprement sur Postgres 18 (PGlite).
+-- GÉNÉRÉ par scripts/build-fresh-setup.mjs (53 migrations) — ne pas éditer à la main.
 -- Ordre CORRIGÉ : 015 (schéma) EN PREMIER — 001-014 posent la RLS sur des tables
--- créées en 015, donc un ordre 001→048 naïf échoue ("table members n'existe pas").
+-- créées en 015, donc un ordre 001→053 naïf échoue ("table members n'existe pas").
 --
 -- USAGE : projet Supabase NEUF (auth + storage + rôles anon/authenticated/service_role
 -- déjà présents). Coller TOUT dans le SQL Editor → Run. IF NOT EXISTS partout.
@@ -1947,3 +1947,183 @@ BEGIN
     ALTER TABLE orders VALIDATE CONSTRAINT orders_qr_style_valid;
   END IF;
 END $$;
+
+
+-- ═══════════════════════════════════════════════════════════════
+-- ▶ 049_order_tagline.sql
+-- ═══════════════════════════════════════════════════════════════
+-- 049_order_tagline.sql
+-- Accroche imprimée SOUS le QR au dos du t-shirt : le hameçon qui donne une raison de
+-- scanner. Le client la CHOISIT dans une bibliothèque fermée (src/lib/taglines.ts) ;
+-- jamais de texte libre (aucune modération, aucun risque juridique sur un objet physique).
+-- Stockée sur l'order au checkout, lue par fulfillOrder pour composer le fichier dos.
+--
+-- NULL = « QR seul » (option assumée). Pas de DEFAULT : l'absence de choix = pas d'accroche.
+ALTER TABLE orders
+  ADD COLUMN IF NOT EXISTS tagline_id TEXT;
+
+-- On NE met PAS de contrainte CHECK sur les id : la whitelist vit dans le code
+-- (isValidTaglineId, src/lib/taglines.ts) et évolue avec la bibliothèque, sans migration.
+-- La validation serveur (checkout / member-create) refuse tout id hors bibliothèque ;
+-- un id inconnu au fulfillment retombe proprement sur « QR seul » (getTagline → null).
+COMMENT ON COLUMN orders.tagline_id IS
+  'Slug d''accroche imprimée sous le QR (src/lib/taglines.ts). NULL = QR seul. Whitelist côté code.';
+
+
+-- ═══════════════════════════════════════════════════════════════
+-- ▶ 050_order_short_code.sql
+-- ═══════════════════════════════════════════════════════════════
+-- 050_order_short_code.sql
+-- Découplage impression ↔ activation : on RÉSERVE le short_code du QR sur la
+-- commande dès le paiement, pour pouvoir imprimer le t-shirt AVANT que l'acheteur
+-- n'ait créé son profil. À l'activation, le membre HÉRITE de ce même short_code
+-- (le QR déjà imprimé pointe alors vers son profil).
+--
+-- Contrainte : le short_code doit être unique GLOBALEMENT. Il vit dans deux
+-- colonnes (members.short_code réservé aux membres activés, orders.short_code
+-- réservé au moment du paiement). L'unicité inter-tables est garantie côté
+-- application (generateUniqueShortCode vérifie members ET orders) ; ici on pose
+-- l'unicité intra-orders + l'index de lookup pour /r/<code>.
+--
+-- ADD COLUMN nullable, sans DEFAULT = safe sur base live (pas de réécriture).
+-- Les commandes existantes gardent short_code NULL (chemin legacy « imprimer à
+-- l'activation » toujours géré par le code).
+ALTER TABLE orders
+  ADD COLUMN IF NOT EXISTS short_code TEXT;
+
+-- Unicité intra-orders (deux commandes ne peuvent pas réserver le même code).
+-- Index partiel : n'indexe que les lignes réservées (NULL exclu).
+CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_short_code_unique
+  ON orders(short_code) WHERE short_code IS NOT NULL;
+
+
+-- ═══════════════════════════════════════════════════════════════
+-- ▶ 051_feedback_unique_conversation.sql
+-- ═══════════════════════════════════════════════════════════════
+-- 051_feedback_unique_conversation.sql
+-- Un seul feedback de CONVERSATION par message (1 note par thread). Avant, le garde
+-- était un check-then-insert applicatif non atomique (api/feedback) → deux
+-- soumissions concurrentes inséraient deux notes pour le même message. Cet index
+-- unique partiel pose la garantie côté DB ; l'app traite le 23505 en
+-- « alreadySubmitted » (pas une erreur serveur).
+--
+-- Partiel : ne couvre que les feedbacks de conversation liés à un message ; les
+-- feedbacks 'app' (message_id NULL) ne sont pas contraints.
+--
+-- ⚠️ Échoue si des doublons existent DÉJÀ (pré-lancement : aucune donnée réelle).
+-- À valider en staging avant prod (cf. DEPLOY_CHECKLIST).
+CREATE UNIQUE INDEX IF NOT EXISTS uq_feedback_conversation_message
+  ON feedback(message_id)
+  WHERE type = 'conversation' AND message_id IS NOT NULL;
+
+
+-- ═══════════════════════════════════════════════════════════════
+-- ▶ 052_close_members_referrals_insert.sql
+-- ═══════════════════════════════════════════════════════════════
+-- 052_close_members_referrals_insert.sql
+-- 🔴 FAILLE (revue 2026-07-17) : bypass du paywall + auto-octroi du premium.
+--
+-- La passe de durcissement a fermé le SELECT (042) et l'UPDATE (045) sur `members`,
+-- mais JAMAIS l'INSERT. La policy `members_insert_own` (002) est restée vivante et
+-- le rôle `authenticated` garde le GRANT INSERT par défaut de Supabase. Résultat :
+-- un utilisateur avec une simple session auth (OTP email, SANS achat) peut poster
+-- directement sur PostgREST, en contournant TOUTES les gardes Next.js :
+--   POST /rest/v1/members
+--   { "auth_user_id":"<son uid>", "name":"x", "pitch":"y", "plan":"premium",
+--     "short_code":"squat" }
+-- WITH CHECK (auth.uid() = auth_user_id) passe, le GRANT INSERT est présent → ligne
+-- créée. Ça contourne : la consommation du code d'activation (le paywall du t-shirt),
+-- le paiement Stripe du premium (`plan` en écriture libre), et la capture du
+-- consentement CGV/service_waiver. Exactement l'escalade que 045 a fermée pour
+-- l'UPDATE, laissée ouverte pour l'INSERT (le cas « pas encore de membre » = ceux
+-- qui n'ont pas payé).
+--
+-- Idem `referrals` (008) : `referrals_insert_own` + GRANT INSERT laissent gonfler
+-- son compteur de parrainage en contournant l'anti-fraude serveur.
+--
+-- MODÈLE VOULU : members/referrals ne sont écrits QUE par le backend (service_role
+-- via supabaseAdmin / RPC SECURITY DEFINER `create_member_with_code`). L'app n'y
+-- insère JAMAIS côté client (vérifié). On aligne le GRANT sur ce modèle.
+-- REVOKE FROM anon, authenticated ne touche PAS service_role → aucun flux cassé.
+
+-- ── members ──────────────────────────────────────────────────────────────────
+DROP POLICY IF EXISTS members_insert_own ON members;
+REVOKE INSERT, DELETE ON members FROM anon, authenticated;
+
+-- ── referrals ────────────────────────────────────────────────────────────────
+DROP POLICY IF EXISTS referrals_insert_own ON referrals;
+REVOKE INSERT, DELETE ON referrals FROM anon, authenticated;
+
+
+-- ═══════════════════════════════════════════════════════════════
+-- ▶ 053_close_definer_rpcs_to_authenticated.sql
+-- ═══════════════════════════════════════════════════════════════
+-- 053_close_definer_rpcs_to_authenticated.sql
+-- 🔴 FAILLE (revue 2026-10-22) : les fonctions SECURITY DEFINER restaient
+-- exécutables par `authenticated` — n'importe quelle session issue d'un simple
+-- signup, sans achat.
+--
+-- Cause : 034/035/036/040/044/045/046 font `REVOKE EXECUTE … FROM anon, public`.
+-- Or Supabase pose des DEFAULT PRIVILEGES sur le schéma public qui accordent
+-- EXECUTE EXPLICITEMENT à anon ET authenticated : retirer PUBLIC n'enlève pas ce
+-- grant nominatif. Même famille que 052 (INSERT members resté ouvert).
+--
+-- Vérifié sur une base migrée 001→052 (rôle authenticated, POST /rest/v1/rpc/…) :
+--   * accounts_pending_profile() → liste les emails d'autres clients (fuite RGPD).
+--   * create_member_with_code(…) → profil avec short_code ET email ARBITRAIRES :
+--     vol du short_code réservé sur la commande d'un autre acheteur (son tee
+--     imprimé pointe alors vers le profil de l'attaquant, et son activation
+--     échoue sur l'index unique) ; contourne aussi la capture du consentement.
+--   * record_scan(…) → scans forgés en masse sur n'importe quel membre
+--     (scan_count, faux lieux, réouverture de la fenêtre de messages).
+--   * cleanup_old_data() → purge déclenchable par n'importe qui.
+--
+-- MODÈLE VOULU : ces fonctions ne sont appelées QUE par le backend (service_role
+-- via supabaseAdmin). Seule get_own_member() est destinée au client (030).
+-- REVOKE … FROM anon, authenticated ne touche PAS service_role → aucun flux cassé.
+
+-- ── 1. RPC SECURITY DEFINER : backend uniquement ─────────────────────────────
+REVOKE EXECUTE ON FUNCTION record_scan(UUID, TEXT, DOUBLE PRECISION, DOUBLE PRECISION, TEXT) FROM anon, authenticated, public;
+REVOKE EXECUTE ON FUNCTION create_member_with_code(UUID, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT) FROM anon, authenticated, public;
+REVOKE EXECUTE ON FUNCTION accounts_pending_profile() FROM anon, authenticated, public;
+REVOKE EXECUTE ON FUNCTION cleanup_old_data() FROM anon, authenticated, public;
+
+GRANT EXECUTE ON FUNCTION record_scan(UUID, TEXT, DOUBLE PRECISION, DOUBLE PRECISION, TEXT) TO service_role;
+GRANT EXECUTE ON FUNCTION create_member_with_code(UUID, TEXT, TEXT, TEXT, TEXT, TEXT, TEXT) TO service_role;
+GRANT EXECUTE ON FUNCTION accounts_pending_profile() TO service_role;
+GRANT EXECUTE ON FUNCTION cleanup_old_data() TO service_role;
+
+-- ── 2. Fail-safe : les FUTURES fonctions ne sont plus exécutables par défaut ──
+-- Même logique que 042 pour les colonnes (allowlist plutôt que blocklist). Une
+-- fonction destinée au client devra être GRANT explicitement (cf. get_own_member).
+-- La révocation PUBLIC doit être GLOBALE : une révocation par schéma ne peut pas
+-- retirer un privilège accordé globalement (doc ALTER DEFAULT PRIVILEGES).
+ALTER DEFAULT PRIVILEGES IN SCHEMA public REVOKE EXECUTE ON FUNCTIONS FROM anon, authenticated;
+ALTER DEFAULT PRIVILEGES REVOKE EXECUTE ON FUNCTIONS FROM public;
+
+-- ── 3. messages : écrit UNIQUEMENT par le backend ────────────────────────────
+-- messages_update_own (003) laissait le porteur réécrire n'importe quelle colonne
+-- de ses messages via PostgREST : le texte du scanneur (qu'il relit dans le fil),
+-- sender_token (désactive le verrou « appareil d'origine »), moderated… L'app ne
+-- modifie jamais messages côté client (mark-read, blocage, etc. passent par l'API).
+-- SELECT conservé : RLS owner-only + postgres_changes du ConversationClient.
+DROP POLICY IF EXISTS messages_update_own ON messages;
+REVOKE INSERT, UPDATE, DELETE ON messages FROM anon, authenticated;
+
+-- ── 4. orders : policy morte ─────────────────────────────────────────────────
+-- orders_select_own lit members.email, colonne retirée à authenticated par 042 →
+-- toute lecture renvoie « permission denied for table members ». Aucun code ne lit
+-- orders avec une session utilisateur (tout passe par supabaseAdmin). On la retire
+-- plutôt que de laisser une policy fondée sur un email désormais non fiable.
+DROP POLICY IF EXISTS orders_select_own ON orders;
+
+-- ── 5. Storage : uploads backend uniquement ──────────────────────────────────
+-- /api/member/avatar (vérification du type réel + taille) et fulfillOrder
+-- uploadent via service_role. Les policies d'INSERT/UPDATE directes laissaient un
+-- membre déposer n'importe quel fichier (type, taille) dans son dossier des buckets
+-- publics, en contournant ces contrôles. Les lectures publiques restent.
+DROP POLICY IF EXISTS avatars_insert_own  ON storage.objects;
+DROP POLICY IF EXISTS avatars_update_own  ON storage.objects;
+DROP POLICY IF EXISTS qrcodes_insert_own  ON storage.objects;
+DROP POLICY IF EXISTS qrcodes_update_own  ON storage.objects;
+DROP POLICY IF EXISTS qrcodes_insert_auth ON storage.objects;
