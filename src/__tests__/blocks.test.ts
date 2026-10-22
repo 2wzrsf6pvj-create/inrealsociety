@@ -9,7 +9,7 @@ const maybeSingle = vi.fn();
 const eq2 = vi.fn(() => ({ maybeSingle }));
 const eq1 = vi.fn(() => ({ eq: eq2, maybeSingle }));
 const select = vi.fn(() => ({ eq: eq1 }));
-const from = vi.fn((_table: string) => ({ select }));
+const from = vi.fn<(table: string) => { select: typeof select }>(() => ({ select }));
 
 vi.mock('@/lib/supabase-admin', () => ({
   // wrapper typé (pas de spread) qui défère l'accès à `from` après son init.
