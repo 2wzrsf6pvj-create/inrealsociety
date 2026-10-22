@@ -5,6 +5,34 @@
 
 ---
 
+## 2026-10-22 (soirée, suite) — Lot RGPD fusionné, liste de mise en production
+
+### Fait
+- **PR #18 fusionnée** (`8bf80ec`), lot RGPD (constats 3 à 7 de l'entrée
+  précédente, décisions de Clément) :
+  - le porteur ne voit que la ville du passant : position arrondie (~1 km)
+    avant OpenStreetMap, plus aucune coordonnée stockée ;
+  - migration **058** : conversations purgées 12 mois après le dernier
+    message, preuves RGPD bornées à 5 ans, anciennes coordonnées effacées ;
+  - « Signaler ce profil » (formulaire, alerte à `ADMIN_ALERT_EMAIL`) ;
+  - liens « Vos données », « Gérer ou résilier mon abonnement », article
+    Modération dans les CGV, politique de confidentialité complétée.
+- **`docs/MISE_EN_PRODUCTION.md`** : la liste de Clément, tout ce qui se règle
+  hors du code, dans l'ordre, avec la façon de vérifier. Upstash y est classé
+  **bloquant** : sans lui, QR codes, scans et messages répondent 500.
+
+### À faire — côté Clément
+- [ ] Suivre `docs/MISE_EN_PRODUCTION.md`, dont la migration **058**.
+- [ ] Juriste : en plus de la rétractation, la clause « délais de livraison
+      indicatifs » (probablement abusive en vente aux particuliers) et
+      l'email de confirmation de résiliation (L215-1-1).
+
+### Ensuite
+- Priorité 1 bouclée côté code. Priorité 2, choix de Clément : **expérience
+  du porteur** après l'activation (tableau de bord, notifications, relances).
+
+---
+
 ## 2026-10-22 (soirée) — Lot UX passant fusionné, analyse RGPD et juridique
 
 ### Fait
