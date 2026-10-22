@@ -5,6 +5,7 @@
 // pour garder ce fichier focalisé sur l'auth/tabs/toast logic.
 
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { captureEvent, identifyMember } from '@/lib/posthog-client';
 import type { Member, Scan, Message } from '@/lib/types';
 import HomeSection from './components/HomeSection';
@@ -89,6 +90,9 @@ export default function DashboardClient({
   const [tab, setTab]     = useState<Tab>('home');
   const [toast, setToast] = useState('');
   const [toastHiding, setToastHiding] = useState(false);
+  // Retour du paiement premium, confirmation de Stripe pas encore reçue.
+  const [awaitingPremium, setAwaitingPremium] = useState(false);
+  const router = useRouter();
 
   // Onglet reflété dans l'URL (?tab=) → deep-linkable et partageable. On lit au
   // mount (post-hydratation pour éviter tout mismatch SSR) et on met à jour via
@@ -104,6 +108,19 @@ export default function DashboardClient({
     url.searchParams.set('tab', t);
     window.history.replaceState(null, '', url.toString());
   }, []);
+
+  // Bandeau « Voir l'offre » de l'onglet Messages → offre premium des réglages
+  // (prix, avantages, CGV), une fois l'onglet affiché.
+  const scrollToPremium = React.useRef(false);
+  const goToPremium = React.useCallback(() => {
+    scrollToPremium.current = true;
+    changeTab('settings');
+  }, [changeTab]);
+  React.useEffect(() => {
+    if (tab !== 'settings' || !scrollToPremium.current) return;
+    scrollToPremium.current = false;
+    document.getElementById('premium')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [tab]);
 
   // Affiche un toast avec entrée + sortie animée. La sortie est déclenchée
   // après `durationMs` puis l'unmount effectif arrive 300ms plus tard
@@ -138,11 +155,16 @@ export default function DashboardClient({
       return showToast('Profil mis à jour.', 3000);
     }
 
-    // Toast upgrade premium
+    // Retour du paiement premium. La confirmation de Stripe (webhook) peut
+    // arriver après la page : on attend alors le premium (effet plus bas).
     const params = new URLSearchParams(window.location.search);
     if (params.get('upgraded') === '1') {
-      window.history.replaceState({}, '', '/dashboard');
-      return showToast('✦ Bienvenue dans le cercle premium.', 4000);
+      // Même page, sans le paramètre : l'attente du premium (plus bas) recharge
+      // les données de CETTE page.
+      window.history.replaceState({}, '', window.location.pathname);
+      if (member.plan === 'premium') return showToast('✦ Bienvenue dans le cercle premium.', 4000);
+      setAwaitingPremium(true);
+      return showToast('Paiement reçu. Activation du premium…', 4000);
     }
 
     // Célébration du TOUT PREMIER scan (une seule fois, persistée). Gardé à
@@ -163,7 +185,31 @@ export default function DashboardClient({
       sessionStorage.setItem('just_logged_in', '1');
       return showToast('Connexion réussie.', 2500);
     }
-  }, [member.name, member.scan_count, showToast]);
+  }, [member.name, member.scan_count, member.plan, showToast]);
+
+  // Premium en attente de confirmation : on recharge les données du serveur toutes
+  // les 2 s, 20 s au plus. Avant, le toast de bienvenue s'affichait sur une page
+  // encore en gratuit, avec « Passer premium » qui ne répondait plus.
+  React.useEffect(() => {
+    if (!awaitingPremium) return;
+    if (member.plan === 'premium') {
+      setAwaitingPremium(false);
+      showToast('✦ Bienvenue dans le cercle premium.', 4000);
+      return;
+    }
+    let tries = 0;
+    const timer = setInterval(() => {
+      tries += 1;
+      if (tries > 10) {
+        clearInterval(timer);
+        setAwaitingPremium(false);
+        showToast('L’activation prend plus de temps que prévu : rechargez la page dans un instant.', 5000);
+        return;
+      }
+      router.refresh();
+    }, 2000);
+    return () => clearInterval(timer);
+  }, [awaitingPremium, member.plan, router, showToast]);
 
   return (
     <main className="relative flex min-h-screen flex-col items-center bg-brand-black text-brand-white px-6 py-8 overflow-hidden">
@@ -212,6 +258,7 @@ export default function DashboardClient({
               plan={member.plan}
               recentConversations={recentConversations}
               totalConversations={totalConversations}
+              onUpgrade={goToPremium}
             />
           )}
 

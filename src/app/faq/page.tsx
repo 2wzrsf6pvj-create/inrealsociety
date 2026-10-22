@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { headers } from 'next/headers';
 import FaqAccordion, { type FaqGroup } from './FaqAccordion';
-import { MAX_CONVERSATIONS, CONVERSATION_WINDOW_DAYS, TSHIRT_PRICE_EUR, SHIPPING_STANDARD_CENTS, SHIPPING_EXPRESS_CENTS } from '@/lib/constants';
+import { MAX_CONVERSATIONS, CONVERSATION_WINDOW_DAYS, TSHIRT_PRICE_EUR, SHIPPING_STANDARD_CENTS, SHIPPING_EXPRESS_CENTS, PREMIUM_PRICE_LABEL, PREMIUM_WITHDRAWAL_DAYS } from '@/lib/constants';
 
 export const metadata = {
   title: 'FAQ — Comment ça marche',
@@ -55,7 +55,7 @@ const FAQ_GROUPS: FaqGroup[] = [
     label: 'compte & premium',
     items: [
       { q: 'Le premium, ça apporte quoi ?',
-        a: `Une fenêtre de réponse étendue à 48 h (au lieu de 24 h), des conversations illimitées (au lieu de ${MAX_CONVERSATIONS.free} sur ${CONVERSATION_WINDOW_DAYS} jours glissants) et le badge ✦ sur votre profil. 2,99 €/mois, sans engagement, annulable à tout moment.` },
+        a: `Une fenêtre de réponse étendue à 48 h (au lieu de 24 h), des conversations illimitées (au lieu de ${MAX_CONVERSATIONS.free} sur ${CONVERSATION_WINDOW_DAYS} jours glissants), le badge ✦ sur votre profil et vos scans des 7 derniers jours, jour par jour. ${PREMIUM_PRICE_LABEL}/mois, sans engagement, résiliable à tout moment depuis vos réglages ; si vous changez d’avis dans les ${PREMIUM_WITHDRAWAL_DAYS} jours, votre paiement vous est remboursé en entier.` },
       { q: 'Je peux avoir un compte sans acheter de t-shirt ?',
         a: 'Le profil s’active avec le code reçu à l’achat : c’est le t-shirt qui ouvre l’accès. Sans t-shirt, il n’y a pas de QR à faire scanner.' },
     ],

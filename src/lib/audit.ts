@@ -23,6 +23,7 @@ export type AuditAction =
   | 'order.email_resent'
   | 'order.refunded'
   | 'subscription.payment_failed'
+  | 'subscription.duplicate'
   | 'member.deleted'
   | 'member.data_exported'
   | 'member.marketing_consent_changed'

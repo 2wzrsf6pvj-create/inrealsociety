@@ -29,6 +29,26 @@ export const MAX_CONVERSATIONS = {
  *  après 3 messages, un porteur gratuit ne pouvait plus jamais être contacté. */
 export const CONVERSATION_WINDOW_DAYS = 7;
 
+/** Prix du premium, TTC — affichage seulement (réglages, FAQ, CGV, emails). Le
+ *  montant débité vient du Stripe Price (STRIPE_PREMIUM_PRICE_ID), qui DOIT être
+ *  en tax_behavior « inclusive » : sinon Stripe ajoute la TVA (3,59 €). */
+export const PREMIUM_PRICE_LABEL = '2,99\u00A0€';
+
+/** Rétractation du premium : remboursé en entier dans ce délai (choix de Clément,
+ *  CGV article 8). Le premium démarre tout de suite. */
+export const PREMIUM_WITHDRAWAL_DAYS = 14;
+
+/** Ce que le premium apporte — source unique : réglages, email de bienvenue, CGV. */
+export const PREMIUM_PERKS = [
+  `Les passants ont ${SCAN_WINDOW_MS.premium / 3_600_000} h pour vous écrire après un scan (au lieu de ${SCAN_WINDOW_MS.free / 3_600_000} h)`,
+  `Conversations illimitées (au lieu de ${MAX_CONVERSATIONS.free} sur ${CONVERSATION_WINDOW_DAYS} jours)`,
+  'Le badge ✦ sur votre profil',
+  'Vos scans des 7 derniers jours, jour par jour',
+] as const;
+
+/** Adresse de contact (rétractation, support). */
+export const CONTACT_EMAIL = 'hello@inrealsociety.com';
+
 /** Un appareil (sender_token) signalé par ce nombre de porteurs DIFFÉRENTS est
  *  banni automatiquement de toute la plateforme (banned_devices). Plusieurs
  *  porteurs, pour qu'un signalement isolé ou abusif ne suffise pas. */

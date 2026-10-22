@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { BrandMark } from '@/app/components/ui/BrandMark';
+import { CONTACT_EMAIL, PREMIUM_PERKS, PREMIUM_PRICE_LABEL, PREMIUM_WITHDRAWAL_DAYS } from '@/lib/constants';
 
 export const metadata = {
   title: 'Conditions Générales de Vente — In Real Society',
@@ -39,7 +40,8 @@ export default function CGVPage() {
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
             Les présentes Conditions Générales de Vente (ci-après &quot;CGV&quot;) régissent l&apos;ensemble des ventes
             conclues entre In Real Society (ci-après &quot;le Vendeur&quot;) et toute personne physique effectuant
-            un achat sur le site inrealsociety.com (ci-après &quot;l&apos;Acheteur&quot;).
+            un achat sur le site inrealsociety.com (ci-après &quot;l&apos;Acheteur&quot;), y compris
+            l&apos;abonnement premium proposé aux porteurs (article 8).
           </p>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
             Toute commande implique l&apos;acceptation pleine et entière des présentes CGV. Le Vendeur se
@@ -130,6 +132,11 @@ export default function CGVPage() {
             cette exception au droit de rétractation préalablement à la passation de sa commande,
             conformément aux articles L221-5 et L221-28 du Code de la consommation.
           </p>
+
+          <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
+            Cette exception concerne les vêtements. L&apos;abonnement premium, lui, ouvre droit à
+            rétractation dans les conditions de l&apos;article 8.
+          </p>
         </section>
 
         {/* Article 6 — Exceptions */}
@@ -179,10 +186,81 @@ export default function CGVPage() {
           </p>
         </section>
 
-        {/* Article 8 — Modération (règlement européen sur les services numériques, art. 14) */}
+        {/* Article 8 — Abonnement premium. Rétractation : remboursement intégral
+            sous 14 jours, sans demande d'exécution immédiate (choix de Clément) ;
+            infos précontractuelles L221-5, formulaire type (annexe à R221-1). */}
+        <section id="premium" className="flex flex-col gap-3 scroll-mt-8">
+          <h2 className="font-ui text-sm font-bold tracking-[0.2em] uppercase text-brand-white">
+            Article 8 — Abonnement premium
+          </h2>
+          <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
+            Le porteur peut souscrire, depuis son tableau de bord, un abonnement premium à{' '}
+            <span className="text-brand-white/80">{PREMIUM_PRICE_LABEL} TTC par mois</span>. Il donne accès à :
+          </p>
+          <ul className="flex flex-col gap-2 pl-4">
+            {PREMIUM_PERKS.map((item) => (
+              <li key={item} className="flex items-start gap-2">
+                <span className="text-brand-gray/55 font-ui text-sm md:text-base flex-shrink-0">—</span>
+                <span className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">{item}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
+            <strong className="text-brand-white/80">Durée et paiement.</strong> L&apos;abonnement est mensuel et
+            sans engagement. Il est payé d&apos;avance par carte, via Stripe, et se renouvelle automatiquement
+            chaque mois, à la date anniversaire de la souscription, jusqu&apos;à sa résiliation. Le porteur
+            accepte les présentes CGV avant de payer ; un email confirme ensuite la souscription et reprend
+            ces conditions.
+          </p>
+          <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
+            <strong className="text-brand-white/80">Résiliation.</strong> Le porteur peut résilier à tout moment,
+            en ligne, depuis son tableau de bord (Réglages, «&nbsp;Gérer ou résilier mon abonnement&nbsp;»). La résiliation
+            prend effet à la fin du mois déjà payé : le premium reste actif jusque-là et aucun autre prélèvement
+            n&apos;a lieu. Un email confirme la résiliation et sa date d&apos;effet. La suppression du compte
+            résilie l&apos;abonnement immédiatement.
+          </p>
+          <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
+            <strong className="text-brand-white/80">Droit de rétractation.</strong> Le porteur dispose de{' '}
+            {PREMIUM_WITHDRAWAL_DAYS} jours à compter de la souscription pour se rétracter, sans avoir à se
+            justifier. Le premium démarre dès la souscription ; en cas de rétractation dans ce délai, le
+            paiement est <span className="text-brand-white/80">remboursé en totalité</span>, par le moyen de
+            paiement utilisé, au plus tard 14 jours après la réception de la demande, et l&apos;abonnement
+            prend fin. Pour se rétracter, il suffit d&apos;écrire à {CONTACT_EMAIL}, par exemple avec le
+            formulaire ci-dessous.
+          </p>
+          <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
+            <strong className="text-brand-white/80">Échec de paiement.</strong> Si un renouvellement échoue,
+            Stripe présente de nouveau le paiement pendant quelques jours et le premium reste actif. Sans
+            paiement à l&apos;issue de ces tentatives, le profil repasse en formule gratuite ; ses scans et ses
+            conversations sont conservés.
+          </p>
+          <div className="border border-brand-white/10 rounded-[2px] p-4 bg-[#080808] flex flex-col gap-2">
+            <p className="font-ui text-xs font-bold tracking-[0.15em] uppercase text-brand-white/70">
+              Formulaire de rétractation
+            </p>
+            <p className="font-ui text-xs md:text-sm font-light text-brand-gray/70 leading-relaxed">
+              (Veuillez compléter et renvoyer le présent formulaire uniquement si vous souhaitez vous
+              rétracter du contrat.)
+              <br />À l&apos;attention de In Real Society, {CONTACT_EMAIL} (adresse postale : voir les{' '}
+              <Link href="/mentions-legales" className="underline underline-offset-4 hover:text-brand-white transition-colors">
+                mentions légales
+              </Link>) :
+              <br />Je vous notifie par la présente ma rétractation du contrat portant sur la prestation de
+              services ci-dessous : abonnement premium In Real Society.
+              <br />Souscrit le :
+              <br />Nom du consommateur :
+              <br />Adresse du consommateur :
+              <br />Signature du consommateur (uniquement en cas de notification du présent formulaire sur
+              papier) :
+              <br />Date :
+            </p>
+          </div>
+        </section>
+
+        {/* Article 9 — Modération (règlement européen sur les services numériques, art. 14) */}
         <section className="flex flex-col gap-3">
           <h2 className="font-ui text-sm font-bold tracking-[0.2em] uppercase text-brand-white">
-            Article 8 — Modération et signalements
+            Article 9 — Modération et signalements
           </h2>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
             Les messages, prénoms et contacts laissés par les personnes qui écrivent aux porteurs sont
@@ -203,10 +281,10 @@ export default function CGVPage() {
           </p>
         </section>
 
-        {/* Article 9 — Données personnelles */}
+        {/* Article 10 — Données personnelles */}
         <section className="flex flex-col gap-3">
           <h2 className="font-ui text-sm font-bold tracking-[0.2em] uppercase text-brand-white">
-            Article 9 — Données personnelles
+            Article 10 — Données personnelles
           </h2>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
             Les données nécessaires à la commande (nom, adresse, email) sont transmises à Printful et
@@ -218,10 +296,10 @@ export default function CGVPage() {
           </p>
         </section>
 
-        {/* Article 10 — Droit applicable */}
+        {/* Article 11 — Droit applicable */}
         <section className="flex flex-col gap-3">
           <h2 className="font-ui text-sm font-bold tracking-[0.2em] uppercase text-brand-white">
-            Article 10 — Droit applicable et litiges
+            Article 11 — Droit applicable et litiges
           </h2>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
             Les présentes CGV sont soumises au droit français. En cas de litige, une solution amiable

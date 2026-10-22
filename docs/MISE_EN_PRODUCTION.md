@@ -75,20 +75,28 @@ qui manquent.
 
 ## 3. Stripe
 
-- [ ] Price du t-shirt en **« inclusive »** (TTC) : sinon la TVA s'ajoute aux
-      49 € affichés.
+- [ ] Price du t-shirt **et** price du premium en **« inclusive »** (TTC) :
+      sinon la TVA s'ajoute aux 49 € et aux 2,99 € affichés (3,59 €).
 - [ ] **Stripe Tax** activé.
 - [ ] Webhook vers `https://<domaine>/api/webhook/stripe`, avec les
       événements `checkout.session.completed`,
       `customer.subscription.updated`, `customer.subscription.deleted`,
       `charge.refunded`, `invoice.payment_failed`.
-- [ ] Coupon parrainage plafonné (nombre d'utilisations ou durée) :
-      l'identifiant du parrain est public.
-- [ ] Portail client : résiliation autorisée (bouton « Gérer ou résilier mon
-      abonnement »).
-- [ ] À décider : l'email qui confirme une résiliation. Il est obligatoire
-      (Code de la consommation, L215-1-1). Si Stripe ne l'envoie pas, il faut
-      l'ajouter à l'application.
+- [ ] Coupon parrainage plafonné (nombre d'utilisations ou durée) : le lien
+      de parrainage circule librement.
+- [ ] Portail client : résiliation autorisée **à la fin de la période** (le
+      premium reste actif jusqu'à la fin du mois payé, comme l'annoncent les
+      CGV) et mise à jour du moyen de paiement autorisée.
+- [ ] Faire relire par le juriste l'article 8 des CGV (abonnement premium) et
+      l'email de bienvenue premium, qui vaut confirmation du contrat.
+
+L'application envoie elle-même la confirmation de résiliation, avec la date de
+fin (Code de la consommation, L215-1-1) : rien à régler dans Stripe.
+
+**Rétractation du premium** (14 jours, remboursée en entier, CGV article 8) :
+sur demande à hello@inrealsociety.com, rembourser le paiement dans Stripe puis
+annuler l'abonnement immédiatement. Le porteur reçoit l'email de fin du
+premium.
 
 ## 4. Emails
 

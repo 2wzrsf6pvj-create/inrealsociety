@@ -4,7 +4,7 @@
 // (membre premium à vie). subscriptionMemberUpdate est pur et ne le lit pas.
 
 import { describe, it, expect } from 'vitest';
-import { subscriptionMemberUpdate } from '@/lib/subscription';
+import { subscriptionMemberUpdate, scheduledEnd } from '@/lib/subscription';
 
 describe('subscriptionMemberUpdate', () => {
   it('active → premium, garde le subscription id, plan_expires_at null', () => {
@@ -42,5 +42,28 @@ describe('subscriptionMemberUpdate', () => {
     const sub = { status: 'canceled', id: 'sub_x' } as { status: string; id: string };
     expect(() => subscriptionMemberUpdate(sub)).not.toThrow();
     expect(subscriptionMemberUpdate(sub).plan_expires_at).toBeNull();
+  });
+});
+
+describe('scheduledEnd / plan_expires_at (résiliation programmée)', () => {
+  const T = 1795341600; // 2026-11-22T10:00:00Z
+
+  it('cancel_at posé par Stripe : date de fin', () => {
+    expect(subscriptionMemberUpdate({ status: 'active', id: 'sub_1', cancel_at: T, cancel_at_period_end: true }))
+      .toEqual({ plan: 'premium', stripe_subscription_id: 'sub_1', plan_expires_at: '2026-11-22T10:00:00.000Z' });
+  });
+
+  it('cancel_at absent : fin de la période en cours, lue sur les items', () => {
+    expect(scheduledEnd({ status: 'active', id: 'sub_1', cancel_at: null, cancel_at_period_end: true,
+      items: { data: [{ current_period_end: T }] } })).toBe('2026-11-22T10:00:00.000Z');
+  });
+
+  it('aucune résiliation programmée : null', () => {
+    expect(scheduledEnd({ status: 'active', id: 'sub_1', cancel_at: null, cancel_at_period_end: false,
+      items: { data: [{ current_period_end: T }] } })).toBeNull();
+  });
+
+  it('abonnement terminé : null, même avec une date', () => {
+    expect(scheduledEnd({ status: 'canceled', id: 'sub_1', cancel_at: T, cancel_at_period_end: true })).toBeNull();
   });
 });

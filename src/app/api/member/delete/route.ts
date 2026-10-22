@@ -6,6 +6,10 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { requireAuth, isHttpError } from '@/lib/require-auth';
 import { checkAuthRateLimit, rateLimitHeaders } from '@/lib/ratelimit';
 import { audit } from '@/lib/audit';
+import { isActiveSubscriptionStatus } from '@/lib/subscription';
+import { sendEmail, emailPremiumEnded } from '@/lib/email-templates';
+import { PREMIUM_SETTINGS_URL } from '@/lib/premium';
+import { formatDayFr } from '@/lib/dates';
 import Stripe from 'stripe';
 
 export async function DELETE(req: NextRequest) {
@@ -24,7 +28,7 @@ export async function DELETE(req: NextRequest) {
     // Récupère le membre
     const { data: member } = await supabaseAdmin
       .from('members')
-      .select('id, email, stripe_customer_id, stripe_subscription_id')
+      .select('id, name, email, stripe_customer_id, stripe_subscription_id')
       .eq('auth_user_id', auth.user.id)
       .single();
 
@@ -32,16 +36,57 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ error: 'Profil introuvable.' }, { status: 404 });
     }
 
-    // Annule l'abonnement Stripe si actif
-    if (member.stripe_subscription_id) {
+    // ─── 0. Résilie l'abonnement premium — DOIT réussir ─────────────────────
+    // Avant, un échec chez Stripe était seulement logué : le compte disparaissait
+    // et le prélèvement continuait chaque mois, sans tableau de bord pour l'arrêter.
+    // On résilie donc TOUS les abonnements actifs du client (pas seulement celui
+    // connu en base : un webhook en retard peut ne pas l'avoir encore enregistré),
+    // et on n'efface rien si Stripe ne répond pas : l'utilisateur réessaie.
+    let cancelled = 0;
+    if (member.stripe_customer_id || member.stripe_subscription_id) {
       try {
         const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
           apiVersion: '2026-03-25.dahlia',
         });
-        await stripe.subscriptions.cancel(member.stripe_subscription_id);
+        // Client ou abonnement déjà supprimé chez Stripe : rien à résilier.
+        const missingIsEmpty = (err: unknown) => {
+          if ((err as { code?: string }).code === 'resource_missing') return [];
+          throw err;
+        };
+        const subs = member.stripe_customer_id
+          ? await stripe.subscriptions.list({ customer: member.stripe_customer_id, status: 'all', limit: 100 })
+              .then((list) => list.data, missingIsEmpty)
+          : await stripe.subscriptions.retrieve(member.stripe_subscription_id!)
+              .then((sub) => [sub], missingIsEmpty);
+        for (const sub of subs) {
+          if (!isActiveSubscriptionStatus(sub.status)) continue;
+          await stripe.subscriptions.cancel(sub.id);
+          cancelled++;
+        }
       } catch (err) {
-        console.warn('[member/delete] Échec annulation Stripe:', err);
+        console.error('[member/delete] Résiliation Stripe impossible, suppression annulée:', err);
+        return NextResponse.json(
+          { error: 'Impossible de résilier votre abonnement premium pour le moment : votre compte n\'a pas été supprimé. Réessayez dans quelques minutes.' },
+          { status: 502 },
+        );
       }
+    }
+
+    // Confirmation de la résiliation (Code de la consommation, L215-1-1), envoyée
+    // ici : le webhook customer.subscription.deleted trouvera un membre déjà
+    // gratuit (ou supprimé) et n'enverra pas un second email.
+    if (cancelled > 0) {
+      const { error: freeErr } = await supabaseAdmin.from('members')
+        .update({ plan: 'free', stripe_subscription_id: null, plan_expires_at: null })
+        .eq('id', member.id);
+      if (freeErr) console.error('[member/delete] Passage en gratuit avant suppression:', freeErr.message);
+    }
+    if (cancelled > 0 && member.email) {
+      const { subject, html } = emailPremiumEnded({
+        name: member.name, endedOn: formatDayFr(new Date()), settingsUrl: PREMIUM_SETTINGS_URL, accountDeleted: true,
+      });
+      const sent = await sendEmail({ to: member.email, subject, html });
+      if (!sent) console.error('[member/delete] Échec email de résiliation');
     }
 
     // ─── Supprime les fichiers Storage (photos + QR codes) ─────────────

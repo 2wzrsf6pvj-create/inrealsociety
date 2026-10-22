@@ -2,7 +2,11 @@
 // Filet de sécurité (C2) : le downgrade premium dépend du webhook
 // customer.subscription.deleted. Si un webhook est manqué (panne, retries Stripe
 // épuisés), un membre resterait premium à vie. Ce cron vérifie chaque membre
-// premium auprès de Stripe et le repasse `free` si l'abonnement n'est plus actif.
+// premium auprès de Stripe et le repasse `free` si l'abonnement n'est plus actif
+// (email de fin compris). Il rattrape aussi une résiliation programmée dont le
+// webhook a été manqué : date de fin et email de confirmation (L215-1-1). Les
+// transitions sont réservées en base (lib/premium) : jamais d'email en double
+// avec le webhook.
 //
 // Protégé par CRON_SECRET (Vercel Cron envoie Authorization: Bearer).
 
@@ -11,7 +15,8 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { subscriptionMemberUpdate, isActiveSubscriptionStatus } from '@/lib/subscription';
+import { subscriptionMemberUpdate, isActiveSubscriptionStatus, scheduledEnd } from '@/lib/subscription';
+import { applyScheduledEnd, endPremium } from '@/lib/premium';
 import { isAuthorizedCron } from '@/lib/cron-auth';
 
 const BATCH_SIZE = 100;
@@ -40,7 +45,7 @@ export async function GET(req: NextRequest) {
   for (let batch = 0; batch < MAX_BATCHES; batch++) {
     const { data: members, error } = await supabaseAdmin
       .from('members')
-      .select('id, stripe_subscription_id')
+      .select('id, name, email, stripe_subscription_id')
       .eq('plan', 'premium')
       .not('stripe_subscription_id', 'is', null)
       .gt('id', lastId)
@@ -62,20 +67,23 @@ export async function GET(req: NextRequest) {
         // Même règle que le webhook (past_due = délai de grâce → reste premium),
         // sinon le cron downgraderait un membre que le webhook vient de garder.
         if (!isActiveSubscriptionStatus(sub.status)) {
-          await supabaseAdmin
-            .from('members')
-            .update(subscriptionMemberUpdate({ status: sub.status, id: sub.id }))
-            .eq('id', m.id);
+          const endedAt = new Date(((sub.ended_at ?? sub.canceled_at) ?? Date.now() / 1000) * 1000);
+          await endPremium(m.id, subscriptionMemberUpdate(sub), { endedAt, reason: sub.status });
           downgraded++;
+        } else {
+          await applyScheduledEnd(m, scheduledEnd(sub));
         }
       } catch (err) {
         // resource_missing = abonnement supprimé côté Stripe → downgrade.
         if ((err as { code?: string }).code === 'resource_missing') {
-          await supabaseAdmin
-            .from('members')
-            .update({ plan: 'free', stripe_subscription_id: null, plan_expires_at: null })
-            .eq('id', m.id);
-          downgraded++;
+          try {
+            await endPremium(m.id, { plan: 'free', stripe_subscription_id: null, plan_expires_at: null },
+              { endedAt: new Date(), reason: 'resource_missing' });
+            downgraded++;
+          } catch (endErr) {
+            errors++;
+            console.error('[cron/premium-reconcile] failed for', m.id, endErr);
+          }
         } else {
           errors++;
           console.error('[cron/premium-reconcile] failed for', m.id, err);

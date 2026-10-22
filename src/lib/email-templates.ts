@@ -3,7 +3,10 @@
 // Modifier le design ici = modifier tous les emails d'un coup.
 
 import { escapeHtml } from '@/lib/escape-html';
-import { EMAIL_FROM, RESEND_API_URL, APP_URL } from '@/lib/constants';
+import {
+  EMAIL_FROM, RESEND_API_URL, APP_URL, CONTACT_EMAIL,
+  PREMIUM_PERKS, PREMIUM_PRICE_LABEL, PREMIUM_WITHDRAWAL_DAYS,
+} from '@/lib/constants';
 import type { OrderRecap } from '@/lib/order-recap';
 
 // ─── Wrapper HTML commun ──────────────────────────────────────────────────────
@@ -277,12 +280,16 @@ export function emailScanReminder(params: {
   };
 }
 
-/** Email de bienvenue premium */
+/** Bienvenue premium. Vaut confirmation du contrat (Code de la consommation,
+ *  L221-13) : prix, renouvellement, résiliation, rétractation et son formulaire. */
 export function emailPremium(params: {
   name:         string;
   dashboardUrl: string;
+  /** Jour de la souscription, en toutes lettres. */
+  subscribedOn: string;
 }): { subject: string; html: string } {
   const safeName = escapeHtml(params.name);
+  const p = 'font-family:system-ui,sans-serif;font-size:12px;color:rgba(255,255,255,0.55);line-height:1.8;margin:0 0 12px;';
   return {
     subject: `${params.name}, bienvenue dans le cercle premium.`,
     html: layout(`
@@ -292,15 +299,110 @@ export function emailPremium(params: {
       <p style="font-family:system-ui,sans-serif;font-size:13px;color:rgba(255,255,255,0.5);text-align:center;line-height:1.8;margin:0 0 32px;">
         Votre abonnement premium est actif. Voici ce qui change :
       </p>
-      <div style="border:1px solid rgba(197,160,89,0.3);padding:24px;margin-bottom:8px;">
+      <div style="border:1px solid rgba(197,160,89,0.3);padding:24px;margin-bottom:24px;">
         <p style="font-family:system-ui,sans-serif;font-size:11px;color:rgba(197,160,89,0.8);line-height:2;margin:0;">
-          ✦ Fenêtre scanner étendue à 48h<br/>
-          ✦ Conversations illimitées<br/>
-          ✦ Badge ✦ visible sur votre profil<br/>
-          ✦ Vos scans des 7 derniers jours, jour par jour
+          ${PREMIUM_PERKS.map((perk) => `✦ ${escapeHtml(perk)}`).join('<br/>')}
+        </p>
+      </div>
+      <div style="border:1px solid rgba(255,255,255,0.1);padding:24px;">
+        <p style="font-family:system-ui,sans-serif;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin:0 0 12px;">Votre abonnement</p>
+        <p style="${p}">
+          ${PREMIUM_PRICE_LABEL} TTC par mois, payé d’avance et renouvelé chaque mois jusqu’à ce que vous résiliiez.
+          Souscrit le ${escapeHtml(params.subscribedOn)}.
+        </p>
+        <p style="${p}">
+          Résiliable à tout moment depuis vos réglages : le premium reste actif jusqu’à la fin du mois payé,
+          sans autre prélèvement.
+        </p>
+        <p style="${p}margin:0;">
+          Vous changez d’avis ? Vous avez ${PREMIUM_WITHDRAWAL_DAYS} jours pour vous rétracter, en écrivant à
+          ${CONTACT_EMAIL} : votre paiement vous sera remboursé en entier.
         </p>
       </div>
       ${cta('Voir mon tableau de bord', params.dashboardUrl)}
+      <p style="font-family:system-ui,sans-serif;font-size:10px;color:rgba(255,255,255,0.3);line-height:1.7;margin:32px 0 0;">
+        Formulaire de rétractation, à renvoyer à ${CONTACT_EMAIL} : « Je vous notifie par la présente ma
+        rétractation du contrat portant sur la prestation de services ci-dessous : abonnement premium
+        In Real Society, souscrit le ${escapeHtml(params.subscribedOn)}. Nom, adresse, date. »
+        Conditions générales de vente, article 8 :
+        <a href="${escapeHtml(`${APP_URL}/cgv#premium`)}" style="color:rgba(255,255,255,0.45);">${escapeHtml(`${APP_URL}/cgv`)}</a>
+      </p>
+    `),
+  };
+}
+
+/** Confirmation de résiliation (Code de la consommation, L215-1-1) : date de fin
+ *  et effets. Part quand la résiliation est programmée, une fois. */
+export function emailPremiumCancelled(params: {
+  name:        string;
+  /** Dernier jour du premium, en toutes lettres. */
+  endsOn:      string;
+  settingsUrl: string;
+}): { subject: string; html: string } {
+  const safeName = escapeHtml(params.name);
+  const p = 'font-family:system-ui,sans-serif;font-size:13px;color:rgba(255,255,255,0.5);text-align:center;line-height:1.8;margin:0 0 16px;';
+  return {
+    subject: `${params.name}, votre résiliation est enregistrée.`,
+    html: layout(`
+      <h1 style="font-size:24px;font-weight:300;letter-spacing:0.04em;margin:0 0 16px;text-align:center;">
+        Résiliation enregistrée.
+      </h1>
+      <p style="${p}">
+        ${safeName}, votre abonnement premium est résilié. Il reste actif jusqu’au
+        ${escapeHtml(params.endsOn)} ; votre profil repasse ensuite en formule gratuite, et aucun
+        autre prélèvement n’aura lieu.
+      </p>
+      <p style="${p}">
+        Vos scans et vos conversations restent dans votre tableau de bord.
+      </p>
+      <p style="${p}margin:0;">
+        Vous changez d’avis ? Vous pouvez réactiver l’abonnement depuis vos réglages jusqu’à cette date.
+      </p>
+      ${cta('Mes réglages', params.settingsUrl)}
+    `),
+  };
+}
+
+/** Fin du premium : résiliation arrivée à son terme, impayé, ou compte supprimé. */
+export function emailPremiumEnded(params: {
+  name:            string;
+  /** Jour de la fin, en toutes lettres. */
+  endedOn:         string;
+  settingsUrl:     string;
+  /** Le porteur a supprimé son compte : pas de lien vers des réglages disparus. */
+  accountDeleted?: boolean;
+}): { subject: string; html: string } {
+  const safeName = escapeHtml(params.name);
+  const endedOn  = escapeHtml(params.endedOn);
+  const p = 'font-family:system-ui,sans-serif;font-size:13px;color:rgba(255,255,255,0.5);text-align:center;line-height:1.8;margin:0 0 16px;';
+  if (params.accountDeleted) {
+    return {
+      subject: `${params.name}, votre abonnement premium est résilié.`,
+      html: layout(`
+        <h1 style="font-size:24px;font-weight:300;letter-spacing:0.04em;margin:0 0 16px;text-align:center;">
+          Abonnement résilié.
+        </h1>
+        <p style="${p}margin:0;">
+          ${safeName}, votre compte est supprimé. Votre abonnement premium est résilié depuis le
+          ${endedOn} : aucun autre prélèvement n’aura lieu.
+        </p>
+      `),
+    };
+  }
+  return {
+    subject: `${params.name}, votre abonnement premium a pris fin.`,
+    html: layout(`
+      <h1 style="font-size:24px;font-weight:300;letter-spacing:0.04em;margin:0 0 16px;text-align:center;">
+        Votre premium a pris fin.
+      </h1>
+      <p style="${p}">
+        ${safeName}, votre abonnement premium a pris fin le ${endedOn}. Votre profil est repassé en
+        formule gratuite : vos scans et vos conversations restent dans votre tableau de bord.
+      </p>
+      <p style="${p}margin:0;">
+        Vous pouvez vous réabonner à tout moment depuis vos réglages.
+      </p>
+      ${cta('Mes réglages', params.settingsUrl)}
     `),
   };
 }
@@ -325,7 +427,7 @@ export function emailPaymentFailed(params: {
       </p>
       <p style="font-family:system-ui,sans-serif;font-size:12px;color:rgba(255,255,255,0.4);text-align:center;line-height:1.8;margin:0 0 24px;">
         Stripe va automatiquement réessayer dans les prochains jours. Pour éviter une coupure de votre abonnement,
-        mettez à jour votre moyen de paiement depuis votre tableau de bord.
+        mettez à jour votre moyen de paiement depuis vos réglages (« Gérer ou résilier mon abonnement »).
       </p>
       ${cta('Mettre à jour ma carte', params.dashboardUrl)}
       <p style="font-family:system-ui,sans-serif;font-size:11px;color:rgba(255,255,255,0.25);text-align:center;line-height:1.6;margin:24px 0 0;">

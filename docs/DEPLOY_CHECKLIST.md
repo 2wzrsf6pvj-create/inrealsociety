@@ -136,7 +136,8 @@ plus exécuter `create_member_with_code` (service_role oui).
 ### 🟠 Paiement / commerce (sinon shop & premium cassés)
 - `STRIPE_SECRET_KEY`, `STRIPE_PRICE_ID`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PREMIUM_PRICE_ID`
 - `STRIPE_REFERRAL_COUPON_ID` (sinon la remise parrainage ne s'applique jamais)
-- **Dashboard Stripe** : activer **Stripe Tax** (sinon `automatic_tax` applique 0 %), créer le **coupon parrainage** — ⚠️ y mettre une limite (`max_redemptions` et/ou durée) car l'UUID parrain est public : sans plafond, la remise est cumulable à l'infini par n'importe qui (coût marketing non borné) —, configurer le **webhook** vers `/api/webhook/stripe` (events : `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `charge.refunded`, `invoice.payment_failed`).
+- **Dashboard Stripe** : activer **Stripe Tax** (sinon `automatic_tax` applique 0 %), créer le **coupon parrainage** — ⚠️ y mettre une limite (`max_redemptions` et/ou durée) car le lien de parrainage circule librement : sans plafond, la remise est cumulable à l'infini par n'importe qui (coût marketing non borné) —, configurer le **webhook** vers `/api/webhook/stripe` (events : `checkout.session.completed`, `customer.subscription.updated`, `customer.subscription.deleted`, `charge.refunded`, `invoice.payment_failed`).
+- **Premium** : Price `STRIPE_PREMIUM_PRICE_ID` en tax_behavior **« inclusive »** (2,99 € TTC, sinon Stripe ajoute la TVA → 3,59 €) ; **portail client** : résiliation autorisée **à la fin de la période** (CGV art. 8 : le premium reste actif jusqu'à la fin du mois payé) et mise à jour du moyen de paiement autorisée (emails d'échec de paiement).
 
 ### 🟠 Fulfillment (sinon t-shirt payé jamais expédié — alerté via Sentry)
 - `PRINTFUL_API_TOKEN`
@@ -220,7 +221,10 @@ Puis dérouler les flux critiques (ceux corrigés ce lot) :
 | **Scan + dédup** | `curl -XPOST localhost:3000/api/scan -d '{"memberId":"<id>"}' -H 'content-type: application/json'` ×2 | 1er `{ok:true}`, 2e `{ok:true,duplicate:true}` ; `scan_count` +1 seulement |
 | **Message — fenêtre/limite** | POST `/api/message` après expiry / au-delà de 3 convs | `{code:"window_expired",windowHours:…}` / `{code:"conversation_limit"}` |
 | **Webhook achat** | `stripe trigger checkout.session.completed` | order → `paid`, code généré, email, fulfillment si membre |
-| **Abonnement — downgrade** | `stripe trigger customer.subscription.deleted` | membre repasse `plan='free'` (vérifie qu'aucune erreur n'est loggée — bug C1) |
+| **Abonnement — downgrade** | `stripe trigger customer.subscription.deleted` | membre repasse `plan='free'` (vérifie qu'aucune erreur n'est loggée — bug C1) + email « votre abonnement premium a pris fin » |
+| **Abonnement — souscription** | passer premium depuis Réglages (CGV cochées), carte de test | retour sur le tableau de bord en premium (attente de quelques secondes au plus), email de bienvenue avec prix, résiliation et rétractation ; métadonnée `termsAcceptedAt` sur l'abonnement |
+| **Abonnement — résiliation** | portail → « Annuler l'abonnement » | Réglages : « Résiliation enregistrée : … jusqu'au <date> » ; email de confirmation avec la même date, une seule fois |
+| **Abonnement — suppression du compte** | membre premium supprime son compte | abonnement annulé chez Stripe, email « abonnement résilié » ; si Stripe est injoignable : `502`, compte intact |
 | **Fulfillment short_code** | membre sans `short_code` qui se fait fulfiller | `members.short_code` rempli + QR encode `/r/<code>` (pas `/profil/`) |
 | **RLS clé publique** | `curl "$SUPABASE_URL/rest/v1/member_inbox" -H "apikey: $ANON_KEY"` | refus / vide (pas les messages de tous) |
 

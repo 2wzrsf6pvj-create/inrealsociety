@@ -9,36 +9,28 @@ import { timeAgo } from './utils';
 
 // ─── Upgrade banner (CTA contextuel ré-utilisable) ───────────────────────────
 
-function UpgradeBanner({ memberId, source, headline, sublabel }: {
-  memberId: string;
-  source:   string;
-  headline: string;
-  sublabel: string;
+// Mène à l'offre des réglages (prix, avantages, CGV à accepter) plutôt que
+// directement au paiement : le porteur voit ce qu'il achète avant de payer.
+function UpgradeBanner({ memberId, source, headline, sublabel, onUpgrade }: {
+  memberId:  string;
+  source:    string;
+  headline:  string;
+  sublabel:  string;
+  onUpgrade: () => void;
 }) {
-  const [loading, setLoading] = useState(false);
-
   React.useEffect(() => {
     captureEvent('upgrade_cta_viewed', { member_id: memberId, plan: 'free', source });
   }, [memberId, source]);
 
-  const handleClick = async () => {
-    setLoading(true);
+  const handleClick = () => {
     captureEvent('upgrade_clicked', { member_id: memberId, plan: 'free', source });
-    try {
-      const res  = await fetch('/api/subscription/checkout', { method: 'POST' });
-      const data = await res.json();
-      if (data.url) window.location.href = data.url;
-    } catch {
-      // ignore
-    }
-    setLoading(false);
+    onUpgrade();
   };
 
   return (
     <button
       onClick={handleClick}
-      disabled={loading}
-      className="w-full bg-[#0a0a08] border border-[#C5A059]/25 rounded-[2px] p-3 flex items-center gap-3 hover:border-[#C5A059]/50 transition-colors disabled:opacity-50 text-left"
+      className="w-full bg-[#0a0a08] border border-[#C5A059]/25 rounded-[2px] p-3 flex items-center gap-3 hover:border-[#C5A059]/50 transition-colors text-left"
     >
       <span className="font-ui text-base text-[#C5A059]/70 leading-none">✦</span>
       <div className="flex-1 flex flex-col gap-0.5">
@@ -46,7 +38,7 @@ function UpgradeBanner({ memberId, source, headline, sublabel }: {
         <span className="font-ui text-xxs text-brand-gray/50">{sublabel}</span>
       </div>
       <span className="font-ui text-xxs text-[#C5A059]/60 tracking-[0.15em] uppercase">
-        {loading ? '...' : 'Passer ✦'}
+        Voir l&apos;offre ✦
       </span>
     </button>
   );
@@ -54,10 +46,12 @@ function UpgradeBanner({ memberId, source, headline, sublabel }: {
 
 // ─── Inbox (Messages) ─────────────────────────────────────────────────────────
 
-export default function InboxSection({ messages: initialMessages, memberId, plan, recentConversations, totalConversations }: {
+export default function InboxSection({ messages: initialMessages, memberId, plan, recentConversations, totalConversations, onUpgrade }: {
   messages: Message[];
   memberId: string;
   plan: 'free' | 'premium';
+  /** Ouvre l'offre premium des réglages. */
+  onUpgrade: () => void;
   // Conversations qui occupent le plafond : fenêtre glissante, hors bloquées.
   recentConversations: number;
   totalConversations: number;
@@ -150,6 +144,7 @@ export default function InboxSection({ messages: initialMessages, memberId, plan
           source="inbox_conversation_limit"
           headline={atLimit ? 'Limite atteinte' : `${recentConversations}/${limit} conversations sur ${CONVERSATION_WINDOW_DAYS} jours`}
           sublabel={atLimit ? `Un créneau se libère ${CONVERSATION_WINDOW_DAYS} jours après chaque conversation. Passez premium pour lever la limite.` : 'Passez premium pour des conversations illimitées.'}
+          onUpgrade={onUpgrade}
         />
       )}
       {messages.map((msg, i) => {
