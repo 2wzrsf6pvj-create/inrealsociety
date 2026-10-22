@@ -14,6 +14,8 @@ export interface Member {
   // Suspension opérateur (migration 054) : implique is_paused, non levable par le
   // porteur. Absent des lectures publiques (allowlist de colonnes).
   suspended_at?:           string | null;
+  /** Code du lien de parrainage /join/<code> (migration 060). */
+  referral_code?:          string | null;
   require_contact:         boolean;
   plan:                    MemberPlan;
   stripe_customer_id:      string | null;

@@ -87,14 +87,15 @@ function PremiumBlock({ member }: { member: Member }) {
 
 // ─── Referral Block ───────────────────────────────────────────────────────────
 
-function ReferralBlock({ memberId }: { memberId: string }) {
+function ReferralBlock({ memberId, referralCode }: { memberId: string; referralCode?: string | null }) {
   const [count,     setCount]     = useState<number | null>(null);
   const [converted, setConverted] = useState<number>(0);
   const [copied,    setCopied]    = useState(false);
-  // Lien vers la page d'invitation brandée /join/<id> (qui pose le ref puis
-  // envoie au shop). memberId = UUID, l'identifiant de parrainage unifié.
+  // Lien vers la page d'invitation brandée /join/<code> (qui pose le ref puis
+  // envoie au shop). Code dédié (migration 060) : le lien ne mène plus à
+  // l'identifiant du profil. Sans la 060, l'ancien lien à identifiant.
   const referralUrl = typeof window !== 'undefined'
-    ? `${window.location.origin}/join/${memberId}`
+    ? `${window.location.origin}/join/${referralCode || memberId}`
     : '';
 
   React.useEffect(() => {
@@ -471,7 +472,7 @@ export default function SettingsSection({ member }: { member: Member }) {
       <PremiumBlock member={member} />
 
       {/* Parrainage */}
-      <ReferralBlock memberId={member.id} />
+      <ReferralBlock memberId={member.id} referralCode={member.referral_code} />
 
       {/* Compte — profil, identité, mot de passe regroupés */}
       <div className="w-full bg-[#080808] border border-brand-gray/10 rounded-[2px] p-4 flex flex-col gap-3">

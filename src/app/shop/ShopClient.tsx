@@ -10,12 +10,12 @@ import { TSHIRT_PRICE_EUR, SHIPPING_STANDARD_CENTS, SHIPPING_EXPRESS_CENTS } fro
 import { BAKED_TAGLINES } from '@/lib/taglines.generated';
 import TaglinePicker from '@/app/components/ui/TaglinePicker';
 import { BrandMark } from '@/app/components/ui/BrandMark';
+import { isReferralToken } from '@/lib/referral-code';
 
 type TshirtColor = 'dark' | 'light';
 type TshirtSize  = 'S' | 'M' | 'L' | 'XL' | 'XXL';
 
 const SIZES: TshirtSize[] = ['S', 'M', 'L', 'XL', 'XXL'];
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SHIPPING_STANDARD_EUR = SHIPPING_STANDARD_CENTS / 100;
 const SHIPPING_EXPRESS_EUR  = SHIPPING_EXPRESS_CENTS / 100;
 
@@ -277,7 +277,8 @@ export default function ShopClient() {
   const [acceptedCgv, setAcceptedCgv] = useState(false);
   const [loading, setLoading]         = useState(false);
   const [error, setError]             = useState('');
-  const [referrerId, setReferrerId]   = useState<string | null>(null);
+  // Lien de parrainage : code dédié, ou ancien lien à identifiant de profil.
+  const [referral, setReferral]       = useState<string | null>(null);
   // Barre d'achat mobile : visible tant que le formulaire de commande n'est PAS à
   // l'écran. `true` au départ (rendu serveur) → pas de barre avant l'hydratation.
   const formRef = useRef<HTMLFormElement>(null);
@@ -305,8 +306,8 @@ export default function ShopClient() {
   useEffect(() => {
     // Capte le parrain depuis ?ref= ou depuis localStorage (page /join)
     const ref = searchParams.get('ref') || localStorage.getItem('referral_code');
-    if (ref && UUID_RE.test(ref)) {
-      setReferrerId(ref);
+    if (isReferralToken(ref)) {
+      setReferral(ref);
     }
   }, [searchParams]);
 
@@ -325,7 +326,7 @@ export default function ShopClient() {
       const res = await fetch('/api/shop/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), tshirtColor, tshirtSize, taglineId, referrerId: referrerId || undefined }),
+        body: JSON.stringify({ email: email.trim(), tshirtColor, tshirtSize, taglineId, referral: referral || undefined }),
       });
       const data = await res.json();
       if (!res.ok || !data.url) throw new Error(data.error);
@@ -333,7 +334,7 @@ export default function ShopClient() {
         tshirt_color: tshirtColor,
         tshirt_size:  tshirtSize,
         has_tagline:  !!taglineId,
-        has_referrer: !!referrerId,
+        has_referrer: !!referral,
       });
       // Pré-remplira l'email du compte à l'activation (même onglet après Stripe).
       // En minuscules, comme l'enregistre l'API (clé de rapprochement commande ↔ membre).
@@ -364,7 +365,7 @@ export default function ShopClient() {
       </nav>
 
       {/* Bandeau parrainage — affiché quand le visiteur arrive avec ?ref= */}
-      {referrerId && (
+      {referral && (
         <div className="relative z-10 bg-[#0a0a08] border-b border-[#C5A059]/20 px-6 py-3">
           <p className="font-ui text-xs md:text-sm text-[#C5A059]/80 text-center tracking-wide">
             ✦ Vous arrivez par un parrainage — votre remise sera appliquée au paiement.

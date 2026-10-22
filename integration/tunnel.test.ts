@@ -660,3 +660,46 @@ describe.skipIf(!ENABLED)('Emails du porteur : un par jour pour les scans, un pa
     expect(toWearer().at(-1)!.subject).toContain('quelqu\'un a essayé de vous écrire');
   });
 });
+
+// ─── Parrainage par code dédié (060) ─────────────────────────────────────────
+describe.skipIf(!ENABLED)('Parrainage : code dédié, ancien lien toujours valable', () => {
+  let checkout: typeof import('@/app/api/shop/checkout/route');
+  const parrain = { authId: crypto.randomUUID(), memberId: crypto.randomUUID() };
+  const parrainEmail = `parrain-${parrain.authId}@example.com`;
+  let code = '';
+
+  beforeAll(async () => {
+    checkout = await import('@/app/api/shop/checkout/route');
+    sql(`INSERT INTO auth.users (id, email, email_confirmed_at) VALUES ('${parrain.authId}', '${parrainEmail}', now())`);
+    sql(`INSERT INTO members (id, auth_user_id, name, email) VALUES ('${parrain.memberId}', '${parrain.authId}', 'Camille', '${parrainEmail}')`);
+    code = sql(`SELECT referral_code FROM members WHERE id = '${parrain.memberId}'`);
+  });
+
+  const buy = async (email: string, extra: Record<string, unknown>) => {
+    const res = await checkout.POST(req('/api/shop/checkout', {
+      body: { email, tshirtColor: 'dark', tshirtSize: 'M', taglineId: null, ...extra },
+    }));
+    expect(res.status).toBe(200);
+    const orderId = (sent.stripeSessions.at(-1)!.metadata as Record<string, string>).orderId;
+    return sql(`SELECT coalesce(referrer_id::text, 'aucun') FROM orders WHERE id = '${orderId}'`);
+  };
+
+  it('chaque membre reçoit un code à sa création, sans rapport avec son identifiant', () => {
+    expect(code).toMatch(/^[a-hjkmnp-z2-8]{10}$/);
+    expect(parrain.memberId).not.toContain(code);
+  });
+
+  it('commande via le code : le parrain est retrouvé côté serveur', async () => {
+    expect(await buy(`filleul-a-${Date.now()}@example.com`, { referral: code })).toBe(parrain.memberId);
+  });
+
+  it('ancien lien à identifiant (champ actuel ou ancien champ) : toujours valable', async () => {
+    expect(await buy(`filleul-b-${Date.now()}@example.com`, { referral: parrain.memberId })).toBe(parrain.memberId);
+    expect(await buy(`filleul-c-${Date.now()}@example.com`, { referrerId: parrain.memberId })).toBe(parrain.memberId);
+  });
+
+  it('code inconnu, ou le parrain qui se parraine lui-même : pas de parrain', async () => {
+    expect(await buy(`filleul-d-${Date.now()}@example.com`, { referral: 'abcdefghjk' })).toBe('aucun');
+    expect(await buy(parrainEmail, { referral: code })).toBe('aucun');
+  });
+});
