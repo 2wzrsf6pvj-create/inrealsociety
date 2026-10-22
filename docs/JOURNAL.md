@@ -5,6 +5,50 @@
 
 ---
 
+## 2026-10-22 (suite) — Fusions et décisions produit
+
+### Fusions
+- **PR #2** fusionnée (`0a6c002`) : cron Vercel quotidien + build ESLint.
+  Vercel déploie de nouveau (bloqué depuis le 11 juillet).
+- **PR #1** fusionnée (`6abbcb3`) une fois verte (build, Playwright, Vercel) :
+  migration 053, `fresh-setup.sql` généré, journal. `main` est verte.
+- ⚠️ Fusionner ne touche pas la base : **la 053 reste à appliquer en prod**
+  (cf. « À faire — côté Clément » plus bas).
+
+### Décisions prises
+- **Plafond de conversations → fenêtre glissante de 7 jours.** Une conversation
+  occupe un créneau pendant 7 jours après son message racine (hors bloquées) ;
+  avant, le compte portait sur tout l'historique et un porteur gratuit devenait
+  injoignable après 3 messages. FAQ et Réglages alignés.
+- **Remboursement d'un code déjà utilisé → suspension verrouillée.** Ma première
+  recommandation (simple pause) ne tenait pas : le porteur lève la pause lui-même
+  dans Réglages. Retenu : `members.suspended_at` (migration 054) + contrainte
+  « suspendu ⇒ en pause » ; le webhook de remboursement suspend le profil activé
+  par ce code (jamais sur un rachat) ; seul le support lève la suspension
+  (`UPDATE members SET suspended_at = NULL, is_paused = false WHERE id = …`).
+- **Petits écarts** (commentaires périmés, pages démo, lint bloquant en CI) :
+  laissés de côté pour l'instant.
+
+### En cours
+- Branche `feat/conversation-window-refund-pause` : les deux décisions ci-dessus,
+  tests compris (contrat `/api/message`, suspension route + webhook) ; 054
+  validée sur Postgres (contrainte, levée support, colonne non exposée).
+  À pousser après réintégration de `main` (régénérer `fresh-setup.sql`).
+
+### Question ouverte — comment les migrations arrivent en prod
+Constat : pas de `supabase/config.toml` (CLI non initialisée dans le dépôt) et
+la checklist passe par `psql` → application **manuelle**, ce qui explique les
+dérives (bundle arrêté à 048, migrations à rattraper). Recommandation :
+1. Tout de suite : appliquer **053** à la main (SQL Editor), puis 054 après sa
+   fusion — toujours **avant** de compter sur le code qui s'en sert.
+2. Ensuite : adopter la Supabase CLI — `supabase link`, marquer l'existant comme
+   appliqué (`supabase migration repair --status applied …`, sans rien
+   rejouer), puis `supabase db push` après chaque fusion. La base garde alors la
+   liste de ce qui est appliqué. Pas d'application automatique au merge tant
+   qu'il n'y a pas d'environnement de staging.
+
+---
+
 ## 2026-10-22 — Audit sécurité de la base + PR #1
 
 ### Contexte
@@ -74,14 +118,13 @@ Ce qui tient : tables sensibles fermées à `anon`, emails masqués par colonne
   Playwright et déploiement Vercel OK — premier déploiement Vercel réussi
   depuis le 11 juillet. `main` réintégrée dans #1 (sans conflit).
 
-### Décisions en attente
-- **Plafond de 3 conversations (gratuit)** : le code compte tous les messages
-  reçus depuis toujours, alors que la FAQ annonce « 3 en simultané ». Paywall
-  voulu (corriger la FAQ) ou vraie notion de conversation active ?
+### Décisions en attente (état au moment de l'audit)
+- ~~**Plafond de 3 conversations (gratuit)**~~ → tranché : fenêtre glissante
+  (voir l'entrée « Suite » ci-dessus).
 - ~~**`safeName` inutilisé**~~ (`src/lib/email-templates.ts:135`) → réglé dans
   PR #2 : code mort depuis l'origine, retiré.
-- **Remboursement d'un code déjà utilisé** : le profil reste actif
-  (`handleChargeRefunded`). Décision business à arbitrer.
+- ~~**Remboursement d'un code déjà utilisé**~~ → tranché : suspension verrouillée
+  (voir l'entrée « Suite » ci-dessus).
 
 ### Autres écarts relevés (non traités)
 - Commentaires périmés : en-têtes de `api/shop/checkout` et `lib/fulfillment.ts`
