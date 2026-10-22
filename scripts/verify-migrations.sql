@@ -76,6 +76,12 @@ SELECT (SELECT count(*) FROM information_schema.columns
        has_function_privilege('authenticated', 'claim_scan_email(uuid)', 'EXECUTE') AS authd_scan,
        has_function_privilege('authenticated', 'claim_cap_email(uuid)', 'EXECUTE') AS authd_cap;
 
+\echo '=== 060 — code de parrainage : rempli, généré par défaut, illisible côté client (attendu: 1 ligne  t | t | f) ==='
+SELECT is_nullable = 'NO' AS rempli,
+       column_default LIKE 'gen_referral_code%' AS genere,
+       has_column_privilege('anon', 'members', 'referral_code', 'SELECT') AS anon_select
+FROM information_schema.columns WHERE table_name = 'members' AND column_name = 'referral_code';
+
 \echo '=== Rappel : RLS activée sur les tables sensibles (attendu: tous t) ==='
 SELECT relname, relrowsecurity
 FROM pg_class

@@ -1,78 +1,19 @@
-'use client';
+// Page d'invitation /join/<code>. Le parrain est résolu côté serveur : le code de
+// parrainage (migration 060) n'est pas lisible côté client, et le lien ne mène
+// jamais à l'identifiant du profil. Les anciens liens à identifiant restent valables.
 
-import Link from 'next/link';
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
-import { supabase } from '@/lib/supabase';
-import { BrandMark } from '@/app/components/ui/BrandMark';
+import type { Metadata } from 'next';
+import { resolveReferrer } from '@/lib/referral';
+import JoinClient from './JoinClient';
 
-// Le « code » d'invitation est le memberId (UUID) — même identifiant que le lien
-// dashboard /shop?ref=<id> et que ShopClient (qui n'accepte que des UUID).
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export const dynamic = 'force-dynamic';
 
-export default function JoinPage() {
-  const { code } = useParams<{ code: string }>();
-  const [referrer, setReferrer] = useState<string | null>(null);
+export const metadata: Metadata = {
+  title: 'Invitation',
+  robots: { index: false, follow: false },
+};
 
-  useEffect(() => {
-    if (!code || !UUID_RE.test(code)) return;
-    // Stocké tel quel (UUID) → ShopClient le relira et l'acceptera (avant, on
-    // stockait un referral_code non-UUID jamais consommé : funnel mort).
-    localStorage.setItem('referral_code', code);
-    supabase.from('members').select('name').eq('id', code).maybeSingle()
-      .then(({ data }) => { if (data) setReferrer(data.name); });
-  }, [code]);
-
-  return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center bg-brand-black text-brand-white px-6 py-12 overflow-hidden">
-      <div className="absolute top-[-15%] right-[-15%] w-[28rem] h-[28rem] rounded-full pointer-events-none"
-        style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%)' }} />
-
-      <div className="z-10 flex flex-col items-center text-center gap-8 w-full max-w-xs md:max-w-sm">
-
-        <div className="relative flex items-center justify-center animate-float">
-          <div className="absolute w-20 h-20 rounded-full border border-brand-white/10 animate-ring-pulse" />
-          <div className="w-14 h-14 rounded-full border border-brand-white/30 flex items-center justify-center">
-            <span className="font-display text-2xl font-light"><BrandMark /></span>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-4 animate-stagger-1">
-          <p className="font-ui text-xs text-brand-gray/55 tracking-[0.3em] uppercase">Invitation</p>
-          <h1 className="font-display text-3xl md:text-4xl font-light tracking-[0.04em] leading-tight">
-            {referrer
-              ? <>{referrer}<br /><span className="text-brand-gray/50 text-2xl">vous invite.</span></>
-              : <>Vous avez été invité.</>
-            }
-          </h1>
-          <p className="font-ui text-sm font-light text-brand-gray/50 leading-relaxed">
-            In Real Society — un QR, une rencontre.<br />
-            Un t-shirt, un QR code, pour les rencontres dans la vraie vie.
-          </p>
-        </div>
-
-        <div className="w-full h-px bg-brand-gray/10 animate-line-draw" />
-
-        <div className="w-full flex flex-col gap-3 animate-stagger-2">
-          <Link href={code ? `/shop?ref=${code}` : '/shop'}
-            className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.3em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 block text-center"
-            style={{ minHeight: '44px' }}
-          >
-            Découvrir le t-shirt
-          </Link>
-          <Link href="/manifeste"
-            className="w-full py-3 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.15em] uppercase text-brand-gray/60 hover:border-brand-gray/30 transition-colors"
-            style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-          >
-            En savoir plus
-          </Link>
-        </div>
-
-        <p className="font-ui text-xxs text-brand-gray/50 leading-relaxed animate-stagger-3">
-          Votre lien d&apos;invitation est actif.<br />
-          Il sera associé à votre commande.
-        </p>
-      </div>
-    </main>
-  );
+export default async function JoinPage({ params }: { params: { code: string } }) {
+  const referrer = await resolveReferrer(params.code);
+  return <JoinClient code={referrer ? params.code : null} referrerName={referrer?.name ?? null} />;
 }

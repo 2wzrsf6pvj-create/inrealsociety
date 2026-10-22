@@ -10,6 +10,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import Stripe from 'stripe';
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { resolveReferrer } from '@/lib/referral';
 import { getOptionalUser } from '@/lib/require-auth';
 import { checkPublicRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
 import { QR_STYLES, DEFAULT_QR_STYLE } from '@/lib/constants';
@@ -27,6 +28,9 @@ const schema = z.object({
   // Accroche : id de la bibliothèque fermée, ou null (QR seul). On refuse tout id
   // inconnu — jamais de texte arbitraire imprimé. `nullish` accepte null ET absent.
   taglineId:   z.string().max(64).refine(isValidTaglineId, 'Accroche inconnue').nullish(),
+  // Lien de parrainage : code dédié (060) ou ancien lien à identifiant de profil,
+  // résolu côté serveur. referrerId : page de boutique ouverte avant la 060.
+  referral:    z.string().max(64).optional(),
   referrerId:  z.string().uuid().optional(),
 });
 
@@ -55,7 +59,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Données invalides.' }, { status: 400 });
     }
 
-    const { email, tshirtColor, tshirtSize, qrStyle, taglineId, referrerId } = body.data;
+    const { email, tshirtColor, tshirtSize, qrStyle, taglineId, referral, referrerId } = body.data;
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;
     if (!appUrl) {
       console.error('[api/shop/checkout] NEXT_PUBLIC_APP_URL non défini');
@@ -77,17 +81,14 @@ export async function POST(req: NextRequest) {
     }
 
     // ─── Valide le parrainage avant d'accorder la remise ──────────────────
-    // referrerId est un UUID public (visible sur /profil/[id]) → on exige que le
-    // membre existe vraiment et qu'il ne soit pas l'acheteur (anti auto-parrainage
-    // par email). Sinon on ignore (pas de remise, pas d'attribution).
+    // Le parrain doit exister vraiment et ne pas être l'acheteur (anti
+    // auto-parrainage par email). Sinon on ignore (pas de remise, pas
+    // d'attribution).
     let validReferrerId: string | null = null;
-    if (referrerId) {
-      const { data: ref } = await supabaseAdmin
-        .from('members').select('id, email').eq('id', referrerId).maybeSingle();
-      // Comparaison insensible à la casse : sinon Bob@x.com ≠ bob@x.com laisserait
-      // un membre se parrainer lui-même pour décrocher la remise.
-      if (ref && ref.email?.toLowerCase() !== email.toLowerCase()) validReferrerId = ref.id;
-    }
+    const referrer = await resolveReferrer(referral ?? referrerId);
+    // Comparaison insensible à la casse : sinon Bob@x.com ≠ bob@x.com laisserait
+    // un membre se parrainer lui-même pour décrocher la remise.
+    if (referrer && referrer.email?.toLowerCase() !== email.toLowerCase()) validReferrerId = referrer.id;
 
     // ─── Crée une commande en BDD (statut pending) ────────────────────────
     const { data: order, error: orderError } = await supabaseAdmin

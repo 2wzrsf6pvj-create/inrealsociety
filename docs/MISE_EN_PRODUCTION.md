@@ -63,7 +63,7 @@ qui manquent.
 
 ## 2. Base Supabase
 
-- [ ] Appliquer les migrations jusqu'à **059**, dans l'ordre
+- [ ] Appliquer les migrations jusqu'à **060**, dans l'ordre
       (`DEPLOY_CHECKLIST.md`, section 1 ; avec la CLI : `docs/SUPABASE_CLI.md`).
 - [ ] Vérifier : SQL Editor → `scripts/verify-migrations.sql`, chaque résultat
       conforme à « attendu ».
