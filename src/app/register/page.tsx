@@ -13,6 +13,7 @@ const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5 Mo
 interface FormData {
   name: string; who: string; intent: string; closing: string; instagram: string; photo: File | null;
   acceptedTerms: boolean;   // §8/9 — consentement d'activation (CGV + service)
+  isAdult:       boolean;   // déclaration « 18 ans ou plus » (service réservé aux majeurs)
 }
 
 function composePitch(f: FormData): string {
@@ -293,6 +294,7 @@ function StepProfile({ form, onChange, onSubmit, onBack, loading, error, isEditi
     if (!form.name.trim()) { setLocalError('Votre prénom est requis.'); return; }
     if (!composePitch(form).trim()) { setLocalError('Rédigez votre pitch : remplissez au moins une des trois phrases.'); return; }
     // §8/9 — consentement requis à l'activation (pas en édition de profil).
+    if (!isEditing && !form.isAdult) { setLocalError('In Real Society est réservé aux personnes de 18 ans ou plus.'); return; }
     if (!isEditing && !form.acceptedTerms) { setLocalError('Vous devez accepter les CGV pour activer votre vêtement.'); return; }
     setLocalError('');
     onSubmit();
@@ -382,6 +384,19 @@ function StepProfile({ form, onChange, onSubmit, onBack, loading, error, isEditi
         {/* NB : l'accroche + la forme du QR sont VERROUILLÉES au checkout — le tee
             est imprimé au paiement. Plus de sélecteur ici (choix déjà figé). */}
 
+        {/* Âge minimum : déclaration distincte des CGV (pas en édition). */}
+        {!isEditing && (
+          <label className="flex items-start gap-3 cursor-pointer select-none">
+            <input type="checkbox" checked={form.isAdult}
+              onChange={e => onChange({ ...form, isAdult: e.target.checked })}
+              className="mt-0.5 h-4 w-4 flex-shrink-0 accent-brand-white cursor-pointer"
+              style={{ minWidth: '16px' }} />
+            <span className="font-ui text-xxs text-brand-gray/65 leading-relaxed">
+              J&apos;ai 18 ans ou plus.
+            </span>
+          </label>
+        )}
+
         {/* §8/9 — consentement bien/service à l'activation (pas en édition). */}
         {!isEditing && (
           <label className="flex items-start gap-3 cursor-pointer select-none">
@@ -427,7 +442,7 @@ function RegisterContent() {
   const [existingId,     setExistingId]     = useState<string | null>(null);
   const [loading,        setLoading]        = useState(false);
   const [error,          setError]          = useState('');
-  const [form, setForm] = useState<FormData>({ name: '', who: '', intent: '', closing: '', instagram: '', photo: null, acceptedTerms: false });
+  const [form, setForm] = useState<FormData>({ name: '', who: '', intent: '', closing: '', instagram: '', photo: null, acceptedTerms: false, isAdult: false });
 
   const initialCode = searchParams.get('code')?.toUpperCase() || '';
   const codeState   = useCodeValidation(initialCode);
@@ -479,7 +494,7 @@ function RegisterContent() {
         });
         if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Erreur de mise à jour.'); }
       } else {
-        const res  = await fetch('/api/member/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: form.name.trim(), pitch: pitch.trim(), instagram: form.instagram.trim() || undefined, activationCode: codeState.code, acceptedTerms: form.acceptedTerms }) });
+        const res  = await fetch('/api/member/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: form.name.trim(), pitch: pitch.trim(), instagram: form.instagram.trim() || undefined, activationCode: codeState.code, acceptedTerms: form.acceptedTerms, isAdult: form.isAdult }) });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Erreur de création.');
         // Fin du funnel post-achat : profil créé → fulfillment déclenché. On lie

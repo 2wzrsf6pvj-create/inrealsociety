@@ -283,8 +283,15 @@ describe.skipIf(!ENABLED)('Tunnel achat → impression → activation → scan �
     expect(await check.json()).toEqual({ valid: true });
 
     currentUser = BUYER;
-    const res = await create.POST(req('/api/member/create', {
+    // Sans la déclaration « 18 ans ou plus » : refusé, et le code n'est pas consommé.
+    const minor = await create.POST(req('/api/member/create', {
       body: { name: 'Jeanne', pitch: 'Café ou expo ?', activationCode: code, acceptedTerms: true },
+    }));
+    expect(minor.status).toBe(400);
+    expect(sql(`SELECT used FROM activation_codes WHERE code = '${code}'`)).toBe('f');
+
+    const res = await create.POST(req('/api/member/create', {
+      body: { name: 'Jeanne', pitch: 'Café ou expo ?', activationCode: code, acceptedTerms: true, isAdult: true },
     }));
     expect(res.status).toBe(200);
     memberId = (await res.json()).memberId;

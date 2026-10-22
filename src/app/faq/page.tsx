@@ -30,6 +30,8 @@ const FAQ_GROUPS: FaqGroup[] = [
         a: 'Oui. La personne qui scanne reste anonyme par défaut (elle peut laisser un @instagram ou un email pour que vous puissiez lui répondre). Vous, vous ne montrez que ce que vous mettez sur votre profil.' },
       { q: 'Et si je reçois un message déplacé ?',
         a: 'Vous gardez le contrôle : modération automatique des messages, blocage d’une personne (elle ne pourra plus vous écrire, ici comme ailleurs), signalement, et option « exiger un contact » pour filtrer l’anonyme. Vous pouvez aussi mettre votre profil en pause à tout moment.' },
+      { q: 'Y a-t-il un âge minimum ?',
+        a: 'Oui : 18 ans, pour porter un t-shirt In Real Society comme pour écrire à un porteur. Le porteur le déclare en activant son profil ; la personne qui écrit le confirme en envoyant son message.' },
       { q: 'Le scanneur voit-il où je suis ?',
         a: 'Non. Il voit votre profil public (prénom ou pseudo, pitch, éventuellement Instagram et photo), jamais votre position. De votre côté, vous voyez une ville approximative des scans reçus, si la personne l’autorise.' },
       { q: 'Que deviennent mes données ?',

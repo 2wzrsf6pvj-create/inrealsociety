@@ -27,7 +27,7 @@ export default function CGVPage() {
             Conditions Générales de Vente
           </h1>
           <p className="font-ui text-sm text-brand-gray/50 tracking-wide">
-            Version en vigueur — Dernière mise à jour : juillet 2026
+            Version en vigueur — Dernière mise à jour : octobre 2026
           </p>
         </div>
 
@@ -45,6 +45,13 @@ export default function CGVPage() {
             Toute commande implique l&apos;acceptation pleine et entière des présentes CGV. Le Vendeur se
             réserve le droit de modifier les CGV à tout moment ; les CGV applicables sont celles en vigueur
             à la date de la commande.
+          </p>
+          <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
+            <strong className="text-brand-white/80">Âge minimum.</strong> Le service de profil et de messagerie
+            associé au t-shirt est réservé aux personnes âgées de 18 ans ou plus. En activant son profil, le
+            porteur déclare être majeur ; toute personne qui envoie un message à un porteur déclare également
+            avoir 18 ans ou plus. Le Vendeur peut suspendre un profil ou bloquer un appareil lorsqu&apos;il
+            apparaît que cette condition n&apos;est pas remplie.
           </p>
         </section>
 
