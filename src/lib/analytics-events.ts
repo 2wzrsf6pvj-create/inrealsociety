@@ -16,6 +16,7 @@ export type AnalyticsEvent =
   // Funnel ACHAT → ACTIVATION (client, même distinct_id anonyme de /shop à
   // /register, puis identify au member_created). Mesure la déperdition « payé mais
   // jamais de profil » (→ t-shirt jamais fabriqué, le fulfillment attend l'inscription).
+  | 'shop_sticky_cta_clicked'   // barre d'achat mobile → amène au formulaire de commande
   | 'checkout_started'          // CTA payer → redirection Stripe
   | 'purchase_success_viewed'   // retour sur /shop/success (paiement OK)
   | 'activation_code_revealed'  // code affiché sur la page succès

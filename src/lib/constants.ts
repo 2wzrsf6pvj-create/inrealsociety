@@ -75,6 +75,12 @@ export const FULFILL_ON_PAYMENT: boolean = process.env.FULFILL_ON_PAYMENT !== 'f
 export const TSHIRT_PRICE_EUR   = 49;
 export const TSHIRT_PRICE_CENTS = 4900;
 
+/** Frais de livraison TTC — source UNIQUE : options Stripe Checkout (api/shop/checkout,
+ *  en tax_behavior « inclusive ») ET affichage (boutique, FAQ). Un prix affiché doit
+ *  toujours être le prix facturé. */
+export const SHIPPING_STANDARD_CENTS = 500;
+export const SHIPPING_EXPRESS_CENTS  = 1200;
+
 /** Formes de QR proposées au client à l'achat. Seules des formes PROUVÉES
  *  décodables (test qr-decode, y compris tee noir inversé) sont exposées :
  *  net (0), arrondi (0.25, défaut), doux (0.35). Les dots pleins ne sont PAS
