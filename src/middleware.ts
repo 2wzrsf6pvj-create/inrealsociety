@@ -55,6 +55,7 @@ const PUBLIC_API_EXACT = new Set([
   '/api/health',         // healthcheck pour monitoring uptime
   '/api/newsletter',     // capture email newsletter
   '/api/newsletter/unsubscribe', // lien de désinscription (cliqué depuis un email)
+  '/api/scan-emails/unsubscribe', // couper les emails de scan (lien signé, cliqué depuis l'email)
   '/api/newsletter/send',        // broadcast — protégé par INTERNAL_SECRET (pas session)
 ]);
 

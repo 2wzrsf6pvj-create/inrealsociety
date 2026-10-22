@@ -46,7 +46,7 @@ qui manquent.
 |---|---|
 | `RESEND_API_KEY` | aucun email : code d'activation, notifications, confirmations |
 | `ADMIN_ALERT_EMAIL` | personne n'est prévenu d'un message ou d'un profil signalé |
-| `CRON_SECRET` | tâches planifiées non lancées (purge RGPD, relances) |
+| `CRON_SECRET` | tâches planifiées non lancées (purge RGPD, relances) ; sans elle ni `INTERNAL_SECRET`, les emails de scan partent sans lien de désinscription |
 | `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN` | erreurs invisibles (ex. commande payée non imprimée) |
 
 **Confort.**
@@ -57,13 +57,14 @@ qui manquent.
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | pas de notifications push |
 | `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST` | pas de mesure d'audience |
 | `INTERNAL_SECRET` | newsletter et notifications externes désactivées |
+| `EMAIL_FROM` | rien : à ne régler que pour changer d'expéditeur (défaut `In Real Society <noreply@mail.inrealsociety.com>`) |
 
 - [ ] Toutes les variables indispensables et de vente sont renseignées.
 - [ ] Vercel → *Cron Jobs* : les 5 tâches de `vercel.json` apparaissent.
 
 ## 2. Base Supabase
 
-- [ ] Appliquer les migrations jusqu'à **060**, dans l'ordre
+- [ ] Appliquer les migrations jusqu'à **061**, dans l'ordre
       (`DEPLOY_CHECKLIST.md`, section 1 ; avec la CLI : `docs/SUPABASE_CLI.md`).
 - [ ] Vérifier : SQL Editor → `scripts/verify-migrations.sql`, chaque résultat
       conforme à « attendu ».
@@ -100,12 +101,21 @@ premium.
 
 ## 4. Emails
 
-- [ ] Domaine d'envoi vérifié dans Resend, avec les enregistrements DNS
-      **SPF, DKIM et DMARC**. Sans eux, les emails arrivent en spam ou pas du
-      tout.
+Détail et vérifications : `docs/EMAIL_DELIVERABILITY.md`.
+
+- [ ] Resend : domaine **`mail.inrealsociety.com`** vérifié (SPF, DKIM), et
+      DMARC sur le domaine principal (sections 1 et 2). Sans eux, les emails
+      arrivent en spam ou pas du tout.
+- [ ] Resend : offre **Pro** au lancement. L'offre gratuite plafonne à 100
+      emails par jour : au-delà, plus rien ne part, codes d'activation compris.
+- [ ] Resend : suivi des ouvertures et des clics désactivé.
+- [ ] (Supabase) SMTP personnalisé avec Resend (section 4) : sans lui, la
+      confirmation d'inscription et le mot de passe oublié ne partent pas.
+- [ ] Google Postmaster Tools : ajouter `inrealsociety.com`, pour voir les
+      plaintes de Gmail (qui ne les transmet pas à Resend).
 - [ ] S'envoyer un email de test, par exemple « Code perdu ? Renvoyer
       l'email » sur la page d'activation (`/register`), après une commande de
-      test.
+      test. Puis un passage sur mail-tester.com : 9/10 visé.
 
 ## 5. Juridique (avant la première vente)
 

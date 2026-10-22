@@ -1,7 +1,7 @@
 -- fresh-setup.sql — INSTALLATION D'UNE BASE NEUVE (Option A)
--- GÉNÉRÉ par scripts/build-fresh-setup.mjs (60 migrations) — ne pas éditer à la main.
+-- GÉNÉRÉ par scripts/build-fresh-setup.mjs (61 migrations) — ne pas éditer à la main.
 -- Ordre CORRIGÉ : 015 (schéma) EN PREMIER — 001-014 posent la RLS sur des tables
--- créées en 015, donc un ordre 001→060 naïf échoue ("table members n'existe pas").
+-- créées en 015, donc un ordre 001→061 naïf échoue ("table members n'existe pas").
 --
 -- USAGE : projet Supabase NEUF (auth + storage + rôles anon/authenticated/service_role
 -- déjà présents). Coller TOUT dans le SQL Editor → Run. IF NOT EXISTS partout.
@@ -2504,3 +2504,41 @@ COMMENT ON COLUMN members.referral_code IS
 -- les fonctions SECURITY DEFINER. Rien pour anon / authenticated (cf. 053).
 REVOKE EXECUTE ON FUNCTION gen_referral_code() FROM anon, authenticated, public;
 GRANT  EXECUTE ON FUNCTION gen_referral_code() TO service_role;
+
+
+-- ═══════════════════════════════════════════════════════════════
+-- ▶ 061_scan_email_opt_out.sql
+-- ═══════════════════════════════════════════════════════════════
+-- 061_scan_email_opt_out.sql
+-- Choix de Clément (2026-10-22), délivrabilité des emails : le porteur peut
+-- couper l'email « nouveau scan », dans ses réglages ou par le lien en un clic
+-- de l'email (List-Unsubscribe). Sans ce moyen, un porteur lassé n'avait que
+-- « Signaler comme spam », qui pèse sur la réputation de tous nos emails,
+-- codes d'activation compris.
+-- Colonne hors de l'allowlist client (042) : lue et écrite par le serveur seul.
+
+ALTER TABLE members ADD COLUMN IF NOT EXISTS scan_emails BOOLEAN NOT NULL DEFAULT true;
+
+COMMENT ON COLUMN members.scan_emails IS
+  'Email « nouveau scan » (un par jour au plus, 059) : false = coupé par le porteur.';
+
+-- La réservation du jour (059) échoue si le porteur a coupé ces emails : la
+-- route de scan n'a rien d'autre à vérifier.
+CREATE OR REPLACE FUNCTION claim_scan_email(p_member_id UUID)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  UPDATE members SET scan_email_on = (now() AT TIME ZONE 'Europe/Paris')::date
+  WHERE id = p_member_id
+    AND scan_emails
+    AND (scan_email_on IS NULL OR scan_email_on < (now() AT TIME ZONE 'Europe/Paris')::date);
+  RETURN FOUND;
+END;
+$$;
+
+-- CREATE OR REPLACE garde les droits de 059 ; réaffirmés : backend seulement.
+REVOKE EXECUTE ON FUNCTION claim_scan_email(UUID) FROM anon, authenticated, public;
+GRANT  EXECUTE ON FUNCTION claim_scan_email(UUID) TO service_role;

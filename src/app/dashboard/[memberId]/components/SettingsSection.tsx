@@ -386,10 +386,13 @@ export default function SettingsSection({ member }: { member: Member }) {
   const suspended = !!member.suspended_at;
   const [requireContact, setRequireContact] = useState(member.require_contact ?? false);
   const [marketingConsent, setMarketingConsent] = useState(member.marketing_consent ?? false);
+  // Absent tant que la migration 061 n'est pas appliquée : pas d'interrupteur.
+  const scanEmailsAvailable = typeof member.scan_emails === 'boolean';
+  const [scanEmails, setScanEmails] = useState(member.scan_emails ?? true);
   // saved/error sont PAR CHAMP : un succès sur un toggle ne doit pas effacer
   // l'erreur live de l'autre (ni afficher "Sauvegardé" sous le toggle qui a
   // échoué).
-  type Field = 'pause' | 'require_contact' | 'marketing';
+  type Field = 'pause' | 'require_contact' | 'marketing' | 'scan_emails';
   const [saving,      setSaving]      = useState(false);
   const [savedField,  setSavedField]  = useState<Field | null>(null);
   const [errorField,  setErrorField]  = useState<{ field: Field; msg: string } | null>(null);
@@ -437,6 +440,12 @@ export default function SettingsSection({ member }: { member: Member }) {
     const next = !marketingConsent;
     setMarketingConsent(next);
     if (!(await updateField('marketing', { marketing_consent: next }))) setMarketingConsent(!next);
+  };
+
+  const toggleScanEmails = async () => {
+    const next = !scanEmails;
+    setScanEmails(next);
+    if (!(await updateField('scan_emails', { scan_emails: next }))) setScanEmails(!next);
   };
 
   return (
@@ -495,6 +504,31 @@ export default function SettingsSection({ member }: { member: Member }) {
       {/* Communications email (consent marketing — distinct du consent analytics) */}
       <div className="w-full bg-[#080808] border border-brand-gray/10 rounded-[2px] p-4 flex flex-col gap-3">
         <SectionDivider label="communications" />
+        {scanEmailsAvailable && (
+          <>
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-0.5">
+                <p className="font-ui text-sm text-brand-white/80">Email au premier scan du jour</p>
+                <p className="font-ui text-xs text-brand-gray/50 leading-relaxed">
+                  Un email quand quelqu&apos;un scanne votre profil, une fois par jour au plus. Les scans restent dans votre tableau de bord.
+                </p>
+              </div>
+              <button
+                onClick={toggleScanEmails}
+                disabled={saving}
+                role="switch"
+                aria-checked={scanEmails}
+                aria-label="Recevoir un email au premier scan du jour"
+                className={`w-10 h-5 rounded-full transition-colors flex-shrink-0 relative ${scanEmails ? 'bg-brand-white/60' : 'bg-brand-gray/20'}`}
+              >
+                <div className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${scanEmails ? 'left-5' : 'left-0.5'}`} />
+              </button>
+            </div>
+            {savedField === 'scan_emails' && <p className="font-ui text-xs text-green-400/60">Sauvegardé.</p>}
+            {errorField?.field === 'scan_emails' && <p className="font-ui text-xs text-red-400" role="alert">{errorField.msg}</p>}
+            <div className="w-full h-px bg-brand-gray/10" />
+          </>
+        )}
         <div className="flex items-center justify-between">
           <div className="flex flex-col gap-0.5">
             <p className="font-ui text-sm text-brand-white/80">Newsletter et actualités</p>

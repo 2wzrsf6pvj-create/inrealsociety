@@ -88,6 +88,19 @@ describe('POST /api/scan — prénom du passant', () => {
     expect(emailNouveauScan).not.toHaveBeenCalled();
   });
 
+  it('l’email porte le lien qui le coupe, aussi en désinscription en un clic (061)', async () => {
+    await scan('Léa');
+    const { unsubscribeUrl } = (emailNouveauScan as ReturnType<typeof vi.fn>).mock.calls[0][0];
+    expect(unsubscribeUrl).toContain(`/api/scan-emails/unsubscribe?m=${MEMBER.id}&t=`);
+    expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({
+      to:      MEMBER.email,
+      headers: {
+        'List-Unsubscribe':      `<${unsubscribeUrl}>`,
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+      },
+    }));
+  });
+
   it('migration 059 absente → l’email part comme avant', async () => {
     wireRpc({ error: { message: 'function claim_scan_email does not exist' } });
     await scan('Léa');

@@ -44,6 +44,7 @@ export default function PreviewDashboardPage({ searchParams }: { searchParams: {
     plan_expires_at:        !free && searchParams?.ends === '1' ? ago(-20 * D) : null,
     marketing_consent:      false,
     marketing_consent_at:   null,
+    scan_emails:            true,
     created_at:             ago(12 * D),
     updated_at:             ago(1 * D),
     auth_user_id:           null,

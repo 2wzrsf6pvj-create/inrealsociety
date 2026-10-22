@@ -15,6 +15,7 @@ const schema = z.object({
   is_paused:         z.boolean().optional(),
   require_contact:   z.boolean().optional(),
   marketing_consent: z.boolean().optional(),
+  scan_emails:       z.boolean().optional(),   // email au premier scan du jour (061)
 });
 
 export async function PATCH(req: NextRequest) {

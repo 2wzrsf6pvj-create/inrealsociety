@@ -30,7 +30,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import crypto from 'crypto';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { sendEmail, emailNewsletter } from '@/lib/email-templates';
+import { sendEmailBatch, emailNewsletter, BATCH_MAX } from '@/lib/email-templates';
 import { signUnsubscribe } from '@/lib/unsubscribe-token';
 import { APP_URL } from '@/lib/constants';
 
@@ -41,8 +41,6 @@ const schema = z.object({
   dryRun:  z.boolean().optional(),
 });
 
-// Resend ~10 req/s — on envoie par lots concurrents bornés.
-const CHUNK = 10;
 
 function secretMatches(provided: string | null, expected: string | undefined): boolean {
   if (!provided || !expected || provided.length !== expected.length) return false;
@@ -145,13 +143,17 @@ export async function POST(req: NextRequest) {
   }
 
   // ─── Envoi par lots ───────────────────────────────────────────────────────
+  // Resend refuse au-delà de 10 requêtes par seconde (tout le compte) ; un lot de
+  // 100 emails compte pour UNE requête. Lots l'un après l'autre : le plafond de
+  // 3 000 destinataires fait 30 requêtes. Avant, des envois un par un, 10 à la
+  // fois sans pause : au-delà de 10 par seconde, les refusés ne recevaient
+  // jamais la newsletter.
   let sent = 0, failures = 0;
-  for (let i = 0; i < recipients.length; i += CHUNK) {
-    const batch = recipients.slice(i, i + CHUNK);
-    const oks = await Promise.all(batch.map(async (email) => {
+  for (let i = 0; i < recipients.length; i += BATCH_MAX) {
+    const batch = recipients.slice(i, i + BATCH_MAX).map((email) => {
       const token          = signUnsubscribe(email);
       const unsubscribeUrl = `${APP_URL}/api/newsletter/unsubscribe?e=${encodeURIComponent(email)}&t=${token}`;
-      return sendEmail({
+      return {
         to:      email,
         subject,
         html:    emailNewsletter({ contentHtml: html, unsubscribeUrl }),
@@ -159,9 +161,11 @@ export async function POST(req: NextRequest) {
           'List-Unsubscribe':      `<${unsubscribeUrl}>`,
           'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
         },
-      });
-    }));
-    for (const ok of oks) { if (ok) sent++; else failures++; }
+      };
+    });
+    const accepted = await sendEmailBatch(batch);
+    sent     += accepted;
+    failures += batch.length - accepted;
   }
 
   await supabaseAdmin.from('newsletter_campaigns')

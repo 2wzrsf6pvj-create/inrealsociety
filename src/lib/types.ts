@@ -23,6 +23,9 @@ export interface Member {
   plan_expires_at:         string | null;
   marketing_consent:       boolean;
   marketing_consent_at:    string | null;
+  /** Email au premier scan du jour (migration 061). Absent tant qu'elle n'est
+   *  pas appliquée : le réglage ne s'affiche pas. */
+  scan_emails?:            boolean;
   created_at:              string;
   updated_at:              string;
   auth_user_id:            string | null;
