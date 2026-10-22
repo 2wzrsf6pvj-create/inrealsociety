@@ -36,6 +36,12 @@ function scan(scannerName: string | null) {
   return POST(req);
 }
 
+// record_scan enregistre ; claim_scan_email réserve l'email du jour (059).
+function wireRpc(claim: { data?: boolean; error?: { message: string } | null } = { data: true, error: null }) {
+  (supabaseAdmin.rpc as ReturnType<typeof vi.fn>).mockImplementation(async (fn: string) =>
+    fn === 'claim_scan_email' ? claim : { error: null });
+}
+
 const recordedName = () =>
   (supabaseAdmin.rpc as ReturnType<typeof vi.fn>).mock.calls[0][1].p_scanner_name;
 
@@ -45,7 +51,7 @@ describe('POST /api/scan — prénom du passant', () => {
     (supabaseAdmin.from as ReturnType<typeof vi.fn>).mockReturnValue({
       select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: MEMBER, error: null }) }) }),
     });
-    (supabaseAdmin.rpc as ReturnType<typeof vi.fn>).mockResolvedValue({ error: null });
+    wireRpc();
   });
 
   it('prénom valide et non signalé → enregistré et montré au porteur', async () => {
@@ -75,6 +81,19 @@ describe('POST /api/scan — prénom du passant', () => {
     expect(recordedName()).toBeNull();
   });
 
+  it('déjà un email aujourd’hui → scan enregistré, pas de second email', async () => {
+    wireRpc({ data: false, error: null });
+    expect((await scan('Léa')).status).toBe(200);
+    expect(recordedName()).toBe('Léa');
+    expect(emailNouveauScan).not.toHaveBeenCalled();
+  });
+
+  it('migration 059 absente → l’email part comme avant', async () => {
+    wireRpc({ error: { message: 'function claim_scan_email does not exist' } });
+    await scan('Léa');
+    expect(emailNouveauScan).toHaveBeenCalled();
+  });
+
   it('l’email au porteur est parti avant la réponse (pas en tâche de fond)', async () => {
     let delivered = false;
     (sendEmail as ReturnType<typeof vi.fn>).mockImplementationOnce(() =>
@@ -92,7 +111,7 @@ describe('POST /api/scan — géolocalisation : la ville seulement', () => {
     (supabaseAdmin.from as ReturnType<typeof vi.fn>).mockReturnValue({
       select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: MEMBER, error: null }) }) }),
     });
-    (supabaseAdmin.rpc as ReturnType<typeof vi.fn>).mockResolvedValue({ error: null });
+    wireRpc();
   });
   afterEach(() => { vi.unstubAllGlobals(); });
 

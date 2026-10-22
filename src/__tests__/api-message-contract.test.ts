@@ -11,10 +11,11 @@ vi.mock('@/lib/ratelimit', () => ({
   getIp:                 vi.fn(() => '1.2.3.4'),
   rateLimitHeaders:      vi.fn(() => ({})),
 }));
-vi.mock('@/lib/supabase-admin', () => ({ supabaseAdmin: { from: vi.fn() } }));
+vi.mock('@/lib/supabase-admin', () => ({ supabaseAdmin: { from: vi.fn(), rpc: vi.fn() } }));
 vi.mock('@/lib/audit', () => ({ audit: vi.fn() }));
 vi.mock('@/lib/email-templates', () => ({
   sendEmail: vi.fn(), emailNouveauMessage: vi.fn(() => ({ subject: '', html: '' })),
+  emailConversationLimit: vi.fn(() => ({ subject: '', html: '' })),
 }));
 vi.mock('@/lib/moderation', () => ({
   moderateContent: vi.fn().mockResolvedValue({ flagged: false, source: 'regex', categories: [] }),
@@ -23,7 +24,7 @@ vi.mock('@/lib/moderation', () => ({
 import { POST } from '@/app/api/message/route';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { moderateContent } from '@/lib/moderation';
-import { sendEmail, emailNouveauMessage } from '@/lib/email-templates';
+import { sendEmail, emailNouveauMessage, emailConversationLimit } from '@/lib/email-templates';
 
 const UUID = '11111111-1111-4111-8111-111111111111';
 
@@ -215,5 +216,45 @@ describe('POST /api/message — notification du porteur', () => {
     expect(delivered).toBe(true);
     expect(emailNouveauMessage).toHaveBeenCalledWith(
       expect.objectContaining({ conversationUrl: expect.stringContaining('/conversation/msg-1') }));
+  });
+});
+
+// Plafond gratuit atteint : le porteur est prévenu qu'il a manqué quelqu'un, une
+// fois par semaine au plus (claim_cap_email, migration 059).
+describe('POST /api/message — plafond atteint : email au porteur', () => {
+  const capped = () => wireSupabase({
+    member: { id: UUID, name: 'Camille', email: 'camille@example.com', is_paused: false, plan: 'free' },
+    firstScanAt: null,
+    activeConvs: 3,
+  });
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (sendEmail as ReturnType<typeof vi.fn>).mockResolvedValue(true);
+  });
+
+  it('premier refus de la semaine → refusé, et le porteur est prévenu', async () => {
+    capped();
+    (supabaseAdmin.rpc as ReturnType<typeof vi.fn>).mockResolvedValue({ data: true, error: null });
+    const res = await POST(makeReq({ memberId: UUID, content: 'salut' }));
+    expect((await res.json()).code).toBe('conversation_limit');
+    expect(supabaseAdmin.rpc).toHaveBeenCalledWith('claim_cap_email', { p_member_id: UUID });
+    expect(emailConversationLimit).toHaveBeenCalledWith(expect.objectContaining({
+      maxConversations: 3, windowDays: 7, dashboardUrl: expect.stringContaining('/dashboard?tab=inbox'),
+    }));
+    expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({ to: 'camille@example.com' }));
+  });
+
+  it('déjà prévenu cette semaine → refusé, sans email', async () => {
+    capped();
+    (supabaseAdmin.rpc as ReturnType<typeof vi.fn>).mockResolvedValue({ data: false, error: null });
+    expect((await (await POST(makeReq({ memberId: UUID, content: 'salut' }))).json()).code).toBe('conversation_limit');
+    expect(sendEmail).not.toHaveBeenCalled();
+  });
+
+  it('migration 059 absente → refusé, sans email (sinon un email par refus)', async () => {
+    capped();
+    (supabaseAdmin.rpc as ReturnType<typeof vi.fn>).mockResolvedValue({ data: null, error: { message: 'missing' } });
+    expect((await (await POST(makeReq({ memberId: UUID, content: 'salut' }))).json()).code).toBe('conversation_limit');
+    expect(sendEmail).not.toHaveBeenCalled();
   });
 });

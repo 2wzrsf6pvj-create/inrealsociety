@@ -70,6 +70,12 @@ FROM pg_proc p WHERE p.proname = 'cleanup_old_data';
 SELECT prosrc NOT LIKE '%INSERT INTO scans (member_id, scanner_name, latitude%' AS city_only
 FROM pg_proc WHERE proname = 'record_scan';
 
+\echo '=== 059 — emails du porteur limités : colonnes, réservations backend seulement (attendu: 1 ligne  2 | f | f) ==='
+SELECT (SELECT count(*) FROM information_schema.columns
+        WHERE table_name = 'members' AND column_name IN ('scan_email_on', 'cap_email_at')) AS colonnes,
+       has_function_privilege('authenticated', 'claim_scan_email(uuid)', 'EXECUTE') AS authd_scan,
+       has_function_privilege('authenticated', 'claim_cap_email(uuid)', 'EXECUTE') AS authd_cap;
+
 \echo '=== Rappel : RLS activée sur les tables sensibles (attendu: tous t) ==='
 SELECT relname, relrowsecurity
 FROM pg_class

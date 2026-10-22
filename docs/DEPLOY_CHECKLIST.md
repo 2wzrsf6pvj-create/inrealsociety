@@ -8,7 +8,7 @@
 
 ## 1. Migrations SQL — ordre & application
 
-Les migrations sont numérotées et **doivent s'appliquer dans l'ordre** (`supabase/migrations/001 … 058`).
+Les migrations sont numérotées et **doivent s'appliquer dans l'ordre** (`supabase/migrations/001 … 059`).
 
 ### Nouveautés de ce lot de durcissement
 | # | Effet | Critique ? |
@@ -38,11 +38,12 @@ Les migrations sont numérotées et **doivent s'appliquer dans l'ordre** (`supab
 | `056` | table `message_reports` (une ligne par porteur et par appareil signalé) + RLS sans accès client | 🟠 bannissement automatique d'un appareil signalé par 3 porteurs différents. Sans elle, un signalement masque toujours le message, mais n'est ni compté ni suivi d'un bannissement |
 | `057` | table `contact_verifications` (lien de confirmation de l'email laissé par un passant, jeton haché) + RLS sans accès client | 🟠 les réponses d'un porteur ne partent par email qu'à une adresse confirmée. **À appliquer AVANT le déploiement du code** : sans elle, aucune réponse ne part plus par email (la confirmation ne peut pas être créée) |
 | `058` | purge hebdomadaire : conversations supprimées 12 mois après leur dernier message, preuves RGPD bornées à 5 ans, traces d'abus 24 mois ; géolocalisation : `record_scan` ignore les coordonnées, les scans existants perdent les leurs et ne gardent que la ville | 🟡 RGPD (minimisation, durées annoncées dans la politique de confidentialité). Sans elle, rien ne casse : le code n'envoie déjà plus de coordonnées, mais les anciennes restent et les conversations ne sont jamais purgées |
+| `059` | `members.scan_email_on` / `members.cap_email_at` + fonctions `claim_scan_email` / `claim_cap_email` (réservation atomique, backend seulement) | 🟡 emails du porteur limités : un email de scan par jour, un email « plafond atteint » par semaine. Sans elle, rien ne casse : les emails de scan partent à chaque scan (comme avant) et l'email de plafond ne part pas |
 
 ### Base NEUVE (staging / nouveau projet) — recommandé (Option A)
-⚠️ **L'ordre 001→058 naïf ÉCHOUE** : `001_enable_rls` fait `ALTER TABLE members …`
+⚠️ **L'ordre 001→059 naïf ÉCHOUE** : `001_enable_rls` fait `ALTER TABLE members …`
 alors que `members` n'est créée qu'en `015`. L'ordre correct est **015 D'ABORD**,
-puis 001-014, puis 016-058.
+puis 001-014, puis 016-059.
 
 Utiliser le bundle pré-généré **et validé** (57/57 migrations — schéma identique, grants et policies compris, à l'application une par une ; vérifié sur PG16) :
 ```
@@ -72,7 +73,7 @@ for f in 033_rls_hardening_views 034_record_scan 035_secure_create_member_rpc 03
          051_feedback_unique_conversation 052_close_members_referrals_insert \
          053_close_definer_rpcs_to_authenticated 054_member_suspension \
          055_order_activation_reminders 056_message_reports 057_contact_verifications \
-         058_rgpd_retention_city_only; do
+         058_rgpd_retention_city_only 059_notification_throttles; do
   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -1 -f "supabase/migrations/$f.sql"
 done
 # 021 a été édité (guard idempotent) : sûr à ré-exécuter si tu veux l'aligner.

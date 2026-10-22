@@ -4,10 +4,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { sendEmail, emailNouveauMessage } from '@/lib/email-templates';
+import { sendEmail, emailNouveauMessage, emailConversationLimit } from '@/lib/email-templates';
 import { checkMessageRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
 import { audit } from '@/lib/audit';
-import { SCAN_WINDOW_MS, MAX_CONVERSATIONS, QUICK_REPLIES as QUICK_REPLIES_LIST } from '@/lib/constants';
+import { SCAN_WINDOW_MS, MAX_CONVERSATIONS, CONVERSATION_WINDOW_DAYS, QUICK_REPLIES as QUICK_REPLIES_LIST } from '@/lib/constants';
 import { moderateContent } from '@/lib/moderation';
 import { isValidFirstName, isValidEmail } from '@/lib/validators';
 import { startContactVerification } from '@/lib/contact-verification';
@@ -29,6 +29,22 @@ const schema = z.object({
   senderName:    z.string().max(50).nullish(),    // (idem) — .optional() rejetterait null
   isQuickReply:  z.boolean().optional(),
 });
+
+/**
+ * Réserve l'email « plafond atteint » de la semaine. Sans la migration 059 (ou en
+ * cas d'erreur), rien ne part : sans réservation, chaque refus enverrait un email.
+ */
+async function claimCapEmail(memberId: string): Promise<boolean> {
+  try {
+    const { data, error } = await supabaseAdmin.rpc('claim_cap_email', { p_member_id: memberId });
+    if (error) throw new Error(error.message);
+    return data === true;
+  } catch (err) {
+    // Le refus doit rester un refus (403), pas devenir une erreur serveur.
+    console.error('[api/message] claim_cap_email indisponible (migration 059 ?) :', err);
+    return false;
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -153,6 +169,18 @@ export async function POST(req: NextRequest) {
       const activeConvs = await getActiveConversationsCount(memberId);
 
       if (activeConvs >= MAX_CONVERSATIONS[plan]) {
+        // Le porteur apprend qu'il a manqué quelqu'un, une fois par semaine au
+        // plus (choix de Clément, migration 059). Rien sur la personne refusée.
+        if (member.email && await claimCapEmail(memberId)) {
+          const { subject, html } = emailConversationLimit({
+            name:             member.name,
+            maxConversations: MAX_CONVERSATIONS[plan],
+            windowDays:       CONVERSATION_WINDOW_DAYS,
+            dashboardUrl:     `${APP_URL}/dashboard?tab=inbox`,
+          });
+          await sendEmail({ to: member.email, subject, html })
+            .catch((err) => console.error('[api/message] Échec email plafond:', err));
+        }
         return NextResponse.json(
           { error: 'Nombre maximum de conversations atteint pour ce profil.', code: 'conversation_limit' },
           { status: 403 },
