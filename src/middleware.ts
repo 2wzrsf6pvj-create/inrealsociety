@@ -178,6 +178,11 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    // Hors middleware : fichiers statiques, et les deux fichiers publics que le
+    // navigateur va chercher tout seul. /sw.js et /manifest.json passaient par le
+    // middleware : un visiteur non connecté était redirigé vers la connexion, le
+    // navigateur refusait alors le service worker (notifications « Me notifier de
+    // sa réponse » du passant jamais reçues) et le manifeste (installation).
+    '/((?!_next/static|_next/image|favicon.ico|sw\\.js$|manifest\\.json$|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

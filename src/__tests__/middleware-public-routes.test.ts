@@ -12,13 +12,16 @@ vi.mock('@supabase/ssr', () => ({
 }));
 
 let middleware: (req: NextRequest) => Promise<Response>;
+let matcher: RegExp;
 
 beforeAll(async () => {
   // Sans ces variables, le middleware laisse tout passer (mode dev) : le test ne
   // prouverait rien. Lues au chargement du module, d'où l'import dynamique.
   vi.stubEnv('NEXT_PUBLIC_SUPABASE_URL', 'https://test.supabase.co');
   vi.stubEnv('NEXT_PUBLIC_SUPABASE_ANON_KEY', 'anon');
-  ({ middleware } = await import('@/middleware'));
+  const mod = await import('@/middleware');
+  middleware = mod.middleware;
+  matcher = new RegExp(`^${mod.config.matcher[0]}$`);
 });
 afterAll(() => { vi.unstubAllEnvs(); });
 
@@ -42,4 +45,20 @@ describe('middleware — parcours du passant anonyme', () => {
   it('témoin : une page membre renvoie bien vers la connexion', async () => {
     expect(await redirectOf('/dashboard')).toContain('/auth/login');
   });
+});
+
+// Le navigateur va chercher ces fichiers seul, sans session : passés par le
+// middleware, ils étaient redirigés vers la connexion. Service worker refusé
+// (« The script resource is behind a redirect ») → le passant n'était jamais
+// notifié de la réponse du porteur ; manifeste illisible → pas d'installation.
+describe('middleware — fichiers publics servis tels quels', () => {
+  it.each(['/sw.js', '/manifest.json', '/favicon.svg', '/shop/tee-blanc-face.png'])(
+    '%s ne passe pas par le middleware', (path) => {
+      expect(matcher.test(path)).toBe(false);
+    });
+
+  it.each(['/dashboard', `/profil/${ID}`, '/api/messages', '/auth/login', '/robots.txt'])(
+    '%s passe toujours par le middleware', (path) => {
+      expect(matcher.test(path)).toBe(true);
+    });
 });
