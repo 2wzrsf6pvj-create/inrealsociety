@@ -272,7 +272,7 @@ function StepProfile({ form, onChange, onSubmit, onBack, loading, error, isEditi
   const handleSubmit = () => {
     if (needsCode && !codeState.codeOk) { setLocalError("Code d'activation requis."); return; }
     if (!form.name.trim()) { setLocalError('Votre prénom est requis.'); return; }
-    if (!composePitch(form).trim()) { setLocalError('Rédigez votre pitch ou générez-en un.'); return; }
+    if (!composePitch(form).trim()) { setLocalError('Rédigez votre pitch : remplissez au moins une des trois phrases.'); return; }
     // §8/9 — consentement requis à l'activation (pas en édition de profil).
     if (!isEditing && !form.acceptedTerms) { setLocalError('Vous devez accepter les CGV pour activer votre vêtement.'); return; }
     setLocalError('');
