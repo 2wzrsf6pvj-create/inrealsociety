@@ -10,10 +10,11 @@ import { getMessages, getMessagesCount, getActiveConversationsCount, getConversa
 import DashboardClient from './DashboardClient';
 
 interface Props {
-  params: { memberId: string };
+  params: Promise<{ memberId: string }>;
 }
 
-export default async function DashboardByIdPage({ params }: Props) {
+export default async function DashboardByIdPage(props: Props) {
+  const params = await props.params;
   const { memberId } = params;
 
   const member = await getMemberById(memberId);
@@ -25,7 +26,7 @@ export default async function DashboardByIdPage({ params }: Props) {
   // était lisible par N'IMPORTE QUEL user connecté en devinant l'UUID public
   // (/profil/<uuid>) → IDOR. Un membre sans auth_user_id n'a pas de
   // propriétaire → personne ne peut ouvrir ce dashboard.
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     redirect(`/auth/login?redirect=/dashboard/${memberId}`);

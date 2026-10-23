@@ -13,7 +13,8 @@ export function generateStaticParams() {
   return Object.keys(BAKED_TAGLINES).map((id) => ({ id }));
 }
 
-export function GET(_req: Request, { params }: { params: { id: string } }) {
+export async function GET(_req: Request, props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const baked = Object.hasOwn(BAKED_TAGLINES, params.id) ? BAKED_TAGLINES[params.id] : null;
   if (!baked) return NextResponse.json({ error: 'Accroche inconnue.' }, { status: 404 });
   return NextResponse.json({ path: baked.path, bbox: baked.bbox });

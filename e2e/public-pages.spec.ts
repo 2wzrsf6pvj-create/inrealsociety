@@ -59,7 +59,7 @@ test.describe('Pages protégées (redirect login attendu sans auth)', () => {
     // Soit on redirect (status 200 sur /auth/login), soit 5xx si Supabase indisponible
     // (acceptable car ce test tourne sans clé Supabase config'd)
     if (response && response.ok()) {
-      // Le middleware redirige proprement
+      // Le proxy redirige proprement
       await expect(page).toHaveURL(/\/auth\/login/);
     }
   });

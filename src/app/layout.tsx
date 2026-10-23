@@ -60,16 +60,19 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // Nonce CSP posé par le middleware (header de requête x-nonce). Permet au
+  // Nonce CSP posé par le proxy (header de requête x-nonce). Permet au
   // script inline ci-dessous de passer la CSP stricte à nonce sans 'unsafe-inline'.
-  const nonce = headers().get('x-nonce') ?? undefined;
+  const nonce = (await headers()).get('x-nonce') ?? undefined;
   return (
-    <html lang="fr" className={`${cormorant.variable} ${montserrat.variable}`} suppressHydrationWarning>
+    // data-scroll-behavior : Next 16 ne coupe plus de lui-même le défilement doux
+    // (globals.css) pendant un changement de page ; sans lui, chaque navigation
+    // remonterait la page en glissant au lieu d'arriver directement en haut.
+    <html lang="fr" className={`${cormorant.variable} ${montserrat.variable}`} data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
         {/* Mode plein soleil : applique la classe avant le paint (anti-FOUC),
             UNIQUEMENT sur le parcours scanneur (profil/message/conversation).

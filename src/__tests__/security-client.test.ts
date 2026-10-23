@@ -86,20 +86,20 @@ describe('Pas de secrets dans le code source', () => {
   }
 });
 
-describe('Middleware — routes protégées', () => {
+describe('Proxy — routes protégées', () => {
   it('le dashboard ne doit PAS être dans PUBLIC_PAGE_PREFIXES', () => {
-    const middleware = fs.readFileSync(
-      path.join(SRC_DIR, 'middleware.ts'), 'utf-8'
+    const proxy = fs.readFileSync(
+      path.join(SRC_DIR, 'proxy.ts'), 'utf-8'
     );
-    const prefixBlock = middleware.match(/PUBLIC_PAGE_PREFIXES\s*=\s*\[([\s\S]*?)\]/)?.[1] || '';
+    const prefixBlock = proxy.match(/PUBLIC_PAGE_PREFIXES\s*=\s*\[([\s\S]*?)\]/)?.[1] || '';
     expect(prefixBlock).not.toContain('/dashboard');
   });
 
   it('/api/referral ne doit PAS être dans PUBLIC_API_PREFIXES', () => {
-    const middleware = fs.readFileSync(
-      path.join(SRC_DIR, 'middleware.ts'), 'utf-8'
+    const proxy = fs.readFileSync(
+      path.join(SRC_DIR, 'proxy.ts'), 'utf-8'
     );
-    const prefixBlock = middleware.match(/PUBLIC_API_PREFIXES\s*=\s*\[([\s\S]*?)\]/)?.[1] || '';
+    const prefixBlock = proxy.match(/PUBLIC_API_PREFIXES\s*=\s*\[([\s\S]*?)\]/)?.[1] || '';
     expect(prefixBlock).not.toContain('/api/referral');
   });
 });

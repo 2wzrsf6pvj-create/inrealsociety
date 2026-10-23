@@ -1,4 +1,4 @@
-/* eslint-disable @next/next/no-img-element, jsx-a11y/alt-text */
+/* eslint-disable jsx-a11y/alt-text */
 // app/opengraph-image.tsx
 // Image d'aperçu des liens partagés (WhatsApp, iMessage, réseaux) pour toutes les
 // pages qui n'ont pas la leur : accueil, boutique, FAQ, liens de parrainage…

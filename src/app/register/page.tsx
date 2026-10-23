@@ -48,7 +48,6 @@ function useCodeValidation(initialCode: string) {
       setCode(initialCode);
       if (initialCode.length >= 6) validate(initialCode);  // depuis l'URL : direct
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialCode]);
 
   useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
@@ -358,8 +357,8 @@ function StepProfile({ form, onChange, onSubmit, onBack, loading, error, isEditi
           <button type="button" onClick={() => fileRef.current?.click()}
             aria-label="Ajouter une photo de profil"
             className="relative w-16 h-16 rounded-full border border-brand-gray/20 bg-[#0a0a0a] flex items-center justify-center overflow-hidden hover:border-brand-gray/40 transition-colors flex-shrink-0">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
             {preview
+              // eslint-disable-next-line @next/next/no-img-element -- aperçu local (blob:), hors next/image
               ? <img src={preview} alt="Aperçu de votre photo" className="w-full h-full object-cover" />
               : <span className="font-ui text-xxs text-brand-gray/55 tracking-[0.1em] uppercase">+ Photo</span>}
           </button>

@@ -12,9 +12,10 @@ import { createClient } from '@/lib/supabase-server';
 import { SENDER_TOKEN_COOKIE, isOriginDevice } from '@/lib/sender-token';
 import ConversationClient from './ConversationClient';
 
-interface Props { params: { messageId: string } }
+interface Props { params: Promise<{ messageId: string }> }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  const params = await props.params;
   const { data: message } = await supabaseAdmin
     .from('messages')
     .select('members(name)')
@@ -30,7 +31,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function ConversationPage({ params }: Props) {
+export default async function ConversationPage(props: Props) {
+  const params = await props.params;
   const { data: message } = await supabaseAdmin
     .from('messages')
     .select('*, members(name, photo_url, instagram, auth_user_id)')
@@ -50,7 +52,7 @@ export default async function ConversationPage({ params }: Props) {
   // Détecte si le visiteur est le propriétaire du profil (le membre)
   let isOwner = false;
   try {
-    const serverSupabase = createClient();
+    const serverSupabase = await createClient();
     const { data: { user } } = await serverSupabase.auth.getUser();
     if (user && message.members?.auth_user_id === user.id) {
       isOwner = true;
@@ -59,7 +61,7 @@ export default async function ConversationPage({ params }: Props) {
 
   // Le lien suffit pour lire (autre appareil, aperçu de lien d'une messagerie) ;
   // seul l'appareil d'origine du passant répond en son nom et vaut lecture.
-  const originDevice = isOriginDevice(message.sender_token, cookies().get(SENDER_TOKEN_COOKIE)?.value);
+  const originDevice = isOriginDevice(message.sender_token, (await cookies()).get(SENDER_TOKEN_COOKIE)?.value);
 
   // Marque comme lu les messages que le visiteur n'a pas écrits :
   //   * membre qui visite → marque les messages du scanner (root + thread)

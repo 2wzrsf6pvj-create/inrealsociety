@@ -1,12 +1,13 @@
 // lib/supabase-server.ts
-// Client Supabase pour les Server Components, API Routes et Middleware
+// Client Supabase pour les Server Components et les routes API
 
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './supabase-config';
 
-export function createClient() {
-  const cookieStore = cookies();
+// Asynchrone depuis Next 15 : cookies() se lit avec await.
+export async function createClient() {
+  const cookieStore = await cookies();
 
   return createServerClient(
     SUPABASE_URL,
@@ -38,7 +39,7 @@ export function createClient() {
 // cookie sans le valider (spoofable) ; toute décision d'autorisation doit passer
 // par getUser() (vérifié auprès de Supabase).
 export async function getUser() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   return user;
 }

@@ -7,10 +7,8 @@ import { APP_URL } from '@/lib/constants';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { checkPublicRateLimit, getIp } from '@/lib/ratelimit';
 
-export async function GET(
-  _req: NextRequest,
-  { params }: { params: { code: string } },
-) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ code: string }> }) {
+  const params = await props.params;
   const { code } = params;
 
   // Validation basique : alphanumériques minuscules, 2-6 chars

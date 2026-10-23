@@ -5,7 +5,7 @@
 
 ## Stack
 
-- **Framework** : Next.js 14 (App Router) + TypeScript strict
+- **Framework** : Next.js 16 (App Router, build webpack) + React 19 + TypeScript strict
 - **Auth + DB** : Supabase (Postgres + RLS + Auth + Storage)
 - **Paiements** : Stripe (one-shot t-shirt + abonnement premium)
 - **Emails** : Resend (transactionnels)
@@ -84,8 +84,8 @@ npm run dev
 
 | Commande | Description |
 |---|---|
-| `npm run dev` | Serveur de développement Next.js |
-| `npm run build` | Build production |
+| `npm run dev` | Serveur de développement Next.js (webpack) |
+| `npm run build` | Build production (webpack : `next.config.mjs` en ajuste la config, que Turbopack, le défaut de Next 16, refuse) |
 | `npm run start` | Serve le build prod |
 | `npm run lint` | ESLint |
 | `npm test` | Tests unitaires (vitest) |
@@ -130,7 +130,7 @@ src/
 │   ├── ratelimit.ts               # Upstash Redis rate limit
 │   └── env.ts                     # Validation env vars au boot
 ├── __tests__/                     # Tests unitaires vitest
-└── middleware.ts                  # Auth + cookies + redirect
+└── proxy.ts                       # Auth + cookies + redirect + CSP (ex-middleware.ts)
 
 supabase/migrations/               # SQL versionné (~30 fichiers, ordre numérique)
 e2e/                               # Tests Playwright

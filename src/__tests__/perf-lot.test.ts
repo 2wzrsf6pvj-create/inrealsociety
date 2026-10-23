@@ -27,13 +27,13 @@ describe('accroches : une à la fois', () => {
   const [id] = Object.keys(BAKED_TAGLINES);
 
   it('la route renvoie le tracé et l’encombrement d’une accroche connue', async () => {
-    const res = GET(new Request('http://x'), { params: { id } });
+    const res = await GET(new Request('http://x'), { params: Promise.resolve({ id }) });
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ path: BAKED_TAGLINES[id].path, bbox: BAKED_TAGLINES[id].bbox });
   });
 
-  it.each(['inconnue', '__proto__', 'constructor'])('« %s » : 404', (bad) => {
-    expect(GET(new Request('http://x'), { params: { id: bad } }).status).toBe(404);
+  it.each(['inconnue', '__proto__', 'constructor'])('« %s » : 404', async (bad) => {
+    expect((await GET(new Request('http://x'), { params: Promise.resolve({ id: bad }) })).status).toBe(404);
   });
 
   it('une réponse statique par accroche, générée au build', () => {

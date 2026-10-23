@@ -1,4 +1,6 @@
-// Sentry — initialisation Edge runtime (middleware Next.js).
+// Sentry — initialisation Edge runtime. Depuis Next 16, plus aucune route n'y
+// tourne (le proxy et l'image Open Graph du profil sont passés sous Node.js,
+// Edge étant déprécié) ; gardé pour une route qui y reviendrait.
 // Loaded via instrumentation.ts register() hook.
 
 import * as Sentry from '@sentry/nextjs';

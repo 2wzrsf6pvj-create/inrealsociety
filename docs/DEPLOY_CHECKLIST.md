@@ -172,7 +172,7 @@ plus exécuter `create_member_with_code` (service_role oui).
 ## 2bis. CSP à nonce — ENFORCE (Phase 2 livrée)
 
 **État actuel (enforçant, commits `a58d71d` Phase 1 + Phase 2)** : une seule CSP,
-posée par `src/middleware.ts`, **enforçante** : `script-src 'self' 'nonce-…'
+posée par `src/proxy.ts` (ex-`middleware.ts`), **enforçante** : `script-src 'self' 'nonce-…'
 'strict-dynamic'` (sans `'unsafe-inline'` effectif — il reste en fallback legacy,
 ignoré par les navigateurs CSP3). `next.config.mjs` **ne pose plus** de CSP.
 
@@ -190,11 +190,11 @@ consentement accepté et confirmer l'absence de `Refused to load the script ...p
 
 **Revenir en observation si un script casse en prod** (rollback doux, sans tout
 annuler) :
-1. `middleware.ts` : header réponse `Content-Security-Policy` → `Content-Security-Policy-Report-Only`.
+1. `proxy.ts` : header réponse `Content-Security-Policy` → `Content-Security-Policy-Report-Only`.
    (Le header de requête `Content-Security-Policy`, lu par Next pour noncer, reste tel quel.)
 2. Optionnel : remettre une CSP enforçante permissive dans `next.config.mjs` le temps de corriger.
 3. Pour collecter les rapports en central plutôt qu'à la console : ajouter `report-to`/
-   `report-uri` au header CSP dans `middleware.ts` + un endpoint qui lit les POST.
+   `report-uri` au header CSP dans `proxy.ts` + un endpoint qui lit les POST.
 
 ---
 
