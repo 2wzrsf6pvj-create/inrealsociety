@@ -5,6 +5,64 @@
 
 ---
 
+## 2026-10-23 (suite) — Performance après Next 16 : analyse et lot (#30)
+
+### Analyse
+Lighthouse mobile, en simulation (comme PageSpeed Insights) et en bridage
+réel, médianes de 5 passages ; Next 14 reconstruit pour comparer.
+
+**Déjà en ordre** :
+- notre propre code ne pèse qu'environ 5 ko par page ; PostHog n'est chargé
+  qu'après consentement ;
+- en bridage réel, l'accroche s'affiche vers 1,9 s et la photo de la boutique
+  vers 1,7 s, comme avant la migration.
+
+**Constats** :
+1. Les chiffres donnés pour #29 (2 passages) exagéraient la perte. Next 14 →
+   16 : accueil 95 → 93, FAQ 96 → 91, boutique 94 → 91.
+2. La perte vient du framework : l'exécution du bundle principal (routeur de
+   Next 16, React 19) tient en une tâche d'environ 250 ms sur mobile simulé.
+3. Essayé sans gain mesurable : Sentry chargé après l'affichage, Turbopack,
+   découpage du bundle, fondu d'entrée des pages coupé.
+4. Le bandeau de consentement attendait le JavaScript : sur la boutique en 4G
+   lente, il n'apparaissait qu'à 4,4 s.
+5. `priority`, déprécié par Next 16, ne posait plus `fetchpriority="high"`
+   sur la photo principale de la boutique.
+6. 26 cas signalés par les règles du React Compiler : des lectures du
+   navigateur après l'hydratation, sans effet sur la vitesse.
+7. Artefact de mesure : Chrome sans écran note parfois la photo de la
+   boutique bien après son affichage réel (1,9 s ou 4 s selon les passages).
+
+### Décision de Clément
+- Les 26 cas : corriger ceux qui ont une alternative propre, annoter les
+  autres comme voulus, repasser les règles en erreur.
+
+### Fait
+- **PR #30 fusionnée** (`f1e773f`), constats 4 à 6 :
+  - bandeau rendu côté serveur, masqué avant l'affichage pour qui a déjà
+    choisi (`html.consent-set`). Sur la boutique en 4G lente, il apparaît à
+    1,7 s au lieu de 4,4 s ;
+  - photo de la boutique : `preload` et `fetchPriority="high"` ;
+  - 5 cas corrigés à l'identique, 21 annotés avec leur raison. Règles en
+    erreur : lint sans erreur ni avertissement ;
+  - `docs/PERFORMANCE.md` : méthode de mesure, repères, pistes écartées,
+    budget JS revu (190 ko) ;
+  - test Playwright du bandeau.
+- Vérifié :
+  - lint, typage, 651 tests, intégration 46/46, Playwright ;
+  - production locale : 15 pages sans erreur, nonce sur tous les scripts ;
+  - tableau de bord de démonstration sans erreur d'hydratation ;
+  - CI et préversion Vercel vertes.
+- Scores après le lot : accueil 94, FAQ 92, boutique 91, dans le bruit de
+  mesure. Le gain est dans l'attente visible du bandeau, pas dans le score.
+
+### Ensuite
+- L'économie unitaire, avec les tarifs Printful de Clément.
+- Le reste de la priorité 3 : app mobile, parrainage et newsletter,
+  accessibilité, petits restes.
+
+---
+
 ## 2026-10-23 (suite) — Migration vers Next.js 16 (#29)
 
 ### Contexte
@@ -35,9 +93,10 @@ après le lot sûr (#28). Next.js 14 ne reçoit plus de correctifs.
 ### Coût mesuré
 - +41 ko de JS compressé par page : routeur de Next 16 +27 ko, React 19
   +11 ko. Notre code et Sentry ne bougent pas.
-- Lighthouse mobile :
-  - accueil 96 → 91, FAQ 96 → 92, boutique 92 → 86 ;
-  - temps de blocage : environ +100 ms.
+- Lighthouse mobile, corrigé dans l'entrée #30 (médianes de 5 passages ; la
+  première mesure, sur 2 passages, exagérait la perte) :
+  - accueil 95 → 93, FAQ 96 → 91, boutique 94 → 91 ;
+  - temps de blocage : +40 à +150 ms.
 - Turbopack, essayé, chargeait encore plus de JS.
 
 ### À faire — côté Clément
