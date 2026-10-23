@@ -5,6 +5,46 @@
 
 ---
 
+## 2026-10-23 (suite) — Administration de la modération (#33)
+
+### Contexte
+Troisième décision de Clément sur la modération : agir depuis une
+mini-interface plutôt qu'en SQL.
+
+### Fait
+- **PR #33 fusionnée** (`d9e70dc`) :
+  - `/admin`, réservée à `ADMIN_EMAILS` avec adresse confirmée (404 pour tout
+    autre compte) : profils et conversations signalés, messages signalés,
+    photos à vérifier, profils suspendus, appareils bannis, dernières
+    décisions ;
+  - décisions en un clic : suspendre ou rétablir, retirer une photo, bannir
+    ou lever, masquer un message, clore ; chacune tracée dans `audit_logs`
+    (qui, quoi, motif) ;
+  - le porteur visé reçoit la décision avec son motif, la règle et le
+    recours ; l'auteur du signalement, s'il a laissé son email, la suite
+    donnée (DSA, art. 16 et 17) ; l'écran dit qui a été prévenu et ce qui
+    reste à faire à la main ;
+  - « traité » est une ligne `moderation.report_handled` dans l'audit : pas
+    de migration ;
+  - alertes avec un lien vers `/admin`, le SQL en secours ; doc et
+    `ADMIN_EMAILS` dans les listes de mise en production.
+- Vérifié :
+  - lint, typage, 697 tests, intégration 50/50 (parcours complet sur vraie
+    base), build, Playwright ;
+  - mutations (contrôle d'accès, contrôle d'origine, clôture) détectées ;
+  - essai réel sur base locale : page sur téléphone et ordinateur, une
+    suspension faite depuis la page ; captures envoyées à Clément.
+
+### À faire par Clément
+- Créer son compte administrateur (Supabase → Authentication → Add user,
+  « Auto Confirm ») et renseigner `ADMIN_EMAILS` dans Vercel.
+
+### Ensuite
+- Trois ajouts à `/admin` choisis par Clément : chiffres du test terrain,
+  commandes à surveiller, recherche d'un porteur ou d'une commande.
+
+---
+
 ## 2026-10-23 (suite) — Modération au quotidien : analyse et premier lot (#32)
 
 ### Analyse
