@@ -8,6 +8,9 @@
 //     pourrait s'abonner au flux d'un porteur via son memberId public
 //     (/profil/<uuid>) → fuite de confidentialité.
 // onConflict:'endpoint' (unique) → un device n'a qu'UN scope à la fois.
+// DELETE { endpoint } — déconnexion du porteur : cet appareil ne reçoit plus
+//   rien. Sans session (elle peut avoir expiré) : l'endpoint, que seuls cet
+//   appareil et le serveur connaissent, désigne l'abonnement.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
@@ -87,6 +90,10 @@ export async function POST(req: NextRequest) {
       auth:       subscription.keys.auth,
       message_id: messageId ?? null,
       member_id:  memberId ?? null,
+      // Date du dernier abonnement : un appareil garde le même endpoint d'une
+      // conversation à l'autre, et la purge des passants (90 jours) partait de
+      // la première, emportant l'abonnement à une conversation toute récente.
+      created_at: new Date().toISOString(),
     }, { onConflict: 'endpoint' });
 
     if (error) throw error;
@@ -94,6 +101,30 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
   } catch (err) {
     reportError('push/subscribe', err);
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
+  }
+}
+
+const unsubscribeSchema = z.object({ endpoint: z.string().url().max(2048) });
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const rl = await checkPublicRateLimit(getIp(req));
+    if (!rl.success) {
+      return NextResponse.json({ error: 'Trop de requêtes.' }, { status: 429, headers: rateLimitHeaders(rl) });
+    }
+
+    const body = unsubscribeSchema.safeParse(await req.json().catch(() => null));
+    if (!body.success) {
+      return NextResponse.json({ error: 'Données invalides.' }, { status: 400 });
+    }
+
+    const { error } = await supabaseAdmin.from('push_subscriptions').delete().eq('endpoint', body.data.endpoint);
+    if (error) throw error;
+
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    reportError('push/unsubscribe', err);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

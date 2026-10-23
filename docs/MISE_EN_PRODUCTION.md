@@ -70,7 +70,7 @@ qui manquent.
 
 - [ ] Offre **Pro** (25 $/mois) avant l'ouverture : l'offre gratuite met le
       projet en pause après une semaine sans activité.
-- [ ] Appliquer les migrations jusqu'à **061**, dans l'ordre
+- [ ] Appliquer les migrations jusqu'à **062**, dans l'ordre
       (`DEPLOY_CHECKLIST.md`, section 1 ; avec la CLI : `docs/SUPABASE_CLI.md`).
 - [ ] Vérifier : SQL Editor → `scripts/verify-migrations.sql`, chaque résultat
       conforme à « attendu ».

@@ -1,10 +1,13 @@
 // src/lib/field-stats.ts — Chiffres du test terrain, pour /admin (choix de
 // Clément) : porteurs activés et scannés, scans → messages → réponses,
-// porteurs encore scannés après un mois, premium, commandes. Calculés depuis la
-// base, sans PostHog : ils ne dépendent pas du consentement aux mesures.
-// SERVEUR UNIQUEMENT.
+// porteurs encore scannés après un mois, premium, commandes, notifications.
+// Calculés depuis la base, sans PostHog : ils ne dépendent pas du consentement
+// aux mesures. SERVEUR UNIQUEMENT.
 
 import { supabaseAdmin } from '@/lib/supabase-admin';
+import { isMissingColumn } from '@/lib/phone';
+import { pushService, type PushService } from '@/lib/push-service';
+import type { PhoneOs } from '@/lib/types';
 
 const DAY = 86_400_000;
 
@@ -21,6 +24,24 @@ export const LOOKBACK_DAYS = 120;
 
 export interface Ratio { eligible: number; hit: number }
 
+/** Service de notifications du téléphone lui-même : l'app installée sur iPhone
+ *  passe par Apple ; sur Android, Chrome et ses dérivés par Google, Firefox par
+ *  Mozilla. Un ordinateur abonné par le même service compte aussi (Safari sur
+ *  Mac, Chrome) : approximation assumée. */
+export const PHONE_PUSH: Record<PhoneOs, PushService[]> = { ios: ['apple'], android: ['google', 'mozilla'] };
+
+export interface NotificationStats {
+  /** Porteurs dont au moins un appareil reçoit les notifications, dont par
+   *  Apple et par Google. */
+  wearers:  { notified: number; apple: number; google: number };
+  /** Téléphone relevé à l'ouverture de « Mon espace » (cf. lib/phone) ; null
+   *  tant que la migration 062 n'est pas appliquée. */
+  phones:   { iphone: { total: number; installed: number; notified: number }; android: { total: number; notified: number } } | null;
+  /** Premiers messages de la fenêtre dont le passant suit la réponse : il s'est
+   *  abonné aux notifications de la conversation. */
+  followed: number;
+}
+
 export interface FieldStats {
   wearers:    number;
   newWearers: number;
@@ -32,6 +53,7 @@ export interface FieldStats {
   stillWorn:  Ratio;
   /** Sur la fenêtre : scans, premiers messages, conversations où le porteur a répondu. */
   funnel:     { scans: number; messages: number; replied: number };
+  notifications: NotificationStats;
 }
 
 export function computeFieldStats(input: {
@@ -42,6 +64,11 @@ export function computeFieldStats(input: {
   /** parent_id des réponses de porteurs, sur la fenêtre. */
   replyParents: (string | null)[];
   paidOrders:   number;
+  /** Abonnements aux notifications : d'un porteur (member_id) ou d'un passant
+   *  à sa conversation (message_id). */
+  subscriptions: { member_id: string | null; message_id: string | null; endpoint: string }[];
+  /** Porteurs dont le téléphone est connu ; null sans la migration 062. */
+  phones:       { id: string; phone_os: PhoneOs; app_installed_at: string | null }[] | null;
 }, now: Date): FieldStats {
   const ago = (days: number) => now.getTime() - days * DAY;
 
@@ -81,6 +108,48 @@ export function computeFieldStats(input: {
       messages: rootIds.size,
       replied:  replied.size,
     },
+    notifications: notificationStats(input.subscriptions, input.phones, rootIds),
+  };
+}
+
+function notificationStats(
+  subscriptions: { member_id: string | null; message_id: string | null; endpoint: string }[],
+  phones: { id: string; phone_os: PhoneOs; app_installed_at: string | null }[] | null,
+  rootIds: Set<string>,
+): NotificationStats {
+  const servicesByMember = new Map<string, Set<PushService>>();
+  const followed = new Set<string>();
+  for (const s of subscriptions) {
+    if (s.member_id) {
+      const services = servicesByMember.get(s.member_id) ?? new Set<PushService>();
+      services.add(pushService(s.endpoint));
+      servicesByMember.set(s.member_id, services);
+    } else if (s.message_id && rootIds.has(s.message_id)) {
+      followed.add(s.message_id);
+    }
+  }
+  const all = [...servicesByMember.values()];
+  const reachesPhone = (id: string, os: PhoneOs) =>
+    PHONE_PUSH[os].some((service) => servicesByMember.get(id)?.has(service));
+
+  let byPhone: NotificationStats['phones'] = null;
+  if (phones) {
+    byPhone = { iphone: { total: 0, installed: 0, notified: 0 }, android: { total: 0, notified: 0 } };
+    for (const p of phones) {
+      const group = p.phone_os === 'ios' ? byPhone.iphone : byPhone.android;
+      group.total++;
+      if (reachesPhone(p.id, p.phone_os)) group.notified++;
+      if (p.phone_os === 'ios' && p.app_installed_at) byPhone.iphone.installed++;
+    }
+  }
+  return {
+    wearers: {
+      notified: all.length,
+      apple:    all.filter((services) => services.has('apple')).length,
+      google:   all.filter((services) => services.has('google')).length,
+    },
+    phones:   byPhone,
+    followed: followed.size,
   };
 }
 
@@ -89,21 +158,36 @@ export function computeFieldStats(input: {
 const PAGE = 1000;
 const MAX_ROWS = 50_000;
 async function allRows<T>(
-  page: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string } | null }>,
+  page: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: { message: string; code?: string } | null }>,
 ): Promise<T[]> {
   const rows: T[] = [];
   for (let from = 0; from < MAX_ROWS; from += PAGE) {
     const { data, error } = await page(from, from + PAGE - 1);
-    if (error) throw new Error(`[field-stats] ${error.message}`);
+    if (error) throw Object.assign(new Error(`[field-stats] ${error.message}`), { code: error.code });
     rows.push(...(data ?? []));
     if (!data || data.length < PAGE) break;
   }
   return rows;
 }
 
+type PhoneRow = { id: string; phone_os: PhoneOs; app_installed_at: string | null };
+
+/** Porteurs dont le téléphone est connu ; null tant que la migration 062 n'est
+ *  pas appliquée (/admin le dit au lieu d'échouer). */
+async function loadPhones(): Promise<PhoneRow[] | null> {
+  try {
+    return await allRows<PhoneRow>((from, to) =>
+      supabaseAdmin.from('members').select('id, phone_os, app_installed_at')
+        .not('phone_os', 'is', null).order('id').range(from, to));
+  } catch (err) {
+    if (isMissingColumn(err)) return null;
+    throw err;
+  }
+}
+
 export async function loadFieldStats(now = new Date()): Promise<FieldStats> {
   const since = (days: number) => new Date(now.getTime() - days * DAY).toISOString();
-  const [members, scans, roots, replies, paid] = await Promise.all([
+  const [members, scans, roots, replies, paid, subscriptions, phones] = await Promise.all([
     allRows<{ id: string; created_at: string; plan: string | null }>((from, to) =>
       supabaseAdmin.from('members').select('id, created_at, plan').order('id').range(from, to)),
     allRows<{ member_id: string; scanned_at: string }>((from, to) =>
@@ -117,6 +201,9 @@ export async function loadFieldStats(now = new Date()): Promise<FieldStats> {
         .gte('created_at', since(STATS_WINDOW_DAYS)).order('id').range(from, to)),
     supabaseAdmin.from('orders').select('id', { count: 'exact', head: true })
       .eq('status', 'paid').gte('created_at', since(STATS_WINDOW_DAYS)),
+    allRows<{ member_id: string | null; message_id: string | null; endpoint: string }>((from, to) =>
+      supabaseAdmin.from('push_subscriptions').select('member_id, message_id, endpoint').order('id').range(from, to)),
+    loadPhones(),
   ]);
   if (paid.error) throw new Error(`[field-stats] ${paid.error.message}`);
 
@@ -124,5 +211,7 @@ export async function loadFieldStats(now = new Date()): Promise<FieldStats> {
     members, scans, roots,
     replyParents: replies.map((r) => r.parent_id),
     paidOrders:   paid.count ?? 0,
+    subscriptions,
+    phones,
   }, now);
 }

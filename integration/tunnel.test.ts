@@ -1023,3 +1023,84 @@ describe.skipIf(!ENABLED)('Administration : chiffres, commandes à surveiller, r
   });
 });
 
+
+// ─── Notifications mesurées (062) ────────────────────────────────────────────
+describe.skipIf(!ENABLED)('Notifications : abonnements des porteurs gardés, téléphone relevé, chiffres de /admin', () => {
+  let push:  typeof import('@/app/api/push/subscribe/route');
+  let phone: typeof import('@/lib/phone');
+  let watch: typeof import('@/lib/order-watch');
+  let stats: typeof import('@/lib/field-stats');
+  const tag    = crypto.randomUUID().slice(0, 8);
+  const wearer = { authId: crypto.randomUUID(), memberId: crypto.randomUUID() };
+  const root   = crypto.randomUUID();   // conversation de ces jours-ci
+  const ep = {
+    wearer:   `https://web.push.apple.com/porteur-${tag}`,
+    passant:  `https://fcm.googleapis.com/fcm/send/passant-${tag}`,
+    resubbed: `https://fcm.googleapis.com/fcm/send/reabonne-${tag}`,
+  };
+  const IPHONE_APP = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148';
+  const kept = (endpoint: string) => sql(`SELECT count(*) FROM push_subscriptions WHERE endpoint = '${endpoint}'`);
+
+  beforeAll(async () => {
+    push  = await import('@/app/api/push/subscribe/route');
+    phone = await import('@/lib/phone');
+    watch = await import('@/lib/order-watch');
+    stats = await import('@/lib/field-stats');
+    sql(`INSERT INTO auth.users (id, email, email_confirmed_at) VALUES ('${wearer.authId}', 'lou-${tag}@example.com', now())`);
+    sql(`INSERT INTO members (id, auth_user_id, name, email) VALUES ('${wearer.memberId}', '${wearer.authId}', 'Lou${tag}', 'lou-${tag}@example.com')`);
+    sql(`INSERT INTO messages (id, member_id, content, author) VALUES ('${root}', '${wearer.memberId}', 'Bonjour', 'scanner')`);
+    // Abonnés il y a 4 mois : l'iPhone du porteur, et deux appareils de passants.
+    sql(`INSERT INTO push_subscriptions (endpoint, p256dh, auth, member_id, created_at) VALUES ('${ep.wearer}', 'p', 'a', '${wearer.memberId}', now() - interval '120 days')`);
+    sql(`INSERT INTO push_subscriptions (endpoint, p256dh, auth, message_id, created_at) VALUES
+      ('${ep.passant}', 'p', 'a', '${crypto.randomUUID()}', now() - interval '120 days'),
+      ('${ep.resubbed}', 'p', 'a', '${crypto.randomUUID()}', now() - interval '120 days')`);
+  });
+
+  it('un passant suit une nouvelle conversation depuis le même appareil : ses 90 jours repartent', async () => {
+    const body = { subscription: { endpoint: ep.resubbed, keys: { p256dh: 'p2', auth: 'a2' } }, messageId: root };
+    expect((await push.POST(req('/api/push/subscribe', { body }))).status).toBe(200);
+    expect(sql(`SELECT message_id || '|' || (created_at > now() - interval '1 minute') FROM push_subscriptions WHERE endpoint = '${ep.resubbed}'`))
+      .toBe(`${root}|true`);
+  });
+
+  it('purge : l’abonnement du porteur reste au-delà de 90 jours, celui du passant part', () => {
+    expect(Number(sql(`SELECT push_subscriptions_deleted FROM cleanup_old_data()`))).toBeGreaterThanOrEqual(1);
+    expect(kept(ep.wearer)).toBe('1');
+    expect(kept(ep.passant)).toBe('0');
+    expect(kept(ep.resubbed)).toBe('1');
+  });
+
+  it('« Mon espace » ouvert depuis l’app sur iPhone : téléphone et première ouverture relevés', async () => {
+    // Profil lu comme « Mon espace » le lit : get_own_member() renvoie aussi les
+    // colonnes ajoutées après sa création.
+    const res = await realFetch(`${POSTGREST_URL}/rpc/get_own_member`, {
+      method: 'POST', body: '{}',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${signJwt({ role: 'authenticated', sub: wearer.authId })}` },
+    });
+    const member = await res.json();
+    expect(member).toEqual(expect.objectContaining({ id: wearer.memberId, phone_os: null, app_installed_at: null }));
+    phone.recordPhone(member, IPHONE_APP, true);
+    await vi.waitFor(() => {
+      expect(sql(`SELECT phone_os || '|' || (app_installed_at IS NOT NULL) FROM members WHERE id = '${wearer.memberId}'`)).toBe('ios|true');
+    });
+  });
+
+  it('/admin : chiffres et recherche disent qui est prévenu, sur quel téléphone', async () => {
+    const s = (await stats.loadFieldStats()).notifications;
+    expect(s.phones!.iphone.installed).toBeGreaterThanOrEqual(1);
+    expect(s.phones!.iphone.notified).toBeGreaterThanOrEqual(1);
+    expect(s.wearers.apple).toBeGreaterThanOrEqual(1);
+    expect(s.followed).toBeGreaterThanOrEqual(1);
+    const hit = (await watch.searchAdmin(`lou${tag}`))!.members.find(m => m.id === wearer.memberId)!;
+    expect(hit.pushServices).toEqual(['apple']);
+    expect(hit.phone).toEqual({ os: 'ios', appInstalledAt: expect.any(String) });
+  });
+
+  it('déconnexion : l’appareil du porteur est désabonné, même sans session', async () => {
+    currentUser = null;
+    const res = await push.DELETE(req('/api/push/subscribe', { method: 'DELETE', body: { endpoint: ep.wearer } }));
+    expect(res.status).toBe(200);
+    expect(kept(ep.wearer)).toBe('0');
+    expect((await watch.searchAdmin(`lou${tag}`))!.members[0].pushServices).toEqual([]);
+  });
+});

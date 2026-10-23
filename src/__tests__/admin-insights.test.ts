@@ -26,6 +26,8 @@ describe('computeFieldStats', () => {
     roots:        [{ id: 'm1' }, { id: 'm2' }, { id: 'm3' }],
     replyParents: ['m1', 'm1', 'm3', 'ailleurs', null],
     paidOrders:   4,
+    subscriptions: [],
+    phones:       null,
   }, NOW);
 
   it('porteurs, nouveaux, premium, commandes', () => {

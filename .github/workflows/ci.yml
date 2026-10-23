@@ -140,3 +140,65 @@ jobs:
 
       - name: Tests d'intégration
         run: npm run test:integration
+
+  e2e-db:
+    name: E2E avec base (Postgres + PostgREST)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Navigateur connecté devant une vraie base, app construite : cf. e2e/db/README.md
+    if: github.event_name == 'push' || github.event.pull_request.draft == false
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      INTEGRATION_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+      INTEGRATION_POSTGREST_URL: http://localhost:3001
+      INTEGRATION_JWT_SECRET: integration-test-secret-integration-test-secret
+      POSTGREST_VERSION: v12.2.3
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version-file: package.json
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Base de test (rôles Supabase + migrations)
+        run: bash integration/setup-db.sh
+
+      # Même démarrage que le job d'intégration.
+      - name: PostgREST
+        run: |
+          curl -sSL -o /tmp/postgrest.tar.xz \
+            "https://github.com/PostgREST/postgrest/releases/download/${POSTGREST_VERSION}/postgrest-${POSTGREST_VERSION}-linux-static-x64.tar.xz"
+          tar -xf /tmp/postgrest.tar.xz -C /tmp
+          PGRST_DB_URI=postgresql://authenticator:authenticator@localhost:5432/postgres \
+          PGRST_DB_SCHEMAS=public PGRST_DB_ANON_ROLE=anon \
+          PGRST_JWT_SECRET="$INTEGRATION_JWT_SECRET" PGRST_SERVER_PORT=3001 \
+            nohup /tmp/postgrest > /tmp/postgrest.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf "$INTEGRATION_POSTGREST_URL/" > /dev/null && exit 0; sleep 1; done
+          cat /tmp/postgrest.log; exit 1
+
+      - name: Install Playwright browsers
+        run: npx playwright install chromium
+
+      - name: E2E avec base
+        run: npm run test:e2e:db
+
+      - name: Upload Playwright traces on failure
+        if: failure()
+        uses: actions/upload-artifact@v6
+        with:
+          name: e2e-db-results
+          path: test-results/
+          retention-days: 7

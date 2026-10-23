@@ -3,10 +3,12 @@
 // Vérification d'ownership : si le membre a un auth_user_id,
 // seul l'utilisateur authentifié correspondant peut accéder.
 
+import { headers } from 'next/headers';
 import { redirect, notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase-server';
 import { getMemberById, getRecentScans, getScansByDay, getScanCountSince } from '@/lib/queries-server';
 import { getMessages, getMessagesCount, getActiveConversationsCount, getConversationsTotal, getUnreadMessagesCount } from '@/lib/inbox';
+import { recordPhone } from '@/lib/phone';
 import DashboardClient from './DashboardClient';
 
 interface Props {
@@ -34,6 +36,10 @@ export default async function DashboardByIdPage(props: Props) {
   if (member.auth_user_id !== user.id) {
     redirect('/dashboard');
   }
+
+  // iPhone ou Android : pour les chiffres de /admin (cf. lib/phone). L'app
+  // installée s'ouvre sur /dashboard, jamais ici.
+  recordPhone(member, (await headers()).get('user-agent'), false);
 
   const [recentScans, messages, unreadCount, activeConversations, recentConversations, totalConversations, scansByDay, weekScans] = await Promise.all([
     getRecentScans(memberId, 5),

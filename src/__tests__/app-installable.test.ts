@@ -102,13 +102,15 @@ describe('manifestes', () => {
     for (const icon of manifest.icons) {
       expect(pngSize(icon.src.slice(1)).join('x')).toBe(icon.sizes);
     }
-    expect(manifest).toMatchObject({ id: '/', start_url: '/', scope: '/', display: 'standalone' });
+    // ?src=app : « Mon espace », où « / » mène un porteur connecté, sait qu'on
+    // l'ouvre depuis l'app installée (cf. lib/phone). L'identité reste « / ».
+    expect(manifest).toMatchObject({ id: '/', start_url: '/?src=app', scope: '/', display: 'standalone' });
   });
 
-  it('« Mon espace » : l’app installée s’ouvre sur le tableau de bord', async () => {
+  it('« Mon espace » : l’app installée s’ouvre sur le tableau de bord, qui la reconnaît', async () => {
     const res = dashboardManifest();
     expect(res.headers.get('content-type')).toContain('application/manifest+json');
-    expect(await res.json()).toEqual({ ...manifest, id: '/dashboard', start_url: '/dashboard' });
+    expect(await res.json()).toEqual({ ...manifest, id: '/dashboard', start_url: '/dashboard?src=app' });
   });
 
   it('conversation : l’app installée rouvre cette conversation', async () => {

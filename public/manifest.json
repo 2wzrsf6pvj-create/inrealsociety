@@ -4,7 +4,7 @@
   "short_name": "IRS",
   "description": "Le premier vêtement conçu pour les rencontres dans la vraie vie.",
   "lang": "fr",
-  "start_url": "/",
+  "start_url": "/?src=app",
   "scope": "/",
   "display": "standalone",
   "background_color": "#000000",

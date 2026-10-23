@@ -13,6 +13,7 @@ import { isAdmin } from '@/lib/admin';
 import { loadModerationQueue, QUEUE_WINDOW_DAYS, type QueueMember } from '@/lib/moderation-queue';
 import { loadFieldStats, STATS_WINDOW_DAYS, FIRST_SCAN_DAYS, STILL_WORN_AFTER_DAYS, RECENT_SCAN_DAYS, LOOKBACK_DAYS } from '@/lib/field-stats';
 import { loadOrderWatch, searchAdmin, NOT_ACTIVATED_AFTER_DAYS, type WatchedOrder, type MemberHit } from '@/lib/order-watch';
+import { PUSH_SERVICE_LABELS } from '@/lib/push-service';
 import AdminAction from './AdminAction';
 
 export const dynamic = 'force-dynamic';
@@ -35,6 +36,9 @@ const DECISION_LABELS: Record<string, string> = {
 const COLOR_LABELS: Record<string, string> = { dark: 'Noir', light: 'Blanc' };
 const STATUS_LABELS: Record<string, string> = { pending: 'en attente de paiement', paid: 'payée', refunded: 'remboursée' };
 const pct = (hit: number, total: number) => (total === 0 ? '—' : `${Math.round((hit / total) * 100)} %`);
+const plural = (n: number, word: string) => `${n} ${word}${n > 1 ? 's' : ''}`;
+const PHONES_MISSING = 'migration 062 à appliquer';
+const PHONE_LABELS = { ios: 'iPhone', android: 'Android' } as const;
 
 const MOTIF_TO_MEMBER = { field: 'motif', label: 'Motif, envoyé au porteur avec la décision' } as const;
 const MOTIF_KEPT      = { field: 'motif', label: 'Motif, gardé dans le journal' } as const;
@@ -107,6 +111,17 @@ function MemberCard({ member }: { member: MemberHit }) {
         {member.plan === 'premium' ? ' · premium' : ''}
         {member.shortCode ? ` · QR ${member.shortCode}` : ''}
       </Line>
+      <Line label="Notifications">
+        {member.pushServices.length > 0
+          ? `activées · ${member.pushServices.map((s) => PUSH_SERVICE_LABELS[s]).join(', ')}`
+          : 'non activées'}
+      </Line>
+      {member.phone && (
+        <Line label="Téléphone">
+          {member.phone.os ? PHONE_LABELS[member.phone.os] : 'pas encore relevé'}
+          {member.phone.appInstalledAt ? ` · app installée, première ouverture le ${when(member.phone.appInstalledAt)}` : ''}
+        </Line>
+      )}
       <div className="flex flex-wrap gap-2">
         {member.suspended
           ? <AdminAction label="Lever la suspension" payload={{ action: 'unsuspend_member', memberId: member.id }} />
@@ -138,6 +153,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
     loadOrderWatch(),
     searchAdmin(typeof raw === 'string' ? raw : ''),
   ]);
+  const notif = stats.notifications;
+  const phones = notif.phones;
 
   return (
     <main className="min-h-screen bg-brand-black text-brand-white px-4 py-16">
@@ -201,6 +218,28 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           <p className="font-ui text-xs text-brand-gray/55 leading-relaxed">
             Achats venus d&apos;un scan : dans PostHog (événement wearer_cta_clicked). Fixer avant le test les seuils
             pour continuer, ajuster ou arrêter.
+          </p>
+
+          <h3 className="font-ui text-sm font-bold tracking-[0.2em] uppercase pt-4">Notifications</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            <Stat label="Porteurs prévenus" value={pct(notif.wearers.notified, stats.wearers)}
+              detail={`${notif.wearers.notified} sur ${plural(stats.wearers, 'porteur')} · ${notif.wearers.apple} par Apple, ${notif.wearers.google} par Google`} />
+            <Stat label="iPhone : app installée" value={phones ? pct(phones.iphone.installed, phones.iphone.total) : '—'}
+              detail={!phones ? PHONES_MISSING : phones.iphone.total === 0
+                ? 'aucun porteur sur iPhone pour l’instant'
+                : `${phones.iphone.installed} sur ${plural(phones.iphone.total, 'porteur')} sur iPhone · ${phones.iphone.notified} prévenu${phones.iphone.notified > 1 ? 's' : ''}`} />
+            <Stat label="Android : prévenus" value={phones ? pct(phones.android.notified, phones.android.total) : '—'}
+              detail={!phones ? PHONES_MISSING : phones.android.total === 0
+                ? 'aucun porteur sur Android pour l’instant'
+                : `${phones.android.notified} sur ${plural(phones.android.total, 'porteur')} sur Android`} />
+            <Stat label="Passants qui suivent la réponse" value={pct(notif.followed, stats.funnel.messages)}
+              detail={`${notif.followed} sur ${plural(stats.funnel.messages, 'conversation')}, ces ${STATS_WINDOW_DAYS} jours`} />
+          </div>
+          <p className="font-ui text-xs text-brand-gray/55 leading-relaxed">
+            Prévenu : au moins un appareil abonné aux notifications. Téléphone relevé à chaque ouverture de « Mon espace »
+            depuis un téléphone ; app installée : ouverte au moins une fois depuis l&apos;écran d&apos;accueil, seule façon
+            d&apos;être prévenu sur iPhone. Service lu dans l&apos;abonnement : Apple (iPhone, Mac), Google (Chrome, Android),
+            Mozilla (Firefox).
           </p>
         </section>
 

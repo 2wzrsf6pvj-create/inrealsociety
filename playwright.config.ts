@@ -7,6 +7,8 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir:  './e2e',
+  // E2E avec base (vraie base, app construite) : playwright.db.config.ts.
+  testIgnore: 'db/**',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries:  process.env.CI ? 2 : 0,

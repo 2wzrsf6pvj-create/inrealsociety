@@ -2,10 +2,14 @@
 // Clément) : payées mais pas imprimées, et codes d'activation non utilisés
 // après 7 jours. Les alertes email existent déjà ; la liste évite qu'un client
 // qui a payé passe entre les mailles. Aussi la recherche d'un porteur ou d'une
-// commande (service client). SERVEUR UNIQUEMENT.
+// commande (service client), qui dit si le porteur reçoit les notifications.
+// SERVEUR UNIQUEMENT.
 
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { FULFILL_ON_PAYMENT } from '@/lib/constants';
+import { isMissingColumn } from '@/lib/phone';
+import { pushService, type PushService } from '@/lib/push-service';
+import type { PhoneOs } from '@/lib/types';
 
 const HOUR = 3_600_000;
 const DAY  = 24 * HOUR;
@@ -82,6 +86,11 @@ export async function loadOrderWatch(now = new Date()): Promise<OrderWatch> {
 export interface MemberHit {
   id: string; name: string | null; email: string | null; createdAt: string;
   plan: string | null; paused: boolean; suspended: boolean; shortCode: string | null;
+  /** Services de notifications de ses appareils abonnés ; vide : pas activées. */
+  pushServices: PushService[];
+  /** Téléphone relevé à l'ouverture de « Mon espace » (cf. lib/phone) ; absent
+   *  tant que la migration 062 n'est pas appliquée. */
+  phone?: { os: PhoneOs | null; appInstalledAt: string | null };
 }
 export interface SearchResults { query: string; members: MemberHit[]; orders: WatchedOrder[] }
 
@@ -96,6 +105,36 @@ type MemberRow = {
   id: string; name: string | null; email: string | null; created_at: string; plan: string | null;
   is_paused: boolean | null; suspended_at: string | null; short_code: string | null;
 };
+
+type PhoneRow = { id: string; phone_os: PhoneOs | null; app_installed_at: string | null };
+
+/** Notifications et téléphone des porteurs trouvés. */
+async function withNotifications(rows: MemberRow[]): Promise<MemberHit[]> {
+  const ids = rows.map((r) => r.id);
+  const [subs, phones] = ids.length === 0 ? [null, null] : await Promise.all([
+    supabaseAdmin.from('push_subscriptions').select('member_id, endpoint').in('member_id', ids),
+    supabaseAdmin.from('members').select('id, phone_os, app_installed_at').in('id', ids),
+  ]);
+  if (subs?.error) throw new Error(`[order-watch] notifications : ${subs.error.message}`);
+  if (phones?.error && !isMissingColumn(phones.error)) throw new Error(`[order-watch] téléphone : ${phones.error.message}`);
+
+  const services = new Map<string, Set<PushService>>();
+  for (const sub of (subs?.data ?? []) as { member_id: string; endpoint: string }[]) {
+    services.set(sub.member_id, (services.get(sub.member_id) ?? new Set()).add(pushService(sub.endpoint)));
+  }
+  // Sans la migration 062, pas de téléphone : la carte n'en parle pas.
+  const phoneRows = phones && !phones.error ? (phones.data ?? []) as PhoneRow[] : null;
+  const phoneById = new Map((phoneRows ?? []).map((p) => [p.id, p]));
+  return rows.map((m) => {
+    const phone = phoneById.get(m.id);
+    return {
+      id: m.id, name: m.name, email: m.email, createdAt: m.created_at, plan: m.plan,
+      paused: !!m.is_paused, suspended: !!m.suspended_at, shortCode: m.short_code,
+      pushServices: [...(services.get(m.id) ?? [])].sort(),
+      ...(phoneRows ? { phone: { os: phone?.phone_os ?? null, appInstalledAt: phone?.app_installed_at ?? null } } : {}),
+    };
+  });
+}
 
 /** Par prénom ou email (contient), code court du QR ou code d'activation (exact). */
 export async function searchAdmin(raw: string): Promise<SearchResults | null> {
@@ -115,12 +154,6 @@ export async function searchAdmin(raw: string): Promise<SearchResults | null> {
   const uniqueById = <T extends { id: string }>(rows: T[]) => [...new Map(rows.map((r) => [r.id, r])).values()];
   const memberRows = uniqueById(results.slice(0, 3).flatMap((r) => (r.data ?? []) as MemberRow[]));
   const orderRows  = uniqueById(results.slice(3).flatMap((r) => (r.data ?? []) as OrderRow[]));
-  return {
-    query,
-    members: memberRows.map((m) => ({
-      id: m.id, name: m.name, email: m.email, createdAt: m.created_at, plan: m.plan,
-      paused: !!m.is_paused, suspended: !!m.suspended_at, shortCode: m.short_code,
-    })),
-    orders: await withCodeState(orderRows),
-  };
+  const [members, orders] = await Promise.all([withNotifications(memberRows), withCodeState(orderRows)]);
+  return { query, members, orders };
 }

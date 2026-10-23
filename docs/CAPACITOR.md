@@ -39,7 +39,17 @@ des magasins ».
   notifications). `app-installable.test.ts` échoue si un fichier n'est plus à jour.
 - **Notifications** : déjà accordées, l'abonnement de l'appareil est renvoyé au
   serveur à chaque visite de « Mon espace » ; s'il n'existe plus, le bouton
-  revient. Un échec d'activation n'est plus annoncé comme une réussite.
+  revient. Un échec d'activation n'est plus annoncé comme une réussite. À la
+  déconnexion, l'appareil est désabonné : il ne reçoit plus l'aperçu des
+  messages du porteur.
+- **Mesure** (/admin, « Notifications ») : à chaque ouverture de « Mon espace »
+  depuis un téléphone, le serveur relève iPhone ou Android. L'app installée
+  s'ouvre sur `/dashboard?src=app` (`/?src=app` installée depuis une autre page,
+  que le proxy fait suivre) : la première ouverture depuis l'app est datée
+  (`src/lib/phone.ts`, migration 062). D'où la part des porteurs sur iPhone qui
+  ont installé l'app, et de ceux qui sont prévenus. Sur iPhone, une app
+  installée avant cette mesure garde son ancienne adresse de départ : la
+  réinstaller pour qu'elle compte.
 - **Hors connexion** : le service worker ne garde que les pages publiques
   fixes (accueil, boutique, manifeste, CGV, confidentialité), sans cookies.
   Ailleurs, l'app installée affiche une page « Pas de connexion » avec
@@ -56,6 +66,8 @@ des magasins ».
   - ouverture sur « Mon espace », toujours connecté, après quelques jours ;
   - barre d'état noire, sans texte par-dessus ;
   - notification reçue app fermée ;
+  - /admin, recherche du porteur : « iPhone · app installée » après une
+    ouverture depuis l'icône ;
   - parcours réel du passant : QR → profil → message → « Voir la
     conversation » → ajout à l'écran d'accueil. L'app doit rouvrir la
     conversation, et le passant doit pouvoir y répondre ;

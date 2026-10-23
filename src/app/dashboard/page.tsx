@@ -3,6 +3,7 @@
 // Plus d'UUID dans l'URL — le membre est résolu depuis auth.uid().
 
 import type { Metadata } from 'next';
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
@@ -15,9 +16,11 @@ import { createClient } from '@/lib/supabase-server';
 import { getMemberByAuthUserId } from '@/lib/supabase';
 import { getRecentScans, getScansByDay, getScanCountSince, claimOrphanedMember } from '@/lib/queries-server';
 import { getMessages, getMessagesCount, getActiveConversationsCount, getConversationsTotal, getUnreadMessagesCount } from '@/lib/inbox';
+import { recordPhone } from '@/lib/phone';
+import { FROM_APP } from '@/lib/constants';
 import DashboardClient from './[memberId]/DashboardClient';
 
-export default async function DashboardPage() {
+export default async function DashboardPage(props: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -43,6 +46,10 @@ export default async function DashboardPage() {
   if (!member) {
     redirect('/register');
   }
+
+  // iPhone ou Android, app installée : pour les chiffres de /admin (cf. lib/phone).
+  const fromApp = (await props.searchParams)[FROM_APP.param] === FROM_APP.value;
+  recordPhone(member, (await headers()).get('user-agent'), fromApp);
 
   const [recentScans, messages, unreadCount, activeConversations, recentConversations, totalConversations, scansByDay, weekScans] = await Promise.all([
     getRecentScans(member.id, 5),

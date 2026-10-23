@@ -59,6 +59,8 @@ export default function ConfidentialitePage() {
             <li><strong>Activité :</strong> scans reçus, ville du scan (si le passant l&apos;autorise), messages envoyés et reçus.</li>
             <li><strong>Passant (sans compte) :</strong> votre message et, si vous les laissez, votre prénom et votre contact (email ou @instagram). Un email laissé ne sert qu&apos;après sa confirmation par le lien que nous vous envoyons. Si vous partagez votre ville, la position de votre appareil, arrondie à environ 1 km, sert uniquement à trouver le nom de la ville : seule la ville est conservée.</li>
             <li><strong>Technique :</strong> adresse IP (rate limiting, logs de sécurité), user-agent, identifiants de session.</li>
+            <li><strong>Notifications (si vous les activez) :</strong> l&apos;adresse d&apos;abonnement que votre navigateur attribue à votre appareil, et ses clés de chiffrement.</li>
+            <li><strong>Téléphone du porteur :</strong> iPhone ou Android, relevé à l&apos;ouverture de « Mon espace » depuis un téléphone, et la date de la première ouverture depuis l&apos;app installée sur l&apos;écran d&apos;accueil. Ils servent à savoir si les notifications parviennent aux porteurs : sur iPhone, seule l&apos;app installée les reçoit.</li>
             <li><strong>Sécurité (côté scanneur) :</strong> un jeton anonyme déposé sur votre appareil (cookie), sans lien avec votre identité, qui permet à un porteur de vous bloquer en cas d&apos;abus.</li>
             <li><strong>Signalements :</strong> le motif d&apos;un signalement de message, de profil ou de conversation et, si vous le laissez, votre contact (un email reçoit l&apos;accusé de réception puis la décision).</li>
             <li><strong>Analytique (avec consentement) :</strong> pages vues, événements de conversion (PostHog, Cloud EU).</li>
@@ -70,8 +72,8 @@ export default function ConfidentialitePage() {
             3 — Finalités et bases légales
           </h2>
           <ul className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed list-disc pl-5 flex flex-col gap-2">
-            <li><strong>Exécution du contrat (art. 6.1.b RGPD) :</strong> création du compte, gestion des commandes, envoi du t-shirt, gestion de l&apos;abonnement premium, transmission des messages entre passant et porteur.</li>
-            <li><strong>Intérêt légitime (art. 6.1.f) :</strong> sécurité du service (rate limiting, audit logs, modération), traitement des signalements, blocage des comportements abusifs (anti-harcèlement), prévention de la fraude.</li>
+            <li><strong>Exécution du contrat (art. 6.1.b RGPD) :</strong> création du compte, gestion des commandes, envoi du t-shirt, gestion de l&apos;abonnement premium, transmission des messages entre passant et porteur, par notification si vous l&apos;activez.</li>
+            <li><strong>Intérêt légitime (art. 6.1.f) :</strong> sécurité du service (rate limiting, audit logs, modération), traitement des signalements, blocage des comportements abusifs (anti-harcèlement), prévention de la fraude, vérification que les notifications parviennent aux porteurs (type de téléphone).</li>
             <li><strong>Consentement (art. 6.1.a) :</strong> mesure d&apos;audience (PostHog), cookies non essentiels, ville du scan.</li>
             <li><strong>Obligation légale (art. 6.1.c) :</strong> conservation des factures (10 ans).</li>
           </ul>
@@ -87,6 +89,7 @@ export default function ConfidentialitePage() {
           <ul className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed list-disc pl-5 flex flex-col gap-2">
             <li><strong>Le porteur du t-shirt</strong> reçoit le message du passant et, s&apos;il les laisse, son prénom, son contact et la ville du scan.</li>
             <li><strong>L&apos;équipe In Real Society</strong> reçoit les messages, profils et conversations signalés, pour les examiner, ainsi que chaque nouvelle photo de profil.</li>
+            <li><strong>Le service de notifications de votre navigateur</strong> (Apple, Google, Mozilla ou Microsoft) achemine les notifications que vous avez activées ; leur contenu est chiffré, il ne peut pas le lire.</li>
             <li><strong>Supabase</strong> (UE) — hébergement base de données et authentification.</li>
             <li><strong>Stripe</strong> (Irlande/USA) — traitement des paiements. Décision d&apos;adéquation UE-USA (Data Privacy Framework).</li>
             <li><strong>Resend</strong> (USA) — envoi des emails transactionnels (DPF).</li>
@@ -111,6 +114,8 @@ export default function ConfidentialitePage() {
             <li>Logs techniques (audit, rate limiting) : 12 mois. Traces d&apos;abus et signalements : 24 mois.</li>
             <li>Preuves de consentement et d&apos;exercice de vos droits (acceptation des CGV, déclaration d&apos;âge, consentement marketing, export ou suppression de compte) : 5 ans.</li>
             <li>Jeton d&apos;un appareil bloqué ou banni pour abus : tant que la mesure est en vigueur.</li>
+            <li>Abonnement aux notifications : celui d&apos;un passant, 90 jours après son dernier abonnement ; celui d&apos;un porteur, jusqu&apos;à sa déconnexion sur cet appareil, la suppression du compte, ou dès que le service de notifications le dit expiré (notifications désactivées, par exemple).</li>
+            <li>Téléphone du porteur (iPhone ou Android, première ouverture de l&apos;app) : tant que le compte existe.</li>
             <li>Analytics (PostHog) : 13 mois (recommandation CNIL).</li>
           </ul>
         </section>
