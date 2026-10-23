@@ -5,6 +5,87 @@
 
 ---
 
+## 2026-10-23 (suite) — Observabilité : analyse et lot (#27)
+
+### Analyse
+Lu : Sentry (serveur, edge, navigateur), le journal d'audit, les 38 routes
+API, les 5 tâches planifiées, le webhook Stripe, la page de santé et
+`MONITORING.md`.
+
+**Déjà en ordre** :
+- Sentry est branché, sans donnée personnelle, et reçoit les erreurs non
+  rattrapées ;
+- les échecs critiques tracés dans l'audit partent aussi dans Sentry ;
+- t-shirt payé non imprimé : retenté chaque jour. Premium : Stripe réessaie,
+  et une réconciliation passe chaque jour ;
+- `/api/health` vérifie Supabase.
+
+**Constats** :
+1. 28 routes API sur 38 rattrapaient leurs erreurs (500) avec un simple
+   `console.error` : Sentry ne les voyait pas, et les logs Vercel ne durent
+   qu'une heure (Hobby) ou un jour (Pro).
+2. Webhook Stripe : une erreur de base en lisant ou en mettant à jour la
+   commande répondait 200. Stripe ne réessayait pas, et la commande payée
+   restait « en attente », sans code ni t-shirt, sans alerte. Un paiement sans
+   commande ou sans email ne laissait qu'un avertissement dans les logs.
+3. Refus de Resend, quota épuisé compris : dans les logs seulement.
+4. Tâches planifiées : un échec ou un arrêt passait inaperçu.
+5. Journal d'audit : écritures non attendues, perdues si Vercel fige la
+   fonction après la réponse.
+6. Par défaut, Sentry ne prévient qu'à l'apparition d'un nouveau problème.
+7. Les aperçus Vercel étaient classés « production » dans Sentry.
+8. `/api/health` ignorait Upstash. `MONITORING.md` disait les alertes de
+   l'audit « non implémentées ».
+
+### Décisions de Clément
+- Échec qui touche l'argent : Sentry et email direct à `ADMIN_ALERT_EMAIL`.
+- Tâches planifiées : échecs dans Sentry, et la tâche de rattrapage des
+  impressions surveillée par Sentry Crons (gratuit pour une tâche).
+
+### Fait
+- **PR #27 fusionnée** (`da25f8d`), constats 1 à 8 :
+  - `reportError` (log + Sentry) dans les 28 routes, les tâches et les
+    configurations manquantes ; un test l'impose à toute route qui répond 500 ;
+  - webhook : les erreurs de base sont levées (500, Stripe réessaie) ;
+  - alertes « argent » (6 cas) : Sentry (tag `alerte=argent`) et email à
+    chaque occurrence, avec la marche à suivre ;
+  - refus de Resend dans Sentry, un problème par raison ;
+  - journal d'audit écrit via `waitUntil` (helper local, sans dépendance) ;
+  - Sentry Crons sur `fulfillment-reconcile` ;
+  - environnement Sentry aligné sur celui de Vercel ;
+  - `/api/health` vérifie Upstash ;
+  - `MONITORING.md` réécrit, section Surveillance dans
+    `MISE_EN_PRODUCTION.md`.
+- Vérifié avant la fusion :
+  - 650 tests, intégration 46/46 ;
+  - anciens comportements réintroduits un à un : les tests échouent ;
+  - rendu de l'email d'alerte, build.
+- Pas de migration.
+
+### À faire — côté Clément
+Détail : `docs/MONITORING.md`.
+- [ ] Sentry : `NEXT_PUBLIC_SENTRY_DSN`, puis une règle d'alerte sur le tag
+      `alerte` = `argent`, en production, qui prévient à chaque occurrence.
+- [ ] Sentry → Crons : après le premier passage (5 h UTC), vérifier que le
+      moniteur `fulfillment-reconcile` prévient en cas d'oubli ou d'échec.
+- [ ] `ADMIN_ALERT_EMAIL` : une boîte réellement lue.
+- [ ] Moniteur de disponibilité gratuit (UptimeRobot, Better Stack) sur
+      `/api/health`.
+- [ ] Printful : notifications du compte activées (commande en attente,
+      échec de paiement).
+
+### Ensuite
+- Reste de la priorité 2 : l'économie unitaire (marge sur 49 €). Il faudra les
+  tarifs Printful de Clément.
+- Priorité 3 (inventaire du 22/10) :
+  - app mobile ;
+  - parrainage et newsletter ;
+  - accessibilité ;
+  - mises à jour (Next.js 14, actions GitHub sur Node 20) ;
+  - petits restes.
+
+---
+
 ## 2026-10-23 — Délivrabilité des emails : analyse et lot (#26)
 
 ### Analyse
