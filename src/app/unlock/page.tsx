@@ -20,6 +20,7 @@ export default function UnlockPage() {
     const saved    = localStorage.getItem('scannerName');
     const memberId = localStorage.getItem('memberId');
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- prénom mémorisé, lu après l'hydratation
     if (saved) { setSavedName(saved); setFirstName(saved); }
 
     // Vérifie que le memberId est un UUID valide

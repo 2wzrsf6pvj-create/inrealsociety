@@ -100,6 +100,7 @@ export default function DashboardClient({
   const isTab = (v: string | null): v is Tab => v === 'home' || v === 'inbox' || v === 'settings';
   React.useEffect(() => {
     const t = new URLSearchParams(window.location.search).get('tab');
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- onglet lu dans l'URL après l'hydratation
     if (isTab(t)) setTab(t);
   }, []);
   const changeTab = React.useCallback((t: Tab) => {
@@ -152,6 +153,7 @@ export default function DashboardClient({
     const updated = sessionStorage.getItem('profile_updated');
     if (updated) {
       sessionStorage.removeItem('profile_updated');
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- message laissé dans sessionStorage
       return showToast('Profil mis à jour.', 3000);
     }
 
@@ -193,6 +195,7 @@ export default function DashboardClient({
   React.useEffect(() => {
     if (!awaitingPremium) return;
     if (member.plan === 'premium') {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- fin de l'attente, constatée sur les données rechargées
       setAwaitingPremium(false);
       showToast('✦ Bienvenue dans le cercle premium.', 4000);
       return;

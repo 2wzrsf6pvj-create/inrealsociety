@@ -26,6 +26,7 @@ function useCountdown(firstScanAt: string | null, plan?: MemberPlan) {
   const [timeLeft, setTimeLeft] = useState({ hours: windowH, minutes: 0, seconds: 0, percent: 100, active: false });
   useEffect(() => {
     if (!firstScanAt) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- compte à rebours remis à zéro sans premier scan
       setTimeLeft({ hours: windowH, minutes: 0, seconds: 0, percent: 100, active: false });
       return;
     }
@@ -79,6 +80,7 @@ export default function ProfilClient({
   // serveur (cul-de-sac du « deuxième jour », le cas le plus courant). Le propriétaire
   // (compte à rebours masqué) conserve `firstScanAt`.
   const [arrivalAt, setArrivalAt] = useState<string | null>(null);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- heure d'arrivée prise dans le navigateur
   useEffect(() => { setArrivalAt(new Date().toISOString()); }, []);
   const windowStart = showOwnerView ? firstScanAt : arrivalAt;
   const countdown = useCountdown(windowStart, member.plan);
@@ -134,6 +136,7 @@ export default function ProfilClient({
 
     captureEvent('profile_viewed', { member_id: member.id, plan: member.plan });
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- prénom mémorisé, lu après l'hydratation
     setScannerName(localStorage.getItem('scannerName') ?? '');
 
     const existingConv = localStorage.getItem(`conversation_${member.id}`);

@@ -83,6 +83,7 @@ function MessageForm() {
   // Pré-remplit le prénom depuis un nom déjà connu (scan précédent / /unlock).
   useEffect(() => {
     const saved = localStorage.getItem('scannerName');
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- prénom mémorisé, lu après l'hydratation
     if (saved) setSenderName(saved);
   }, []);
 

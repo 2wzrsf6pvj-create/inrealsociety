@@ -48,6 +48,7 @@ const taglineCache = new Map<string, Pick<BakedTagline, 'path' | 'bbox'>>();
 function useBakedTagline(taglineId: string | null): Pick<BakedTagline, 'path' | 'bbox'> | null {
   const [baked, setBaked] = useState(() => (taglineId ? taglineCache.get(taglineId) ?? null : null));
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- accroche retirée, ou déjà en cache
     if (!taglineId) { setBaked(null); return; }
     const cached = taglineCache.get(taglineId);
     if (cached) { setBaked(cached); return; }
@@ -111,7 +112,10 @@ function ProductGallery({ color, taglineId }: { color: TshirtColor; taglineId: s
                 src={backSrc}
                 alt={`T-shirt In Real Society ${isDark ? 'Noir' : 'Blanc'} — dos avec QR code`}
                 fill sizes="(max-width: 768px) 100vw, 420px" className="object-contain"
-                onError={() => setMissing(m => ({ ...m, [backSrc]: true }))} priority
+                onError={() => setMissing(m => ({ ...m, [backSrc]: true }))}
+                // Image LCP de la boutique : préchargée dans le <head> et prioritaire.
+                // `priority`, déprécié par Next 16, n'y pose plus fetchpriority="high".
+                preload fetchPriority="high"
               />
               {baked && (
                 <div
@@ -332,6 +336,7 @@ export default function ShopClient() {
     // Capte le parrain depuis ?ref= ou depuis localStorage (page /join)
     const ref = searchParams.get('ref') || localStorage.getItem('referral_code');
     if (isReferralToken(ref)) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- parrain lu dans l'URL ou localStorage
       setReferral(ref);
     }
   }, [searchParams]);

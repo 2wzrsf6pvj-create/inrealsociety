@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { captureEvent } from '@/lib/posthog-client';
 import { MAX_CONVERSATIONS, CONVERSATION_WINDOW_DAYS } from '@/lib/constants';
@@ -66,7 +66,7 @@ export default function InboxSection({ messages: initialMessages, memberId, plan
   // s'animent à l'arrivée (slide-in), les initiales non (elles ont déjà joué).
   // Suppose initialMessages stable par montage (rendu serveur, pas de refresh
   // dans ce sous-arbre) — vrai aujourd'hui.
-  const initialCount = useRef(initialMessages.length).current;
+  const [initialCount] = useState(initialMessages.length);
   // Pagination basée sur le total AFFICHÉ (totalConversations = racine, bloquées
   // incluses) — pas sur recentConversations (fenêtre glissante hors bloquées, qui
   // pilote le plafond premium). Sinon les conv bloquées masqueraient "Voir plus".

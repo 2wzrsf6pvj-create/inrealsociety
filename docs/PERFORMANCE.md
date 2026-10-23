@@ -29,6 +29,22 @@ npm run build && npm run start
 # - Lance audit sur http://localhost:3000
 ```
 
+Le score varie d'environ ±3 points d'un passage à l'autre : comparer des
+médianes sur 5 passages par page, jamais un passage isolé. Le bridage réel
+(`--throttling-method=devtools` en ligne de commande) donne des temps plus
+stables que la simulation par défaut, qui est celle de PageSpeed Insights.
+
+Repères (oct. 2026, mobile simulé, médianes de 5 passages) :
+
+| Page | Next 14 | Next 16 |
+|---|---|---|
+| Accueil | 95 | 93 |
+| FAQ | 96 | 91 |
+| Boutique | 94 | 91 |
+
+L'écart vient du framework : l'exécution du bundle principal (routeur de
+Next 16, React 19) tient en une tâche d'environ 250 ms sur mobile simulé.
+
 Cibles initiales (mobile, throttled 4G) :
 
 | Métrique | Cible bonne | Cible excellente |
@@ -65,18 +81,24 @@ Deux options déjà connectées :
 - ✅ `prefers-reduced-motion` neutralise les animations sur préférence système
 - ✅ Service worker précache les pages publiques (1ère visite + 1 = instant)
 - ✅ Tailwind purgé (seules les classes utilisées sont incluses)
-- ✅ Static pre-rendering pour les pages sans données (`/manifeste`, `/cgv`...)
+- ✅ PostHog téléchargé seulement après consentement
+- ✅ Bandeau de consentement rendu côté serveur : visible avec la page, sans
+  attendre le JavaScript (boutique en 4G lente : 1,7 s au lieu de 4,4 s)
+- ✅ Photo principale de la boutique préchargée, en priorité haute (`preload`
+  + `fetchPriority` : `priority` est déprécié par Next 16)
+- ℹ️ Pas de pré-rendu statique : le nonce CSP, différent à chaque requête,
+  rend toutes les pages dynamiques
 
 ### À auditer (pistes prioritaires)
-1. **Lazy-load Sentry browser** : son SDK browser est chargé sur toutes les
-   pages. Lazy-loader sauf en cas d'erreur peut sauver 30 KB sur la home.
-2. **Lazy-load PostHog browser** : idem, 50 KB. Charger après consent du user.
-3. **next/dynamic sur AnimatedBlock** : composant utilisé en bas des pages
+1. Essayé sans gain mesurable (5 passages), donc non retenu : charger le SDK
+   Sentry après l'affichage, la build Turbopack (plus lourde), découper le
+   bundle principal (`splitChunks.maxSize`), couper le fondu d'entrée des pages.
+2. **next/dynamic sur AnimatedBlock** : composant utilisé en bas des pages
    manifeste, pourrait être code-split.
-4. **AVIF/WebP pour les images de produits** : si tu ajoutes des photos shop
+3. **AVIF/WebP pour les images de produits** : si tu ajoutes des photos shop
    plus tard, configurer `next.config.mjs > images.formats: ['image/avif',
    'image/webp']`.
-5. **Connexion preconnect** : ajouter `<link rel="preconnect"
+4. **Connexion preconnect** : ajouter `<link rel="preconnect"
    href="https://fonts.googleapis.com">` et `https://<supabase-url>` au début
    du `<head>` pour gagner ~100 ms sur le first byte des assets externes.
 
@@ -96,7 +118,7 @@ Limite à ne pas dépasser sans justification :
 
 | Resource | Max |
 |---|---|
-| First Load JS (route principale) | 150 KB gzipped |
+| First Load JS (route principale) | 190 KB gzipped (150 avec Next 14 ; Next 16 et React 19 en prennent ~140 à eux seuls) |
 | Total JS sur une page | 250 KB gzipped |
 | Total CSS | 30 KB gzipped |
 | Total fonts | 100 KB |

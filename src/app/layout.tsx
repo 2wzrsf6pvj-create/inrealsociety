@@ -74,10 +74,13 @@ export default async function RootLayout({
     // remonterait la page en glissant au lieu d'arriver directement en haut.
     <html lang="fr" className={`${cormorant.variable} ${montserrat.variable}`} data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
-        {/* Mode plein soleil : applique la classe avant le paint (anti-FOUC),
-            UNIQUEMENT sur le parcours scanneur (profil/message/conversation).
-            Noncé pour la CSP stricte. SunScope gère ensuite les navigations client. */}
-        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: "try{if(localStorage.getItem('irs_sun')==='1'&&/^\\/(profil|message|conversation)(\\/|$)/.test(location.pathname))document.documentElement.classList.add('sun')}catch(e){}" }} />
+        {/* Avant le paint (anti-FOUC), noncé pour la CSP stricte :
+            - mode plein soleil, UNIQUEMENT sur le parcours scanneur
+              (profil/message/conversation) ; SunScope gère ensuite les
+              navigations client ;
+            - consentement déjà donné ou refusé : html.consent-set masque le
+              bandeau, rendu côté serveur pour tous. */}
+        <script nonce={nonce} dangerouslySetInnerHTML={{ __html: "try{var d=document.documentElement,c=localStorage.getItem('irs_consent');if(c==='granted'||c==='denied')d.classList.add('consent-set');if(localStorage.getItem('irs_sun')==='1'&&/^\\/(profil|message|conversation)(\\/|$)/.test(location.pathname))d.classList.add('sun')}catch(e){}" }} />
       </head>
       <body className="antialiased bg-brand-black">
         <a href="#main" className="skip-link">Aller au contenu principal</a>

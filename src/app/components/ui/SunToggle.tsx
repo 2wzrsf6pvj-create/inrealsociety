@@ -13,6 +13,7 @@ export default function SunToggle() {
   const themeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- classe posée avant l'affichage par le script du <head>
     setSun(document.documentElement.classList.contains('sun'));
   }, []);
 

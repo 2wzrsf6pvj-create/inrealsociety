@@ -44,6 +44,7 @@ function LandingContent() {
         router.replace(`/profil/${id}`);
         return;
       }
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- erreur de QR et localStorage, lus après l'hydratation
       setQrError('Ce QR code est invalide.');
     }
     // QR code invalide (passé en query par /profil/[id]/page.tsx quand notFound)

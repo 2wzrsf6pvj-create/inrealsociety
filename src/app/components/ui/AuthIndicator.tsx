@@ -69,6 +69,7 @@ export default function AuthIndicator() {
   useEffect(() => {
     if (hasSession) return;
     if (hasSessionCookie()) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- cookie de session, lu après l'hydratation
       setHasSession(true);
     } else {
       setAuth(LOGGED_OUT);
