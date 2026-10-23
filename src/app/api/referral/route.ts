@@ -9,6 +9,7 @@ import { requireAuth, requireOwnership, isHttpError } from '@/lib/require-auth';
 import { getIp } from '@/lib/ratelimit';
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
+import { reportError } from '@/lib/report-error';
 
 let redis: Redis;
 function getRedis(): Redis {
@@ -103,7 +104,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error('[referral POST]', err);
+    reportError('referral POST', err);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
@@ -139,7 +140,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ count: referredCount ?? 0, converted: paidCount ?? 0 });
   } catch (err) {
-    console.error('[referral GET]', err);
+    reportError('referral GET', err);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

@@ -17,6 +17,7 @@ import { generateSecureCode } from '@/lib/generate-code';
 import { sendEmail, emailActivation, emailPaymentFailed } from '@/lib/email-templates';
 import { APP_URL, FULFILL_ON_PAYMENT } from '@/lib/constants';
 import { audit } from '@/lib/audit';
+import { reportError } from '@/lib/report-error';
 import { fulfillOrder, getShippingDetails } from '@/lib/fulfillment';
 import { buildOrderRecap, type OrderRecap } from '@/lib/order-recap';
 import { generateUniqueShortCode } from '@/lib/short-code';
@@ -46,7 +47,8 @@ export async function POST(req: NextRequest) {
       process.env.STRIPE_WEBHOOK_SECRET!,
     );
   } catch (err) {
-    console.error('[webhook] Signature invalide:', err);
+    // Un secret mal réglé rendrait TOUS les paiements invisibles : signalé.
+    reportError('webhook/stripe', err, { step: 'signature' });
     return NextResponse.json({ error: 'Signature invalide.' }, { status: 400 });
   }
 
@@ -80,7 +82,10 @@ export async function POST(req: NextRequest) {
       }
     }
   } catch (err) {
-    console.error('[webhook] Erreur traitement:', err);
+    reportError('webhook/stripe', err, { eventType: event.type });
+    // Alerte « argent » (Sentry + email) : Stripe réessaie pendant 3 jours,
+    // puis abandonne.
+    audit({ action: 'webhook.failed', metadata: { eventId: event.id, eventType: event.type } });
     // 5xx → Stripe RÉESSAIE. Les handlers sont idempotents (flip de statut
     // optimiste, fulfillOrder idempotent, rollback du code) donc un retry est
     // sûr. Renvoyer 200 ici laissait des commandes payées coincées en 'pending'
@@ -102,25 +107,31 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
   const email     = session.customer_details?.email ?? session.customer_email;
 
   // ─── Idempotence : vérifie si cet événement a déjà été traité ──────────
-  let { data: existingOrder } = await supabaseAdmin
+  // Une erreur de base est LEVÉE (→ 500, Stripe réessaie) : la confondre avec
+  // « commande introuvable » répondait 200 et perdait la commande payée.
+  let { data: existingOrder, error: lookupError } = await supabaseAdmin
     .from('orders')
     .select('id, status, activation_code, tagline_id')
     .eq('stripe_session_id', sessionId)
     .maybeSingle();
+  if (lookupError) throw new Error(`Lecture de la commande : ${lookupError.message}`);
 
   // Filet money-path : si le lien `stripe_session_id` n'a pas pu être écrit au
   // checkout (UPDATE post-création échoué), on retombe sur l'orderId porté par la
   // metadata Stripe — toujours présent — pour ne pas perdre une commande payée.
   if (!existingOrder && session.metadata?.orderId) {
-    ({ data: existingOrder } = await supabaseAdmin
+    ({ data: existingOrder, error: lookupError } = await supabaseAdmin
       .from('orders')
       .select('id, status, activation_code, tagline_id')
       .eq('id', session.metadata.orderId)
       .maybeSingle());
+    if (lookupError) throw new Error(`Lecture de la commande : ${lookupError.message}`);
   }
 
   if (!existingOrder) {
-    console.warn('[webhook] Order introuvable pour session:', sessionId);
+    // Payé, mais aucune commande : un nouvel essai n'y changerait rien.
+    // Alerte « argent » : à créer à la main ou à rembourser.
+    audit({ action: 'order.payment_unmatched', metadata: { sessionId } });
     return;
   }
 
@@ -165,9 +176,10 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session): Promis
     .select('id');
 
   if (orderError) {
-    console.error('[webhook] Erreur mise à jour order:', orderError);
+    // Levée APRÈS le retrait du code : → 500, Stripe réessaie (la commande est
+    // toujours 'pending'). Avant : 200, commande payée restée sans code.
     await supabaseAdmin.from('activation_codes').delete().eq('code', code);
-    return;
+    throw new Error(`Mise à jour de la commande : ${orderError.message}`);
   }
 
   if (!updated || updated.length === 0) {

@@ -18,6 +18,7 @@ import { getIp } from '@/lib/ratelimit';
 import { recordReport, senderTokenOf, type ReportOutcome } from '@/lib/reports';
 import { sendEmail, emailReportAlert } from '@/lib/email-templates';
 import { REPORT_BAN_THRESHOLD } from '@/lib/constants';
+import { reportError } from '@/lib/report-error';
 
 const schema = z.object({
   messageId: z.string().uuid(),
@@ -100,7 +101,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error('[api/report]', err);
+    reportError('api/report', err);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

@@ -16,6 +16,7 @@ import { moderateContent } from '@/lib/moderation';
 import { getSenderToken } from '@/lib/sender-token';
 import { isBlocked, isDeviceBanned } from '@/lib/blocks';
 import { isContactVerified } from '@/lib/contact-verification';
+import { reportError } from '@/lib/report-error';
 
 const schema = z.object({
   messageId: z.string().uuid(),      // ID du message racine (le premier)
@@ -232,7 +233,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, moderated: false, replyId: newMsg?.id });
 
   } catch (err) {
-    console.error('[conversation/reply]', err);
+    reportError('conversation/reply', err);
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });
   }
 }

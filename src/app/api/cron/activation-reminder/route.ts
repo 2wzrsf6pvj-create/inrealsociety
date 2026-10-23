@@ -23,6 +23,7 @@ import { APP_URL } from '@/lib/constants';
 import {
   isOrderReminderDue, FIRST_REMINDER_AFTER_DAYS, REMINDER_WINDOW_DAYS, MAX_ORDER_REMINDERS,
 } from '@/lib/order-reminders';
+import { reportError } from '@/lib/report-error';
 
 const ORDER_BATCH = 200;
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -37,7 +38,7 @@ export async function GET(req: NextRequest) {
   // créés il y a 2 h–7 j, pas encore relancés. Plafonnée à 200/run côté SQL.
   const { data: accounts, error } = await supabaseAdmin.rpc('accounts_pending_profile');
   if (error) {
-    console.error('[cron/activation-reminder]', error);
+    reportError('cron/activation-reminder', error);
     return NextResponse.json({ error: 'Erreur SQL.' }, { status: 500 });
   }
 
@@ -60,7 +61,7 @@ export async function GET(req: NextRequest) {
         failed++;
       }
     } catch (err) {
-      console.error('[cron/activation-reminder] failed for', a.auth_user_id, err);
+      reportError('cron/activation-reminder', err, { authUserId: a.auth_user_id });
       failed++;
     }
   }
@@ -87,7 +88,7 @@ async function remindUnactivatedOrders(): Promise<{ sent: number; failed: number
     .limit(ORDER_BATCH);
   if (error) {
     // Ex. migration 055 pas encore appliquée : on n'emporte pas la partie A avec.
-    console.error('[cron/activation-reminder] orders:', error.message);
+    reportError('cron/activation-reminder', error, { step: 'orders' });
     return { sent: 0, failed: 0, candidates: 0, error: error.message };
   }
 
@@ -126,7 +127,7 @@ async function remindUnactivatedOrders(): Promise<{ sent: number; failed: number
         .eq('activation_reminders_sent', o.activation_reminders_sent);
       sent++;
     } catch (err) {
-      console.error('[cron/activation-reminder] order failed', o.id, err);
+      reportError('cron/activation-reminder', err, { orderId: o.id });
       failed++;
     }
   }

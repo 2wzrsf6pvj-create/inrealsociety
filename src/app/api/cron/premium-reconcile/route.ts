@@ -18,6 +18,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { subscriptionMemberUpdate, isActiveSubscriptionStatus, scheduledEnd } from '@/lib/subscription';
 import { applyScheduledEnd, endPremium } from '@/lib/premium';
 import { isAuthorizedCron } from '@/lib/cron-auth';
+import { reportError } from '@/lib/report-error';
 
 const BATCH_SIZE = 100;
 // Garde-fou anti-boucle infinie : BATCH_SIZE × MAX_BATCHES = 100k membres premium.
@@ -30,6 +31,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
   if (!process.env.STRIPE_SECRET_KEY) {
+    reportError('cron/premium-reconcile', new Error('STRIPE_SECRET_KEY non défini'));
     return NextResponse.json({ error: 'Stripe non configuré.' }, { status: 500 });
   }
 
@@ -53,7 +55,7 @@ export async function GET(req: NextRequest) {
       .limit(BATCH_SIZE);
 
     if (error) {
-      console.error('[cron/premium-reconcile]', error);
+      reportError('cron/premium-reconcile', error);
       return NextResponse.json({ error: 'Erreur SQL.', checked, downgraded, errors }, { status: 500 });
     }
     if (!members || members.length === 0) break;
@@ -82,11 +84,11 @@ export async function GET(req: NextRequest) {
             downgraded++;
           } catch (endErr) {
             errors++;
-            console.error('[cron/premium-reconcile] failed for', m.id, endErr);
+            reportError('cron/premium-reconcile', endErr, { memberId: m.id });
           }
         } else {
           errors++;
-          console.error('[cron/premium-reconcile] failed for', m.id, err);
+          reportError('cron/premium-reconcile', err, { memberId: m.id });
         }
       }
     }

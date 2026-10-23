@@ -16,6 +16,7 @@ import { checkPublicRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
 import { QR_STYLES, DEFAULT_QR_STYLE } from '@/lib/constants';
 import { isValidTaglineId } from '@/lib/taglines';
 import { TSHIRT_PRICE_CENTS, SHIPPING_STANDARD_CENTS, SHIPPING_EXPRESS_CENTS } from '@/lib/constants';
+import { reportError } from '@/lib/report-error';
 
 const schema = z.object({
   // `.toLowerCase()` : orders.email sert de clé de lookup (renvoi de code, match
@@ -38,7 +39,7 @@ const TSHIRT_PRICE_ID = process.env.STRIPE_PRICE_ID!;
 
 export async function POST(req: NextRequest) {
   if (!TSHIRT_PRICE_ID) {
-    console.error('[api/shop/checkout] STRIPE_PRICE_ID non défini');
+    reportError('api/shop/checkout', new Error('STRIPE_PRICE_ID non défini'));
     return NextResponse.json({ error: 'Configuration serveur manquante.' }, { status: 500 });
   }
 
@@ -62,7 +63,7 @@ export async function POST(req: NextRequest) {
     const { email, tshirtColor, tshirtSize, qrStyle, taglineId, referral, referrerId } = body.data;
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;
     if (!appUrl) {
-      console.error('[api/shop/checkout] NEXT_PUBLIC_APP_URL non défini');
+      reportError('api/shop/checkout', new Error('NEXT_PUBLIC_APP_URL non défini'));
       return NextResponse.json({ error: 'Configuration serveur manquante.' }, { status: 500 });
     }
 
@@ -108,7 +109,7 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (orderError) {
-      console.error('[api/shop/checkout] Order insert error:', orderError);
+      reportError('api/shop/checkout', orderError, { step: 'Order insert error' });
       return NextResponse.json({ error: 'Erreur création commande.' }, { status: 500 });
     }
 
@@ -189,7 +190,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ url: session.url });
 
   } catch (err) {
-    console.error('[api/shop/checkout]', err);
+    reportError('api/shop/checkout', err);
     if (err instanceof Stripe.errors.StripeError) {
       return NextResponse.json({ error: 'Erreur de paiement.' }, { status: err.statusCode ?? 500 });
     }

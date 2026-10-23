@@ -8,6 +8,7 @@ import Stripe from 'stripe';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { requireAuth, isHttpError } from '@/lib/require-auth';
 import { checkAuthRateLimit, rateLimitHeaders } from '@/lib/ratelimit';
+import { reportError } from '@/lib/report-error';
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,6 +22,7 @@ export async function POST(req: NextRequest) {
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;
     if (!appUrl) {
+      reportError('subscription/portal', new Error('NEXT_PUBLIC_APP_URL non défini'));
       return NextResponse.json({ error: 'Configuration serveur manquante.' }, { status: 500 });
     }
 
@@ -46,7 +48,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ url: session.url });
 
   } catch (err) {
-    console.error('[subscription/portal]', err);
+    reportError('subscription/portal', err);
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });
   }
 }

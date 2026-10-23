@@ -10,6 +10,7 @@ import { audit } from '@/lib/audit';
 import { captureServerEvent } from '@/lib/posthog-server';
 import { moderateContent } from '@/lib/moderation';
 import { isValidFirstName } from '@/lib/validators';
+import { reportError } from '@/lib/report-error';
 
 const schema = z.object({
   memberId:    z.string().uuid(),
@@ -188,7 +189,7 @@ export async function POST(req: NextRequest) {
     await Promise.all(notifications);
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error('[api/scan]', err);
+    reportError('api/scan', err);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

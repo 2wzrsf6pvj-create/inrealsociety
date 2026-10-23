@@ -14,6 +14,7 @@ import { z } from 'zod';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { checkPublicRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
 import { requireAuth, requireOwnership, isHttpError } from '@/lib/require-auth';
+import { reportError } from '@/lib/report-error';
 
 // Abonnement soit au niveau thread (messageId — scanner anonyme dans une
 // conversation), soit au niveau membre (memberId — porteur depuis le dashboard,
@@ -92,7 +93,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error('[push/subscribe]', err);
+    reportError('push/subscribe', err);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

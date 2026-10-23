@@ -289,6 +289,20 @@ export async function releaseScanDedup(memberId: string, ip: string): Promise<vo
  * en premier laissait un attaquant varier l'IP à chaque requête et contourner
  * TOUT le rate limiting par IP. On ne retombe sur x-forwarded-for (segment gauche)
  * qu'en dev/local où x-real-ip est absent. */
+/** Santé (/api/health) : Upstash répond-il, en 3 s au plus ? Sans lui, scanner
+ *  un QR et écrire répondent 500. */
+export async function pingRedis(): Promise<boolean> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const timeout = new Promise<'timeout'>((resolve) => { timer = setTimeout(() => resolve('timeout'), 3000); });
+  try {
+    return (await Promise.race([getRedis().ping(), timeout])) === 'PONG';
+  } catch {
+    return false;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export function getIp(req: Request): string {
   return (
     req.headers.get('x-real-ip')?.trim() ||

@@ -33,6 +33,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { sendEmailBatch, emailNewsletter, BATCH_MAX } from '@/lib/email-templates';
 import { signUnsubscribe } from '@/lib/unsubscribe-token';
 import { APP_URL } from '@/lib/constants';
+import { reportError } from '@/lib/report-error';
 
 const schema = z.object({
   key:     z.string().min(1).max(120),
@@ -97,7 +98,7 @@ export async function POST(req: NextRequest) {
       pageEmails(() => supabaseAdmin.from('members').select('email').eq('marketing_consent', false).not('email', 'is', null) as unknown as PagedQuery),
     ]);
   } catch (err) {
-    console.error('[newsletter/send] audience fetch failed:', err);
+    reportError('newsletter/send', err, { step: 'audience fetch failed' });
     return NextResponse.json({ error: 'Erreur de calcul d\'audience.' }, { status: 500 });
   }
 

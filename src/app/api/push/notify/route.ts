@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import crypto from 'crypto';
 import { notifyThreadSubscribers } from '@/lib/push-notify';
+import { reportError } from '@/lib/report-error';
 
 /** Compare deux secrets en temps constant (fail-closed si l'un est absent). */
 function secretMatches(provided: string | null, expected: string | undefined): boolean {
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
     const result = await notifyThreadSubscribers(parsed.data);
     return NextResponse.json({ ok: true, ...result });
   } catch (err) {
-    console.error('[push/notify]', err);
+    reportError('push/notify', err);
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });
   }
 }

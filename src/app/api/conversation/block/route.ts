@@ -13,6 +13,7 @@ import { requireAuth, requireOwnership, isHttpError } from '@/lib/require-auth';
 import { checkAuthRateLimit, rateLimitHeaders, getIp } from '@/lib/ratelimit';
 import { audit } from '@/lib/audit';
 import { blockConversation, unblockConversation } from '@/lib/blocks';
+import { reportError } from '@/lib/report-error';
 
 const schema = z.object({
   messageId: z.string().uuid(),
@@ -71,7 +72,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true, blocked: action === 'block' });
   } catch (err) {
-    console.error('[api/conversation/block]', err);
+    reportError('api/conversation/block', err);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

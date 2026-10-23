@@ -1,13 +1,15 @@
 // GET /api/health
 // Endpoint de healthcheck pour monitoring externe (UptimeRobot, BetterStack, etc.)
-// Retourne 200 si l'app répond + un ping rapide sur Supabase.
-// Retourne 503 si Supabase est inaccessible.
+// Retourne 200 si l'app répond + un ping rapide sur Supabase et sur Upstash.
+// Retourne 503 si l'un des deux est inaccessible (ou Upstash absent en
+// production : sans lui, scanner un QR et écrire répondent 500).
 
 export const dynamic = 'force-dynamic';
 
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { SUPABASE_CONFIGURED } from '@/lib/supabase-config';
+import { pingRedis } from '@/lib/ratelimit';
 
 const START_TIME = Date.now();
 
@@ -29,6 +31,12 @@ export async function GET() {
     }
   } else {
     checks.supabase = 'skip';
+  }
+
+  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+    checks.upstash = (await pingRedis()) ? 'ok' : 'fail';
+  } else {
+    checks.upstash = process.env.VERCEL_ENV === 'production' ? 'fail' : 'skip';
   }
 
   const allOk = Object.values(checks).every(v => v !== 'fail');

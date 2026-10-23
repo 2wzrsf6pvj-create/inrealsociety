@@ -11,6 +11,7 @@ import { checkPublicRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
 import { audit } from '@/lib/audit';
 import { sendEmail, emailProfileReportAlert } from '@/lib/email-templates';
 import { APP_URL } from '@/lib/constants';
+import { reportError } from '@/lib/report-error';
 
 const schema = z.object({
   memberId: z.string().uuid(),
@@ -65,7 +66,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error('[api/profile/report]', err);
+    reportError('api/profile/report', err);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

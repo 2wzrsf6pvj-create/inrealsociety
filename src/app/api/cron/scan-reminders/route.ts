@@ -11,6 +11,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { sendEmail, emailScanReminder } from '@/lib/email-templates';
 import { APP_URL } from '@/lib/constants';
 import { isAuthorizedCron } from '@/lib/cron-auth';
+import { reportError } from '@/lib/report-error';
 
 const BATCH_SIZE = 50; // garde-fou contre un run qui partirait en vrille
 
@@ -32,7 +33,7 @@ export async function GET(req: NextRequest) {
     .limit(BATCH_SIZE);
 
   if (error) {
-    console.error('[cron/scan-reminders]', error);
+    reportError('cron/scan-reminders', error);
     return NextResponse.json({ error: 'Erreur SQL.' }, { status: 500 });
   }
 
@@ -58,7 +59,7 @@ export async function GET(req: NextRequest) {
         failed++;
       }
     } catch (err) {
-      console.error('[cron/scan-reminders] failed for', m.id, err);
+      reportError('cron/scan-reminders', err, { memberId: m.id });
       failed++;
     }
   }

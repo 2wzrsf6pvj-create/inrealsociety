@@ -11,6 +11,7 @@ import { fulfillOrder, orderQrStoragePath } from '@/lib/fulfillment';
 import { audit } from '@/lib/audit';
 import { sendEmail, emailBienvenue } from '@/lib/email-templates';
 import { APP_URL } from '@/lib/constants';
+import { reportError } from '@/lib/report-error';
 
 const schema = z.object({
   name:           z.string().min(1).max(50).trim(),
@@ -107,7 +108,7 @@ export async function POST(req: NextRequest) {
     const result = data as unknown as CreateMemberResult;
 
     if (rpcError) {
-      console.error('[api/member/create] RPC error:', rpcError);
+      reportError('api/member/create', rpcError, { step: 'RPC error' });
       return NextResponse.json({ error: 'Erreur création profil.' }, { status: 500 });
     }
 
@@ -209,7 +210,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ memberId: result.member_id });
 
   } catch (err) {
-    console.error('[api/member/create]', err);
+    reportError('api/member/create', err);
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });
   }
 }

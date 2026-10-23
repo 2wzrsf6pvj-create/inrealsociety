@@ -6,7 +6,8 @@ import * as Sentry from '@sentry/nextjs';
 
 Sentry.init({
   dsn:                       process.env.NEXT_PUBLIC_SENTRY_DSN,
-  environment:               process.env.NODE_ENV,
+  // production / preview / development : un aperçu Vercel n'alerte pas comme la production.
+  environment:               process.env.NEXT_PUBLIC_VERCEL_ENV || process.env.NODE_ENV,
   // Pas de suivi de performance dans le navigateur (retiré du bundle, cf.
   // next.config) : les erreurs seulement.
   replaysSessionSampleRate:  0,        // session replay désactivé (vie privée + coût)

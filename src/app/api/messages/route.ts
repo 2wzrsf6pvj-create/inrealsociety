@@ -6,6 +6,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, requireOwnership, isHttpError } from '@/lib/require-auth';
 import { getMessages } from '@/lib/inbox';
+import { reportError } from '@/lib/report-error';
 
 // Pas de rate-limit ici volontairement : route en LECTURE seule, gated par
 // requireAuth + requireOwnership (un membre ne lit que sa propre inbox). Le
@@ -32,7 +33,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ messages });
 
   } catch (err) {
-    console.error('[api/messages]', err);
+    reportError('api/messages', err);
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });
   }
 }

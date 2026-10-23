@@ -45,9 +45,9 @@ qui manquent.
 | Variable | Sans elle |
 |---|---|
 | `RESEND_API_KEY` | aucun email : code d'activation, notifications, confirmations |
-| `ADMIN_ALERT_EMAIL` | personne n'est prévenu d'un message ou d'un profil signalé |
+| `ADMIN_ALERT_EMAIL` | personne n'est prévenu d'un message ou d'un profil signalé, ni d'un échec qui touche l'argent (paiement sans commande, code non envoyé, t-shirt non imprimé) |
 | `CRON_SECRET` | tâches planifiées non lancées (purge RGPD, relances) ; sans elle ni `INTERNAL_SECRET`, les emails de scan partent sans lien de désinscription |
-| `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN` | erreurs invisibles (ex. commande payée non imprimée) |
+| `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN` | erreurs invisibles : les logs Vercel ne durent qu'une heure (Hobby) ou un jour (Pro) |
 
 **Confort.**
 
@@ -117,7 +117,21 @@ Détail et vérifications : `docs/EMAIL_DELIVERABILITY.md`.
       l'email » sur la page d'activation (`/register`), après une commande de
       test. Puis un passage sur mail-tester.com : 9/10 visé.
 
-## 5. Juridique (avant la première vente)
+## 5. Surveillance
+
+Détail : `docs/MONITORING.md`.
+
+- [ ] Sentry : une règle d'alerte sur le tag `alerte` = `argent`, en
+      `production`, qui prévient à chaque occurrence (section 3).
+- [ ] Sentry → *Crons* : après le premier passage de `fulfillment-reconcile`
+      (5 h UTC), le moniteur apparaît ; vérifier qu'il prévient en cas d'oubli
+      ou d'échec.
+- [ ] Moniteur de disponibilité gratuit (UptimeRobot, Better Stack) sur
+      `/api/health`.
+- [ ] Printful : notifications du compte activées (commande en attente,
+      échec de paiement).
+
+## 6. Juridique (avant la première vente)
 
 - [ ] **Mentions légales et politique de confidentialité** : forme juridique,
       siège, SIRET/RCS, TVA, téléphone, directeur de publication (les
@@ -134,7 +148,7 @@ Détail et vérifications : `docs/EMAIL_DELIVERABILITY.md`.
   - le reste des CGV (âge, modération) et la politique de confidentialité,
     dont les transferts hors UE (Vercel, Sentry, OpenStreetMap).
 
-## 6. Recette : un parcours complet avant d'ouvrir
+## 7. Recette : un parcours complet avant d'ouvrir
 
 En mode test Stripe (carte `4242 4242 4242 4242`) :
 

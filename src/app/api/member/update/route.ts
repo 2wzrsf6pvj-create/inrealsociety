@@ -7,6 +7,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { requireAuth, isHttpError } from '@/lib/require-auth';
 import { checkAuthRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
 import { audit } from '@/lib/audit';
+import { reportError } from '@/lib/report-error';
 
 const schema = z.object({
   name:              z.string().min(1).max(50).trim().optional(),
@@ -74,7 +75,7 @@ export async function PATCH(req: NextRequest) {
       .eq('auth_user_id', auth.user.id);
 
     if (updateError) {
-      console.error('[api/member/update]', updateError);
+      reportError('api/member/update', updateError);
       return NextResponse.json({ error: 'Erreur de mise à jour.' }, { status: 500 });
     }
 
@@ -107,7 +108,7 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ ok: true });
 
   } catch (err) {
-    console.error('[api/member/update]', err);
+    reportError('api/member/update', err);
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });
   }
 }
