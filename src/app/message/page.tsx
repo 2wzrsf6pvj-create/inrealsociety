@@ -8,6 +8,7 @@ import { captureEvent } from '@/lib/posthog-client';
 import { isValidEmail, isInstagramHandle, isValidFirstName } from '@/lib/validators';
 import { haptic } from '@/lib/haptics';
 import SunToggle from '@/app/components/ui/SunToggle';
+import ScreenTitle from '@/app/components/ui/ScreenTitle';
 import { BANNED_DEVICE_NOTICE, MODERATION_REFUSAL_NOTICE } from '@/lib/constants';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -237,7 +238,7 @@ function MessageForm() {
     return (
       <div className="flex flex-col items-center gap-6 text-center animate-stagger-1">
         <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
-        <p className="font-display text-2xl font-light">{memberName} a déjà du monde autour.</p>
+        <ScreenTitle className="font-display text-2xl font-light">{memberName} a déjà du monde autour.</ScreenTitle>
         <p className="font-ui text-sm text-brand-gray/65 leading-relaxed">
           Cette personne attire l&apos;attention.<br />
           Ses conversations en cours sont au complet.
@@ -260,7 +261,7 @@ function MessageForm() {
     return (
       <div className="flex flex-col items-center gap-6 text-center animate-stagger-1">
         <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
-        <p className="font-display text-2xl font-light">Vous ne pouvez plus écrire.</p>
+        <ScreenTitle className="font-display text-2xl font-light">Vous ne pouvez plus écrire.</ScreenTitle>
         <p className="font-ui text-sm text-brand-gray/65 leading-relaxed">
           {BANNED_DEVICE_NOTICE}
         </p>
@@ -277,7 +278,7 @@ function MessageForm() {
     return (
       <div className="flex flex-col items-center gap-6 text-center animate-stagger-1">
         <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
-        <p className="font-display text-2xl font-light">{memberName} est indisponible.</p>
+        <ScreenTitle className="font-display text-2xl font-light">{memberName} est indisponible.</ScreenTitle>
         <p className="font-ui text-sm text-brand-gray/65 leading-relaxed">
           Cette personne ne reçoit pas de message pour le moment.<br />
           Peut-être une prochaine fois.
@@ -297,7 +298,7 @@ function MessageForm() {
     return (
       <div className="flex flex-col items-center gap-6 text-center animate-stagger-1">
         <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
-        <p className="font-display text-2xl font-light">C&apos;est déjà lancé.</p>
+        <ScreenTitle className="font-display text-2xl font-light">C&apos;est déjà lancé.</ScreenTitle>
         <p className="font-ui text-sm text-brand-gray/65 leading-relaxed">
           Vous avez déjà écrit à {memberName}.<br />
           La suite se passe dans votre conversation.
@@ -323,9 +324,9 @@ function MessageForm() {
     return (
       <div className="flex flex-col items-center gap-6 text-center animate-stagger-1">
         <div className="w-14 h-14 rounded-full border border-red-500/20 flex items-center justify-center">
-          <span className="font-display text-xl text-red-400/60">!</span>
+          <span aria-hidden="true" className="font-display text-xl text-red-400/60">!</span>
         </div>
-        <p className="font-display text-2xl font-light">Ce message ne peut pas être envoyé.</p>
+        <ScreenTitle className="font-display text-2xl font-light">Ce message ne peut pas être envoyé.</ScreenTitle>
         <p className="font-ui text-sm text-brand-gray/65 leading-relaxed">
           {MODERATION_REFUSAL_NOTICE}
         </p>
@@ -342,10 +343,10 @@ function MessageForm() {
     return (
       <div className="flex flex-col items-center gap-8 text-center animate-stagger-1 w-full">
         <div className="w-14 h-14 rounded-full border border-brand-white/20 flex items-center justify-center animate-success">
-          <span style={{ fontSize: '16px' }}>✦</span>
+          <span aria-hidden="true" style={{ fontSize: '16px' }}>✦</span>
         </div>
         <div className="flex flex-col gap-3">
-          <p className="font-display text-2xl md:text-3xl font-light tracking-[0.04em]">Signal envoyé.</p>
+          <ScreenTitle className="font-display text-2xl md:text-3xl font-light tracking-[0.04em]">Signal envoyé.</ScreenTitle>
           <p className="font-ui text-sm font-light text-brand-gray/65 leading-relaxed">
             {memberName} peut vous répondre directement ici.
           </p>
@@ -404,7 +405,7 @@ function MessageForm() {
       <input id="msg-name" aria-describedby="msg-name-hint" type="text" placeholder="Anonyme par défaut" value={senderName} maxLength={30}
         autoComplete="given-name"
         onChange={(e) => setSenderName(e.target.value)}
-        className="w-full bg-transparent border-b border-brand-gray/20 focus:border-brand-white/50 text-brand-white font-ui font-light text-base py-3 outline-none transition-colors placeholder:text-brand-gray/45"
+        className="w-full bg-transparent border-b border-brand-gray/20 focus:border-brand-white/50 text-brand-white font-ui font-light text-base py-3 outline-none transition-colors placeholder:text-brand-gray/55"
         style={{ minHeight: '44px' }}
       />
       {!nameLooksValid && (
@@ -431,7 +432,7 @@ function MessageForm() {
       <input id="msg-contact" aria-describedby="msg-contact-hint" ref={contactRef} type="text" inputMode="email" autoCapitalize="none" autoCorrect="off"
         placeholder={contactRequired ? '@instagram ou email' : 'Anonyme par défaut'} value={contact} maxLength={200}
         onChange={(e) => setContact(e.target.value)}
-        className={`w-full bg-transparent border-b text-brand-white font-ui font-light text-base py-3 outline-none transition-colors placeholder:text-brand-gray/45 ${contactRequired && !contact.trim() ? 'border-[#C5A059]/50 focus:border-[#C5A059]' : 'border-brand-gray/20 focus:border-brand-white/50'}`}
+        className={`w-full bg-transparent border-b text-brand-white font-ui font-light text-base py-3 outline-none transition-colors placeholder:text-brand-gray/55 ${contactRequired && !contact.trim() ? 'border-[#C5A059]/50 focus:border-[#C5A059]' : 'border-brand-gray/20 focus:border-brand-white/50'}`}
         style={{ minHeight: '44px' }}
       />
       {/* Validation douce (non bloquante) : alerte si ça ne ressemble ni à un email
@@ -447,7 +448,7 @@ function MessageForm() {
   return (
     <div className="flex flex-col gap-6 w-full">
       <div className="text-center flex flex-col gap-2 animate-stagger-1">
-        <h2 className="font-display text-2xl md:text-3xl font-light tracking-[0.04em]">Un signal discret.</h2>
+        <h1 className="font-display text-2xl md:text-3xl font-light tracking-[0.04em]">Un signal discret.</h1>
         <p className="font-ui text-sm font-light text-brand-gray/65 leading-relaxed">À {memberName}, qui pourra vous répondre directement.</p>
         <p className="font-ui text-xxs text-brand-gray/50 leading-relaxed">
           Réservé aux 18 ans et plus : en envoyant un message, vous confirmez avoir l&apos;âge requis.{' '}
@@ -459,7 +460,7 @@ function MessageForm() {
 
       {isPreview && (
         <div className="w-full bg-[#0a0a08] border border-[#C5A059]/25 rounded-[2px] px-4 py-3 flex flex-col gap-1 text-center">
-          <p className="font-ui text-xxs text-[#C5A059]/85 tracking-[0.18em] uppercase">✦ Aperçu</p>
+          <p className="font-ui text-xxs text-[#C5A059]/85 tracking-[0.18em] uppercase"><span aria-hidden="true">✦ </span>Aperçu</p>
           <p className="font-ui text-xs text-brand-gray/65 leading-relaxed">
             Voici le formulaire qu&apos;un scanneur remplit pour vous écrire. L&apos;envoi est désactivé ici.
           </p>
@@ -483,15 +484,15 @@ function MessageForm() {
           {[
             { label: 'Belle audace.',       symbol: '✦' },
             { label: "J'aime la démarche.", symbol: '◈' },
-            { label: "Envoyer un clin d'œil 👁", symbol: '', value: '👁' },
+            { label: "Envoyer un clin d'œil", symbol: '', emoji: '👁', value: '👁' },
           ].map((r) => (
             <button key={r.label} disabled={sending || isPreview}
               onClick={() => sendMessage(r.value || r.label, true)}
               className="w-full py-3 px-4 border border-brand-gray/20 text-left font-ui text-sm font-light tracking-[0.1em] flex items-center gap-3 transition-all rounded-[1px] hover:border-brand-gray/45 hover:bg-brand-white/5 disabled:opacity-40"
               style={{ minHeight: '44px' }}
             >
-              {r.symbol && <span style={{ fontSize: '14px', opacity: 0.5 }}>{r.symbol}</span>}
-              <span className="text-brand-white/80">{r.label}</span>
+              {r.symbol && <span aria-hidden="true" style={{ fontSize: '14px', opacity: 0.5 }}>{r.symbol}</span>}
+              <span className="text-brand-white/80">{r.label}{r.emoji && <span aria-hidden="true"> {r.emoji}</span>}</span>
             </button>
           ))}
         </div>
@@ -509,7 +510,7 @@ function MessageForm() {
           <label htmlFor="msg-content" className="font-ui text-xs text-brand-gray/60 tracking-[0.2em] uppercase">Message libre</label>
           <textarea id="msg-content" rows={4} placeholder="Quelque chose vous a traversé l'esprit..." value={message}
             maxLength={1000} onChange={(e) => setMessage(e.target.value)}
-            className="w-full bg-transparent border-b border-brand-gray/20 focus:border-brand-white/50 text-brand-white font-ui font-light text-base py-3 outline-none transition-colors resize-none placeholder:text-brand-gray/45 leading-relaxed"
+            className="w-full bg-transparent border-b border-brand-gray/20 focus:border-brand-white/50 text-brand-white font-ui font-light text-base py-3 outline-none transition-colors resize-none placeholder:text-brand-gray/55 leading-relaxed"
           />
           <div className="flex justify-end">
             <span className="font-ui text-xxs text-brand-gray/55 tabular-nums">{1000 - message.length}</span>
@@ -543,7 +544,7 @@ export default function MessagePage() {
         <Suspense fallback={
           <div className="flex flex-col items-center gap-3 py-12 animate-pulse">
             <div className="w-12 h-12 rounded-full border border-brand-white/15 flex items-center justify-center">
-              <span style={{ fontSize: '16px', opacity: 0.5 }}>✦</span>
+              <span aria-hidden="true" style={{ fontSize: '16px', opacity: 0.5 }}>✦</span>
             </div>
             <p className="font-ui text-xxs text-brand-gray/55 tracking-[0.25em] uppercase">Un instant</p>
           </div>

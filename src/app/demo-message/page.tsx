@@ -28,9 +28,9 @@ export default function DemoMessagePage() {
           <p className="font-ui text-xs text-brand-gray/50 tracking-[0.3em] uppercase">Un inconnu vous a remarqué·e</p>
           <div className="flex items-center gap-3">
             <span className="font-ui text-xxs text-brand-gray/55 tracking-[0.2em] uppercase">Anonyme</span>
-            <span className="text-brand-gray/15">·</span>
+            <span aria-hidden="true" className="text-brand-gray/15">·</span>
             <span className="font-ui text-xxs text-brand-gray/55 tracking-[0.2em] uppercase">Éphémère</span>
-            <span className="text-brand-gray/15">·</span>
+            <span aria-hidden="true" className="text-brand-gray/15">·</span>
             <span className="font-ui text-xxs text-brand-gray/55 tracking-[0.2em] uppercase">Une fois</span>
           </div>
         </div>
@@ -48,7 +48,7 @@ export default function DemoMessagePage() {
           </div>
         </div>
 
-        <p className="font-ui text-xs font-light text-brand-gray/45 text-center leading-relaxed">
+        <p className="font-ui text-xs font-light text-brand-gray/55 text-center leading-relaxed">
           Un seul message. Vous pouvez répondre — ou le laisser filer.
         </p>
       </div>

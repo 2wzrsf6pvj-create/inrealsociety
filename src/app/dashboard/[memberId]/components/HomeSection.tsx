@@ -57,12 +57,12 @@ function PhotoNudge() {
   return (
     <Link href="/register?edit=1"
       className="w-full bg-[#0a0a08] border border-[#C5A059]/25 rounded-[2px] p-3 flex items-center gap-3 hover:border-[#C5A059]/50 transition-colors">
-      <span className="font-ui text-base text-[#C5A059]/70 leading-none">◎</span>
+      <span aria-hidden="true" className="font-ui text-base text-[#C5A059]/70 leading-none">◎</span>
       <div className="flex-1 flex flex-col gap-0.5">
         <span className="font-ui text-xs tracking-[0.12em] uppercase text-[#C5A059]/80">Ajoutez une photo</span>
         <span className="font-ui text-xxs text-brand-gray/50">C&apos;est la première chose que voient les scanneurs.</span>
       </div>
-      <span className="font-ui text-xxs text-[#C5A059]/60 tracking-[0.15em] uppercase flex-shrink-0">Ajouter →</span>
+      <span className="font-ui text-xxs text-[#C5A059]/85 tracking-[0.15em] uppercase flex-shrink-0">Ajouter →</span>
     </Link>
   );
 }
@@ -152,9 +152,9 @@ function NotificationsPrompt({ memberId }: { memberId: string }) {
 
 function StepDot({ done }: { done: boolean }) {
   return done ? (
-    <span className="animate-success w-5 h-5 rounded-full border border-green-400/40 flex items-center justify-center text-green-400/70 text-[10px] flex-shrink-0">✓</span>
+    <span role="img" aria-label="Fait" className="animate-success w-5 h-5 rounded-full border border-green-400/40 flex items-center justify-center text-green-400/70 text-xxs flex-shrink-0">✓</span>
   ) : (
-    <span className="w-5 h-5 rounded-full border border-brand-gray/25 flex-shrink-0" />
+    <span role="img" aria-label="À faire" className="w-5 h-5 rounded-full border border-brand-gray/25 flex-shrink-0" />
   );
 }
 
@@ -190,7 +190,7 @@ function ActivationGuide({ member }: { member: Member }) {
       {/* 2 — Aperçu */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-3">
-          <span className="w-5 h-5 rounded-full border border-[#C5A059]/40 flex items-center justify-center text-[#C5A059]/70 text-[10px] flex-shrink-0">✦</span>
+          <span aria-hidden="true" className="w-5 h-5 rounded-full border border-[#C5A059]/40 flex items-center justify-center text-[#C5A059]/70 text-xxs flex-shrink-0">✦</span>
           <span className="font-ui text-sm text-brand-white/70">Vivez votre premier scan</span>
         </div>
         <Link href={`/profil/${member.id}?preview=1`} className="font-ui text-xs text-brand-white/60 hover:text-brand-white transition-colors flex-shrink-0">
@@ -276,10 +276,11 @@ function ScanChart({ data }: { data: { date: string; count: number }[] }) {
     <div className="w-full bg-[#080808] border border-[#C5A059]/15 rounded-[2px] p-4 flex flex-col gap-3">
       <div className="flex items-center gap-3 w-full">
         <div className="flex-1 h-px bg-brand-gray/10" />
-        <span className="font-ui text-xs text-[#C5A059]/50 tracking-[0.18em] uppercase">✦ scans · 7 jours</span>
+        <span className="font-ui text-xs text-[#C5A059]/85 tracking-[0.18em] uppercase"><span aria-hidden="true">✦ </span>scans · 7 jours</span>
         <div className="flex-1 h-px bg-brand-gray/10" />
       </div>
-      <div className="flex items-end gap-1.5 h-16 w-full">
+      <div className="flex items-end gap-1.5 h-16 w-full" role="img"
+        aria-label={`Scans par jour : ${data.map(d => `${new Date(d.date).toLocaleDateString('fr-FR', { weekday: 'long' })} ${d.count}`).join(', ')}`}>
         {data.map(d => (
           <div key={d.date} className="flex-1 flex flex-col items-center gap-1">
             <div className="w-full relative" style={{ height: '48px' }}>
@@ -288,7 +289,7 @@ function ScanChart({ data }: { data: { date: string; count: number }[] }) {
                 style={{ height: `${Math.max(2, (d.count / max) * 48)}px` }}
               />
             </div>
-            <span className="font-ui text-[8px] text-brand-gray/55 tabular-nums">
+            <span className="font-ui text-xxs leading-none text-brand-gray/55 tabular-nums">
               {new Date(d.date).toLocaleDateString('fr-FR', { weekday: 'narrow' })}
             </span>
           </div>
@@ -351,7 +352,7 @@ export default function HomeSection({ member, recentScans, scansByDay = [], week
           <div className="flex flex-col gap-0.5">
             <p className="font-ui text-sm font-medium tracking-[0.2em]">
               {member.name.toUpperCase()}
-              {member.plan === 'premium' && <span className="ml-1.5 text-[#C5A059]/70">✦</span>}
+              {member.plan === 'premium' && <span role="img" aria-label="Membre premium" className="ml-1.5 text-[#C5A059]/85">✦</span>}
             </p>
             <p className="font-ui text-xs text-brand-gray/50">
               {member.is_paused

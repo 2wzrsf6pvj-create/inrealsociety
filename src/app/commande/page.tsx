@@ -113,7 +113,7 @@ function CommandeContent() {
             autoCapitalize="characters"
             autoCorrect="off"
             spellCheck={false}
-            className="flex-1 bg-transparent border-b border-brand-gray/20 focus:border-brand-white/50 text-brand-white font-mono text-base py-3 outline-none transition-colors placeholder:text-brand-gray/30 tracking-[0.15em]"
+            className="flex-1 bg-transparent border-b border-brand-gray/20 focus:border-brand-white/50 text-brand-white font-mono text-base py-3 outline-none transition-colors placeholder:text-brand-gray/55 tracking-[0.15em]"
             style={{ minHeight: '44px' }}
           />
           <button type="submit" disabled={loading || !code.trim()}

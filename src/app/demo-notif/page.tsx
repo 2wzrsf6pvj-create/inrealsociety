@@ -14,7 +14,7 @@ export default function DemoNotifPage() {
 
       <PhoneNotif className="relative z-10 w-[300px]" />
 
-      <p className="relative z-10 mt-8 font-ui text-xs text-brand-gray/40 tracking-[0.15em] uppercase text-center">
+      <p className="relative z-10 mt-8 font-ui text-xs text-brand-gray/55 tracking-[0.15em] uppercase text-center">
         Quelqu&apos;un t&apos;a scanné·e
       </p>
     </main>

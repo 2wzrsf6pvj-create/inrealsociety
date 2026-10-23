@@ -46,6 +46,16 @@ html.sun body::after { opacity: 0.025; }
   outline-offset: 2px;
   border-radius: 2px;
 }
+/* Mode plein soleil (fond clair) : le contour blanc y serait invisible (1,1:1). */
+html.sun *:focus-visible {
+  outline-color: rgba(0, 0, 0, 0.75);
+}
+
+/* Barres fixées en bas (barre d'achat de la boutique, bandeau cookies) : un
+   élément qui prend le focus au clavier s'arrête au-dessus d'elles au lieu de
+   passer dessous (WCAG 2.4.11). */
+html:has([data-sticky-bottom]) { scroll-padding-bottom: 7rem; }
+html:not(.consent-set):has([data-consent-banner]) { scroll-padding-bottom: 10rem; }
 
 /* Cible tactile minimum 44px (WCAG 2.5.5 / Apple HIG). Remplace les
    style={{ minHeight: '44px' }} inline. */
@@ -115,7 +125,7 @@ html.sun [class*="text-green-"]       { color: #15803d !important; }
 html.sun [class*="border-brand-gray/"]  { border-color: rgba(0, 0, 0, 0.18) !important; }
 html.sun [class*="border-brand-white/"] { border-color: rgba(0, 0, 0, 0.30) !important; }
 html.sun [class*="bg-brand-white/"]     { background-color: rgba(0, 0, 0, 0.05) !important; }
-html.sun [class*="placeholder:text-brand-gray/"]::placeholder { color: rgba(0, 0, 0, 0.45) !important; }
+html.sun [class*="placeholder:text-brand-gray/"]::placeholder { color: rgba(0, 0, 0, 0.6) !important; }
 
 /* ─────────────────────────────────────────
    A11y — prefers-contrast: more  (APRÈS le bloc sun : l'ordre fait gagner la
@@ -155,7 +165,7 @@ html.sun [class*="placeholder:text-brand-gray/"]::placeholder { color: rgba(0, 0
   50%       { opacity: 0.18; transform: scale(1.04); }
 }
 .animate-ring-pulse {
-  animation: ringPulse 3.5s ease-in-out infinite;
+  animation: ringPulse 3.5s ease-in-out 1 forwards;
 }
 
 /* ─────────────────────────────────────────
@@ -221,14 +231,18 @@ html.sun [class*="placeholder:text-brand-gray/"]::placeholder { color: rgba(0, 0
 /* Fade-in générique (messages d'erreur de formulaire, etc.) */
 .animate-fade-in { animation: fadeIn2 0.3s ease-out both; }
 
+/* Animations d'attention (pastille, compte à rebours, anneaux, flottement,
+   badge) : quelques cycles à l'arrivée, puis l'élément reste fixe. Rien ne bouge
+   en continu plus de 5 s (WCAG 2.2.2). */
+
 /* Pastille non-lu : respiration douce — « on t'a écrit » se sent vivant. */
 @keyframes unreadPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
-.animate-unread { animation: unreadPulse 2s ease-in-out infinite; }
+.animate-unread { animation: unreadPulse 2s ease-in-out 2; }
 
 /* Compte à rebours « dernière heure » : respiration douce (or) pour faire ressentir
    l'urgence de l'occasion éphémère, sans clignoter fort. */
 @keyframes countUrgent { 0%, 100% { opacity: 1; } 50% { opacity: 0.6; } }
-.animate-count-urgent { animation: countUrgent 1.8s ease-in-out infinite; }
+.animate-count-urgent { animation: countUrgent 1.8s ease-in-out 2; }
 
 /* Bascule de thème (sombre ↔ plein soleil) : transition de couleurs UNIQUEMENT
    pendant le switch (classe posée ~300ms par SunToggle) — sinon ça ralentirait
@@ -255,7 +269,7 @@ button, a {
   50%       { transform: translateY(-5px); }
 }
 .animate-float {
-  animation: float 4s ease-in-out infinite;
+  animation: float 4s ease-in-out 1;
 }
 
 /* ─────────────────────────────────────────
@@ -289,15 +303,17 @@ button, a {
 }
 
 /* ─────────────────────────────────────────
-   TYPING DOTS — indicateur "en attente de réponse" (conversation)
+   TYPING DOTS — indicateur "en attente de réponse" (conversation). L'attente
+   peut durer des heures : trois vagues à l'arrivée, puis les points restent
+   fixes (WCAG 2.2.2).
    ───────────────────────────────────────── */
 @keyframes typingDot {
   0%, 60%, 100% { opacity: 0.25; transform: scale(1);   }
   30%           { opacity: 1;    transform: scale(1.35); }
 }
-.animate-typing-1 { animation: typingDot 1.4s 0s    ease-in-out infinite; }
-.animate-typing-2 { animation: typingDot 1.4s 0.2s  ease-in-out infinite; }
-.animate-typing-3 { animation: typingDot 1.4s 0.4s  ease-in-out infinite; }
+.animate-typing-1 { animation: typingDot 1.4s 0s    ease-in-out 3 both; }
+.animate-typing-2 { animation: typingDot 1.4s 0.2s  ease-in-out 3 both; }
+.animate-typing-3 { animation: typingDot 1.4s 0.4s  ease-in-out 3 both; }
 
 /* ─────────────────────────────────────────
    SUCCESS CHECKMARK — confirmation envoi (feedback dashboard)
@@ -342,7 +358,7 @@ button, a {
   inset: 0;
   border-radius: inherit;
   background: currentColor;
-  animation: pingBadge 2s ease-out infinite;
+  animation: pingBadge 2s ease-out 2 forwards;
   pointer-events: none;
 }
 

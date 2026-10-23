@@ -366,6 +366,14 @@ export default function ConversationClient({
 
       <div className="z-10 flex flex-col w-full max-w-xs md:max-w-sm gap-4">
 
+        {/* Titre de la page pour les lecteurs d'écran (l'en-tête visible montre
+            le nom du porteur, y compris à lui-même). */}
+        <h1 className="sr-only">
+          {isOwner
+            ? (message.sender_name ? `Conversation avec ${message.sender_name}` : 'Conversation')
+            : `Conversation avec ${memberName}`}
+        </h1>
+
         {/* Header */}
         <div className="flex items-center gap-3 animate-stagger-1">
           <div className="w-10 h-10 rounded-full border border-brand-gray/20 bg-[#0a0a0a] flex items-center justify-center overflow-hidden flex-shrink-0">
@@ -387,7 +395,8 @@ export default function ConversationClient({
         <div className="w-full h-px bg-brand-gray/10 animate-line-draw" />
 
         {/* ─── Fil de conversation ────────────────────────────────────────── */}
-        <div className="flex flex-col gap-3 animate-stagger-2">
+        {/* role="log" : un message qui arrive (temps réel) est annoncé. */}
+        <div role="log" aria-label="Messages" className="flex flex-col gap-3 animate-stagger-2">
 
           {/* Message initial du scanner */}
           <ChatBubble
@@ -533,8 +542,8 @@ export default function ConversationClient({
                 <button key={opt.rating} onClick={() => handleFeedback(opt.rating)}
                   className="flex flex-col items-center gap-1 px-3 py-2 border border-brand-gray/10 rounded-[2px] hover:border-brand-gray/30 hover:bg-brand-white/5 transition-all"
                   aria-label={opt.label}>
-                  <span className="text-lg">{opt.emoji}</span>
-                  <span className="font-ui text-[9px] text-brand-gray/55 tracking-wide uppercase">{opt.label}</span>
+                  <span aria-hidden="true" className="text-lg">{opt.emoji}</span>
+                  <span className="font-ui text-xxs text-brand-gray/55 tracking-wide uppercase">{opt.label}</span>
                 </button>
               ))}
             </div>
@@ -567,7 +576,7 @@ export default function ConversationClient({
           {/* Bloquer — réservé au porteur, masqué si déjà bloqué */}
           {isOwner && !isBlocked && (
             <button onClick={() => setBlock('block')} disabled={blockLoading}
-              className="font-ui text-xxs text-brand-gray/50 tracking-[0.15em] uppercase hover:text-red-400/70 transition-colors text-center py-2 disabled:opacity-40"
+              className="font-ui text-xxs text-brand-gray/50 tracking-[0.15em] uppercase hover:text-red-400/80 transition-colors text-center py-2 disabled:opacity-40"
               style={{ minHeight: '44px' }}>
               {blockLoading ? '...' : 'Bloquer cette personne'}
             </button>
