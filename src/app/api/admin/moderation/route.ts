@@ -1,5 +1,6 @@
 // src/app/api/admin/moderation/route.ts
-// POST — décisions de modération prises depuis /admin.
+// POST — décisions prises depuis /admin : modération, et renvoi d'un code
+// d'activation (service client).
 // Réservé à ADMIN_EMAILS (adresse confirmée) ; pour tout autre compte, 404 sans
 // rien révéler. Chaque décision s'inscrit dans audit_logs (qui, quoi, pourquoi),
 // clôt le signalement d'où elle part, et prévient par email la personne visée
@@ -13,7 +14,8 @@ import { requireAuth, isHttpError } from '@/lib/require-auth';
 import { checkAuthRateLimit, rateLimitHeaders } from '@/lib/ratelimit';
 import { isAdmin } from '@/lib/admin';
 import { REPORT_KEY_RE } from '@/lib/moderation-queue';
-import { sendEmail, emailModerationNotice, emailReportOutcome } from '@/lib/email-templates';
+import { sendEmail, emailActivation, emailModerationNotice, emailReportOutcome } from '@/lib/email-templates';
+import { APP_URL } from '@/lib/constants';
 import type { AuditAction } from '@/lib/audit';
 import { reportError } from '@/lib/report-error';
 
@@ -29,11 +31,12 @@ const schema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('unban_device'),     senderToken: z.string().uuid() }),
   z.object({ action: z.literal('hide_message'),     messageId: z.string().uuid(), motif, ...fromReport }),
   z.object({ action: z.literal('mark_handled'),     reportKey, decision: motif, notifyReporter: z.boolean().default(false) }),
+  z.object({ action: z.literal('resend_code'),      orderId: z.string().uuid() }),
 ]);
 type Decision = z.infer<typeof schema>;
 
 /** Ce que l'auteur du signalement apprend de la suite donnée. */
-const OUTCOME: Record<Exclude<Decision['action'], 'mark_handled' | 'unsuspend_member' | 'unban_device'>, string> = {
+const OUTCOME: Record<Exclude<Decision['action'], 'mark_handled' | 'unsuspend_member' | 'unban_device' | 'resend_code'>, string> = {
   suspend_member: 'le profil signalé a été suspendu.',
   remove_photo:   'la photo signalée a été retirée.',
   ban_device:     'l’appareil à l’origine des messages ne peut plus écrire sur In Real Society.',
@@ -43,6 +46,7 @@ const OUTCOME: Record<Exclude<Decision['action'], 'mark_handled' | 'unsuspend_me
 const DATE = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'long', timeZone: 'Europe/Paris' });
 
 class NotFound extends Error {}
+class Conflict extends Error {}
 
 /** Trace écrite AVANT de répondre : c'est aussi l'état « traité » de /admin. */
 async function record(action: AuditAction, memberId: string | null, metadata: Record<string, unknown>) {
@@ -79,8 +83,9 @@ async function notifyReporter(key: string, decision: string): Promise<boolean> {
   return sendEmail({ to: contact, subject, html }).catch(() => false);
 }
 
-/** memberNotified : null quand la décision ne vise pas un porteur. */
-async function apply(d: Decision, by: string): Promise<{ memberNotified: boolean | null }> {
+/** memberNotified : null quand la décision ne vise pas un porteur ;
+ *  buyerNotified : seulement pour le renvoi d'un code d'activation. */
+async function apply(d: Decision, by: string): Promise<{ memberNotified: boolean | null; buyerNotified?: boolean }> {
   switch (d.action) {
     case 'suspend_member': {
       const member = await getMember(d.memberId);
@@ -132,6 +137,24 @@ async function apply(d: Decision, by: string): Promise<{ memberNotified: boolean
     }
     case 'mark_handled':
       return { memberNotified: null };
+    case 'resend_code': {
+      // Même règle que « Code perdu ? » sur /register : commande payée, code
+      // jamais utilisé.
+      const { data: order, error } = await supabaseAdmin.from('orders')
+        .select('id, email, status, activation_code').eq('id', d.orderId).maybeSingle();
+      if (error) throw error;
+      if (!order || order.status !== 'paid' || !order.activation_code) throw new NotFound();
+      const { data: code } = await supabaseAdmin.from('activation_codes')
+        .select('used').eq('code', order.activation_code).maybeSingle();
+      if (!code || code.used) throw new Conflict('Code déjà utilisé : le profil est activé.');
+      const { subject, html } = emailActivation({
+        code:        order.activation_code,
+        registerUrl: `${APP_URL}/register?code=${order.activation_code}`,
+      });
+      const sent = await sendEmail({ to: order.email, subject, html }).catch(() => false);
+      await record('order.email_resent', null, { by, orderId: order.id, email: order.email, sent });
+      return { memberNotified: null, buyerNotified: sent };
+    }
   }
 }
 
@@ -159,7 +182,7 @@ export async function POST(req: NextRequest) {
     const d = body.data;
     const by = auth.user.email!.toLowerCase();
 
-    const { memberNotified } = await apply(d, by);
+    const { memberNotified, buyerNotified } = await apply(d, by);
 
     // Clôt le signalement d'où part la décision, puis prévient son auteur
     // (reporterNotified : null quand ce n'était pas demandé).
@@ -170,9 +193,10 @@ export async function POST(req: NextRequest) {
       if (d.notifyReporter) reporterNotified = await notifyReporter(d.reportKey, decision);
     }
 
-    return NextResponse.json({ ok: true, memberNotified, reporterNotified });
+    return NextResponse.json({ ok: true, memberNotified, reporterNotified, ...(buyerNotified === undefined ? {} : { buyerNotified }) });
   } catch (err) {
     if (err instanceof NotFound) return NextResponse.json({ error: 'Introuvable.' }, { status: 404 });
+    if (err instanceof Conflict) return NextResponse.json({ error: err.message }, { status: 409 });
     reportError('api/admin/moderation', err);
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });
   }
