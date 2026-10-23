@@ -23,7 +23,9 @@ export default defineConfig({
   },
 
   projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    // Le Chromium complet, et non sa version allégée (headless shell), qui a
+    // planté en CI (SIGSEGV) en ouvrant un contexte.
+    { name: 'chromium', use: { ...devices['Desktop Chrome'], channel: 'chromium' } },
   ],
 
   webServer: [
