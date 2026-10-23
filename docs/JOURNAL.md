@@ -5,6 +5,80 @@
 
 ---
 
+## 2026-10-23 (suite) — Modération au quotidien : analyse et premier lot (#32)
+
+### Analyse
+Ce que le code fait d'un signalement, ce que l'équipe doit faire ensuite, et
+les obligations du règlement européen sur les services numériques (DSA). Le
+texte officiel n'étant pas joignable depuis la session (EUR-Lex bloqué), les
+points DSA viennent de sources secondaires concordantes : à faire relire par
+le juriste.
+
+**Déjà en ordre** :
+- messages, réponses, prénoms et contacts filtrés avant envoi (OpenAI et liste
+  de mots) ;
+- message signalé par un porteur : masqué aussitôt, alerte email avec le SQL ;
+  le porteur peut aussi bloquer ;
+- appareil signalé par 3 porteurs différents : banni automatiquement ;
+- signalement de profil ouvert à tous, sans compte ;
+- CGV, article 9 : la modération décrite (DSA, art. 14) ;
+- en micro ou petite entreprise, dispense des obligations les plus lourdes
+  des plateformes (DSA, art. 19).
+
+**Constats** :
+1. Aucune marche à suivre pour l'équipe : délais, gestes, autorités (DSA,
+   art. 18).
+2. Le passant ne pouvait rien signaler depuis sa conversation (DSA, art. 16).
+3. Prénom, présentation, Instagram et photo du porteur, publics, sans filtre.
+4. Personnes visées mal informées (DSA, art. 17) : écran de message filtré
+   incomplet, appareil banni qui voyait « membre indisponible », porteur
+   suspendu sans email.
+5. Formulaire de signalement sans déclaration de bonne foi ni accusé de
+   réception (DSA, art. 16).
+6. Pas de point de contact désigné (DSA, art. 11 et 12).
+7. Décisions prises en SQL sans trace dans l'audit.
+8. Limite connue : le bannissement tient à un cookie.
+
+### Décisions de Clément
+- Profils : texte filtré, photos vues par l'équipe.
+- Appareil banni : le lui dire clairement.
+- Outil pour agir : une mini-interface d'administration (PR suivante).
+
+### Fait
+- **PR #32 fusionnée** (`548121c`) :
+  - `docs/MODERATION.md` : délais par gravité, gestes SQL, modèles d'email
+    (porteur, auteur du signalement), autorités (17, 112, PHAROS), registre ;
+  - « Signaler cette conversation » pour le passant, conversation jointe à
+    l'alerte ;
+  - formulaire : déclaration de bonne foi, accusé de réception par email,
+    rappel 17 ou 112 ;
+  - prénom, présentation et Instagram filtrés comme les messages (champs
+    modifiés seulement, avant de consommer le code d'activation) ; chaque
+    nouvelle photo part à l'équipe ;
+  - message filtré et appareil banni : décision, règle et recours affichés ;
+    le blocage par un porteur reste discret ;
+  - mentions légales : point de contact du DSA ; CGV (article 9) et
+    confidentialité à jour ;
+  - SQL des alertes : chaque geste s'inscrit dans `audit_logs`.
+- Vérifié :
+  - lint, typage, 672 tests, intégration 46/46, build, Playwright ;
+  - 4 mutations (filtre des profils, code `banned`, bonne foi, email des
+    photos) détectées par les tests ;
+  - conversation du passant sur base locale, à 390 px : lien et formulaire
+    affichés ;
+  - CI verte.
+
+### À faire par Clément
+- `ADMIN_ALERT_EMAIL` sur une boîte lue chaque jour, notifications activées.
+- Faire relire par le juriste l'article 9 des CGV, `docs/MODERATION.md` et ses
+  modèles d'email.
+
+### Ensuite
+- L'interface d'administration (`/admin`), PR suivante.
+- La préparation du test terrain.
+
+---
+
 ## 2026-10-23 (suite) — Économie unitaire : analyse et lot (#31)
 
 ### Analyse
