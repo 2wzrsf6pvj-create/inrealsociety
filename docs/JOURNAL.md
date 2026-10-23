@@ -5,7 +5,7 @@
 
 ---
 
-## 2026-10-23 (suite) — Accessibilité (#39)
+## 2026-10-23 (suite) — Accessibilité (#39, #40)
 
 ### Analyse
 axe-core (le moteur des outils d'audit) sur 27 écrans : passant, porteur,
@@ -68,6 +68,14 @@ annoncées, onglets de « Mon espace » balisés, textes alternatifs.
   - dix défauts réintroduits, chacun détecté par le bon test ;
   - captures relues à 390 px, rien de cassé par le passage à 11 px ;
   - CI verte.
+
+### Après la fusion
+- CI de main rouge (run #130) : deux tests de `accessibilite.spec.ts`
+  lisaient l'état une tâche trop tôt. Le contour de focus du bouton
+  principal arrive par une transition ; le drapeau de la présentation est
+  écrit à l'événement « close », qui suit la fermeture. Reproduit en local,
+  l'app se comportait bien. **PR #40 fusionnée** (`feabbba`) : les deux
+  tests attendent l'état final. 40/40 sur cinq passages, CI verte.
 
 ### Limite
 - Pas d'essai avec un vrai lecteur d'écran (VoiceOver, TalkBack) : axe et
