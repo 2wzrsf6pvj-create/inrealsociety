@@ -3,7 +3,8 @@
 > Tout ce qui se règle **hors du code** (Vercel, Supabase, Stripe, Printful,
 > emails, juridique), dans l'ordre, avec la façon de vérifier chaque point.
 > Le détail technique (migrations, dry-run, CSP) est dans
-> [`DEPLOY_CHECKLIST.md`](./DEPLOY_CHECKLIST.md). État au 22 octobre 2026.
+> [`DEPLOY_CHECKLIST.md`](./DEPLOY_CHECKLIST.md). Marges, frais fixes et seuils
+> de TVA : [`ECONOMIE_UNITAIRE.md`](./ECONOMIE_UNITAIRE.md). État au 23 octobre 2026.
 
 ## 0. État des lieux (5 minutes)
 
@@ -11,6 +12,8 @@
       préversion). Dans Vercel → *Settings → Git*, vérifier que la branche de
       production est `main` : chaque fusion part alors en production. Noter le
       domaine de production (*Settings → Domains*).
+- [ ] Vercel : offre **Pro** (20 $/mois) avant la première vente. L'offre
+      gratuite (Hobby) est réservée à un usage non commercial.
 - [ ] Ouvrir `https://<domaine>/api/health` :
   - `"supabase":"ok"` : une base répond ;
   - `"skip"` : aucune base configurée ;
@@ -64,6 +67,8 @@ qui manquent.
 
 ## 2. Base Supabase
 
+- [ ] Offre **Pro** (25 $/mois) avant l'ouverture : l'offre gratuite met le
+      projet en pause après une semaine sans activité.
 - [ ] Appliquer les migrations jusqu'à **061**, dans l'ordre
       (`DEPLOY_CHECKLIST.md`, section 1 ; avec la CLI : `docs/SUPABASE_CLI.md`).
 - [ ] Vérifier : SQL Editor → `scripts/verify-migrations.sql`, chaque résultat
@@ -76,9 +81,14 @@ qui manquent.
 
 ## 3. Stripe
 
-- [ ] Price du t-shirt **et** price du premium en **« inclusive »** (TTC) :
-      sinon la TVA s'ajoute aux 49 € et aux 2,99 € affichés (3,59 €).
-- [ ] **Stripe Tax** activé.
+- [ ] Franchise de TVA : **pas de Stripe Tax**, le code ne le demande pas
+      (`VAT_EXEMPT`). Dans les réglages des factures, pied de page par défaut :
+      « TVA non applicable, art. 293 B du CGI ». La mention est obligatoire sur
+      les factures, dont celles du premium.
+- [ ] Price du t-shirt (49 €) **et** price du premium (2,99 €/mois) en
+      **« inclusive »**. Sans effet en franchise, mais ce réglage ne change plus
+      une fois choisi : sans lui, le jour où la TVA s'applique, elle s'ajoute
+      aux prix affichés (3,59 € au lieu de 2,99 €).
 - [ ] Webhook vers `https://<domaine>/api/webhook/stripe`, avec les
       événements `checkout.session.completed`,
       `customer.subscription.updated`, `customer.subscription.deleted`,
@@ -137,8 +147,11 @@ Détail : `docs/MONITORING.md`.
 ## 6. Juridique (avant la première vente)
 
 - [ ] **Mentions légales et politique de confidentialité** : forme juridique,
-      siège, SIRET/RCS, TVA, téléphone, directeur de publication (les
+      siège, SIRET/RCS, téléphone, directeur de publication (les
       `[À COMPLÉTER]` de `src/app/mentions-legales` et `src/app/confidentialite`).
+- [ ] **Comptable** : faire confirmer le régime de TVA, en particulier
+      l'autoliquidation sur les services achetés à l'étranger et les seuils
+      (`ECONOMIE_UNITAIRE.md`, sections 7 et 8).
 - [ ] **Médiateur de la consommation** : obligatoire pour vendre aux
       particuliers ; en choisir un et le nommer dans les mentions légales.
 - [ ] **Relecture par un juriste** :
@@ -155,7 +168,9 @@ Détail : `docs/MONITORING.md`.
 
 En mode test Stripe (carte `4242 4242 4242 4242`) :
 
-- [ ] Commander un t-shirt : l'email avec le code d'activation arrive.
+- [ ] Commander un t-shirt : le paiement ne propose que la livraison standard
+      (5 €) vers la France, la Belgique, le Luxembourg et l'Allemagne, et
+      l'email avec le code d'activation arrive.
 - [ ] Activer le profil avec ce code (case 18 ans comprise).
 - [ ] Scanner le QR code avec un autre téléphone : le profil s'ouvre.
 - [ ] Envoyer un message avec un email : le lien de confirmation arrive.

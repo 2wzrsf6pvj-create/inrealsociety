@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { BrandMark } from '@/app/components/ui/BrandMark';
-import { CONTACT_EMAIL, PREMIUM_PERKS, PREMIUM_PRICE_LABEL, PREMIUM_WITHDRAWAL_DAYS } from '@/lib/constants';
+import { CONTACT_EMAIL, PREMIUM_PERKS, PREMIUM_PRICE_LABEL, PREMIUM_WITHDRAWAL_DAYS, SHIPPING_COUNTRIES_LABEL, VAT_EXEMPT, VAT_EXEMPT_NOTICE } from '@/lib/constants';
 
 export const metadata = {
   // Le gabarit du layout ajoute « — In Real Society ».
@@ -85,7 +85,8 @@ export default function CGVPage() {
             Article 3 — Prix et paiement
           </h2>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
-            Les prix sont indiqués en euros TTC. Le Vendeur se réserve le droit de modifier ses prix
+            {VAT_EXEMPT ? `Les prix sont indiqués en euros. ${VAT_EXEMPT_NOTICE}.` : 'Les prix sont indiqués en euros TTC.'}
+            {' '}Le Vendeur se réserve le droit de modifier ses prix
             à tout moment, étant entendu que le prix applicable est celui en vigueur au moment de la
             commande.
           </p>
@@ -175,10 +176,11 @@ export default function CGVPage() {
             Article 7 — Livraison
           </h2>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
-            Chaque article étant fabriqué à la demande via Printful, le délai se décompose en deux
+            Les commandes sont livrées en {SHIPPING_COUNTRIES_LABEL}. Chaque article étant
+            fabriqué à la demande via Printful, le délai se décompose en deux
             temps : <span className="text-brand-white/80">production sous 2 à 5 jours ouvrés</span> après
             validation du paiement, puis <span className="text-brand-white/80">expédition de 5 à 10 jours
-            ouvrés</span> (ou 2 à 4 jours en livraison express) selon la destination. Comptez donc
+            ouvrés</span> selon la destination. Comptez donc
             généralement 1 à 3 semaines au total. Ces délais sont indicatifs et ne constituent pas
             un engagement contractuel.
           </p>
@@ -197,7 +199,7 @@ export default function CGVPage() {
           </h2>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
             Le porteur peut souscrire, depuis son tableau de bord, un abonnement premium à{' '}
-            <span className="text-brand-white/80">{PREMIUM_PRICE_LABEL} TTC par mois</span>. Il donne accès à :
+            <span className="text-brand-white/80">{PREMIUM_PRICE_LABEL}{VAT_EXEMPT ? '' : ' TTC'} par mois</span>. Il donne accès à :
           </p>
           <ul className="flex flex-col gap-2 pl-4">
             {PREMIUM_PERKS.map((item) => (

@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { captureEvent } from '@/lib/posthog-client';
 import { rememberCheckoutEmail } from '@/lib/checkout-email';
-import { TSHIRT_PRICE_EUR, SHIPPING_STANDARD_CENTS, SHIPPING_EXPRESS_CENTS } from '@/lib/constants';
+import { TSHIRT_PRICE_EUR, SHIPPING_STANDARD_CENTS } from '@/lib/constants';
 import type { BakedTagline } from '@/lib/taglines.generated';
 import TaglinePicker from '@/app/components/ui/TaglinePicker';
 import { BrandMark } from '@/app/components/ui/BrandMark';
@@ -17,7 +17,6 @@ type TshirtSize  = 'S' | 'M' | 'L' | 'XL' | 'XXL';
 
 const SIZES: TshirtSize[] = ['S', 'M', 'L', 'XL', 'XXL'];
 const SHIPPING_STANDARD_EUR = SHIPPING_STANDARD_CENTS / 100;
-const SHIPPING_EXPRESS_EUR  = SHIPPING_EXPRESS_CENTS / 100;
 
 // ─── Galerie produit ──────────────────────────────────────────────────────────
 // Placeholder abstrait (logo ( • )) — fallback tant qu'aucune vraie image n'est
@@ -457,7 +456,7 @@ export default function ShopClient() {
               </div>
               <div className="flex flex-col items-end gap-1 shrink-0">
                 <span className="font-display text-3xl font-light">{TSHIRT_PRICE_EUR}€</span>
-                <span className="font-ui text-xxs text-brand-gray/55 whitespace-nowrap">TTC · livraison dès {SHIPPING_STANDARD_EUR}€</span>
+                <span className="font-ui text-xxs text-brand-gray/55 whitespace-nowrap">+ livraison {SHIPPING_STANDARD_EUR}€</span>
               </div>
             </div>
 
@@ -549,15 +548,15 @@ export default function ShopClient() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-ui text-xxs text-brand-gray/50 tracking-[0.15em] uppercase">Expédition</span>
-                  <span className="font-ui text-xs text-brand-gray/60">5-10 j. · 2-4 j. en express</span>
+                  <span className="font-ui text-xs text-brand-gray/60">5-10 j. ouvrés</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-ui text-xxs text-brand-gray/50 tracking-[0.15em] uppercase">Frais</span>
-                  <span className="font-ui text-xs text-brand-gray/60">{SHIPPING_STANDARD_EUR}€ standard · {SHIPPING_EXPRESS_EUR}€ express</span>
+                  <span className="font-ui text-xs text-brand-gray/60">{SHIPPING_STANDARD_EUR}€</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-ui text-xxs text-brand-gray/50 tracking-[0.15em] uppercase">Zones</span>
-                  <span className="font-ui text-xs text-brand-gray/60">UE · UK · USA · Canada</span>
+                  <span className="font-ui text-xs text-brand-gray/60">FR · BE · LU · DE</span>
                 </div>
               </div>
 
@@ -686,7 +685,7 @@ export default function ShopClient() {
             <div className="flex flex-col">
               <span className="font-display text-2xl font-light leading-none">{TSHIRT_PRICE_EUR}€</span>
               <span className="font-ui text-xxs text-brand-gray/55 mt-1 whitespace-nowrap">
-                {colorLabel} · {tshirtSize} · livraison dès {SHIPPING_STANDARD_EUR}€
+                {colorLabel} · {tshirtSize} · livraison {SHIPPING_STANDARD_EUR}€
               </span>
             </div>
             <button

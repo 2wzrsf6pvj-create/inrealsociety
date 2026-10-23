@@ -71,7 +71,8 @@ describe('activatePremium', () => {
     const { subject, html } = sent[0];
     expect(subject).toContain('bienvenue dans le cercle premium');
     expect(html).toContain('2,99');
-    expect(html).toContain('TTC par mois');
+    expect(html).toContain('2,99\u00A0€ par mois'); // franchise de TVA : sans « TTC »
+    expect(html).not.toContain('TTC');
     expect(html).toContain('Résiliable à tout moment');
     expect(html).toContain('14 jours pour vous rétracter');
     expect(html).toContain('remboursé en entier');

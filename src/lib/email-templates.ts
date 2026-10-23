@@ -8,7 +8,7 @@ import { escapeHtml } from '@/lib/escape-html';
 import { maskLinks } from '@/lib/mask-links';
 import {
   EMAIL_FROM, RESEND_API_URL, APP_URL, CONTACT_EMAIL,
-  PREMIUM_PERKS, PREMIUM_PRICE_LABEL, PREMIUM_WITHDRAWAL_DAYS,
+  PREMIUM_PERKS, PREMIUM_PRICE_LABEL, PREMIUM_WITHDRAWAL_DAYS, VAT_EXEMPT,
 } from '@/lib/constants';
 import type { OrderRecap } from '@/lib/order-recap';
 
@@ -329,7 +329,7 @@ export function emailPremium(params: {
       <div style="border:1px solid rgba(255,255,255,0.1);padding:24px;">
         <p style="font-family:system-ui,sans-serif;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;color:rgba(255,255,255,0.4);margin:0 0 12px;">Votre abonnement</p>
         <p style="${p}">
-          ${PREMIUM_PRICE_LABEL} TTC par mois, payé d’avance et renouvelé chaque mois jusqu’à ce que vous résiliiez.
+          ${PREMIUM_PRICE_LABEL}${VAT_EXEMPT ? '' : ' TTC'} par mois, payé d’avance et renouvelé chaque mois jusqu’à ce que vous résiliiez.
           Souscrit le ${escapeHtml(params.subscribedOn)}.
         </p>
         <p style="${p}">
@@ -500,7 +500,7 @@ function recapBlock(r: OrderRecap): string {
     ['Accroche', r.tagline ? `« ${r.tagline} »` : 'QR seul, sans accroche'],
   ];
   if (r.shipping) rows.push(['Livraison', r.shipping]);
-  if (r.total)    rows.push(['Total payé', `${r.total} TTC`]);
+  if (r.total)    rows.push(['Total payé', r.total]);
   if (r.address)  rows.push(['Livré à', r.address]);
   return `
     <div style="margin-top:40px;border-top:1px solid rgba(255,255,255,0.1);padding-top:24px;">
