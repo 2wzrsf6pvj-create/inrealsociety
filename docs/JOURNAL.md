@@ -5,6 +5,56 @@
 
 ---
 
+## 2026-10-23 (suite) — Migration vers Next.js 16 (#29)
+
+### Contexte
+Suite de « Mises à jour et failles » : Clément a choisi une PR séparée, juste
+après le lot sûr (#28). Next.js 14 ne reçoit plus de correctifs.
+
+### Fait
+- **PR #29 fusionnée** (`68f6f4e`) :
+  - Next 16.4.2 et React 19, via les codemods officiels. `cookies()`,
+    `headers()`, `params` et `searchParams` deviennent asynchrones
+    (13 fichiers) ;
+  - client Supabase serveur asynchrone, 4 appelants corrigés à la main ;
+  - `middleware.ts` devient `proxy.ts`, qui tourne sous Node.js ;
+  - bug raté par le codemod : l'image Open Graph du profil lisait `params`
+    sans `await`, et l'aperçu partagé aurait perdu le prénom du porteur.
+    Corrigé et verrouillé par un test ; le runtime Edge, déprécié, est retiré ;
+  - ESLint 9 en configuration « flat ». Les règles du React Compiler sont en
+    avertissement : 26 cas existants, des motifs déconseillés plutôt que des
+    bugs ;
+  - build et dev restent sur webpack ; `data-scroll-behavior` sur `<html>`.
+- Vérifié :
+  - lint, typage, 651 tests, intégration 46/46, Playwright ;
+  - tour de 13 pages en production locale : aucune erreur console, aucune
+    violation CSP, nonce sur tous les scripts ;
+  - CI et préversion Vercel vertes.
+- Failles de production : 0 (33 au début du sujet).
+
+### Coût mesuré
+- +41 ko de JS compressé par page : routeur de Next 16 +27 ko, React 19
+  +11 ko. Notre code et Sentry ne bougent pas.
+- Lighthouse mobile :
+  - accueil 96 → 91, FAQ 96 → 92, boutique 92 → 86 ;
+  - temps de blocage : environ +100 ms.
+- Turbopack, essayé, chargeait encore plus de JS.
+
+### À faire — côté Clément
+- [ ] Après déploiement : partager un lien de profil (l'aperçu doit montrer le
+      prénom), puis se connecter et ouvrir le tableau de bord.
+- [ ] Rappel de #28 : activer les *Dependabot alerts*.
+
+### Ensuite
+- Pistes pour regagner la performance perdue : les 26 avertissements des
+  règles React, moins de JavaScript côté client.
+- Puis :
+  - l'économie unitaire, avec les tarifs Printful de Clément ;
+  - le reste de la priorité 3 : app mobile, parrainage et newsletter,
+    accessibilité, petits restes.
+
+---
+
 ## 2026-10-23 (suite) — Mises à jour et failles : analyse et lot sûr (#28)
 
 ### Analyse
