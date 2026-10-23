@@ -967,3 +967,59 @@ describe.skipIf(!ENABLED)('Administration : un signalement traité depuis /admin
     expect(mailsTo(wearerEmail, 'Votre profil In Real Society est rétabli')).toHaveLength(1);
   });
 });
+
+describe.skipIf(!ENABLED)('Administration : chiffres, commandes à surveiller, recherche', () => {
+  let watch: typeof import('@/lib/order-watch');
+  let stats: typeof import('@/lib/field-stats');
+  let admin: typeof import('@/app/api/admin/moderation/route');
+  const tag     = crypto.randomUUID().slice(0, 8);
+  const wearer  = { authId: crypto.randomUUID(), memberId: crypto.randomUUID() };
+  const orderId = crypto.randomUUID();
+  const code    = `Z${tag.toUpperCase().slice(0, 7)}`;
+  const buyer   = `achat-${tag}@example.com`;
+
+  beforeAll(async () => {
+    process.env.ADMIN_EMAILS = 'clement@example.com';
+    watch = await import('@/lib/order-watch');
+    stats = await import('@/lib/field-stats');
+    admin = await import('@/app/api/admin/moderation/route');
+    // Porteur activé il y a 40 jours, scanné il y a 3 jours ; commande payée il y
+    // a 10 jours, jamais imprimée, code jamais utilisé.
+    sql(`INSERT INTO auth.users (id, email, email_confirmed_at) VALUES ('${wearer.authId}', 'ines-${tag}@example.com', now())`);
+    sql(`INSERT INTO members (id, auth_user_id, name, email, created_at) VALUES ('${wearer.memberId}', '${wearer.authId}', 'Ines${tag}', 'ines-${tag}@example.com', now() - interval '40 days')`);
+    sql(`INSERT INTO scans (member_id, scanned_at) VALUES ('${wearer.memberId}', now() - interval '3 days')`);
+    sql(`INSERT INTO activation_codes (code, used) VALUES ('${code}', false)`);
+    sql(`INSERT INTO orders (id, email, status, activation_code, created_at) VALUES ('${orderId}', '${buyer}', 'paid', '${code}', now() - interval '10 days')`);
+  });
+
+  it('recherche par prénom, par email et par code d’activation', async () => {
+    expect((await watch.searchAdmin(`ines${tag}`))!.members.map(m => m.id)).toContain(wearer.memberId);
+    const byEmail = await watch.searchAdmin(`achat-${tag}`);
+    expect(byEmail!.orders.map(o => o.id)).toEqual([orderId]);
+    expect(byEmail!.orders[0]).toEqual(expect.objectContaining({ code, codeUsed: false, printed: false, status: 'paid' }));
+    expect((await watch.searchAdmin(code.toLowerCase()))!.orders.map(o => o.id)).toEqual([orderId]);
+  });
+
+  it('commandes à surveiller : pas imprimée, code non utilisé depuis 10 jours', async () => {
+    const list = await watch.loadOrderWatch();
+    expect(list.unprinted.map(o => o.id)).toContain(orderId);
+    expect(list.notActivated.map(o => o.id)).toContain(orderId);
+  });
+
+  it('chiffres du test : le porteur ancien et scanné compte comme encore porté', async () => {
+    const s = await stats.loadFieldStats();
+    expect(s.wearers).toBeGreaterThanOrEqual(1);
+    expect(s.stillWorn.hit).toBeGreaterThanOrEqual(1);
+    expect(s.stillWorn.hit).toBeLessThanOrEqual(s.stillWorn.eligible);
+    expect(s.funnel.scans).toBeGreaterThanOrEqual(1);
+  });
+
+  it('renvoyer le code depuis /admin : email à l’acheteur, tracé', async () => {
+    currentUser = { id: crypto.randomUUID(), email: 'clement@example.com', email_confirmed_at: new Date().toISOString() };
+    const res = await admin.POST(req('/api/admin/moderation', { body: { action: 'resend_code', orderId } }));
+    expect(await res.json()).toEqual(expect.objectContaining({ ok: true, buyerNotified: true }));
+    expect(sent.emails.filter(e => e.to[0] === buyer)).toHaveLength(1);
+    expect(sql(`SELECT count(*) FROM audit_logs WHERE action = 'order.email_resent' AND metadata->>'orderId' = '${orderId}'`)).toBe('1');
+  });
+});
+

@@ -13,6 +13,8 @@ const removed: string[][] = [];
 let memberRow: Record<string, unknown> | null = null;
 let reportMeta: Record<string, unknown> | null = null;
 let hiddenMessage: { member_id: string } | null = null;
+let orderRow: Record<string, unknown> | null = null;
+let codeRow: { used: boolean } | null = null;
 
 function builder(table: string, op: string, values?: unknown) {
   const entry: Op = { table, op, values, filters: {} };
@@ -21,6 +23,8 @@ function builder(table: string, op: string, values?: unknown) {
     if (op === 'select' && table === 'members') return { data: memberRow, error: null };
     if (op === 'select' && table === 'audit_logs') return { data: reportMeta ? { metadata: reportMeta } : null, error: null };
     if (op === 'update' && table === 'messages') return { data: hiddenMessage, error: null };
+    if (op === 'select' && table === 'orders') return { data: orderRow, error: null };
+    if (op === 'select' && table === 'activation_codes') return { data: codeRow, error: null };
     return { data: null, error: null };
   };
   const chain: Record<string, unknown> = {
@@ -69,6 +73,7 @@ const MEMBER = '11111111-1111-4111-8111-111111111111';
 const TOKEN  = '22222222-2222-4222-8222-222222222222';
 const MSG    = '33333333-3333-4333-8333-333333333333';
 const REPORT = `profile:${'44444444-4444-4444-8444-444444444444'}`;
+const ORDER  = '55555555-5555-4555-8555-555555555555';
 const ADMIN  = { id: 'auth-admin', email: 'Clement@Example.com', email_confirmed_at: '2026-10-01T00:00:00Z' };
 
 const post = (body: unknown, origin = 'http://localhost:3000') =>
@@ -87,6 +92,8 @@ beforeEach(() => {
   memberRow = { id: MEMBER, name: 'Camille', email: 'camille@example.com' };
   reportMeta = { reason: 'Photo choquante.', contact: 'lea@example.com' };
   hiddenMessage = { member_id: MEMBER };
+  orderRow = { id: ORDER, email: 'acheteur@example.com', status: 'paid', activation_code: 'CODE1234' };
+  codeRow = { used: false };
 });
 afterEach(() => { vi.unstubAllEnvs(); });
 
@@ -201,6 +208,27 @@ describe('POST /api/admin/moderation — décisions', () => {
     expect((await (await post({ action: 'remove_photo', memberId: MEMBER, motif: 'Photo explicite' })).json()).memberNotified).toBe(false);
     memberRow = { id: MEMBER, name: 'Camille', email: null };
     expect((await (await post({ action: 'remove_photo', memberId: MEMBER, motif: 'Photo explicite' })).json()).memberNotified).toBe(false);
+  });
+
+  it('renvoyer un code d’activation : email à l’acheteur, tracé', async () => {
+    expect(await (await post({ action: 'resend_code', orderId: ORDER })).json())
+      .toEqual({ ok: true, memberNotified: null, reporterNotified: null, buyerNotified: true });
+    expect(mails()[0].to).toBe('acheteur@example.com');
+    expect(mails()[0].html).toContain('CODE1234');
+    expect(audits()[0]).toEqual(expect.objectContaining({
+      action: 'order.email_resent', metadata: expect.objectContaining({ by: 'clement@example.com', orderId: ORDER, sent: true }),
+    }));
+  });
+
+  it('code déjà utilisé → 409 ; commande inconnue ou non payée → 404 ; rien n’est envoyé', async () => {
+    codeRow = { used: true };
+    expect((await post({ action: 'resend_code', orderId: ORDER })).status).toBe(409);
+    codeRow = { used: false };
+    orderRow = { ...orderRow!, status: 'refunded' };
+    expect((await post({ action: 'resend_code', orderId: ORDER })).status).toBe(404);
+    orderRow = null;
+    expect((await post({ action: 'resend_code', orderId: ORDER })).status).toBe(404);
+    expect(mails()).toHaveLength(0);
   });
 
   it('profil inconnu → 404, rien n’est tracé', async () => {

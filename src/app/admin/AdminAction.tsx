@@ -51,6 +51,8 @@ export default function AdminAction({ label, payload, ask, notifyReporter = fals
         data.memberNotified === false ? 'Porteur non prévenu (pas d’adresse ou envoi impossible) : le prévenir à la main.' : '',
         data.reporterNotified === true  ? 'Auteur du signalement prévenu.' : '',
         data.reporterNotified === false ? 'Auteur du signalement non prévenu : pas d’email laissé, ou envoi impossible.' : '',
+        data.buyerNotified === true  ? 'Code renvoyé par email.' : '',
+        data.buyerNotified === false ? 'Code non envoyé : envoi impossible, réessayer plus tard.' : '',
       ].filter(Boolean).join(' '));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erreur.');

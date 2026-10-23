@@ -142,7 +142,10 @@ Détail : `docs/MONITORING.md`.
 - [ ] Modération : lire `docs/MODERATION.md` (délais, gestes, modèles
       d'email, autorités). `ADMIN_ALERT_EMAIL` sur une boîte lue chaque jour,
       notifications activées sur le téléphone. Accès à `/admin` :
-      `docs/MODERATION.md`, section 7.
+      `docs/MODERATION.md`, section 7. La page sert aussi au quotidien :
+      recherche d'un porteur ou d'une commande (renvoi du code d'activation),
+      chiffres du test terrain, commandes payées mais pas imprimées, codes
+      non utilisés après 7 jours.
 - [ ] Printful : notifications du compte activées (commande en attente,
       échec de paiement).
 - [ ] GitHub → Settings → Advanced Security (ou Code security) : activer les
