@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { requireAuth, isHttpError } from '@/lib/require-auth';
 import { checkAuthRateLimit, rateLimitHeaders } from '@/lib/ratelimit';
+import { reportError } from '@/lib/report-error';
 
 const MAX_SIZE = 5 * 1024 * 1024; // 5 Mo
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
@@ -88,7 +89,7 @@ export async function POST(req: NextRequest) {
       .upload(filePath, buffer, { contentType: realType, upsert: true });
 
     if (uploadError) {
-      console.error('[api/member/avatar]', uploadError.message);
+      reportError('api/member/avatar', uploadError.message);
       return NextResponse.json({ error: 'Erreur upload.' }, { status: 500 });
     }
 
@@ -106,7 +107,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true, photoUrl: publicUrl });
 
   } catch (err) {
-    console.error('[api/member/avatar]', err);
+    reportError('api/member/avatar', err);
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });
   }
 }

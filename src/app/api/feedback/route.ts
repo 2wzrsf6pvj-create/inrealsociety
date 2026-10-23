@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { checkPublicRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
+import { reportError } from '@/lib/report-error';
 
 const schema = z.object({
   type:      z.enum(['conversation', 'app']),
@@ -75,7 +76,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true });
 
   } catch (err) {
-    console.error('[api/feedback]', err);
+    reportError('api/feedback', err);
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });
   }
 }

@@ -21,6 +21,9 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { isAuthorizedCron } from '@/lib/cron-auth';
 import { fulfillOrder } from '@/lib/fulfillment';
 import { audit } from '@/lib/audit';
+import { reportError } from '@/lib/report-error';
+import * as Sentry from '@sentry/nextjs';
+import { FULFILLMENT_MONITOR } from '@/lib/cron-monitors';
 
 const BATCH_SIZE = 50;
 // Garde-fou anti-boucle : BATCH_SIZE × MAX_BATCHES = 5000 orders en attente / run.
@@ -32,6 +35,10 @@ export async function GET(req: NextRequest) {
   if (!isAuthorizedCron(req)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
+  // Sentry Crons : alerte si cette tâche ne passe pas, ou échoue.
+  const { slug, config } = FULFILLMENT_MONITOR;
+  const checkInId = Sentry.captureCheckIn({ monitorSlug: slug, status: 'in_progress' }, config);
+  const checkIn = (status: 'ok' | 'error') => Sentry.captureCheckIn({ checkInId, monitorSlug: slug, status });
 
   let checked = 0, fulfilled = 0, skipped = 0, failed = 0;
 
@@ -50,7 +57,8 @@ export async function GET(req: NextRequest) {
       .limit(BATCH_SIZE);
 
     if (error) {
-      console.error('[cron/fulfillment-reconcile]', error);
+      reportError('cron/fulfillment-reconcile', error);
+      checkIn('error');
       return NextResponse.json({ error: 'Erreur SQL.', checked, fulfilled, skipped, failed }, { status: 500 });
     }
     if (!orders || orders.length === 0) break;
@@ -104,7 +112,13 @@ export async function GET(req: NextRequest) {
         // result.ok && alreadyFulfilled : course avec un autre chemin → rien à faire.
       } catch (err) {
         failed++;
-        console.error('[cron/fulfillment-reconcile] exception', o.id, err);
+        reportError('cron/fulfillment-reconcile', err, { orderId: o.id });
+        // Alerte « argent » aussi : un t-shirt payé reste non envoyé.
+        audit({
+          action:   'order.fulfillment_failed',
+          ...(memberId ? { memberId } : {}),
+          metadata: { orderId: o.id, reason: 'exception', trigger: 'cron_reconcile' },
+        });
       }
     }
 
@@ -112,5 +126,7 @@ export async function GET(req: NextRequest) {
   }
 
   console.log('[cron/fulfillment-reconcile]', { checked, fulfilled, skipped, failed });
+  // La tâche a tourné : les commandes encore en échec ont chacune leur alerte.
+  checkIn('ok');
   return NextResponse.json({ ok: true, checked, fulfilled, skipped, failed });
 }

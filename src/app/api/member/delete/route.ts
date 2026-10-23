@@ -11,6 +11,7 @@ import { sendEmail, emailPremiumEnded } from '@/lib/email-templates';
 import { PREMIUM_SETTINGS_URL } from '@/lib/premium';
 import { formatDayFr } from '@/lib/dates';
 import Stripe from 'stripe';
+import { reportError } from '@/lib/report-error';
 
 export async function DELETE(req: NextRequest) {
   try {
@@ -161,7 +162,7 @@ export async function DELETE(req: NextRequest) {
     const piiResults = await Promise.all(piiOps);
     const piiFailed = piiResults.filter(r => r.error);
     if (piiFailed.length) {
-      console.error('[member/delete] Effacement PII non-cascade échoué:', piiFailed.map(r => r.error?.message));
+      reportError('member/delete', new Error(`Effacement PII non-cascade échoué : ${piiFailed.map(r => r.error?.message).join(' ; ')}`));
       return NextResponse.json(
         { error: 'La suppression n\'a pas pu être complétée entièrement. Réessayez.' },
         { status: 500 },
@@ -208,7 +209,7 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ ok: true });
 
   } catch (err) {
-    console.error('[member/delete]', err);
+    reportError('member/delete', err);
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });
   }
 }

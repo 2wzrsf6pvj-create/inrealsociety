@@ -17,6 +17,7 @@ import { getActiveConversationsCount } from '@/lib/inbox';
 import { notifyMemberSubscribers } from '@/lib/push-notify';
 import { captureServerEvent } from '@/lib/posthog-server';
 import { APP_URL } from '@/lib/constants';
+import { reportError } from '@/lib/report-error';
 
 const QUICK_REPLIES = new Set<string>(QUICK_REPLIES_LIST);
 
@@ -335,7 +336,7 @@ export async function POST(req: NextRequest) {
     return res;
 
   } catch (err) {
-    console.error('[api/message]', err);
+    reportError('api/message', err);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

@@ -3,6 +3,7 @@
 // Modifier le design ici = modifier tous les emails d'un coup.
 
 import crypto from 'crypto';
+import * as Sentry from '@sentry/nextjs';
 import { escapeHtml } from '@/lib/escape-html';
 import { maskLinks } from '@/lib/mask-links';
 import {
@@ -550,6 +551,27 @@ export function emailActivation(params: {
 /** Alerte à l'équipe (ADMIN_ALERT_EMAIL) : un porteur a signalé un message.
  *  `outcome` null = le signalement n'a pas pu être enregistré (voir les logs). */
 /** Ligne « libellé : valeur » des alertes à l'équipe (valeur déjà échappée). */
+/** Alerte à l'équipe (ADMIN_ALERT_EMAIL) : un échec qui touche l'argent, à
+ *  chaque occurrence (MONEY_ALERTS, audit.ts). */
+export function emailOpsAlert(params: {
+  title:   string;
+  todo:    string;
+  details: Record<string, string>;
+}): { subject: string; html: string } {
+  return {
+    subject: `Alerte : ${params.title}`,
+    html: layout(`
+      <h1 style="font-size:22px;font-weight:300;margin:0 0 16px;text-align:center;">${escapeHtml(params.title)}</h1>
+      <p style="font-family:system-ui,sans-serif;font-size:13px;color:rgba(255,255,255,0.7);text-align:center;line-height:1.8;margin:0 0 24px;">
+        ${escapeHtml(params.todo)}
+      </p>
+      <table role="presentation" style="width:100%;border-collapse:collapse;">
+        ${Object.entries(params.details).map(([k, v]) => alertRow(escapeHtml(k), escapeHtml(v))).join('')}
+      </table>
+    `),
+  };
+}
+
 function alertRow(label: string, value: string): string {
   return `
     <tr>
@@ -673,6 +695,18 @@ function retryDelayMs(res: Response | null, attempt: number): number {
 
 /** POST vers Resend, avec les nouveaux essais. `null` si rien n'est parti : la
  *  raison est dans les logs, jamais en exception. */
+/** Refus noté dans les logs ET dans Sentry, regroupé par raison : un quota
+ *  épuisé fait UNE alerte, pas une par email. Jamais d'adresse vers Sentry
+ *  (tiers) : celles que cite un message de Resend sont masquées. */
+function reportSendFailure(kind: string, reason: string): void {
+  console.error(`[sendEmail] ${reason}`);
+  Sentry.captureMessage(`Resend : ${kind}`, {
+    level:       'error',
+    fingerprint: ['resend', kind],
+    extra:       { reason: reason.replace(/[^\s@<>()]+@[^\s@<>()]+/g, '[email]') },
+  });
+}
+
 async function postToResend(
   url: string,
   payload: unknown,
@@ -686,6 +720,7 @@ async function postToResend(
   for (let attempt = 1; ; attempt++) {
     let res: Response | null = null;
     let reason: string;
+    let kind: string;
     try {
       res = await fetch(url, {
         method: 'POST',
@@ -700,16 +735,18 @@ async function postToResend(
       if (res.ok) return { data: await res.json().catch(() => null) };
       const error = await res.json().catch(() => null) as { name?: string; message?: string } | null;
       reason = [res.status, error?.name, error?.message].filter(Boolean).join(' ');
+      kind   = error?.name ?? `http_${res.status}`;
       const retryable = res.status >= 500 || (res.status === 429 && error?.name === 'rate_limit_exceeded');
       if (!retryable) {
-        console.error(`[sendEmail] refusé par Resend : ${reason}`);
+        reportSendFailure(kind, `refusé par Resend : ${reason}`);
         return null;
       }
     } catch (err) {
       reason = `Resend injoignable : ${err instanceof Error ? err.message : String(err)}`;
+      kind   = 'injoignable';
     }
     if (attempt >= SEND_ATTEMPTS) {
-      console.error(`[sendEmail] échec après ${SEND_ATTEMPTS} essais : ${reason}`);
+      reportSendFailure(kind, `échec après ${SEND_ATTEMPTS} essais : ${reason}`);
       return null;
     }
     await new Promise((resolve) => setTimeout(resolve, retryDelayMs(res, attempt)));
@@ -717,7 +754,7 @@ async function postToResend(
 }
 
 /** Envoie un email. `false` si rien n'est parti : la raison est toujours dans
- *  les logs (`[sendEmail]`), ne jamais l'attendre en exception. */
+ *  les logs (`[sendEmail]`) et dans Sentry, ne jamais l'attendre en exception. */
 export async function sendEmail(params: EmailParams): Promise<boolean> {
   return (await postToResend(RESEND_API_URL, apiEmail(params))) !== null;
 }

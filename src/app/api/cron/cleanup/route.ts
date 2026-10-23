@@ -13,6 +13,7 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { isAuthorizedCron } from '@/lib/cron-auth';
+import { reportError } from '@/lib/report-error';
 
 interface CleanupResult {
   audit_logs_deleted:         number;
@@ -37,7 +38,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ ok: true, deleted: result });
   } catch (err) {
-    console.error('[cron/cleanup]', err);
+    reportError('cron/cleanup', err);
     return NextResponse.json({ error: 'Erreur cleanup.' }, { status: 500 });
   }
 }

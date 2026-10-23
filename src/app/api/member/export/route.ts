@@ -25,6 +25,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { requireAuth, isHttpError } from '@/lib/require-auth';
 import { checkAuthRateLimit, rateLimitHeaders } from '@/lib/ratelimit';
 import { audit } from '@/lib/audit';
+import { reportError } from '@/lib/report-error';
 
 export async function GET(req: NextRequest) {
   try {
@@ -133,7 +134,7 @@ export async function GET(req: NextRequest) {
     });
 
   } catch (err) {
-    console.error('[member/export]', err);
+    reportError('member/export', err);
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });
   }
 }

@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { checkPublicRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
+import { reportError } from '@/lib/report-error';
 
 const schema = z.object({
   code: z.string().min(6).max(12).toUpperCase(),
@@ -43,7 +44,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ valid: true });
   } catch (err) {
-    console.error('[api/activate]', err);
+    reportError('api/activate', err);
     return NextResponse.json({ valid: false, error: 'Erreur serveur.' }, { status: 500 });
   }
 }

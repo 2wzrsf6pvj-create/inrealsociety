@@ -14,6 +14,7 @@ import { requireAuth, isHttpError } from '@/lib/require-auth';
 import { checkAuthRateLimit, rateLimitHeaders } from '@/lib/ratelimit';
 import { isActiveSubscriptionStatus } from '@/lib/subscription';
 import { activatePremium } from '@/lib/premium';
+import { reportError } from '@/lib/report-error';
 
 const BodySchema = z.object({
   // Même règle qu'à l'activation du profil : pas d'acceptation implicite.
@@ -42,12 +43,13 @@ export async function POST(req: NextRequest) {
 
     const priceId = process.env.STRIPE_PREMIUM_PRICE_ID;
     if (!priceId) {
-      console.error('[subscription/checkout] STRIPE_PREMIUM_PRICE_ID non défini');
+      reportError('subscription/checkout', new Error('STRIPE_PREMIUM_PRICE_ID non défini'));
       return NextResponse.json({ error: 'Configuration serveur manquante.' }, { status: 500 });
     }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL;
     if (!appUrl) {
+      reportError('subscription/checkout', new Error('NEXT_PUBLIC_APP_URL non défini'));
       return NextResponse.json({ error: 'Configuration serveur manquante.' }, { status: 500 });
     }
 
@@ -102,7 +104,7 @@ export async function POST(req: NextRequest) {
         .eq('id', member.id);
 
       if (updateErr) {
-        console.error('[subscription/checkout] Échec update customer_id:', updateErr);
+        reportError('subscription/checkout', updateErr, { step: 'Échec update customer_id' });
         return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });
       }
     }
@@ -130,7 +132,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ url: session.url });
 
   } catch (err) {
-    console.error('[subscription/checkout]', err);
+    reportError('subscription/checkout', err);
     return NextResponse.json({ error: 'Erreur serveur.' }, { status: 500 });
   }
 }

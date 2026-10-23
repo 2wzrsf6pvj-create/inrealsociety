@@ -7,6 +7,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { requireAuth, requireOwnership, isHttpError } from '@/lib/require-auth';
 import { audit } from '@/lib/audit';
 import { getIp, checkAuthRateLimit, rateLimitHeaders } from '@/lib/ratelimit';
+import { reportError } from '@/lib/report-error';
 
 const schema = z.object({
   messageId: z.string().uuid(),
@@ -51,7 +52,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true });
   } catch (err) {
-    console.error('[api/mark-read]', err);
+    reportError('api/mark-read', err);
     return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }

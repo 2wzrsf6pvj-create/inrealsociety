@@ -1,103 +1,74 @@
-# Monitoring — uptime, errors, alertes
+# Surveillance : erreurs, alertes, disponibilité
 
-## Stack actuelle
+Les logs Vercel ne sont gardés qu'une heure (offre Hobby) ou un jour (Pro) :
+Sentry sert de mémoire et d'alarme, l'email `ADMIN_ALERT_EMAIL` d'alarme
+directe pour ce qui touche l'argent, un moniteur externe de témoin de
+disponibilité.
 
-| Domaine | Outil | État |
+## 1. Ce qui part où
+
+| Événement | Sentry | Email à `ADMIN_ALERT_EMAIL` |
 |---|---|---|
-| Erreurs runtime | Sentry | ✅ configuré (instrumentation.ts, sentry.*.config.ts) |
-| Analytics produit | PostHog | ✅ configuré (consent-gated) |
-| Performance traces | Sentry + PostHog | ✅ tracesSampleRate 10 % en prod |
-| **Uptime externe** | _à configurer_ | ⚠️ Sentry détecte les erreurs, pas la dispo |
-| **Alertes Sentry** | _à router_ | ⚠️ Erreurs vues seulement en checkant le dashboard |
+| Erreur non rattrapée (route, page) | oui (`onRequestError`) | non |
+| Erreur rattrapée : route qui répond 500, échec dans une tâche planifiée | oui, `reportError`, tag `scope` | non |
+| Échec qui touche l'argent (section 2) | oui, tag `alerte=argent` | **oui, à chaque occurrence** |
+| Autre échec tracé dans l'audit (`*_failed`) | oui | non |
+| Refus de Resend (quota, débit, domaine, adresse) | oui, un problème par raison (`Resend : <raison>`) | non |
+| Tâche `fulfillment-reconcile` absente ou en échec | oui, Sentry Crons | non |
+| Message ou profil signalé | non | oui |
+| Supabase ou Upstash injoignable | non | non : `/api/health` répond 503 au moniteur externe |
 
----
+Aucune donnée personnelle ne part vers Sentry (ni email, ni IP, ni contenu).
+L'email d'alerte, interne, garde ce qui sert à agir (email de l'acheteur par
+exemple).
 
-## 1. Uptime monitoring (UptimeRobot ou BetterStack)
+## 2. Les échecs qui touchent l'argent
 
-Le projet expose `GET /api/health` qui retourne :
-```json
-{
-  "ok": true,
-  "checks": { "app": "ok", "supabase": "ok" },
-  "uptimeMs": 123456,
-  "timestamp": "2026-05-19T..."
-}
-```
-Status 200 si tout est OK, 503 si Supabase down.
+Définis dans `src/lib/audit.ts` (`MONEY_ALERTS`), chacun avec la marche à
+suivre, reprise dans l'email :
 
-### Setup UptimeRobot (gratuit, 50 monitors)
-
-1. Compte sur [uptimerobot.com](https://uptimerobot.com)
-2. New monitor → **HTTP(s)**
-3. URL : `https://inrealsociety.com/api/health`
-4. Interval : 5 min (free) ou 1 min (paid)
-5. Alert contacts : email + Slack/Discord webhook
-6. Optionnel : monitor secondaire sur `https://inrealsociety.com/` (homepage) pour catcher le cas où l'app boot mais Supabase est down (status 503)
-
-### Setup BetterStack (plus avancé)
-
-Free tier : 10 monitors, 30s interval, incidents tracking, status page publique.
-- [betterstack.com/uptime](https://betterstack.com/uptime)
-- Même URL `/api/health`
-- Activer la status page publique sur `status.inrealsociety.com` (sous-domaine CNAME)
-
----
-
-## 2. Alertes Sentry → Slack/Discord
-
-Par défaut, Sentry envoie un email à chaque issue. Pour router vers Slack/Discord :
-
-### Slack
-1. Dashboard Sentry → Settings → Integrations → Slack → "Add to Slack"
-2. Choisir le channel (ex. `#alertes-prod`)
-3. Créer une **Alert Rule** :
-   - Settings → Alerts → Create Alert
-   - **When** : "A new issue is created"
-   - **If** : `level:error` AND `environment:production`
-   - **Then** : Send a Slack notification to `#alertes-prod`
-4. Filtres conseillés pour ne pas spammer :
-   - Ignore `ZodError` (déjà géré côté API)
-   - Ignore `AbortError` (timeouts client normaux)
-   - Ignore les 4xx (déjà dans `ignoreErrors` de sentry.server.config.ts)
-
-### Discord
-- Créer un webhook Discord (Server Settings → Integrations → Webhooks)
-- Sentry → Settings → Integrations → Webhooks → ajouter l'URL Discord
-- Alert Rule similaire que Slack
-
-### Alertes recommandées spécifiques au projet
-
-| Trigger | Action |
+| Action d'audit | Ce qui s'est passé |
 |---|---|
-| `order.email_failed` (audit_logs) ≥ 1 en 1h | Slack — un client n'a pas reçu son code |
-| `order.fulfillment_failed` ≥ 1 en 1h | Slack — un t-shirt ne sera pas imprimé |
-| `subscription.payment_failed` ≥ 5 en 24h | Slack — pic anormal de cartes refusées |
-| Sentry P95 transaction > 3s | Slack — performance dégradée |
-| Lighthouse score (CI) < 80 | PR commenter |
+| `order.payment_unmatched` | Paiement reçu, aucune commande correspondante |
+| `order.email_missing` | Commande payée sans email : code non envoyé |
+| `order.email_failed` | Code d'activation non envoyé |
+| `order.fulfillment_failed` | T-shirt payé non transmis à Printful (nouvel essai chaque jour à 5 h UTC) |
+| `member.suspension_failed` | Remboursement : profil non suspendu |
+| `webhook.failed` | Webhook Stripe en échec (Stripe réessaie pendant 3 jours) |
 
-Ces audit_logs alerts nécessitent un job/cron qui interroge `audit_logs` et envoie sur Slack — pas implémenté côté code. **Action manuelle** : créer une vue Supabase et un Slack alert via Supabase Realtime / Postgres trigger.
+Une erreur de base pendant le traitement d'un paiement répond 500 : Stripe
+réessaie, au lieu de croire l'événement traité.
 
----
+## 3. Réglages
 
-## 3. Health dashboard interne
+1. **Sentry** : `NEXT_PUBLIC_SENTRY_DSN` sur Vercel. Les événements portent
+   l'environnement Vercel (`production`, `preview`, `development`) : filtrer
+   les alertes sur `production`.
+2. **Alerte « argent » dans Sentry** (en plus de l'email) : une règle d'alerte
+   sur les événements au tag `alerte` = `argent`, en `production`, avec la
+   condition de fréquence la plus basse proposée, pour être prévenu à chaque
+   occurrence. Par défaut, Sentry ne prévient qu'à l'apparition d'un nouveau
+   problème.
+3. **Sentry Crons** : le moniteur `fulfillment-reconcile` se crée au premier
+   passage de la tâche (Sentry → Crons). Vérifier qu'il prévient en cas de
+   passage manqué ou en échec. Une seule tâche surveillée : c'est la limite de
+   l'offre gratuite.
+4. **Disponibilité** : un moniteur externe gratuit (UptimeRobot, Better Stack)
+   sur `https://<domaine>/api/health`, toutes les 5 minutes. 200 attendu ; 503
+   si Supabase ou Upstash ne répondent pas (sans Upstash, scanner un QR
+   répond 500).
+5. **`ADMIN_ALERT_EMAIL`** : une boîte réellement lue.
+6. **Stripe** : en cas d'alerte `webhook.failed`, l'onglet *Failed* des
+   webhooks montre les livraisons en échec. Stripe désactive un point d'accès
+   qui échoue plusieurs jours de suite.
+7. **Printful** : notifications du compte activées (commande en attente,
+   échec de paiement Printful) : l'app ne les reçoit pas.
 
-Pour un coup d'œil rapide :
-- **Sentry** → Issues + Performance tabs
-- **PostHog** → Live events + Funnel "scan → upgrade"
-- **Supabase** → Reports → Database performance + Auth
-- **Stripe** → Payments + Subscriptions failed
-- **Resend** → Logs (bounces, complaints)
-- **Vercel** → Analytics + Logs
+## 4. Coups d'œil
 
-À terme, un dashboard unifié via Grafana ou Outerbase serait pertinent — pas urgent.
-
----
-
-## 4. Page de statut publique (optionnelle)
-
-Si tu veux montrer la dispo au public :
-- BetterStack offre une status page gratuite sur sous-domaine
-- Cachet.io alternative open-source self-hostable
-- Ou intégrer un widget sur `inrealsociety.com/status` (composant client qui ping `/api/health`)
-
-Pas critique tant que le service est stable.
+- **Sentry** : *Issues* (filtre `environment:production`), *Crons*.
+- **Stripe** : paiements, abonnements, webhooks.
+- **Resend** : *Emails* (rebonds, plaintes) ; Google Postmaster Tools pour
+  Gmail (`EMAIL_DELIVERABILITY.md`).
+- **Supabase** : *Reports*, table `audit_logs`.
+- **Vercel** : *Logs* (courte durée), *Cron Jobs*.

@@ -104,8 +104,9 @@ heure ; relever si besoin.
   à Resend. À garder sous 0,1 %, jamais 0,3 %.
 - **Resend → Emails** : rebonds et plaintes. Resend bloque d'office ces
   adresses pour tout le compte (liste de suppression).
-- **Logs Vercel** : chaque refus de Resend est noté `[sendEmail]`, avec sa
-  raison : quota, débit, domaine non vérifié, adresse invalide.
+- **Sentry et logs Vercel** : chaque refus de Resend est noté `[sendEmail]`,
+  avec sa raison (quota, débit, domaine non vérifié, adresse invalide), et
+  remonte dans Sentry, un problème par raison (`MONITORING.md`).
 
 ## 7. Ce que l'app fait déjà
 

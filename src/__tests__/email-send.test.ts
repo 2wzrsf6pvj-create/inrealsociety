@@ -15,6 +15,9 @@ import {
 import { maskLinks, LINK_PLACEHOLDER } from '@/lib/mask-links';
 import { CONTACT_EMAIL } from '@/lib/constants';
 
+const sentry = vi.hoisted(() => ({ captureMessage: vi.fn() }));
+vi.mock('@sentry/nextjs', () => sentry);
+
 type Call = { url: string; headers: Record<string, string>; body: unknown };
 const calls: Call[] = [];
 let replies: Array<Response | Error> = [];
@@ -23,6 +26,7 @@ const json = (status: number, body: unknown, headers: Record<string, string> = {
   new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', ...headers } });
 
 beforeEach(() => {
+  sentry.captureMessage.mockClear();
   calls.length = 0;
   replies = [];
   vi.useFakeTimers();
@@ -87,6 +91,25 @@ describe('sendEmail', () => {
     expect(await settle(sendEmail(EMAIL))).toBe(false);
     expect(calls).toHaveLength(1);
     expect(logged()).toContain(`${status} ${name} refus`);
+  });
+
+  it('refus signalé à Sentry, regroupé par raison, sans adresse', async () => {
+    replies = [json(403, { name: 'validation_error', message: 'You can only send testing emails to your own email address (moi@exemple.fr).' })];
+    await settle(sendEmail(EMAIL));
+    expect(sentry.captureMessage).toHaveBeenCalledTimes(1);
+    const [message, options] = sentry.captureMessage.mock.calls[0];
+    expect(message).toBe('Resend : validation_error');
+    expect(options.fingerprint).toEqual(['resend', 'validation_error']);
+    expect(options.extra.reason).toContain('([email])');
+    expect(JSON.stringify(options)).not.toContain('@');
+  });
+
+  it('quota épuisé sur plusieurs emails : un seul problème Sentry (même empreinte)', async () => {
+    replies = [json(429, { name: 'daily_quota_exceeded' }), json(429, { name: 'daily_quota_exceeded' })];
+    await settle(sendEmail(EMAIL));
+    await settle(sendEmail(EMAIL));
+    const prints = sentry.captureMessage.mock.calls.map((c) => c[1].fingerprint.join('/'));
+    expect(prints).toEqual(['resend/daily_quota_exceeded', 'resend/daily_quota_exceeded']);
   });
 
   it('ne lève jamais d’exception, même Resend injoignable à chaque essai', async () => {
