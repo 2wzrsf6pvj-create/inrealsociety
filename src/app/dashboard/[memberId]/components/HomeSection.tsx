@@ -212,12 +212,14 @@ function ActivationGuide({ member }: { member: Member }) {
 
 // ─── Stats Block ──────────────────────────────────────────────────────────────
 
-function StatNumber({ value, label }: { value: number; label: string }) {
+function StatNumber({ value, label, spoken }: { value: number; label: string; spoken: string }) {
   const display = useCountUp(value);
   return (
     <div className="flex flex-col items-center gap-1">
-      <span className="font-display text-3xl md:text-4xl font-light tabular-nums">{display}</span>
-      <span className="font-ui text-xxs text-brand-gray/55 tracking-[0.12em] uppercase text-center leading-tight">{label}</span>
+      <span aria-hidden="true" className="font-display text-3xl md:text-4xl font-light tabular-nums">{display}</span>
+      <span aria-hidden="true" className="font-ui text-xxs text-brand-gray/55 tracking-[0.12em] uppercase text-center leading-tight">{label}</span>
+      {/* Lecteurs d'écran : la valeur finale, en phrase (pas le décompte animé). */}
+      <span className="sr-only">{spoken}</span>
     </div>
   );
 }
@@ -243,10 +245,11 @@ function StatsBlock({ member, weekScans, conversations }: { member: Member; week
 
   // Valeur d'abord (conversations = rencontres réelles, hors bloquées), scans
   // ensuite (portée).
+  const plural = (n: number) => (n > 1 ? 's' : '');
   const stats = [
-    { value: conversations,                 label: 'Conversations' },
-    { value: member.scan_count,             label: 'Scans' },
-    { value: weekScans,                     label: '7 jours' },
+    { value: conversations,                 label: 'Conversations', spoken: `${conversations} conversation${plural(conversations)}` },
+    { value: member.scan_count,             label: 'Scans',         spoken: `${member.scan_count} scan${plural(member.scan_count)} au total` },
+    { value: weekScans,                     label: '7 jours',       spoken: `${weekScans} scan${plural(weekScans)} ces 7 derniers jours` },
   ];
 
   return (
@@ -254,7 +257,7 @@ function StatsBlock({ member, weekScans, conversations }: { member: Member; week
       {stats.map((s, i) => (
         <React.Fragment key={s.label}>
           {i > 0 && <div className="w-px self-center h-8 bg-brand-gray/10" />}
-          <StatNumber value={s.value} label={s.label} />
+          <StatNumber value={s.value} label={s.label} spoken={s.spoken} />
         </React.Fragment>
       ))}
     </div>
@@ -345,13 +348,13 @@ export default function HomeSection({ member, recentScans, scansByDay = [], week
               {member.photo_url ? (
                 <Image src={member.photo_url} alt={`Photo de ${member.name}`} width={40} height={40} className="w-full h-full object-cover" />
               ) : (
-                <span className="font-display text-base font-light text-brand-gray/50">{getInitials(member.name)}</span>
+                <span aria-hidden="true" className="font-display text-base font-light text-brand-gray/50">{getInitials(member.name)}</span>
               )}
             </div>
           </div>
           <div className="flex flex-col gap-0.5">
-            <p className="font-ui text-sm font-medium tracking-[0.2em]">
-              {member.name.toUpperCase()}
+            <p className="font-ui text-sm font-medium tracking-[0.2em] uppercase">
+              {member.name}
               {member.plan === 'premium' && <span role="img" aria-label="Membre premium" className="ml-1.5 text-[#C5A059]/85">✦</span>}
             </p>
             <p className="font-ui text-xs text-brand-gray/50">

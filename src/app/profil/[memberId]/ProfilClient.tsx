@@ -240,7 +240,7 @@ export default function ProfilClient({
                 />
               ) : (
                 <div className="flex flex-col items-center gap-1">
-                  <span className="font-display text-3xl font-light text-brand-gray/50 tracking-wider leading-none">
+                  <span aria-hidden="true" className="font-display text-3xl font-light text-brand-gray/50 tracking-wider leading-none">
                     {getInitials(member.name)}
                   </span>
                   <div className="w-8 h-px bg-brand-gray/20" />
@@ -249,8 +249,8 @@ export default function ProfilClient({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <p className="font-ui text-sm font-medium tracking-[0.25em] text-brand-white/80">
-              {member.name.toUpperCase()}
+            <p className="font-ui text-sm font-medium tracking-[0.25em] uppercase text-brand-white/80">
+              {member.name}
             </p>
             {member.plan === 'premium' && (
               <span role="img" aria-label="Membre premium" className="font-ui text-xs text-[#C5A059]/85" title="Membre premium">✦</span>

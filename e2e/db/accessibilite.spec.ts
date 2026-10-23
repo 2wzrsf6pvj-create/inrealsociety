@@ -64,9 +64,14 @@ test('le passant : profil, message, conversation, en mode sombre et en plein sol
 
     await page.goto(`/profil/${wearer.memberId}`);
     await expectAccessible(page, page.getByRole('link', { name: 'Lui envoyer un message' }), `profil${mode}`);
+    // Prénom en capitales par le style seulement : le texte lu reste
+    // « Camille », pas une suite de lettres à épeler.
+    await expect(page.getByText(wearer.name.toUpperCase(), { exact: true })).toHaveCount(0);
 
     await page.goto(`/message?to=${wearer.memberId}&name=${wearer.name}`);
     await expectAccessible(page, page.getByRole('heading', { level: 1, name: 'Un signal discret.' }), `message${mode}`);
+    // Titre annoncé à l'arrivée sur la page.
+    await expect(page).toHaveTitle('Envoyer un message — In Real Society');
 
     await page.goto(`/conversation/${wearer.conversation}`);
     await expectAccessible(page, page.getByLabel('Votre message'), `conversation${mode}`);
@@ -132,6 +137,9 @@ test('boutique : le guide des tailles s’ouvre en fenêtre, Échap le ferme et 
 
 test('le porteur : « Mon espace », sa conversation, et le lien « Mon espace » nommé comme affiché', async ({ browser }) => {
   const wearer = wearerWithConversation('Hugo');
+  // Deux scans cette semaine : les chiffres de l'accueil s'affichent.
+  sql(`INSERT INTO scans (member_id, scanned_at) VALUES ('${wearer.memberId}', now() - interval '1 hour'), ('${wearer.memberId}', now() - interval '2 days')`);
+  sql(`UPDATE members SET scan_count = 2 WHERE id = '${wearer.memberId}'`);
   const context = await newContext(browser, { viewport: PHONE });
   await logIn(context, wearer);
   const page = await context.newPage();
@@ -139,6 +147,9 @@ test('le porteur : « Mon espace », sa conversation, et le lien « Mon espace �
 
   await page.goto('/dashboard');
   await expectAccessible(page, page.getByRole('heading', { level: 1, name: new RegExp(`^Bienvenue\\s*${wearer.name}\\.$`) }), 'mon espace (accueil)');
+  // Les chiffres se lisent comme des phrases, avec leur valeur finale.
+  await expect(page.getByText('2 scans au total')).toBeAttached();
+  await expect(page.getByText('2 scans ces 7 derniers jours')).toBeAttached();
   await page.goto('/dashboard?tab=inbox');
   await expectAccessible(page, page.getByRole('tab', { name: /Messages/, selected: true }), 'mon espace (messages)');
   await page.goto('/dashboard?tab=settings');

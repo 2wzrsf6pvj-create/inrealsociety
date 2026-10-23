@@ -187,3 +187,5 @@ En mode test Stripe (carte `4242 4242 4242 4242`) :
 - [ ] Signaler ce message : une alerte arrive à `ADMIN_ALERT_EMAIL`. Même chose
       avec « Signaler ce profil ».
 - [ ] Rembourser la commande dans Stripe : le profil est suspendu.
+- [ ] Écouter le parcours du passant au lecteur d'écran (VoiceOver ou
+      TalkBack), 10 minutes : [ESSAI_LECTEUR_ECRAN.md](ESSAI_LECTEUR_ECRAN.md).
