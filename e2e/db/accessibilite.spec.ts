@@ -85,7 +85,9 @@ test('plein soleil : le contour de focus reste visible sur le fond clair', async
   // Au clavier, jusqu'au bouton principal.
   for (let i = 0; i < 10 && !(await link.evaluate((el) => el === document.activeElement)); i++) await page.keyboard.press('Tab');
   await expect(link).toBeFocused();
-  expect(await link.evaluate((el) => getComputedStyle(el).outlineColor)).toBe('rgba(0, 0, 0, 0.75)');
+  // Le lien a une transition (transition-all) : au moment du focus, le contour
+  // part encore de la couleur du texte ; on attend sa couleur finale.
+  await expect.poll(() => link.evaluate((el) => getComputedStyle(el).outlineColor)).toBe('rgba(0, 0, 0, 0.75)');
   await context.close();
 });
 
@@ -180,7 +182,9 @@ test('présentation de « Mon espace » : une fenêtre, le focus y reste, Échap
 
   await page.keyboard.press('Escape');
   await expect(dialog).toHaveCount(0);
-  expect(await page.evaluate(() => localStorage.getItem('irs_onboarding_v1'))).toBe('1');
+  // Le drapeau est écrit à l'événement « close », que le navigateur déclenche
+  // juste après avoir fermé la fenêtre (tâche suivante).
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('irs_onboarding_v1'))).toBe('1');
   await context.close();
 });
 
