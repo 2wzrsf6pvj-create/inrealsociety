@@ -277,6 +277,7 @@ function LogoutButton() {
     // du prochain visiteur seraient attribués à ce membre (distinct_id persisté).
     resetIdentity();
     sessionStorage.removeItem('just_logged_in');
+    // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- rechargement complet voulu : efface l'état client
     window.location.href = '/auth/login';
   };
 
@@ -332,6 +333,7 @@ function DeleteAccountButton() {
     try {
       const res = await fetch('/api/member/delete', { method: 'DELETE' });
       if (res.ok) {
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- rechargement complet voulu : efface l'état client
         window.location.href = '/';
         return;
       }

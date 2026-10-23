@@ -76,6 +76,7 @@ function NotificationsPrompt({ memberId }: { memberId: string }) {
 
   React.useEffect(() => {
     if (typeof window === 'undefined' || !('Notification' in window) || !('serviceWorker' in navigator)) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- permission connue du navigateur seulement
     if (Notification.permission === 'default') setState('idle');
   }, []);
 

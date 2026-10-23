@@ -39,6 +39,7 @@ function SuccessContent() {
   };
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- sans session Stripe dans l'URL, rien à attendre
     if (!sessionId) { setStatus('error'); return; }
     captureEvent('purchase_success_viewed');
     // L'achat est fait → le parrainage est consommé. On purge le ref pour qu'il

@@ -51,6 +51,20 @@ test.describe('Pages publiques', () => {
     const banner = page.locator('text=cookies de mesure');
     await expect(banner).toBeVisible({ timeout: 5000 });
   });
+
+  test('ConsentBanner : dans le HTML serveur, masqué au rechargement après un choix', async ({ page, request }) => {
+    // Rendu côté serveur : visible sans attendre le JavaScript.
+    expect(await (await request.get('/faq')).text()).toContain('data-consent-banner');
+    await page.goto('/faq');
+    const banner = page.locator('[data-consent-banner]');
+    await expect(banner).toBeVisible();
+    await page.getByRole('button', { name: 'Refuser' }).click();
+    await expect(banner).toHaveCount(0);
+    // Toujours dans le HTML, mais masqué avant l'affichage (html.consent-set).
+    await page.reload();
+    await expect(banner).toHaveCount(1);
+    await expect(banner).toBeHidden();
+  });
 });
 
 test.describe('Pages protégées (redirect login attendu sans auth)', () => {

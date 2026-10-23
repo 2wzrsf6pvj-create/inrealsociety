@@ -10,6 +10,9 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Bandeau de consentement : masqué avant le paint si un choix existe (layout). */
+html.consent-set [data-consent-banner] { display: none; }
+
 /* ─────────────────────────────────────────
    Grain / texture — film grain subtil sur le fond noir.
    Donne de la matière (feel "drop"/premium) sans salir le contenu. Statique

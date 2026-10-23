@@ -43,13 +43,6 @@ function useCodeValidation(initialCode: string) {
   // dès 6 (3 appels pour un code de 8, consommant le rate-limit). On debounce.
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    if (initialCode) {
-      setCode(initialCode);
-      if (initialCode.length >= 6) validate(initialCode);  // depuis l'URL : direct
-    }
-  }, [initialCode]);
-
   useEffect(() => () => { if (debounceRef.current) clearTimeout(debounceRef.current); }, []);
 
   const validate = async (val: string) => {
@@ -63,6 +56,15 @@ function useCodeValidation(initialCode: string) {
     } catch { setCodeErr('Erreur de validation.'); setCodeOk(false); }
     setChecking(false);
   };
+
+  // Déclaré après validate, qu'il appelle.
+  useEffect(() => {
+    if (initialCode) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- le code de l'URL peut changer sans remonter la page
+      setCode(initialCode);
+      if (initialCode.length >= 6) validate(initialCode);  // depuis l'URL : direct
+    }
+  }, [initialCode]);
 
   const handleChange = (val: string) => {
     const v = val.toUpperCase().replace(/[^A-Z0-9]/g, '');
@@ -167,6 +169,7 @@ function StepAccount({ onNext, codeState }: {
   useEffect(() => {
     const saved = recallCheckoutEmail();
     if (!saved) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- email mémorisé au paiement, lu après l'hydratation
     setEmail(saved);
     setPrefilled(true);
   }, []);

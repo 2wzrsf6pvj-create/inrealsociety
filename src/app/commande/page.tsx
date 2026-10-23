@@ -63,6 +63,7 @@ function CommandeContent() {
   // Auto-lookup si un code est passé en query (depuis /shop/success ou l'email).
   useEffect(() => {
     const c = searchParams.get('code');
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- recherche lancée pour le code passé dans l'URL
     if (c) lookup(c);
   }, [searchParams, lookup]);
 

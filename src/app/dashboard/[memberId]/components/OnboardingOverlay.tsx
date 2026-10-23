@@ -32,6 +32,7 @@ export default function OnboardingOverlay({ name }: { name?: string }) {
 
   // Lu en effet (pas au render) → pas de mismatch d'hydratation.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- localStorage, lu après l'hydratation
     try { if (!localStorage.getItem(KEY)) setOpen(true); } catch { /* no-op */ }
   }, []);
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
@@ -73,6 +73,9 @@ function isIOS(): boolean {
   return /iPad|iPhone|iPod/.test(navigator.userAgent) && !('MSStream' in window);
 }
 
+// Rien à écouter : la valeur ne change pas pendant la visite.
+const noSubscribe = () => () => {};
+
 function isStandalonePWA(): boolean {
   if (typeof window === 'undefined') return false;
   return window.matchMedia('(display-mode: standalone)').matches
@@ -86,8 +89,8 @@ function PushPrompt({ pushAsked, pushGranted, pushLoading, onSubscribe, hasConta
   onSubscribe: () => void;
   hasContact: boolean;
 }) {
-  const [iosNotPwa, setIosNotPwa] = useState(false);
-  useEffect(() => { setIosNotPwa(isIOS() && !isStandalonePWA()); }, []);
+  // false au rendu serveur et pendant l'hydratation, puis la vraie valeur.
+  const iosNotPwa = useSyncExternalStore(noSubscribe, () => isIOS() && !isStandalonePWA(), () => false);
 
   if (pushAsked) {
     if (pushGranted) {

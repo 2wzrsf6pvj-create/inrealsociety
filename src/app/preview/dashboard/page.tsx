@@ -27,6 +27,7 @@ export default async function PreviewDashboardPage(
 
   const empty = searchParams?.empty === '1';
   const free  = searchParams?.plan === 'free';
+  // eslint-disable-next-line react-hooks/purity -- page de démonstration : l'heure du rendu est voulue
   const now = Date.now();
   const ago = (ms: number) => new Date(now - ms).toISOString();
   const H = 3_600_000, D = 24 * H;
@@ -72,6 +73,7 @@ export default async function PreviewDashboardPage(
 
   const totalConversations = messages.length;
   const activeConversations = messages.filter(m => !m.blocked_at).length;
+  // eslint-disable-next-line react-hooks/purity -- page de démonstration : l'heure du rendu est voulue
   const recentConversations = messages.filter(m => !m.blocked_at && Date.parse(m.created_at) > Date.now() - CONVERSATION_WINDOW_DAYS * D).length;
   const unreadCount = messages.filter(m => !m.read_at && !m.blocked_at).length;
 
