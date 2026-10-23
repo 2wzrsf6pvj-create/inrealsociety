@@ -10,8 +10,10 @@ export const APP_URL =
 export const EMAIL_FROM =
   process.env.EMAIL_FROM || 'In Real Society <noreply@mail.inrealsociety.com>';
 
-/** URL de l'API Resend */
-export const RESEND_API_URL = 'https://api.resend.com/emails';
+/** URL de l'API Resend. Remplaçable par l'environnement : les E2E la pointent sur
+ *  leur passerelle locale, qui garde les emails au lieu de les envoyer (cf.
+ *  e2e/db). Jamais définie en production. */
+export const RESEND_API_URL = process.env.RESEND_API_URL || 'https://api.resend.com/emails';
 
 // ─── Premium ─────────────────────────────────────────────────────────────────
 
