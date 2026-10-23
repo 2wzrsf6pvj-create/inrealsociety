@@ -532,7 +532,11 @@ describe.skipIf(!ENABLED)('Signalements : un appareil signalé par 3 porteurs es
       body:   { memberId: wearers[3].memberId, content: 'Belle audace.' },
       cookie: `irs_sender=${device}`,
     }));
-    expect(res.status).toBe(403);   // même réponse que « indisponible » : le ban n'est pas révélé
+    expect(res.status).toBe(403);
+    // Dit clairement, avec la raison et le recours (choix de Clément, DSA art. 17).
+    const data = await res.json();
+    expect(data.code).toBe('banned');
+    expect(data.error).toContain('CGV, article 9');
     expect(sql(`SELECT count(*) FROM messages WHERE member_id = '${wearers[3].memberId}'`)).toBe('0');
   });
 });

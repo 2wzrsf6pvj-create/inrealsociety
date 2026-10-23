@@ -17,7 +17,7 @@ function getInitials(name: string): string {
 import { SCAN_WINDOW_MS } from '@/lib/constants';
 import type { MemberPlan } from '@/lib/types';
 import { BrandMark } from '@/app/components/ui/BrandMark';
-import ReportProfile from './ReportProfile';
+import ReportProfile from '@/app/components/ReportProfile';
 
 function useCountdown(firstScanAt: string | null, plan?: MemberPlan) {
   const safePlan = (plan === 'premium' ? 'premium' : 'free') as keyof typeof SCAN_WINDOW_MS;

@@ -6,6 +6,8 @@
 //
 // Sans clé, on garde le comportement historique (regex sur liste de mots).
 
+import { CONTACT_EMAIL } from '@/lib/constants';
+
 // Fallback regex — liste haute précision (OpenAI gère le contexte/la nuance).
 // Stockés SANS accent : le contenu est dé-accentué (NFD) avant comparaison.
 // Volontairement exclus car légitimes dans un contexte de rencontre :
@@ -82,4 +84,36 @@ export async function moderateContent(content: string): Promise<ModerationResult
   }
 
   return { flagged: regexCheck(content), source: 'regex', categories: [] };
+}
+
+// ─── Textes publics du profil ─────────────────────────────────────────────────
+// Prénom, présentation et compte Instagram du porteur s'affichent à quiconque
+// scanne le t-shirt : même filtre que les messages avant publication (choix de
+// Clément). Un texte jugé abusif n'est pas enregistré ; le porteur le modifie.
+
+export type ProfileTextField = 'name' | 'pitch' | 'instagram';
+
+const PROFILE_REFUSAL: Record<ProfileTextField, string> = {
+  name:      'Ce prénom n’a pas été enregistré',
+  pitch:     'Cette présentation n’a pas été enregistrée',
+  instagram: 'Ce compte Instagram n’a pas été enregistré',
+};
+
+/** Message au porteur : décision automatique, règle appliquée et recours,
+ *  comme le demande le règlement européen sur les services numériques (art. 17). */
+export function profileRefusalMessage(field: ProfileTextField): string {
+  return `${PROFILE_REFUSAL[field]} : notre outil de modération automatique a jugé ce texte contraire à nos règles (CGV, article 9). Modifiez-le ; en cas d’erreur, écrivez à ${CONTACT_EMAIL}.`;
+}
+
+/** Premier champ jugé abusif, dans l'ordre donné, ou null. Les champs absents
+ *  ou vides ne sont pas analysés. */
+export async function moderateProfileFields(
+  fields: Partial<Record<ProfileTextField, string | null | undefined>>,
+): Promise<{ field: ProfileTextField; result: ModerationResult } | null> {
+  const texts = (Object.entries(fields) as Array<[ProfileTextField, string | null | undefined]>)
+    .filter((entry): entry is [ProfileTextField, string] => typeof entry[1] === 'string' && entry[1].trim() !== '');
+  const results = await Promise.all(
+    texts.map(async ([field, text]) => ({ field, result: await moderateContent(text) })),
+  );
+  return results.find((r) => r.result.flagged) ?? null;
 }

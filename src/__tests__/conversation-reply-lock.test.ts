@@ -30,6 +30,7 @@ vi.mock('@/lib/realtime-broadcast', () => ({ broadcastThreadMessage: vi.fn() }))
 import { POST } from '@/app/api/conversation/reply/route';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { getSenderToken } from '@/lib/sender-token';
+import { isBlocked, isDeviceBanned } from '@/lib/blocks';
 
 const UUID = '11111111-1111-4111-8111-111111111111';
 
@@ -63,5 +64,29 @@ describe('POST /api/conversation/reply — verrou anti-imposture scanneur', () =
     const res = await POST(makeReq({ messageId: UUID, content: 'salut', author: 'scanner' }));
     expect(res.status).toBe(403);
     expect((await res.json()).code).toBe('wrong_device');
+  });
+});
+
+describe('POST /api/conversation/reply — appareil bloqué ou banni', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    wireRoot('TOKEN_ORIGINE');
+    (getSenderToken as ReturnType<typeof vi.fn>).mockReturnValue('TOKEN_ORIGINE');
+  });
+
+  it('bloqué par le porteur → « conversation close », sans révéler le blocage', async () => {
+    (isBlocked as ReturnType<typeof vi.fn>).mockResolvedValueOnce(true);
+    const res = await POST(makeReq({ messageId: UUID, content: 'salut', author: 'scanner' }));
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({ error: 'Cette conversation est close.', code: 'blocked' });
+  });
+
+  it('banni de la plateforme → dit clairement, avec la règle et le recours', async () => {
+    (isDeviceBanned as ReturnType<typeof vi.fn>).mockResolvedValueOnce(true);
+    const res = await POST(makeReq({ messageId: UUID, content: 'salut', author: 'scanner' }));
+    expect(res.status).toBe(403);
+    const data = await res.json();
+    expect(data.code).toBe('banned');
+    expect(data.error).toContain('CGV, article 9');
   });
 });

@@ -7,6 +7,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { requireAuth, isHttpError } from '@/lib/require-auth';
 import { checkAuthRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
 import { audit } from '@/lib/audit';
+import { moderateProfileFields, profileRefusalMessage } from '@/lib/moderation';
 import { reportError } from '@/lib/report-error';
 
 const schema = z.object({
@@ -66,6 +67,29 @@ export async function PATCH(req: NextRequest) {
       updateData.marketing_consent_at = new Date().toISOString();
     } else if (body.data.marketing_consent === false) {
       updateData.marketing_consent_at = null;
+    }
+
+    // Textes publics (prénom, présentation, Instagram) : filtrés comme les
+    // messages. Seuls les champs modifiés sont analysés : un texte déjà en ligne
+    // ne bloque pas un autre réglage.
+    const changed = (field: 'name' | 'pitch' | 'instagram') =>
+      typeof updateData[field] === 'string' && updateData[field] !== member[field]
+        ? updateData[field] as string
+        : undefined;
+    const refused = await moderateProfileFields({
+      name: changed('name'), pitch: changed('pitch'), instagram: changed('instagram'),
+    });
+    if (refused) {
+      audit({
+        action:   'profile.moderated',
+        memberId: member.id,
+        ip:       getIp(req),
+        metadata: { field: refused.field, source: refused.result.source, categories: refused.result.categories },
+      });
+      return NextResponse.json(
+        { error: profileRefusalMessage(refused.field), code: 'moderated', field: refused.field },
+        { status: 400 },
+      );
     }
 
     const { error: updateError } = await supabaseAdmin

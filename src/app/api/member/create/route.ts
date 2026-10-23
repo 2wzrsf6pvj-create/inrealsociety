@@ -9,6 +9,7 @@ import { checkAuthRateLimit, rateLimitHeaders } from '@/lib/ratelimit';
 import { generateUniqueShortCode } from '@/lib/short-code';
 import { fulfillOrder, orderQrStoragePath } from '@/lib/fulfillment';
 import { audit } from '@/lib/audit';
+import { moderateProfileFields, profileRefusalMessage } from '@/lib/moderation';
 import { sendEmail, emailBienvenue } from '@/lib/email-templates';
 import { APP_URL } from '@/lib/constants';
 import { reportError } from '@/lib/report-error';
@@ -46,6 +47,20 @@ export async function POST(req: NextRequest) {
     }
 
     const { name, pitch, instagram, activationCode } = body.data;
+
+    // Textes publics du profil : filtrés comme les messages, AVANT de consommer
+    // le code d'activation (le porteur corrige et renvoie).
+    const refused = await moderateProfileFields({ name, pitch, instagram });
+    if (refused) {
+      audit({
+        action:   'profile.moderated',
+        metadata: { field: refused.field, source: refused.result.source, categories: refused.result.categories, step: 'create' },
+      });
+      return NextResponse.json(
+        { error: profileRefusalMessage(refused.field), code: 'moderated', field: refused.field },
+        { status: 400 },
+      );
+    }
 
     // ─── Récupère la commande liée AVANT de créer le membre ────────────────
     // Deux infos y sont clés :

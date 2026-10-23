@@ -62,8 +62,19 @@ export const PREMIUM_PERKS = [
  *  pages qui définissent leur propre `openGraph` : elles n'en héritent pas. */
 export const OG_IMAGE = { url: '/opengraph-image', width: 1200, height: 630, alt: 'In Real Society' };
 
-/** Adresse de contact (rétractation, support). */
+/** Adresse de contact (rétractation, support, modération). */
 export const CONTACT_EMAIL = 'hello@inrealsociety.com';
+
+/** Message refusé par le filtre automatique : ce qui est dit à son auteur. Le
+ *  règlement européen sur les services numériques (art. 17) demande d'indiquer
+ *  la décision automatique, la règle appliquée et le recours. */
+export const MODERATION_REFUSAL_NOTICE =
+  `Notre outil de modération automatique l’a jugé contraire à nos règles (CGV, article 9) : menaces, harcèlement, insultes, contenus sexuels ou haineux. Reformulez-le ; en cas d’erreur, écrivez à ${CONTACT_EMAIL}.`;
+
+/** Appareil banni (signalements, ou décision de l'équipe) : la décision, sa
+ *  raison et le recours lui sont dits clairement (choix de Clément, art. 17). */
+export const BANNED_DEVICE_NOTICE =
+  `Des messages envoyés depuis cet appareil ont été signalés et jugés contraires à nos règles (CGV, article 9) : il ne peut plus écrire sur In Real Society. Pour contester cette décision, écrivez à ${CONTACT_EMAIL}.`;
 
 /** Un appareil (sender_token) signalé par ce nombre de porteurs DIFFÉRENTS est
  *  banni automatiquement de toute la plateforme (banned_devices). Plusieurs

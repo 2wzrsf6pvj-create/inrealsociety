@@ -7,6 +7,7 @@ import { captureEvent } from '@/lib/posthog-client';
 import { isValidEmail, isInstagramHandle, isValidFirstName } from '@/lib/validators';
 import { haptic } from '@/lib/haptics';
 import SunToggle from '@/app/components/ui/SunToggle';
+import { BANNED_DEVICE_NOTICE, MODERATION_REFUSAL_NOTICE } from '@/lib/constants';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -63,6 +64,7 @@ function MessageForm() {
   const [sending, setSending]     = useState(false);
   const [error, setError]         = useState('');
   const [moderated, setModerated] = useState(false);
+  const [banned, setBanned]       = useState(false);
   const [expired, setExpired]     = useState(false);
   const [windowHours, setWindowHours] = useState(24);
   const [limitReached, setLimitReached] = useState(false);
@@ -140,6 +142,10 @@ function MessageForm() {
         if (data.code === 'paused') {
           captureEvent('message_blocked_paused', { member_id: memberId });
           setUnavailable(true); setSending(false); return;
+        }
+        if (data.code === 'banned') {
+          captureEvent('message_blocked_banned', { member_id: memberId });
+          setBanned(true); setSending(false); return;
         }
         if (data.code === 'already_messaged') {
           captureEvent('message_blocked_already_messaged', { member_id: memberId });
@@ -249,6 +255,23 @@ function MessageForm() {
     );
   }
 
+  if (banned) {
+    return (
+      <div className="flex flex-col items-center gap-6 text-center animate-stagger-1">
+        <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
+        <p className="font-display text-2xl font-light">Vous ne pouvez plus écrire.</p>
+        <p className="font-ui text-sm text-brand-gray/65 leading-relaxed">
+          {BANNED_DEVICE_NOTICE}
+        </p>
+        <button onClick={() => router.push('/')}
+          className="font-ui text-sm text-brand-gray/55 tracking-[0.15em] uppercase underline underline-offset-4 py-3"
+          style={{ minHeight: '44px' }}>
+          ← retour
+        </button>
+      </div>
+    );
+  }
+
   if (unavailable) {
     return (
       <div className="flex flex-col items-center gap-6 text-center animate-stagger-1">
@@ -303,9 +326,7 @@ function MessageForm() {
         </div>
         <p className="font-display text-2xl font-light">Ce message ne peut pas être envoyé.</p>
         <p className="font-ui text-sm text-brand-gray/65 leading-relaxed">
-          Votre message contient des termes qui ne respectent pas<br />
-          les règles de notre espace. Évitez le langage offensant,<br />
-          les menaces ou les contenus inappropriés.
+          {MODERATION_REFUSAL_NOTICE}
         </p>
         <button onClick={() => setModerated(false)}
           className="animate-shimmer w-full py-3 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200"
