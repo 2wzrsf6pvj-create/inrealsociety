@@ -23,6 +23,8 @@
 
 ### 1. Cloner et installer
 
+Prérequis : Node 24, la version du champ `engines` de `package.json` (Vercel et la CI la lisent aussi).
+
 ```bash
 git clone <repo-url>
 cd inrealsociety-main
@@ -150,6 +152,8 @@ docs/                              # Guides ops (monitoring, perf, email DNS)
 3. **Pour Vercel Cron** : ajouter `CRON_SECRET` (Vercel injecte auto dans le header `Authorization: Bearer`)
 4. Push sur `main` → déploiement auto
 
+La version de Node vient du champ `engines` de `package.json` (24.x) : elle prime sur le réglage « Node.js Version » du projet Vercel.
+
 ### Webhook Stripe
 
 Dans Stripe Dashboard → Developers → Webhooks → Add endpoint :
@@ -182,6 +186,7 @@ Avant lancement public :
 - **Push tokens** validés VAPID
 - **Cron secret** pour les endpoints `/api/cron/*` (Vercel inject `Authorization: Bearer`)
 - **Pre-commit hook** husky + lint-staged (eslint --fix)
+- **Dépendances** : alertes Dependabot sur les failles connues ; corrections sans version majeure via `npm audit fix` sous Node 24 (le npm 10 de Node 22 plante sur cet arbre de dépendances)
 
 Signaler une faille : voir [public/.well-known/security.txt](public/.well-known/security.txt).
 

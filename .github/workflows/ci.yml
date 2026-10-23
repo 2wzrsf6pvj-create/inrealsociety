@@ -18,11 +18,13 @@ jobs:
     timeout-minutes: 10
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      # Node : la version de `engines` dans package.json, celle que Vercel
+      # utilise aussi. La CI teste donc ce qui tourne en production.
+      - uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version-file: package.json
           cache: 'npm'
 
       - name: Install dependencies
@@ -56,11 +58,11 @@ jobs:
     if: github.event_name == 'push' || github.event.pull_request.draft == false
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version-file: package.json
           cache: 'npm'
 
       - name: Install dependencies
@@ -84,7 +86,7 @@ jobs:
 
       - name: Upload Playwright report on failure
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: playwright-report
           path: playwright-report/
@@ -111,11 +113,11 @@ jobs:
       POSTGREST_VERSION: v12.2.3
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version-file: package.json
           cache: 'npm'
 
       - name: Install dependencies

@@ -130,6 +130,9 @@ Détail : `docs/MONITORING.md`.
       `/api/health`.
 - [ ] Printful : notifications du compte activées (commande en attente,
       échec de paiement).
+- [ ] GitHub → Settings → Advanced Security (ou Code security) : activer les
+      *Dependabot alerts*. Un email arrive quand une faille connue touche un
+      paquet du projet.
 
 ## 6. Juridique (avant la première vente)
 
