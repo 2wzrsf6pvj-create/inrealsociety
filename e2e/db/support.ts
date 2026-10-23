@@ -31,24 +31,38 @@ export const APP_ENV: Record<string, string> = {
   UPSTASH_REDIS_REST_URL:        `${GATEWAY_URL}/upstash`,
   UPSTASH_REDIS_REST_TOKEN:      'e2e',
   ADMIN_EMAILS:                  ADMIN_EMAIL,
+  // Les emails vont à la passerelle, qui les garde : rien ne sort.
+  RESEND_API_URL:                `${GATEWAY_URL}/resend/emails`,
+  RESEND_API_KEY:                're_e2e',
+  // Exigé en production pour les liens signés des emails.
+  INTERNAL_SECRET:               'e2e-internal-secret',
 };
+
+/** Objets des emails « envoyés » à cette adresse (gardés par la passerelle). */
+export async function emailsTo(address: string): Promise<string[]> {
+  const res = await fetch(`${GATEWAY_URL}/resend/sent?to=${encodeURIComponent(address)}`);
+  return ((await res.json()) as { subject: string }[]).map((email) => email.subject);
+}
 
 export function sql(query: string): string {
   return execFileSync('psql', [DB_URL, '-XAtq', '-v', 'ON_ERROR_STOP=1', '-c', query], { encoding: 'utf8' }).trim();
 }
 
 export interface Account { id: string; email: string }
-export interface Wearer extends Account { memberId: string; name: string }
+export interface Wearer extends Account { memberId: string; name: string; shortCode: string }
 
-/** Porteur au compte confirmé, prénom unique (recherche de /admin). */
+/** Porteur au compte confirmé : prénom unique (recherche de /admin), code de
+ *  QR (/r/<code>) unique. */
 export function createWearer(firstName: string): Wearer {
   const id = crypto.randomUUID();
   const memberId = crypto.randomUUID();
   const name = `${firstName}${id.slice(0, 6)}`;
   const email = `${name.toLowerCase()}@example.com`;
+  const shortCode = memberId.slice(0, 6);
   sql(`INSERT INTO auth.users (id, email, email_confirmed_at) VALUES ('${id}', '${email}', now())`);
-  sql(`INSERT INTO members (id, auth_user_id, name, email) VALUES ('${memberId}', '${id}', '${name}', '${email}')`);
-  return { id, email, memberId, name };
+  sql(`INSERT INTO members (id, auth_user_id, name, email, short_code)
+       VALUES ('${memberId}', '${id}', '${name}', '${email}', '${shortCode}')`);
+  return { id, email, memberId, name, shortCode };
 }
 
 /** Contexte de navigateur : la CSP de production n'autorise pas la base de
@@ -57,9 +71,20 @@ export function newContext(browser: Browser, options: { userAgent?: string; view
   return browser.newContext({ baseURL: APP_URL, bypassCSP: true, ...options });
 }
 
+/** Visiteur qui a déjà répondu au bandeau des cookies et vu la présentation de
+ *  « Mon espace » : rien ne recouvre la page. */
+export async function skipIntros(context: BrowserContext): Promise<void> {
+  await context.addCookies([{ name: 'irs_consent_set', value: '1', url: APP_URL }]);
+  await context.addInitScript(() => {
+    try {
+      localStorage.setItem('irs_consent', 'denied');
+      localStorage.setItem('irs_onboarding_v1', '1');
+    } catch { /* stockage indisponible : sans effet sur les tests */ }
+  });
+}
+
 /** Connecté comme après la page de connexion : session Supabase dans le cookie
- *  de @supabase/ssr. Bandeau des cookies et présentation de « Mon espace »
- *  déjà vus. */
+ *  de @supabase/ssr. */
 export async function logIn(context: BrowserContext, account: Account): Promise<void> {
   const now = Math.floor(Date.now() / 1000);
   const user = {
@@ -70,14 +95,8 @@ export async function logIn(context: BrowserContext, account: Account): Promise<
     access_token: signJwt({ sub: account.id, email: account.email, role: 'authenticated', aud: 'authenticated', exp: now + 3600 }),
     refresh_token: 'e2e', token_type: 'bearer', expires_in: 3600, expires_at: now + 3600, user,
   };
+  await skipIntros(context);
   await context.addCookies([
     { name: 'sb-localhost-auth-token', value: `base64-${Buffer.from(JSON.stringify(session)).toString('base64url')}`, url: APP_URL },
-    { name: 'irs_consent_set', value: '1', url: APP_URL },
   ]);
-  await context.addInitScript(() => {
-    try {
-      localStorage.setItem('irs_consent', 'denied');
-      localStorage.setItem('irs_onboarding_v1', '1');
-    } catch { /* stockage indisponible : sans effet sur les tests */ }
-  });
 }

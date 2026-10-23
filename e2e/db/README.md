@@ -1,20 +1,31 @@
 # E2E avec base
 
-Les tests de `e2e/db/` parcourent l'app dans un vrai navigateur, **connecté**,
-devant une **vraie base** : « Mon espace », /admin, la déconnexion… Les tests de
-fumée de `e2e/` (`npm run test:e2e`), eux, tournent sans base et ne voient que
-les pages publiques.
+Les tests de `e2e/db/` parcourent l'app dans un vrai navigateur, devant une
+**vraie base**, avec plusieurs personnes chacune dans son navigateur :
+
+- `parcours.spec.ts` : le passant scanne le QR et écrit, le porteur répond
+  depuis « Mon espace », chacun son tour ; un profil signalé puis suspendu
+  depuis /admin ; un message signalé, l'appareil banni ;
+- `notifications.spec.ts` : téléphone relevé à l'ouverture de « Mon espace »,
+  chiffres de /admin, désabonnement à la déconnexion.
+
+Les tests de fumée de `e2e/` (`npm run test:e2e`), eux, tournent sans base et ne
+voient que les pages publiques.
 
 | Réel | Simulé |
 |---|---|
 | L'app construite comme en production (`next build`, `next start`) | La session Supabase : cookie posé par le test, jeton signé avec le secret de la base de test |
-| Chromium (Playwright) | Le service de push du navigateur (absent du Chromium de test), quand un test en a besoin |
+| Chromium (Playwright), un contexte par personne : le passant n'est jamais connecté, son appareil se reconnaît à son cookie | Le service de push du navigateur (absent du Chromium de test), quand un test en a besoin |
 | Postgres + PostgREST, migrations du dépôt (`integration/setup-db.sh`) | Les limites de débit (Upstash) : elles laissent tout passer |
+| Les routes, la modération sans clé OpenAI (liste de mots), les décisions de /admin | Les emails (Resend) : gardés par la passerelle, jamais envoyés ; les tests les lisent (`emailsTo`) |
 
 `supabase-gateway.mjs` se fait passer pour Supabase devant la base :
 `/rest/v1` → PostgREST, `/auth/v1/user` → l'utilisateur du jeton, `/upstash` →
-limites ouvertes. La CSP de production n'autorise pas cette adresse locale : les
-tests la contournent (`bypassCSP`).
+limites ouvertes, `/resend/emails` → emails gardés. La CSP de production
+n'autorise pas cette adresse locale : les tests la contournent (`bypassCSP`).
+
+Pas de temps réel (Supabase Realtime) : une page voit les nouveaux messages
+en se rechargeant, comme un passant qui revient sur sa conversation.
 
 En CI : job **« E2E avec base »**, sans aucun secret.
 

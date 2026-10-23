@@ -213,7 +213,8 @@ Signaler une faille : voir [public/.well-known/security.txt](public/.well-known/
 Stack actuelle :
 - **Unitaires** (vitest) : 270+ tests, dont security-routes auto-discover
 - **E2E** (Playwright) : smoke tests pages publiques + skeleton tunnel ; avec
-  une vraie base (`e2e/db/`) : « Mon espace », /admin, déconnexion
+  une vraie base (`e2e/db/`) : du QR à la conversation (passant et porteur),
+  décisions de /admin, « Mon espace », déconnexion
 - **CI** (GitHub Actions) : lint + typecheck + vitest + build + playwright sur PR
 
 Couverture explicite :

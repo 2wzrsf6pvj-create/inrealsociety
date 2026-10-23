@@ -6,7 +6,9 @@
 //   /auth/v1/logout  → déconnexion acceptée ;
 //   /upstash         → limites de débit qui laissent toujours passer : elles ont
 //                      leurs propres tests, et ici toutes les requêtes viennent
-//                      de la même adresse.
+//                      de la même adresse ;
+//   /resend/emails   → emails gardés ici, jamais envoyés ; les tests les lisent
+//                      sur /resend/sent?to=<adresse>.
 // Sans dépendance. Variables : GATEWAY_PORT, POSTGREST_URL, JWT_SECRET.
 
 import http from 'node:http';
@@ -15,6 +17,9 @@ import crypto from 'node:crypto';
 const PORT      = Number(process.env.GATEWAY_PORT ?? 54321);
 const POSTGREST = process.env.POSTGREST_URL ?? 'http://localhost:3001';
 const SECRET    = process.env.JWT_SECRET ?? 'integration-test-secret-integration-test-secret';
+
+/** Emails « envoyés » par l'app, du premier au dernier. */
+const emails = [];
 
 /** Revendications d'un jeton HS256 valide et non expiré, sinon null. */
 function verify(token) {
@@ -90,6 +95,19 @@ http.createServer(async (req, res) => {
     if (url.pathname === '/auth/v1/logout') {
       res.writeHead(204, cors);
       return res.end();
+    }
+
+    if (url.pathname === '/resend/emails' || url.pathname === '/resend/emails/batch') {
+      const sent = [JSON.parse(body.toString())].flat();
+      emails.push(...sent);
+      const ids = sent.map((_, i) => ({ id: `e2e-${emails.length - sent.length + i + 1}` }));
+      return json(200, url.pathname.endsWith('/batch') ? { data: ids } : ids[0]);
+    }
+    if (url.pathname === '/resend/sent') {
+      const to = url.searchParams.get('to');
+      return json(200, emails
+        .filter((email) => !to || [email.to].flat().includes(to))
+        .map(({ to: recipients, subject }) => ({ to: recipients, subject })));
     }
 
     if (url.pathname.startsWith('/upstash')) {

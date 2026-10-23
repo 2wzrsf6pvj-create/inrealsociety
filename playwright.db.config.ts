@@ -16,6 +16,8 @@ export default defineConfig({
 
   use: {
     baseURL:    APP_URL,
+    // Une action qui ne trouve pas sa cible échoue en 10 s, en la nommant.
+    actionTimeout: 10_000,
     trace:      'retain-on-failure',
     screenshot: 'only-on-failure',
   },
