@@ -5,6 +5,121 @@
 
 ---
 
+## 2026-10-23 (suite) — App mobile : analyse et app installable (#35)
+
+### Avant : chiffres de `/admin` vérifiés
+- Les 11 chiffres du test terrain ont été recoupés avec un calcul SQL
+  indépendant, sur un jeu de données piégé : tous égaux.
+- Les cas limites sont corrects. La lecture par pages tient avec la limite
+  de 1 000 lignes de Supabase.
+- Aucun écart, aucune correction. Limites à connaître pour lire les chiffres :
+  - un porteur qui teste son propre QR sans être connecté compte comme un
+    scan ;
+  - un même appareil n'est compté qu'une fois par 30 minutes ;
+  - « activé » correspond à la création du profil.
+
+### Analyse
+Lu :
+- la coque Capacitor, l'app installable (manifeste, service worker, icônes),
+  les notifications ;
+- les règles des magasins : texte d'Apple du 16/10/2026, données de
+  compatibilité MDN ;
+- le code de Capacitor 8.4.3.
+
+**Déjà en ordre** :
+- les exigences d'Apple pour les messages entre utilisateurs (filtre,
+  signalement, blocage, contact) ;
+- la suppression du compte dans l'app ;
+- la connexion par mot de passe ;
+- le t-shirt payable par Stripe (bien physique) ;
+- les 18 ans minimum.
+
+**Constats** :
+1. Une app des magasins ferait moins que le site : le push du site n'existe
+   pas dans une WebView, il faudrait des notifications natives.
+2. Capacitor documente `server.url` comme « not intended for use in
+   production » ; l'écran de repli décrit dans le code ne s'affichait jamais.
+3. Le premium ne peut pas être vendu par Stripe dans l'app iPhone (règles
+   3.1.1 et 3.1.3(b)). Chez Google : facturation Play, ou paiement externe
+   avec commission dans l'UE depuis le 30/06/2026.
+4. Risques de refus chez Apple :
+   - « chat aléatoire ou anonyme » (1.2, début 2026) ;
+   - apps de rencontre (4.3(b)) ;
+   - site emballé (4.2).
+5. Coûts et délais :
+   - Apple : environ 99 € par an et un Mac ;
+   - Google : 25 $, et 12 testeurs pendant 14 jours pour un compte
+     personnel ;
+   - dans l'UE, les coordonnées du vendeur sont publiées (DSA).
+6. L'app installable sur iPhone avait plusieurs défauts :
+   - l'icône SVG n'était pas lue ;
+   - l'app s'ouvrait sur l'accueil du site ;
+   - le porteur ne voyait jamais le bouton des notifications ;
+   - la barre d'état était translucide.
+
+### Décision de Clément
+- L'app installable d'abord. Les magasins viendront après le test terrain,
+  si les porteurs la demandent.
+
+### Fait
+- **PR #35 fusionnée** (`19c44a5`) :
+  - icônes PNG générées depuis le monogramme (`scripts/build-app-icons.mjs`) ;
+  - manifestes par page : l'app installée depuis « Mon espace » s'ouvre sur
+    `/dashboard`, et celle installée depuis une conversation la rouvre ;
+  - « Mon espace » sur iPhone : une aide pour ajouter l'app à l'écran
+    d'accueil, puis le bouton des notifications dans l'app ;
+  - abonnement fiable : résultat réel du serveur, attente bornée du service
+    worker, réabonnement quand l'autorisation est déjà accordée ;
+  - service worker : seules les pages publiques fixes en cache, précache
+    sans cookies, page « Pas de connexion » ;
+  - barre d'état noire opaque ; « Connexion réussie. » seulement après la
+    connexion ;
+  - `docs/CAPACITOR.md` réécrit : décision, pièges, ce qu'il faudra pour
+    les magasins, sources datées.
+- **Relecture indépendante**, demandée par Clément. Constats vérifiés et
+  corrigés dans la même PR :
+  - Next.js 16 range dans le `<body>` les métadonnées d'une page à
+    `generateMetadata`, et Safari ne lit le manifeste qu'au chargement de
+    la page (code de WebKit). Le passant installait donc le manifeste du
+    site. Correctif : manifeste posé par le layout, et arrivées sur la
+    conversation et sur « Mon espace » par un chargement complet ;
+  - le service worker gardait des données personnelles : la page « Mon
+    espace » d'un porteur connecté (rangée sous « / »), l'administration
+    et les données des navigations internes de Next ;
+  - un échec d'abonnement aux notifications passait pour une réussite, et
+    le bouton ne revenait jamais.
+- Vérifié :
+  - lint et typage ;
+  - 753 tests, dont le service worker exécuté avec un navigateur simulé
+    (contre l'ancien, 7 tests sur 8 échouent) ;
+  - mutations détectées ;
+  - build ;
+  - Playwright 10/10, contre le build et en mode développement ;
+  - essai réel : 36 vérifications ;
+  - CI verte. Visuels envoyés à Clément.
+
+### À faire — côté Clément
+- [ ] Après le déploiement, sur un vrai iPhone, suivre la liste de
+      `docs/CAPACITOR.md` :
+  - icône ;
+  - ouverture sur « Mon espace » ;
+  - barre d'état ;
+  - notification app fermée ;
+  - parcours réel du passant, du QR à la conversation ajoutée à l'écran
+    d'accueil ;
+  - mode avion.
+- [ ] Clés VAPID dans Vercel : sans elles, pas de notifications (déjà dans
+      `docs/MISE_EN_PRODUCTION.md`).
+
+### Ensuite
+- La préparation du test terrain : qui, où, seuils pour continuer, ajuster
+  ou arrêter.
+- Plus tard, dans `/admin` : combien de porteurs ont activé les
+  notifications, sur iPhone et sur Android, pour décider des magasins.
+- Le reste de la priorité 3 : parrainage et newsletter, accessibilité.
+
+---
+
 ## 2026-10-23 (suite) — Administration : recherche, chiffres, commandes (#34)
 
 ### Contexte
