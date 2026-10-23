@@ -5,6 +5,71 @@
 
 ---
 
+## 2026-10-23 (suite) — Mises à jour et failles : analyse et lot sûr (#28)
+
+### Analyse
+Lu : `npm audit` (production et développement), les 25 avis de sécurité de
+Next.js un par un, la configuration (images, middleware, Sentry, Capacitor), la
+CI, et les annonces de Vercel et de GitHub sur Node 20.
+
+**Déjà en ordre** :
+- les failles critiques de Next.js ne touchent pas l'app :
+  - l'optimiseur d'images (AVIF, SVG) est celui de Vercel, pas celui de Next ;
+  - le SVG n'est pas autorisé, et les avatars n'acceptent que jpeg, png et
+    webp ;
+  - serveur Windows, Pages Router avec i18n, rewrites, WebSockets, serveur
+    personnalisé : rien de tout cela n'est utilisé ;
+- XSS via le nonce CSP : le middleware réécrit lui-même les en-têtes du nonce
+  et de la CSP ;
+- Sentry : la faille passe par `tunnelRoute`, non configuré ;
+- Capacitor : aucune app mobile n'est encore compilée ;
+- Vercel déployait toujours : le projet ne dépendait pas de Node 20.
+
+**Constats** :
+1. Next.js 14 est en fin de vie : des dénis de service de l'App Router et des
+   empoisonnements de cache (modérés) resteront sans correctif. La 15 arrive en
+   fin de maintenance, seule la 16 est suivie.
+2. 31 des 33 failles de production se corrigent sans version majeure.
+3. La CI tournait sous Node 20, en fin de vie depuis avril, avec des actions
+   GitHub dépréciées. Rien ne fixait la version de Node de Vercel.
+4. Aucune alerte sur les nouvelles failles.
+5. Tailwind 3 et ESLint 8 : failles de développement, sans entrée extérieure.
+
+### Décision de Clément
+- Migration vers Next.js 16 dans une PR séparée, juste après le lot sûr.
+
+### Fait
+- **PR #28 fusionnée** (`f8a00f3`), constats 2 et 3 :
+  - Sentry 10.76, PostHog 1.438 (DOMPurify 3.4.17), Capacitor 8.4.3 et
+    dépendances indirectes. Failles de production : 33 → 2 (Next.js et son
+    postcss). En tout : 48 → 12, toutes liées à une version majeure ;
+  - lockfile écrit avec npm 11 : le npm 10 de Node 22 plante sur
+    `npm audit fix` et effaçait les filtres glibc/musl ;
+  - `engines.node` = 24.x, lu par Vercel et par la CI ; actions GitHub en v6 ;
+  - import Sentry déplacé (`@sentry/nextjs/config`) ; configurations Vitest en
+    `.mts`, pour faire taire l'avertissement de Vite 8.3.
+- Vérifié :
+  - sous Node 24 : lint, typage, 650 tests, intégration 46/46, Playwright ;
+  - build : +2 ko de JS par page, venus de Sentry ;
+  - CI sous Node 24.21, déploiement Vercel réussi.
+- Laissé de côté : Tailwind 4, gros chantier visuel sans gain de sécurité.
+
+### À faire — côté Clément
+- [ ] GitHub → Settings → Advanced Security : activer les *Dependabot alerts*.
+
+### Ensuite
+- Migration vers Next.js 16 (PR séparée) :
+  - `cookies`, `headers` et `params` deviennent asynchrones ;
+  - React 19, ESLint 9 ;
+  - `middleware.ts` devient `proxy.ts` ;
+  - build Turbopack.
+- Puis :
+  - l'économie unitaire, avec les tarifs Printful de Clément ;
+  - le reste de la priorité 3 : app mobile, parrainage et newsletter,
+    accessibilité, petits restes.
+
+---
+
 ## 2026-10-23 (suite) — Observabilité : analyse et lot (#27)
 
 ### Analyse
