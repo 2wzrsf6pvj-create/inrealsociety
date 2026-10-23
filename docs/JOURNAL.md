@@ -5,6 +5,40 @@
 
 ---
 
+## 2026-10-23 (suite) — Administration : recherche, chiffres, commandes (#34)
+
+### Contexte
+Question de Clément : que voir ou faire d'autre dans `/admin` ? Trois ajouts
+proposés, tous retenus. Restent ailleurs : remboursements (Stripe),
+expéditions (Printful), parcours détaillés (PostHog), erreurs (Sentry).
+
+### Fait
+- **PR #34 fusionnée** (`4a616ed`) :
+  - recherche par prénom, email, code du QR ou code d'activation : état du
+    porteur (suspendre ou rétablir), état de la commande, renvoi du code
+    d'activation s'il n'a pas servi (tracé) ;
+  - chiffres du test terrain, calculés depuis la base (sans PostHog) :
+    porteurs activés, scannés dans leurs 14 premiers jours, encore scannés
+    après un mois, scans → messages → réponses sur 30 jours, premium,
+    commandes payées ;
+  - commandes à surveiller : payées mais pas imprimées depuis plus d'une
+    heure, codes non utilisés depuis 7 jours ;
+  - page renommée « Administration », sommaire en tête.
+- Vérifié :
+  - lint, typage, 707 tests, intégration 54/54 (requêtes réelles :
+    recherche, commandes, chiffres, renvoi du code), build, Playwright ;
+  - 3 mutations détectées par les tests ;
+  - essai sur base locale avec des données de démonstration, chiffres
+    vérifiés à la main ; captures envoyées à Clément.
+
+### Ensuite
+- La préparation du test terrain : qui, où, seuils pour continuer, ajuster
+  ou arrêter (les chiffres sont désormais dans `/admin`).
+- Le reste de la priorité 3 : app mobile, parrainage et newsletter,
+  accessibilité.
+
+---
+
 ## 2026-10-23 (suite) — Administration de la modération (#33)
 
 ### Contexte
