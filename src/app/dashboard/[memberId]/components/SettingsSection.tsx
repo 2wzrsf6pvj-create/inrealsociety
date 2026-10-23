@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase-browser';
 import { captureEvent, resetIdentity } from '@/lib/posthog-client';
+import { unsubscribePush } from '@/lib/push-client';
 import type { Member } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import { PREMIUM_PERKS, PREMIUM_PRICE_LABEL, PREMIUM_WITHDRAWAL_DAYS } from '@/lib/constants';
@@ -271,6 +272,8 @@ function LogoutButton() {
   const [confirming, setConfirming] = useState(false);
 
   const handleLogout = async () => {
+    // Cet appareil ne reçoit plus les notifications du porteur déconnecté.
+    await unsubscribePush();
     const supabase = createClient();
     await supabase.auth.signOut();
     // Réinitialise l'identité PostHog : sinon, sur un device partagé, les events

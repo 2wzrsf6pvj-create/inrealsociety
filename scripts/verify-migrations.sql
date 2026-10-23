@@ -88,6 +88,13 @@ SELECT column_default = 'true' AS actifs_par_defaut,
        (SELECT prosrc LIKE '%AND scan_emails%' FROM pg_proc WHERE proname = 'claim_scan_email') AS reservation
 FROM information_schema.columns WHERE table_name = 'members' AND column_name = 'scan_emails';
 
+\echo '=== 062 — abonnements des porteurs gardés par la purge ; téléphone illisible côté client (attendu: 1 ligne  t | 2 | f | f) ==='
+SELECT (SELECT prosrc LIKE '%member_id IS NULL AND created_at%' FROM pg_proc WHERE proname = 'cleanup_old_data') AS porteurs_gardes,
+       (SELECT count(*) FROM information_schema.columns
+        WHERE table_name = 'members' AND column_name IN ('phone_os', 'app_installed_at')) AS colonnes,
+       has_column_privilege('anon', 'members', 'phone_os', 'SELECT') AS anon_select,
+       has_column_privilege('authenticated', 'members', 'app_installed_at', 'SELECT') AS authd_select;
+
 \echo '=== Rappel : RLS activée sur les tables sensibles (attendu: tous t) ==='
 SELECT relname, relrowsecurity
 FROM pg_class

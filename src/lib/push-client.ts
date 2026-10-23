@@ -93,6 +93,38 @@ export async function subscribePush(scope: PushScope): Promise<boolean> {
   }
 }
 
+/** Déconnexion attendue au plus ce délai : elle ne dépend pas du réseau. */
+export const UNSUBSCRIBE_TIMEOUT_MS = 3_000;
+
+/** Déconnexion : cet appareil cesse de recevoir les notifications (sinon, après
+ *  la déconnexion, il recevait encore l'aperçu des messages du porteur). Le
+ *  serveur oublie l'abonnement et le navigateur le résilie auprès du service de
+ *  push : l'un suffit, les deux à la fois ne laissent rien derrière. Si cet
+ *  appareil suivait plutôt la conversation d'un passant (le porteur a écrit à
+ *  un autre porteur depuis ce navigateur), elle n'est plus suivie non plus.
+ *  Ne bloque jamais la déconnexion. */
+export async function unsubscribePush(): Promise<void> {
+  if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+  const work = (async () => {
+    const reg = await navigator.serviceWorker.getRegistration('/');
+    const sub = await reg?.pushManager.getSubscription();
+    if (!sub) return;
+    await Promise.allSettled([
+      fetch('/api/push/subscribe', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint: sub.endpoint }),
+      }),
+      sub.unsubscribe(),
+    ]);
+  })().catch(() => {});
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  await Promise.race([
+    work,
+    new Promise<void>((resolve) => { timer = setTimeout(resolve, UNSUBSCRIBE_TIMEOUT_MS); }),
+  ]).finally(() => clearTimeout(timer));
+}
+
 /** Notifications déjà accordées : renvoie au serveur l'abonnement de cet
  *  appareil. Rattrape un envoi raté, ou un abonnement effacé côté serveur (le
  *  service de push l'a dit expiré). false si l'appareil n'a plus d'abonnement

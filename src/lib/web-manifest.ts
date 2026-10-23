@@ -9,6 +9,9 @@
 //     l'écran d'accueil pour être notifié, y retrouve la sienne. La page n'avait
 //     jusque-là aucun manifeste lisible (cf. son layout).
 // Ils reprennent public/manifest.json et ne changent que le point d'entrée.
+// L'adresse de départ de « Mon espace » (et celle du site, qui y mène un porteur
+// connecté) porte FROM_APP : la page sait qu'on l'ouvre depuis l'app installée
+// (cf. lib/phone). L'identité de l'app (id) reste l'adresse sans paramètre.
 // Servis hors proxy (extension .webmanifest) : le navigateur les demande sans
 // cookies, un passage par la connexion les rendrait illisibles.
 // Deux conditions pour qu'ils soient lus :
@@ -23,12 +26,12 @@ import base from '../../public/manifest.json';
  *  conversation dont les métadonnées arrivent trop tard dans le <head>. */
 export const APPLE_WEB_APP = { title: 'In Real Society', statusBarStyle: 'black' } as const;
 
-export function webManifest(startUrl: string) {
-  return { ...base, id: startUrl, start_url: startUrl };
+export function webManifest(id: string, startUrl = id) {
+  return { ...base, id, start_url: startUrl };
 }
 
-export function manifestResponse(startUrl: string): Response {
-  return new Response(JSON.stringify(webManifest(startUrl)), {
+export function manifestResponse(id: string, startUrl = id): Response {
+  return new Response(JSON.stringify(webManifest(id, startUrl)), {
     headers: {
       'Content-Type':  'application/manifest+json; charset=utf-8',
       'Cache-Control': 'public, max-age=3600',

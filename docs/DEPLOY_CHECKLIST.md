@@ -8,7 +8,7 @@
 
 ## 1. Migrations SQL — ordre & application
 
-Les migrations sont numérotées et **doivent s'appliquer dans l'ordre** (`supabase/migrations/001 … 061`).
+Les migrations sont numérotées et **doivent s'appliquer dans l'ordre** (`supabase/migrations/001 … 062`).
 
 ### Nouveautés de ce lot de durcissement
 | # | Effet | Critique ? |
@@ -41,11 +41,12 @@ Les migrations sont numérotées et **doivent s'appliquer dans l'ordre** (`supab
 | `059` | `members.scan_email_on` / `members.cap_email_at` + fonctions `claim_scan_email` / `claim_cap_email` (réservation atomique, backend seulement) | 🟡 emails du porteur limités : un email de scan par jour, un email « plafond atteint » par semaine. Sans elle, rien ne casse : les emails de scan partent à chaque scan (comme avant) et l'email de plafond ne part pas |
 | `060` | `members.referral_code` rempli (colonne de 015 jamais utilisée) + défaut `gen_referral_code()`, non nul, unique | 🟡 lien de parrainage `/join/<code>` qui ne révèle plus l'identifiant du profil. Sans elle, le tableau de bord garde l'ancien lien à identifiant, qui continue de donner la remise |
 | `061` | `members.scan_emails` (défaut : activé) + `claim_scan_email` qui le respecte | 🟡 le porteur peut couper l'email de scan (réglages, lien en un clic dans l'email). Sans elle, rien ne casse : l'interrupteur n'apparaît pas dans les réglages, et le lien de l'email affiche « Impossible pour le moment » |
+| `062` | `cleanup_old_data()` ne purge plus que les abonnements aux notifications des **passants** + `members.phone_os` / `members.app_installed_at` (téléphone relevé à l'ouverture de « Mon espace », cf. `src/lib/phone.ts`) | 🟠 sans elle, un porteur qui n'ouvre pas « Mon espace » pendant 90 jours cesse d'être notifié, sans le savoir. Le reste ne casse pas : le téléphone n'est pas relevé, et /admin affiche « migration 062 à appliquer » |
 
 ### Base NEUVE (staging / nouveau projet) — recommandé (Option A)
-⚠️ **L'ordre 001→061 naïf ÉCHOUE** : `001_enable_rls` fait `ALTER TABLE members …`
+⚠️ **L'ordre 001→062 naïf ÉCHOUE** : `001_enable_rls` fait `ALTER TABLE members …`
 alors que `members` n'est créée qu'en `015`. L'ordre correct est **015 D'ABORD**,
-puis 001-014, puis 016-061.
+puis 001-014, puis 016-062.
 
 Utiliser le bundle pré-généré **et validé** (57/57 migrations — schéma identique, grants et policies compris, à l'application une par une ; vérifié sur PG16) :
 ```
@@ -76,7 +77,7 @@ for f in 033_rls_hardening_views 034_record_scan 035_secure_create_member_rpc 03
          053_close_definer_rpcs_to_authenticated 054_member_suspension \
          055_order_activation_reminders 056_message_reports 057_contact_verifications \
          058_rgpd_retention_city_only 059_notification_throttles 060_referral_code \
-         061_scan_email_opt_out; do
+         061_scan_email_opt_out 062_push_porteurs_telephone; do
   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -1 -f "supabase/migrations/$f.sql"
 done
 # 021 a été édité (guard idempotent) : sûr à ré-exécuter si tu veux l'aligner.

@@ -2,6 +2,7 @@
 
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
+import { FROM_APP } from '@/lib/constants';
 
 const PUBLIC_PAGES = new Set([
   '/',
@@ -172,7 +173,13 @@ export async function proxy(req: NextRequest) {
   }
 
   if (user && (pathname === '/auth/login' || pathname === '/')) {
-    return redirectWithSession(new URL('/dashboard', req.url));
+    const dashboard = new URL('/dashboard', req.url);
+    // App installée depuis une page du site (départ « /?src=app ») : « Mon
+    // espace » doit savoir qu'on l'ouvre depuis l'app (cf. lib/phone).
+    if (req.nextUrl.searchParams.get(FROM_APP.param) === FROM_APP.value) {
+      dashboard.searchParams.set(FROM_APP.param, FROM_APP.value);
+    }
+    return redirectWithSession(dashboard);
   }
 
   return res;

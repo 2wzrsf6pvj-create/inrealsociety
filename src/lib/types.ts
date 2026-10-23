@@ -1,6 +1,7 @@
 // src/lib/types.ts — InRealSociety
 
 export type MemberPlan = 'free' | 'premium';
+export type PhoneOs = 'ios' | 'android';
 
 export interface Member {
   id:                      string;
@@ -26,6 +27,11 @@ export interface Member {
   /** Email au premier scan du jour (migration 061). Absent tant qu'elle n'est
    *  pas appliquée : le réglage ne s'affiche pas. */
   scan_emails?:            boolean;
+  /** Téléphone de la dernière ouverture de « Mon espace » depuis un téléphone,
+   *  et première ouverture depuis l'app installée (migration 062, cf. lib/phone).
+   *  Absents tant qu'elle n'est pas appliquée : rien n'est relevé. */
+  phone_os?:               PhoneOs | null;
+  app_installed_at?:       string | null;
   created_at:              string;
   updated_at:              string;
   auth_user_id:            string | null;

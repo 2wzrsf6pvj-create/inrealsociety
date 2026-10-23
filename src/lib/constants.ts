@@ -69,6 +69,10 @@ export const CONTACT_EMAIL = 'hello@inrealsociety.com';
  *  « Connexion réussie. » une fois, puis l'efface. */
 export const LOGIN_SUCCESS_KEY = 'irs_login_success';
 
+/** Ajouté à l'adresse de départ de l'app installée (manifestes) : « Mon espace »
+ *  sait qu'on l'ouvre depuis l'app (cf. lib/phone). */
+export const FROM_APP = { param: 'src', value: 'app' } as const;
+
 /** Message refusé par le filtre automatique : ce qui est dit à son auteur. Le
  *  règlement européen sur les services numériques (art. 17) demande d'indiquer
  *  la décision automatique, la règle appliquée et le recours. */
