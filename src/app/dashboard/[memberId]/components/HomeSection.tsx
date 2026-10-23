@@ -7,7 +7,7 @@ import type { Member, Scan, Message } from '@/lib/types';
 import { daysActive, formatDate, getInitials, getWaitingPhrase, timeAgo } from './utils';
 import { useCountUp } from './hooks';
 import { captureEvent } from '@/lib/posthog-client';
-import { notificationOffer, subscribePush, type NotificationOffer } from '@/lib/push-client';
+import { notificationOffer, resyncPush, subscribePush, type NotificationOffer } from '@/lib/push-client';
 import SectionDivider from '@/app/components/ui/SectionDivider';
 
 // ─── #1 Conversations en attente — la VRAIE valeur, remontée tout en haut ──────
@@ -71,6 +71,9 @@ function PhotoNudge() {
 // La réactivité du porteur fait la qualité du produit. Se masque si déjà
 // accordées / refusées / non supportées (pas de nag). No-op silencieux sans
 // VAPID (dev) ou service worker.
+// Déjà accordées : l'abonnement de l'appareil est renvoyé au serveur à chaque
+// visite ; s'il n'existe plus (envoi raté, abonnement expiré puis effacé), le
+// bouton revient. Avant, le porteur n'était plus jamais notifié, sans le savoir.
 // iPhone : Safari ne propose les notifications qu'à l'app ajoutée à l'écran
 // d'accueil, l'API n'existe pas dans le navigateur. Le porteur sur iPhone n'en
 // entendait donc jamais parler : on lui dit comment ajouter l'app (elle s'ouvre
@@ -79,19 +82,28 @@ function PhotoNudge() {
 const IOS_HINT_HIDDEN_KEY = 'irs_ios_install_hint_hidden';
 
 function NotificationsPrompt({ memberId }: { memberId: string }) {
-  const [state, setState] = React.useState<NotificationOffer | 'loading'>('none');
+  const [state, setState]   = React.useState<NotificationOffer | 'loading'>('none');
+  const [failed, setFailed] = React.useState(false);
 
   React.useEffect(() => {
     let hintHidden = false;
     try { hintHidden = !!localStorage.getItem(IOS_HINT_HIDDEN_KEY); } catch { /* no-op */ }
+    const offer = notificationOffer(hintHidden);
     // eslint-disable-next-line react-hooks/set-state-in-effect -- appareil et permission connus du navigateur seulement
-    setState(notificationOffer(hintHidden));
-  }, []);
+    setState(offer);
+    if (offer === 'none' && typeof Notification !== 'undefined' && Notification.permission === 'granted'
+        && 'serviceWorker' in navigator) {
+      resyncPush({ memberId }).then((ok) => { if (!ok) setState('ask'); });
+    }
+  }, [memberId]);
 
   const enable = async () => {
     setState('loading');
-    await subscribePush({ memberId });
-    setState('none');
+    const ok = await subscribePush({ memberId });
+    // Autorisation donnée mais abonnement non enregistré : on peut réessayer.
+    const retry = !ok && Notification.permission === 'granted';
+    setFailed(retry);
+    setState(retry ? 'ask' : 'none');
   };
 
   const hideIosHint = () => {
@@ -121,11 +133,18 @@ function NotificationsPrompt({ memberId }: { memberId: string }) {
   }
 
   return (
-    <button onClick={enable} disabled={state === 'loading'}
-      className="w-full py-3 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.1em] text-brand-gray/60 hover:border-brand-gray/35 hover:text-brand-white/80 transition-colors rounded-[2px] disabled:opacity-40"
-      style={{ minHeight: '44px' }}>
-      {state === 'loading' ? 'Activation...' : 'Être prévenu·e quand on m’écrit'}
-    </button>
+    <div className="w-full flex flex-col gap-1">
+      <button onClick={enable} disabled={state === 'loading'}
+        className="w-full py-3 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.1em] text-brand-gray/60 hover:border-brand-gray/35 hover:text-brand-white/80 transition-colors rounded-[2px] disabled:opacity-40"
+        style={{ minHeight: '44px' }}>
+        {state === 'loading' ? 'Activation...' : 'Être prévenu·e quand on m’écrit'}
+      </button>
+      {failed && state !== 'loading' && (
+        <p role="status" className="font-ui text-xxs text-brand-gray/55">
+          L&apos;activation n&apos;a pas abouti. Réessayez dans un instant.
+        </p>
+      )}
+    </div>
   );
 }
 

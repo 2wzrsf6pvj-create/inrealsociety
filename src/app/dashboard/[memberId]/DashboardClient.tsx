@@ -150,6 +150,14 @@ export default function DashboardClient({
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    // Drapeau de la page de connexion, consommé d'abord : si un autre message
+    // passe avant, celui-ci ne doit pas ressortir plus tard, hors de propos.
+    let justLoggedIn = false;
+    try {
+      justLoggedIn = !!sessionStorage.getItem(LOGIN_SUCCESS_KEY);
+      sessionStorage.removeItem(LOGIN_SUCCESS_KEY);
+    } catch { /* stockage indispo */ }
+
     // Toast profil mis à jour
     const updated = sessionStorage.getItem('profile_updated');
     if (updated) {
@@ -185,11 +193,6 @@ export default function DashboardClient({
     // un toast « Bienvenue {nom} » ferait doublon). Seulement juste après la page
     // de connexion : il s'affichait à chaque nouvelle session du navigateur, donc
     // à chaque ouverture de l'app installée sur l'écran d'accueil.
-    let justLoggedIn = false;
-    try {
-      justLoggedIn = !!sessionStorage.getItem(LOGIN_SUCCESS_KEY);
-      sessionStorage.removeItem(LOGIN_SUCCESS_KEY);
-    } catch { /* stockage indispo */ }
     if (justLoggedIn) return showToast('Connexion réussie.', 2500);
   }, [member.name, member.scan_count, member.plan, showToast]);
 

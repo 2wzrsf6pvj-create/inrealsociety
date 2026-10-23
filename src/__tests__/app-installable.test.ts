@@ -7,7 +7,11 @@
 //   conversation, que le passant est invité à ajouter à l'écran d'accueil pour
 //   être notifié, n'avait aucun manifeste lisible (diffusé dans le <body>) ;
 // - « Mon espace » sur iPhone : le porteur n'entendait jamais parler des
-//   notifications, que Safari réserve à l'app installée.
+//   notifications, que Safari réserve à l'app installée ;
+// - abonnement : un échec passait pour une réussite, et une fois l'autorisation
+//   donnée le bouton ne revenait jamais ;
+// - sur iPhone, Safari ne lit le manifeste qu'au chargement de la page : on
+//   arrive sur la conversation et sur « Mon espace » par un chargement complet.
 
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
@@ -17,7 +21,7 @@ import { APP_ICONS, renderIcon } from '../../scripts/build-app-icons.mjs';
 import manifest from '../../public/manifest.json';
 import { GET as dashboardManifest } from '@/app/dashboard/manifest.webmanifest/route';
 import { GET as conversationManifest } from '@/app/conversation/[messageId]/manifest.webmanifest/route';
-import { notificationOffer } from '@/lib/push-client';
+import { notificationOffer, resyncPush, subscribePush, SW_READY_TIMEOUT_MS } from '@/lib/push-client';
 
 vi.mock('next/font/google', () => ({ Cormorant_Garamond: () => ({ variable: '' }), Montserrat: () => ({ variable: '' }) }));
 vi.mock('@/lib/supabase-admin', () => ({
@@ -75,6 +79,9 @@ describe('icônes de l’app installable', () => {
     expect(metadata.icons).toMatchObject({ apple: '/apple-touch-icon.png' });
     // « black-translucent » : l'app installée dessinait sous l'heure et la batterie.
     expect(metadata.appleWebApp).toMatchObject({ statusBarStyle: 'black' });
+    // Next n'écrit que « mobile-web-app-capable » ; sans la version Apple, Safari
+    // ignore la couleur de la barre d'état.
+    expect(metadata.other).toMatchObject({ 'apple-mobile-web-app-capable': 'yes' });
   });
 
   it('badge de notification : logo blanc sur fond transparent', () => {
@@ -124,12 +131,17 @@ describe('manifestes', () => {
   // le layout, que React place dans le <head>.
   it('conversation : manifeste posé par le layout, aucun dans les métadonnées', async () => {
     const { default: ConversationLayout } = await import('@/app/conversation/[messageId]/layout');
-    const manifestLink = async (messageId: string) => {
+    const headTags = async (messageId: string) => {
       const tree = await ConversationLayout({ children: null, params: Promise.resolve({ messageId }) });
-      return (tree.props as { children: unknown[] }).children[0];
+      return (tree.props as { children: unknown[] }).children;
     };
-    expect(await manifestLink(ID)).toMatchObject({ type: 'link', props: { rel: 'manifest', href: `/conversation/${ID}/manifest.webmanifest` } });
-    expect(await manifestLink('pas-un-uuid')).toBe(false);
+    const [manifestLink, ...appleTags] = await headTags(ID);
+    expect(manifestLink).toMatchObject({ type: 'link', props: { rel: 'manifest', href: `/conversation/${ID}/manifest.webmanifest` } });
+    expect(appleTags).toEqual(expect.arrayContaining([
+      expect.objectContaining({ type: 'meta', props: { name: 'apple-mobile-web-app-capable', content: 'yes' } }),
+      expect.objectContaining({ type: 'meta', props: { name: 'apple-mobile-web-app-status-bar-style', content: 'black' } }),
+    ]));
+    expect((await headTags('pas-un-uuid'))[0]).toBe(false);
 
     const { generateMetadata } = await import('@/app/conversation/[messageId]/page');
     expect((await generateMetadata({ params: Promise.resolve({ messageId: ID }) })).manifest).toBeNull();
@@ -172,5 +184,91 @@ describe('« Mon espace » : notifications selon l’appareil', () => {
     expect(notificationOffer(false)).toBe('ask');
     device({ ua: ANDROID, permission: 'granted' });
     expect(notificationOffer(false)).toBe('none');
+  });
+});
+
+describe('abonnement aux notifications', () => {
+  const ENDPOINT = 'https://fcm.googleapis.com/fcm/send/abc';
+  const subscription = { toJSON: () => ({ endpoint: ENDPOINT, keys: { p256dh: 'p', auth: 'a' } }) };
+
+  /** Navigateur simulé : autorisation, service worker, réponse du serveur. */
+  function browser({ permission = 'granted', ready, status = 200, existing = subscription }: {
+    permission?: NotificationPermission; ready?: Promise<unknown>; status?: number; existing?: typeof subscription | null;
+  } = {}) {
+    const registration = { pushManager: { subscribe: vi.fn(async () => subscription), getSubscription: vi.fn(async () => existing) } };
+    const requestPermission = vi.fn(async () => permission);
+    const fetch = vi.fn(async () => new Response(null, { status }));
+    vi.stubGlobal('Notification', { permission, requestPermission });
+    vi.stubGlobal('window', { Notification: {}, atob: (b64: string) => Buffer.from(b64, 'base64').toString('binary') });
+    vi.stubGlobal('navigator', { serviceWorker: {
+      register: vi.fn(async () => registration),
+      ready: ready ?? Promise.resolve(registration),
+      getRegistration: vi.fn(async () => registration),
+    } });
+    vi.stubGlobal('fetch', fetch);
+    vi.stubEnv('NEXT_PUBLIC_VAPID_PUBLIC_KEY', Buffer.from('cle-publique-de-test').toString('base64url'));
+    return { requestPermission, fetch };
+  }
+
+  afterEach(() => { vi.unstubAllGlobals(); vi.unstubAllEnvs(); vi.useRealTimers(); });
+
+  it('enregistré par le serveur : réussi, avec la portée demandée', async () => {
+    const { fetch } = browser();
+    expect(await subscribePush({ memberId: ID })).toBe(true);
+    const [, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
+    expect(JSON.parse(String(init.body))).toMatchObject({ memberId: ID, subscription: { endpoint: ENDPOINT } });
+  });
+
+  it('serveur en erreur (429) : échec, l’interface ne dit pas « activées »', async () => {
+    browser({ status: 429 });
+    expect(await subscribePush({ messageId: ID })).toBe(false);
+  });
+
+  it('service worker jamais actif : échec au bout du délai, pas d’attente sans fin', async () => {
+    vi.useFakeTimers();
+    browser({ ready: new Promise(() => {}) });
+    const result = subscribePush({ memberId: ID });
+    await vi.advanceTimersByTimeAsync(SW_READY_TIMEOUT_MS);
+    expect(await result).toBe(false);
+  });
+
+  it('autorisation refusée : échec, rien n’est envoyé', async () => {
+    const { fetch } = browser({ permission: 'denied' });
+    expect(await subscribePush({ memberId: ID })).toBe(false);
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('sans clé VAPID : échec, sans demander l’autorisation pour rien', async () => {
+    const { requestPermission } = browser();
+    vi.stubEnv('NEXT_PUBLIC_VAPID_PUBLIC_KEY', '');
+    expect(await subscribePush({ memberId: ID })).toBe(false);
+    expect(requestPermission).not.toHaveBeenCalled();
+  });
+
+  it('déjà accordées : l’abonnement de l’appareil est renvoyé ; absent, il faut reproposer le bouton', async () => {
+    const { fetch } = browser();
+    expect(await resyncPush({ memberId: ID })).toBe(true);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    browser({ existing: null });
+    expect(await resyncPush({ memberId: ID })).toBe(false);
+  });
+});
+
+// Sur iPhone, Safari ne lit le manifeste qu'au chargement de la page (WebKit,
+// DocumentLoader::loadApplicationManifest) : arrivé par une navigation interne,
+// le passant installait le manifeste du site, qui s'ouvre sur l'accueil.
+describe('arrivées sur une page installable : chargement complet', () => {
+  const SRC = path.resolve(__dirname, '..');
+  const read = (rel: string) => readFileSync(path.join(SRC, rel), 'utf8');
+
+  it.each([
+    ['app/message/page.tsx', /openFullPage\(conversationUrl\)/g, 2],
+    ['app/contact/confirme/page.tsx', /<a href=\{`\/conversation\//g, 1],
+    ['app/profil/[memberId]/ProfilClient.tsx', /<a href=\{convUrl\}/g, 1],
+    ['app/auth/login/page.tsx', /openFullPage\(redirect\)/g, 1],
+  ] as const)('%s', (file, pattern, count) => {
+    const source = read(file);
+    expect(source.match(pattern)?.length ?? 0).toBe(count);
+    expect(source).not.toMatch(/router\.push\(conversationUrl\)|<Link href=\{convUrl\}|<Link href=\{`\/conversation\//);
   });
 });

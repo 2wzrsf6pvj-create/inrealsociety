@@ -324,13 +324,14 @@ export default function ProfilClient({
           <div className="w-full flex flex-col gap-3 animate-stagger-4">
             {convUrl ? (
               /* Déjà écrit : un seul message par appareil (le serveur refuse le
-                 second), la suite se passe dans la conversation. */
-              <Link href={convUrl}
+                 second), la suite se passe dans la conversation. <a> et non
+                 <Link> : chargement complet (cf. lib/full-page). */
+              <a href={convUrl}
                 className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 text-center block"
                 style={{ minHeight: '44px' }}
               >
                 Retrouver votre conversation
-              </Link>
+              </a>
             ) : (
               <>
                 {/* #4 — contact requis annoncé en amont (évite la surprise sur la

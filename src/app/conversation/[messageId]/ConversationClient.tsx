@@ -37,7 +37,8 @@ function formatDate(iso: string): string {
 // Sur iOS Safari, le Web Push exige que le site soit installé comme PWA
 // (iOS 16.4+). Sinon, la permission est silencieusement refusée. On affiche
 // un hint pour guider l'utilisateur vers "Ajouter à l'écran d'accueil" ; l'app
-// ainsi installée rouvre cette conversation (manifeste de la page).
+// ainsi installée rouvre cette conversation (manifeste de la page). Pas de bouton
+// dans Safari : il ne pouvait rien, et remplaçait l'aide par « désactivées ».
 
 // Rien à écouter : la valeur ne change pas pendant la visite.
 const noSubscribe = () => () => {};
@@ -58,7 +59,7 @@ function PushPrompt({ pushAsked, pushGranted, pushLoading, onSubscribe, hasConta
     }
     return (
       <p className="font-ui text-xs text-brand-gray/55 italic leading-relaxed">
-        Notifications désactivées.{' '}
+        Notifications non activées.{' '}
         {hasContact
           ? 'Vous recevrez un email à la place.'
           : 'Revenez sur cette page pour voir la réponse.'}
@@ -66,16 +67,19 @@ function PushPrompt({ pushAsked, pushGranted, pushLoading, onSubscribe, hasConta
     );
   }
 
+  if (iosNotPwa) {
+    return (
+      <p className="font-ui text-xxs text-brand-gray/60 leading-relaxed">
+        Sur iPhone : ajoutez d&apos;abord la page à l&apos;écran d&apos;accueil
+        (<span className="text-brand-white/50">Partager</span>, sous ⋯ depuis iOS 26, puis{' '}
+        <span className="text-brand-white/50">Sur l&apos;écran d&apos;accueil</span>) et
+        ouvrez-la depuis son icône pour activer les notifications.
+      </p>
+    );
+  }
+
   return (
     <div className="w-full flex flex-col gap-2">
-      {iosNotPwa && (
-        <p className="font-ui text-xxs text-brand-gray/60 leading-relaxed">
-          Sur iPhone : ajoutez d&apos;abord la page à l&apos;écran d&apos;accueil
-          (<span className="text-brand-white/50">Partager</span>, sous ⋯ depuis iOS 26, puis{' '}
-          <span className="text-brand-white/50">Sur l&apos;écran d&apos;accueil</span>) et
-          ouvrez-la depuis son icône pour activer les notifications.
-        </p>
-      )}
       <button onClick={onSubscribe} disabled={pushLoading}
         className="w-full py-3 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.1em] hover:border-brand-gray/35 transition-colors disabled:opacity-40"
         style={{ minHeight: '44px' }}>
@@ -329,8 +333,7 @@ export default function ConversationClient({
   const handleSubscribePush = async () => {
     setPushLoading(true);
     try {
-      await subscribePush(isOwner ? { memberId: message.member_id } : { messageId: message.id });
-      setPushGranted(typeof Notification !== 'undefined' && Notification.permission === 'granted');
+      setPushGranted(await subscribePush(isOwner ? { memberId: message.member_id } : { messageId: message.id }));
     } catch { setPushGranted(false); }
     setPushAsked(true);
     setPushLoading(false);
@@ -469,6 +472,16 @@ export default function ConversationClient({
                   Connectez-vous pour répondre
                 </Link>.
               </p>
+              {/* Être notifié reste possible : le lien suffit déjà pour lire le fil.
+                  C'est le cas de l'app installée sur iPhone avant iOS 17.2, qui ne
+                  reprend pas le cookie de l'appareil d'origine. */}
+              <PushPrompt
+                pushAsked={pushAsked}
+                pushGranted={pushGranted}
+                pushLoading={pushLoading}
+                onSubscribe={handleSubscribePush}
+                hasContact={!!message.sender_contact}
+              />
             </div>
           ) : isMyTurn ? (
             /* C'est mon tour de répondre — unifié sur ThreadReplyForm */

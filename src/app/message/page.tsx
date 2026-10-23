@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { openFullPage } from '@/lib/full-page';
 import { captureEvent } from '@/lib/posthog-client';
 import { isValidEmail, isInstagramHandle, isValidFirstName } from '@/lib/validators';
 import { haptic } from '@/lib/haptics';
@@ -185,7 +186,7 @@ function MessageForm() {
       }
 
       // conversationUrl porte un CHEMIN interne (cohérent avec l'assainissement à la
-      // relecture localStorage) → router.push reçoit toujours un path, jamais une URL
+      // relecture localStorage) → openFullPage reçoit toujours un path, jamais une URL
       // absolue. Le localStorage garde l'URL complète (relue + assainie en amont).
       const convPath = `/conversation/${data.messageId}`;
       localStorage.setItem(`conversation_${memberId}`, `${window.location.origin}${convPath}`);
@@ -303,7 +304,7 @@ function MessageForm() {
         </p>
         <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
         {conversationUrl && (
-          <button onClick={() => router.push(conversationUrl)}
+          <button onClick={() => openFullPage(conversationUrl)}
             className="w-full max-w-xs py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all"
             style={{ minHeight: '44px' }}>
             Voir la conversation
@@ -356,7 +357,7 @@ function MessageForm() {
         </div>
         <div className="w-full flex flex-col gap-3">
           <p className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Votre fil de conversation</p>
-          <button onClick={() => router.push(conversationUrl)}
+          <button onClick={() => openFullPage(conversationUrl)}
             className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200"
             style={{ minHeight: '44px' }}
           >

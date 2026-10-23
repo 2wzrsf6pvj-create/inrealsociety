@@ -10,11 +10,18 @@
 //     jusque-là aucun manifeste lisible (cf. son layout).
 // Ils reprennent public/manifest.json et ne changent que le point d'entrée.
 // Servis hors proxy (extension .webmanifest) : le navigateur les demande sans
-// cookies, un passage par la connexion les rendrait illisibles. Le lien doit
-// être dans le <head>, seul endroit où Chrome et Safari le cherchent : d'où le
-// layout de la conversation (cf. son en-tête).
+// cookies, un passage par la connexion les rendrait illisibles.
+// Deux conditions pour qu'ils soient lus :
+//   - le lien est dans le <head>, seul endroit où Chrome et Safari le cherchent
+//     (d'où le layout de la conversation) ;
+//   - sur iPhone, Safari ne lit le manifeste qu'au chargement de la page : on
+//     arrive sur ces pages par un chargement complet (cf. lib/full-page).
 
 import base from '../../public/manifest.json';
+
+/** Réglages de l'app installée sur iPhone : layout racine, et layout de la
+ *  conversation dont les métadonnées arrivent trop tard dans le <head>. */
+export const APPLE_WEB_APP = { title: 'In Real Society', statusBarStyle: 'black' } as const;
 
 export function webManifest(startUrl: string) {
   return { ...base, id: startUrl, start_url: startUrl };

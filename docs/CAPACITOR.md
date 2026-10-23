@@ -17,29 +17,49 @@ des magasins ».
   l'explique au porteur sur iPhone, la conversation l'explique au passant.
 - **Android** : Chrome propose l'installation. Les notifications marchent aussi
   dans le navigateur.
-- **Où elle s'ouvre** : sur l'adresse de départ du manifeste de la page
-  d'installation, pas sur la page elle-même (`src/lib/web-manifest.ts`) :
+- **Où elle s'ouvre** : sur l'adresse de départ du manifeste, pas sur la page
+  elle-même (`src/lib/web-manifest.ts`) :
   - accueil du site (`/manifest.json`) ;
   - « Mon espace » (`/dashboard/manifest.webmanifest`) ;
   - la conversation (`/conversation/<id>/manifest.webmanifest`).
-- **Piège de Next.js 16** : sur une page dont les métadonnées viennent de
-  `generateMetadata` (profil, conversation…), Next les envoie après coup dans le
-  `<body>`. Chrome et Safari n'y cherchent pas le manifeste. La conversation pose
-  donc le sien dans son `layout.tsx`, que React place dans le `<head>`. Une
-  autre page à rendre installable devra faire de même.
+- **Piège de Safari** : il ne lit le manifeste qu'une fois, au chargement de la
+  page (WebKit, `DocumentLoader::loadApplicationManifest`). Arrivé par une
+  navigation interne de Next, le visiteur installerait le manifeste de la page
+  précédente. On arrive donc sur la conversation et, après la connexion, sur
+  « Mon espace » par un chargement complet (`src/lib/full-page.ts`, ou `<a href>`
+  plutôt que `<Link>`). Chrome, lui, suit les changements.
+- **Piège de Next.js 16** : quand `generateMetadata` attend la base (profil,
+  conversation…), Next envoie les métadonnées de la page après coup, dans le
+  `<body>`. Il ne remet ensuite dans le `<head>` que les icônes. Or Chrome et
+  Safari n'y cherchent pas le manifeste. La conversation pose donc le sien, et
+  les balises Apple, dans son `layout.tsx`, rendu sans attente : React les place
+  dans le `<head>`. Une autre page à rendre installable devra faire de même.
 - **Icônes** : `node scripts/build-app-icons.mjs` régénère les PNG depuis le
   monogramme (écran d'accueil iPhone, Android normale et adaptative, badge des
   notifications). `app-installable.test.ts` échoue si un fichier n'est plus à jour.
+- **Notifications** : déjà accordées, l'abonnement de l'appareil est renvoyé au
+  serveur à chaque visite de « Mon espace » ; s'il n'existe plus, le bouton
+  revient. Un échec d'activation n'est plus annoncé comme une réussite.
+- **Hors connexion** : le service worker ne garde que les pages publiques
+  fixes (accueil, boutique, manifeste, CGV, confidentialité), sans cookies.
+  Ailleurs, l'app installée affiche une page « Pas de connexion » avec
+  « Réessayer ». Rien de personnel n'entre dans Cache Storage.
 - **Session** : depuis iOS 17.2, l'ajout à l'écran d'accueil copierait les
   cookies (iGeneration ; Apple l'a annoncé pour macOS). Le porteur resterait
   connecté, et le passant garderait le droit de répondre (cookie de l'appareil
-  d'origine). Avant iOS 17.2, il faut se reconnecter dans l'app.
+  d'origine). Safari et l'app partagent alors la même session Supabase : une
+  déconnexion des deux est possible quand l'un renouvelle la session. Avant
+  iOS 17.2, le porteur se reconnecte dans l'app ; le passant peut y activer les
+  notifications, mais répond depuis Safari.
 - **À vérifier sur un vrai iPhone avant le test terrain** :
   - icône sur l'écran d'accueil ;
-  - ouverture sur « Mon espace », toujours connecté ;
+  - ouverture sur « Mon espace », toujours connecté, après quelques jours ;
   - barre d'état noire, sans texte par-dessus ;
   - notification reçue app fermée ;
-  - conversation rouverte par l'app du passant, qui peut y répondre.
+  - parcours réel du passant : QR → profil → message → « Voir la
+    conversation » → ajout à l'écran d'accueil. L'app doit rouvrir la
+    conversation, et le passant doit pouvoir y répondre ;
+  - mode avion : page « Pas de connexion ».
 
 ## Le jour des magasins : ce qu'il faudra
 
@@ -167,6 +187,8 @@ npx capacitor-assets generate   # depuis assets/icon.png (1024², plein cadre) +
   `api.Notification`, `manifests.webapp.icons`, `api.Navigator.vibrate`).
 - Capacitor 8.4.3 : `node_modules/@capacitor/cli/dist/declarations.d.ts` (`server.url`,
   `server.errorPath`) et `WebViewDelegationHandler.swift` / `BridgeWebViewClient.java`.
+- WebKit, lecture du manifeste une fois par chargement (`loadApplicationManifest`) :
+  https://github.com/WebKit/WebKit/blob/main/Source/WebCore/loader/DocumentLoader.cpp
 - Cookies copiés à l'ajout (iOS 17.2) :
   https://www.igen.fr/ios/2023/12/ios-172-et-macos-142-ameliorent-leur-gestion-des-web-apps-141013
 - Partager sous « ⋯ » (iOS 26) :
