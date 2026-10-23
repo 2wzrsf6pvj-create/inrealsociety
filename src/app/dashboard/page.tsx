@@ -8,6 +8,8 @@ import { redirect } from 'next/navigation';
 export const metadata: Metadata = {
   title: 'Mon espace',
   description: 'Gérez votre profil, consultez vos scans et vos messages sur In Real Society.',
+  // Installée depuis ici, l'app s'ouvre sur « Mon espace » (cf. lib/web-manifest).
+  manifest: '/dashboard/manifest.webmanifest',
 };
 import { createClient } from '@/lib/supabase-server';
 import { getMemberByAuthUserId } from '@/lib/supabase';

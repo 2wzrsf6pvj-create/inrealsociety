@@ -8,6 +8,7 @@ import SunToggle from '@/app/components/ui/SunToggle';
 import { MAX_THREAD_MESSAGES as MAX_THREAD, MODERATION_REFUSAL_NOTICE } from '@/lib/constants';
 import ReportProfile from '@/app/components/ReportProfile';
 import { haptic } from '@/lib/haptics';
+import { isIOS, isStandaloneWebApp, subscribePush } from '@/lib/push-client';
 
 interface ConversationMessage {
   id: string; member_id: string; content: string; sender_contact: string | null;
@@ -32,56 +33,15 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' });
 }
 
-// Un device n'a qu'UN scope à la fois (push_subscriptions.onConflict:'endpoint').
-// On choisit donc le bon scope selon le viewer :
-//   * scanner → thread (messageId) : abonné à CETTE conversation.
-//   * porteur → membre (memberId)  : abonné à TOUS ses messages, comme depuis le
-//     dashboard. Indispensable car la réponse du scanner notifie le porteur via
-//     notifyMemberSubscribers (member_id) ; s'abonner ici en thread scope
-//     écraserait l'abonnement membre et il ne recevrait plus rien.
-async function subscribePush(scope: { messageId: string } | { memberId: string }): Promise<void> {
-  if (!('Notification' in window) || !('serviceWorker' in navigator)) return;
-  try {
-    const perm = await Notification.requestPermission();
-    if (perm !== 'granted') return;
-    const reg = await navigator.serviceWorker.register('/sw.js');
-    const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-    if (!vapidKey) return;
-    const padding = '='.repeat((4 - vapidKey.length % 4) % 4);
-    const base64  = (vapidKey + padding).replace(/-/g, '+').replace(/_/g, '/');
-    const raw     = window.atob(base64);
-    const key     = Uint8Array.from(Array.from(raw), c => c.charCodeAt(0));
-    const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
-    const j   = sub.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } };
-    await fetch('/api/push/subscribe', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        subscription: { endpoint: j.endpoint, keys: { p256dh: j.keys.p256dh, auth: j.keys.auth } },
-        ...scope,
-      }),
-    });
-  } catch (err) { console.error('[push] Échec inscription push:', err); }
-}
-
 // ─── Push prompt avec iOS-awareness ─────────────────────────────────────────
 // Sur iOS Safari, le Web Push exige que le site soit installé comme PWA
 // (iOS 16.4+). Sinon, la permission est silencieusement refusée. On affiche
-// un hint pour guider l'utilisateur vers "Ajouter à l'écran d'accueil".
-
-function isIOS(): boolean {
-  if (typeof navigator === 'undefined') return false;
-  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !('MSStream' in window);
-}
+// un hint pour guider l'utilisateur vers "Ajouter à l'écran d'accueil" ; l'app
+// ainsi installée rouvre cette conversation (manifeste de la page). Pas de bouton
+// dans Safari : il ne pouvait rien, et remplaçait l'aide par « désactivées ».
 
 // Rien à écouter : la valeur ne change pas pendant la visite.
 const noSubscribe = () => () => {};
-
-function isStandalonePWA(): boolean {
-  if (typeof window === 'undefined') return false;
-  return window.matchMedia('(display-mode: standalone)').matches
-      || (navigator as Navigator & { standalone?: boolean }).standalone === true;
-}
 
 function PushPrompt({ pushAsked, pushGranted, pushLoading, onSubscribe, hasContact }: {
   pushAsked: boolean;
@@ -91,7 +51,7 @@ function PushPrompt({ pushAsked, pushGranted, pushLoading, onSubscribe, hasConta
   hasContact: boolean;
 }) {
   // false au rendu serveur et pendant l'hydratation, puis la vraie valeur.
-  const iosNotPwa = useSyncExternalStore(noSubscribe, () => isIOS() && !isStandalonePWA(), () => false);
+  const iosNotPwa = useSyncExternalStore(noSubscribe, () => isIOS() && !isStandaloneWebApp(), () => false);
 
   if (pushAsked) {
     if (pushGranted) {
@@ -99,7 +59,7 @@ function PushPrompt({ pushAsked, pushGranted, pushLoading, onSubscribe, hasConta
     }
     return (
       <p className="font-ui text-xs text-brand-gray/55 italic leading-relaxed">
-        Notifications désactivées.{' '}
+        Notifications non activées.{' '}
         {hasContact
           ? 'Vous recevrez un email à la place.'
           : 'Revenez sur cette page pour voir la réponse.'}
@@ -107,15 +67,19 @@ function PushPrompt({ pushAsked, pushGranted, pushLoading, onSubscribe, hasConta
     );
   }
 
+  if (iosNotPwa) {
+    return (
+      <p className="font-ui text-xxs text-brand-gray/60 leading-relaxed">
+        Sur iPhone : ajoutez d&apos;abord la page à l&apos;écran d&apos;accueil
+        (<span className="text-brand-white/50">Partager</span>, sous ⋯ depuis iOS 26, puis{' '}
+        <span className="text-brand-white/50">Sur l&apos;écran d&apos;accueil</span>) et
+        ouvrez-la depuis son icône pour activer les notifications.
+      </p>
+    );
+  }
+
   return (
     <div className="w-full flex flex-col gap-2">
-      {iosNotPwa && (
-        <p className="font-ui text-xxs text-brand-gray/60 leading-relaxed">
-          Sur iPhone : ajoutez d&apos;abord la page à l&apos;écran d&apos;accueil
-          (<span className="text-brand-white/50">Partager → Sur l&apos;écran d&apos;accueil</span>)
-          pour activer les notifications.
-        </p>
-      )}
       <button onClick={onSubscribe} disabled={pushLoading}
         className="w-full py-3 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.1em] hover:border-brand-gray/35 transition-colors disabled:opacity-40"
         style={{ minHeight: '44px' }}>
@@ -330,7 +294,12 @@ export default function ConversationClient({
         !notifiedRef.current.has(newReply.id)
       ) {
         notifiedRef.current.add(newReply.id);
-        new Notification('Nouveau message', { body: newReply.content.slice(0, 80), icon: '/icon.svg' });
+        // Sur mobile (Chrome Android, app iPhone), le constructeur lève une
+        // erreur : seul le service worker y affiche une notification, et le push
+        // du serveur s'en charge.
+        try {
+          new Notification('Nouveau message', { body: newReply.content.slice(0, 80), icon: '/icon-192.png' });
+        } catch { /* mobile : cf. ci-dessus */ }
       }
     };
 
@@ -364,8 +333,7 @@ export default function ConversationClient({
   const handleSubscribePush = async () => {
     setPushLoading(true);
     try {
-      await subscribePush(isOwner ? { memberId: message.member_id } : { messageId: message.id });
-      setPushGranted(typeof Notification !== 'undefined' && Notification.permission === 'granted');
+      setPushGranted(await subscribePush(isOwner ? { memberId: message.member_id } : { messageId: message.id }));
     } catch { setPushGranted(false); }
     setPushAsked(true);
     setPushLoading(false);
@@ -504,6 +472,16 @@ export default function ConversationClient({
                   Connectez-vous pour répondre
                 </Link>.
               </p>
+              {/* Être notifié reste possible : le lien suffit déjà pour lire le fil.
+                  C'est le cas de l'app installée sur iPhone avant iOS 17.2, qui ne
+                  reprend pas le cookie de l'appareil d'origine. */}
+              <PushPrompt
+                pushAsked={pushAsked}
+                pushGranted={pushGranted}
+                pushLoading={pushLoading}
+                onSubscribe={handleSubscribePush}
+                hasContact={!!message.sender_contact}
+              />
             </div>
           ) : isMyTurn ? (
             /* C'est mon tour de répondre — unifié sur ThreadReplyForm */

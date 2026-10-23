@@ -60,7 +60,11 @@ describe('proxy — parcours du passant anonyme', () => {
 // (« The script resource is behind a redirect ») → le passant n'était jamais
 // notifié de la réponse du porteur ; manifeste illisible → pas d'installation.
 describe('proxy — fichiers publics servis tels quels', () => {
-  it.each(['/sw.js', '/manifest.json', '/favicon.svg', '/shop/tee-blanc-face.png'])(
+  it.each([
+    '/sw.js', '/manifest.json', '/favicon.svg', '/shop/tee-blanc-face.png', '/apple-touch-icon.png',
+    // Manifestes de page, demandés sans cookies même par le porteur connecté.
+    '/dashboard/manifest.webmanifest', `/conversation/${ID}/manifest.webmanifest`,
+  ])(
     '%s ne passe pas par le proxy', (path) => {
       expect(matcher.test(path)).toBe(false);
     });

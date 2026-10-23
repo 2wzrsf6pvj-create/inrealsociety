@@ -1,13 +1,14 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase-browser';
 import { safeInternalPath } from '@/lib/safe-redirect';
+import { LOGIN_SUCCESS_KEY } from '@/lib/constants';
+import { openFullPage } from '@/lib/full-page';
 
 export default function LoginPage() {
-  const router       = useRouter();
   const searchParams = useSearchParams();
   const redirect     = safeInternalPath(searchParams.get('redirect'));
 
@@ -47,8 +48,12 @@ export default function LoginPage() {
       return;
     }
 
-    router.push(redirect);
-    router.refresh();
+    if (redirect.startsWith('/dashboard')) {
+      try { sessionStorage.setItem(LOGIN_SUCCESS_KEY, '1'); } catch { /* stockage indispo */ }
+    }
+    // Chargement complet : la page suivante (souvent « Mon espace ») lit son
+    // manifeste et la nouvelle session (cf. lib/full-page).
+    openFullPage(redirect);
   };
 
   return (

@@ -67,6 +67,30 @@ test.describe('Pages publiques', () => {
   });
 });
 
+// Chrome et Safari ne cherchent le manifeste que dans le <head>. Quand
+// generateMetadata attend la base, Next envoie les métadonnées dans le <body> :
+// la conversation pose les siennes dans son layout. HTML brut du serveur, pour
+// juger de ce que le navigateur trouve au chargement.
+test.describe('App installable', () => {
+  const head = (html: string) => html.slice(0, html.indexOf('</head>'));
+
+  test('accueil : manifeste, icône PNG et balises Apple dans le <head>', async ({ request }) => {
+    const html = head(await (await request.get('/')).text());
+    expect(html).toContain('<link rel="manifest" href="/manifest.json"');
+    expect(html).toContain('<link rel="apple-touch-icon" href="/apple-touch-icon.png"');
+    expect(html).toContain('<meta name="apple-mobile-web-app-capable" content="yes"');
+    expect(html).toContain('<meta name="apple-mobile-web-app-status-bar-style" content="black"');
+  });
+
+  test('conversation : son manifeste et les balises Apple dans le <head>', async ({ request }) => {
+    test.setTimeout(60_000);   // sans base : la page attend l'échec des requêtes
+    const id = '541c253f-592d-4f6e-8de6-d32676a72df1';
+    const html = head(await (await request.get(`/conversation/${id}`, { timeout: 55_000 })).text());
+    expect(html).toContain(`<link rel="manifest" href="/conversation/${id}/manifest.webmanifest"`);
+    expect(html).toContain('<meta name="apple-mobile-web-app-status-bar-style" content="black"');
+  });
+});
+
 test.describe('Pages protégées (redirect login attendu sans auth)', () => {
   test('/dashboard redirige vers login', async ({ page }) => {
     const response = await page.goto('/dashboard');

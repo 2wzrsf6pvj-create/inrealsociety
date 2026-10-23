@@ -28,6 +28,9 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
     title: `Conversation avec ${name}`,
     description: `Échangez avec ${name} sur In Real Society.`,
     robots: { index: false, follow: false },
+    // Le manifeste de la conversation est posé par layout.tsx, dans le <head>.
+    // null retire celui du site : diffusé ici, il atterrirait dans le <body>.
+    manifest: null,
   };
 }
 

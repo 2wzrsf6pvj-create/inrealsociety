@@ -180,11 +180,13 @@ export async function proxy(req: NextRequest) {
 
 export const config = {
   matcher: [
-    // Hors proxy : fichiers statiques, et les deux fichiers publics que le
-    // navigateur va chercher tout seul. /sw.js et /manifest.json passaient par le
-    // proxy : un visiteur non connecté était redirigé vers la connexion, le
-    // navigateur refusait alors le service worker (notifications « Me notifier de
-    // sa réponse » du passant jamais reçues) et le manifeste (installation).
-    '/((?!_next/static|_next/image|favicon.ico|sw\\.js$|manifest\\.json$|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    // Hors proxy : fichiers statiques, et les fichiers publics que le navigateur
+    // va chercher tout seul. /sw.js et /manifest.json passaient par le proxy : un
+    // visiteur non connecté était redirigé vers la connexion, le navigateur
+    // refusait alors le service worker (notifications « Me notifier de sa
+    // réponse » du passant jamais reçues) et le manifeste (installation). Les
+    // manifestes de page (.webmanifest, cf. lib/web-manifest) sont demandés sans
+    // cookies, même par le porteur connecté.
+    '/((?!_next/static|_next/image|favicon.ico|sw\\.js$|manifest\\.json$|.*\\.(?:svg|png|jpg|jpeg|gif|webp|webmanifest)$).*)',
   ],
 };

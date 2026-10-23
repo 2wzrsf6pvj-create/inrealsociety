@@ -10,6 +10,7 @@ import ServiceWorkerRegistration from './components/ServiceWorkerRegistration';
 import SunScope from './components/ui/SunScope';
 import PageTransition from './components/ui/PageTransition';
 import { APP_URL } from '@/lib/constants';
+import { APPLE_WEB_APP } from '@/lib/web-manifest';
 import './globals.css';
 
 const cormorant = Cormorant_Garamond({
@@ -50,14 +51,20 @@ export const metadata: Metadata = {
   },
   icons: {
     icon:  '/favicon.svg',
-    apple: '/icon.svg',
+    // PNG : l'iPhone ne lit pas le SVG et mettait une capture de la page sur
+    // l'écran d'accueil (cf. scripts/build-app-icons.mjs).
+    apple: '/apple-touch-icon.png',
   },
   manifest: '/manifest.json',
   appleWebApp: {
-    capable:       true,
-    title:         'In Real Society',
-    statusBarStyle: 'black-translucent',
+    capable: true,
+    // Barre noire opaque : en « black-translucent », l'app installée sur iPhone
+    // dessine sous l'heure et la batterie, et aucune page ne réserve cette marge.
+    ...APPLE_WEB_APP,
   },
+  // Next 16 n'écrit que « mobile-web-app-capable » ; Safari lit encore la
+  // version Apple, sans laquelle la couleur de la barre d'état est ignorée.
+  other: { 'apple-mobile-web-app-capable': 'yes' },
 };
 
 export default async function RootLayout({

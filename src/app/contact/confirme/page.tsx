@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { BrandMark } from '@/app/components/ui/BrandMark';
 import { CONTACT_VERIFY_TTL_DAYS } from '@/lib/contact-verification';
 
@@ -56,11 +55,13 @@ export default async function ContactConfirmePage(
         </div>
 
         {conversation && (
-          <Link href={`/conversation/${conversation}`}
+          // <a> et non <Link> : chargement complet, pour que l'app ajoutée à l'écran
+          // d'accueil rouvre la conversation (cf. lib/full-page).
+          <a href={`/conversation/${conversation}`}
             className="w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-100 transition-colors"
             style={{ minHeight: '44px' }}>
             Voir la conversation
-          </Link>
+          </a>
         )}
       </div>
     </main>

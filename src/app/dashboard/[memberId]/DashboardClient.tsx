@@ -7,6 +7,7 @@
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { captureEvent, identifyMember } from '@/lib/posthog-client';
+import { LOGIN_SUCCESS_KEY } from '@/lib/constants';
 import type { Member, Scan, Message } from '@/lib/types';
 import HomeSection from './components/HomeSection';
 import InboxSection from './components/InboxSection';
@@ -149,6 +150,14 @@ export default function DashboardClient({
   React.useEffect(() => {
     if (typeof window === 'undefined') return;
 
+    // Drapeau de la page de connexion, consommé d'abord : si un autre message
+    // passe avant, celui-ci ne doit pas ressortir plus tard, hors de propos.
+    let justLoggedIn = false;
+    try {
+      justLoggedIn = !!sessionStorage.getItem(LOGIN_SUCCESS_KEY);
+      sessionStorage.removeItem(LOGIN_SUCCESS_KEY);
+    } catch { /* stockage indispo */ }
+
     // Toast profil mis à jour
     const updated = sessionStorage.getItem('profile_updated');
     if (updated) {
@@ -181,12 +190,10 @@ export default function DashboardClient({
     }
 
     // Toast connexion réussie — message neutre (l'en-tête salue déjà par le nom,
-    // un toast « Bienvenue {nom} » ferait doublon).
-    const justLoggedIn = sessionStorage.getItem('just_logged_in');
-    if (!justLoggedIn) {
-      sessionStorage.setItem('just_logged_in', '1');
-      return showToast('Connexion réussie.', 2500);
-    }
+    // un toast « Bienvenue {nom} » ferait doublon). Seulement juste après la page
+    // de connexion : il s'affichait à chaque nouvelle session du navigateur, donc
+    // à chaque ouverture de l'app installée sur l'écran d'accueil.
+    if (justLoggedIn) return showToast('Connexion réussie.', 2500);
   }, [member.name, member.scan_count, member.plan, showToast]);
 
   // Premium en attente de confirmation : on recharge les données du serveur toutes
