@@ -32,13 +32,13 @@ function UpgradeBanner({ memberId, source, headline, sublabel, onUpgrade }: {
       onClick={handleClick}
       className="w-full bg-[#0a0a08] border border-[#C5A059]/25 rounded-[2px] p-3 flex items-center gap-3 hover:border-[#C5A059]/50 transition-colors text-left"
     >
-      <span className="font-ui text-base text-[#C5A059]/70 leading-none">✦</span>
+      <span aria-hidden="true" className="font-ui text-base text-[#C5A059]/70 leading-none">✦</span>
       <div className="flex-1 flex flex-col gap-0.5">
         <span className="font-ui text-xs tracking-[0.12em] uppercase text-[#C5A059]/80">{headline}</span>
         <span className="font-ui text-xxs text-brand-gray/50">{sublabel}</span>
       </div>
-      <span className="font-ui text-xxs text-[#C5A059]/60 tracking-[0.15em] uppercase">
-        Voir l&apos;offre ✦
+      <span className="font-ui text-xxs text-[#C5A059]/85 tracking-[0.15em] uppercase">
+        Voir l&apos;offre<span aria-hidden="true"> ✦</span>
       </span>
     </button>
   );
@@ -170,7 +170,7 @@ export default function InboxSection({ messages: initialMessages, memberId, plan
                     ? <><span className="text-brand-white/75">{msg.sender_name}</span>{msg.sender_contact ? ` · ${msg.sender_contact}` : ''}</>
                     : (msg.sender_contact || 'Anonyme')}
                 </span>
-                <span className="text-brand-gray/15">·</span>
+                <span aria-hidden="true" className="text-brand-gray/15">·</span>
                 <span className="font-ui text-xs text-brand-gray/55">
                   {timeAgo(msg.created_at)}
                 </span>
@@ -179,8 +179,8 @@ export default function InboxSection({ messages: initialMessages, memberId, plan
               {msg.blocked_at ? (
                 /* Conversation bloquée — gérer/débloquer depuis la conversation */
                 <div className="flex items-center gap-2">
-                  <span className="font-ui text-xxs text-red-400/60 tracking-[0.1em] uppercase">Bloqué</span>
-                  <span className="text-brand-gray/10">|</span>
+                  <span className="font-ui text-xxs text-red-400/80 tracking-[0.1em] uppercase">Bloqué</span>
+                  <span aria-hidden="true" className="text-brand-gray/10">|</span>
                   <Link href={`/conversation/${msg.id}`}
                     className="font-ui text-xs text-brand-gray/50 hover:text-brand-white/80 transition-colors">
                     Gérer
@@ -198,9 +198,9 @@ export default function InboxSection({ messages: initialMessages, memberId, plan
                     Répondre
                   </Link>
                 )}
-                <span className="text-brand-gray/10">|</span>
+                <span aria-hidden="true" className="text-brand-gray/10">|</span>
                 {isReported ? (
-                  <span className="font-ui text-xxs text-red-400/60">Signalé</span>
+                  <span className="font-ui text-xxs text-red-400/80">Signalé</span>
                 ) : confirmingId === msg.id ? (
                   <span className="flex items-center gap-1">
                     <button onClick={() => handleReport(msg.id)} disabled={reportingId === msg.id}
@@ -211,7 +211,7 @@ export default function InboxSection({ messages: initialMessages, memberId, plan
                       className="font-ui text-xxs text-brand-gray/55 hover:text-brand-white/80 transition-colors">
                       Annuler
                     </button>
-                    {reportError === msg.id && <span className="font-ui text-xxs text-red-400/70">échec</span>}
+                    {reportError === msg.id && <span className="font-ui text-xxs text-red-400/80">échec</span>}
                   </span>
                 ) : (
                   <button

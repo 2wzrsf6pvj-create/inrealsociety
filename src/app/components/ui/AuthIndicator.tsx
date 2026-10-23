@@ -99,39 +99,45 @@ export default function AuthIndicator() {
   if (HIDDEN_PATHS.some(p => pathname.startsWith(p))) return null;
   if (!loaded) return null;
 
+  // Dans une zone « Compte » (repère pour les lecteurs d'écran) ; le lien
+  // s'annonce par son texte visible (« Mon espace », « Connexion »), ce que la
+  // commande vocale retrouve.
   if (auth.loggedIn) {
     return (
-      <Link
-        href="/dashboard"
-        className="fixed top-4 right-4 z-50 flex items-center gap-2 px-3 py-1.5 rounded-full border border-brand-white/10 bg-brand-black/80 backdrop-blur-sm hover:border-brand-white/25 transition-all duration-300 group"
-        aria-label="Aller au dashboard"
-      >
-        <div className="w-6 h-6 rounded-full border border-brand-white/20 bg-brand-white/5 flex items-center justify-center group-hover:border-brand-white/40 transition-colors">
-          <span className="font-ui text-[9px] font-medium text-brand-white/70 tracking-wider">
-            {auth.name ? getInitials(auth.name) : '?'}
+      <nav aria-label="Compte">
+        <Link
+          href="/dashboard"
+          className="fixed top-4 right-4 z-50 flex items-center gap-2 px-3 py-1.5 rounded-full border border-brand-white/10 bg-brand-black/80 backdrop-blur-sm hover:border-brand-white/25 transition-all duration-300 group"
+        >
+          <div aria-hidden="true" className="w-6 h-6 rounded-full border border-brand-white/20 bg-brand-white/5 flex items-center justify-center group-hover:border-brand-white/40 transition-colors">
+            <span className="font-ui text-xxs font-medium text-brand-white/70 tracking-wider">
+              {auth.name ? getInitials(auth.name) : '?'}
+            </span>
+          </div>
+          <span className="font-ui text-xxs text-brand-white/50 tracking-[0.15em] uppercase group-hover:text-brand-white/80 transition-colors">
+            Mon espace
           </span>
-        </div>
-        <span className="font-ui text-[10px] text-brand-white/50 tracking-[0.15em] uppercase group-hover:text-brand-white/80 transition-colors">
-          Mon espace
-        </span>
-      </Link>
+        </Link>
+      </nav>
     );
   }
 
   return (
-    <Link
-      href="/auth/login"
-      className="fixed top-4 right-4 z-50 flex items-center gap-2 px-3 py-1.5 rounded-full border border-brand-gray/10 bg-brand-black/80 backdrop-blur-sm hover:border-brand-gray/25 transition-all duration-300"
-    >
-      <div className="w-6 h-6 rounded-full border border-brand-gray/15 flex items-center justify-center">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-brand-gray/55">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-          <circle cx="12" cy="7" r="4" />
-        </svg>
-      </div>
-      <span className="font-ui text-[10px] text-brand-gray/55 tracking-[0.15em] uppercase hover:text-brand-white/80 transition-colors">
-        Connexion
-      </span>
-    </Link>
+    <nav aria-label="Compte">
+      <Link
+        href="/auth/login"
+        className="fixed top-4 right-4 z-50 flex items-center gap-2 px-3 py-1.5 rounded-full border border-brand-gray/10 bg-brand-black/80 backdrop-blur-sm hover:border-brand-gray/25 transition-all duration-300"
+      >
+        <div aria-hidden="true" className="w-6 h-6 rounded-full border border-brand-gray/15 flex items-center justify-center">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-brand-gray/55">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+            <circle cx="12" cy="7" r="4" />
+          </svg>
+        </div>
+        <span className="font-ui text-xxs text-brand-gray/55 tracking-[0.15em] uppercase hover:text-brand-white/80 transition-colors">
+          Connexion
+        </span>
+      </Link>
+    </nav>
   );
 }

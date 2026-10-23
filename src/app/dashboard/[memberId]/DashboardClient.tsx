@@ -229,9 +229,12 @@ export default function DashboardClient({
       <div className="absolute top-[-15%] right-[-15%] w-[28rem] h-[28rem] rounded-full pointer-events-none"
         style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.07) 0%, transparent 70%)' }} />
 
-      {/* Toast notification — entrée animate-stagger-1, sortie animate-toast-out */}
+      {/* Toast notification — entrée animate-stagger-1, sortie animate-toast-out.
+          Lu par les lecteurs d'écran via la zone « status », présente dès
+          l'affichage (sinon l'annonce se perd), sans le symbole décoratif. */}
+      <p role="status" className="sr-only">{toast.replace(/^✦\s*/, '')}</p>
       {toast && (
-        <div className={`fixed top-4 z-50 px-4 py-2 bg-brand-white/10 border border-brand-white/20 rounded-[2px] backdrop-blur-sm ${toastHiding ? 'animate-toast-out' : 'animate-stagger-1'}`}>
+        <div aria-hidden="true" className={`fixed top-4 z-50 px-4 py-2 bg-brand-white/10 border border-brand-white/20 rounded-[2px] backdrop-blur-sm ${toastHiding ? 'animate-toast-out' : 'animate-stagger-1'}`}>
           <p className="font-ui text-sm text-brand-white/80">{toast}</p>
         </div>
       )}
@@ -240,9 +243,9 @@ export default function DashboardClient({
 
         {/* Header */}
         <div className="text-center flex flex-col gap-2">
-          <h2 className="font-display text-3xl font-light tracking-[0.06em]">
+          <h1 className="font-display text-3xl font-light tracking-[0.06em]">
             Bienvenue<br /><span className="font-semibold">{member.name}.</span>
-          </h2>
+          </h1>
           <p className="font-ui text-sm font-light text-brand-gray/50 tracking-[0.1em]">
             {member.is_paused
               ? 'Profil en pause.'

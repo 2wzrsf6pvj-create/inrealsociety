@@ -211,7 +211,7 @@ export default function ProfilClient({
         {/* Bannière aperçu (porteur en mode « vis ton premier scan ») */}
         {preview && (
           <div className="w-full bg-[#0a0a08] border border-[#C5A059]/25 rounded-[2px] px-4 py-3 flex flex-col gap-1 text-center">
-            <p className="font-ui text-xxs text-[#C5A059]/80 tracking-[0.18em] uppercase">✦ Aperçu</p>
+            <p className="font-ui text-xxs text-[#C5A059]/80 tracking-[0.18em] uppercase"><span aria-hidden="true">✦ </span>Aperçu</p>
             <p className="font-ui text-xs text-brand-gray/50 leading-relaxed">
               Voici ce qu&apos;un scanneur voit en vous scannant. Portez votre t-shirt pour que ça arrive en vrai.
             </p>
@@ -253,7 +253,7 @@ export default function ProfilClient({
               {member.name.toUpperCase()}
             </p>
             {member.plan === 'premium' && (
-              <span className="font-ui text-xs text-[#C5A059]/70" title="Membre premium">✦</span>
+              <span role="img" aria-label="Membre premium" className="font-ui text-xs text-[#C5A059]/85" title="Membre premium">✦</span>
             )}
           </div>
         </div>
@@ -379,12 +379,12 @@ export default function ProfilClient({
             </p>
             <div className="flex items-center gap-2">
               <button onClick={shareLocation}
-                className="flex-1 py-2.5 border border-brand-white/25 font-ui text-xxs tracking-[0.15em] uppercase hover:border-brand-white/50 hover:bg-brand-white/5 active:scale-[0.98] transition-all rounded-[1px]"
+                className="flex-1 py-2.5 border border-brand-white/25 font-ui text-xxs tracking-[0.1em] uppercase hover:border-brand-white/50 hover:bg-brand-white/5 active:scale-[0.98] transition-all rounded-[1px]"
                 style={{ minHeight: '44px' }}>
                 Partager ma ville
               </button>
               <button onClick={declineLocation}
-                className="flex-1 py-2.5 border border-brand-gray/15 font-ui text-xxs tracking-[0.15em] uppercase text-brand-gray/55 hover:border-brand-gray/30 transition-all rounded-[1px]"
+                className="flex-1 py-2.5 border border-brand-gray/15 font-ui text-xxs tracking-[0.1em] uppercase text-brand-gray/55 hover:border-brand-gray/30 transition-all rounded-[1px]"
                 style={{ minHeight: '44px' }}>
                 Non merci
               </button>

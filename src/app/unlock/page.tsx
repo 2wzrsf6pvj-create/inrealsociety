@@ -85,9 +85,9 @@ export default function UnlockPage() {
       <div className="z-10 flex flex-col items-center w-full max-w-xs md:max-w-sm gap-9">
 
         <div className="text-center flex flex-col gap-3 animate-stagger-1">
-          <h2 className="font-display text-3xl md:text-4xl font-light tracking-[0.08em]">
+          <h1 className="font-display text-3xl md:text-4xl font-light tracking-[0.08em]">
             {savedName ? `C'est bien vous ?` : 'Qui êtes-vous ?'}
-          </h2>
+          </h1>
           {savedName
             ? <p className="font-display text-2xl font-semibold">{savedName} ?</p>
             : (

@@ -73,8 +73,8 @@ function PremiumBlock({ member }: { member: Member }) {
     <div id="premium" className={`w-full border rounded-[2px] p-4 flex flex-col gap-3 scroll-mt-6 ${isPremium ? 'bg-[#0a0a08] border-[#C5A059]/20' : 'bg-[#080808] border-brand-gray/10'}`}>
       <div className="flex items-center gap-3 w-full">
         <div className="flex-1 h-px bg-brand-gray/10" />
-        <span className={`font-ui text-xs tracking-[0.18em] uppercase ${isPremium ? 'text-[#C5A059]/60' : 'text-brand-gray/55'}`}>
-          {isPremium ? '✦ premium actif' : 'premium'}
+        <span className={`font-ui text-xs tracking-[0.18em] uppercase ${isPremium ? 'text-[#C5A059]/85' : 'text-brand-gray/55'}`}>
+          {isPremium ? <><span aria-hidden="true">✦ </span>premium actif</> : 'premium'}
         </span>
         <div className="flex-1 h-px bg-brand-gray/10" />
       </div>
@@ -82,7 +82,7 @@ function PremiumBlock({ member }: { member: Member }) {
       <ul className="flex flex-col gap-2">
         {PREMIUM_PERKS.map(item => (
           <li key={item} className="flex items-start gap-2">
-            <span className="font-ui text-xs text-[#C5A059]/50 mt-0.5">✦</span>
+            <span aria-hidden="true" className="font-ui text-xs text-[#C5A059]/50 mt-0.5">✦</span>
             <span className="font-ui text-xs text-brand-gray/50">{item}</span>
           </li>
         ))}
@@ -91,7 +91,7 @@ function PremiumBlock({ member }: { member: Member }) {
       {isPremium ? (
         <div className="flex flex-col gap-2">
           {member.plan_expires_at && (
-            <p className="font-ui text-xs text-[#C5A059]/70 leading-relaxed">
+            <p className="font-ui text-xs text-[#C5A059]/85 leading-relaxed">
               Résiliation enregistrée : votre premium reste actif jusqu’au {formatDayFr(member.plan_expires_at)}.
             </p>
           )}
@@ -287,7 +287,7 @@ function LogoutButton() {
     return (
       <button
         onClick={() => setConfirming(true)}
-        className="w-full py-3 border border-red-500/20 text-center font-ui text-xs font-light tracking-[0.2em] uppercase text-red-400/60 hover:border-red-500/40 hover:text-red-400 transition-colors rounded-[2px]"
+        className="w-full py-3 border border-red-500/20 text-center font-ui text-xs font-light tracking-[0.2em] uppercase text-red-400/80 hover:border-red-500/40 hover:text-red-400 transition-colors rounded-[2px]"
       >
         Se déconnecter
       </button>
@@ -355,7 +355,7 @@ function DeleteAccountButton() {
     return (
       <button
         onClick={() => setConfirming(true)}
-        className="font-ui text-xxs text-brand-gray/50 tracking-[0.1em] underline underline-offset-4 hover:text-red-400/50 transition-colors py-2"
+        className="font-ui text-xxs text-brand-gray/50 tracking-[0.1em] underline underline-offset-4 hover:text-red-400/80 transition-colors py-2"
       >
         Supprimer mon compte
       </button>

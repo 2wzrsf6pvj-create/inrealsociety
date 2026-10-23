@@ -73,7 +73,7 @@ export default function ReportProfile({ memberId, messageId }: {
       <textarea id="report-reason" rows={3} maxLength={1000} value={reason}
         onChange={(e) => setReason(e.target.value)}
         placeholder="Que se passe-t-il ?"
-        className="w-full bg-transparent border border-brand-gray/20 focus:border-brand-white/50 text-brand-white font-ui font-light text-base p-3 outline-none transition-colors placeholder:text-brand-gray/45 rounded-[2px] resize-none"
+        className="w-full bg-transparent border border-brand-gray/20 focus:border-brand-white/50 text-brand-white font-ui font-light text-base p-3 outline-none transition-colors placeholder:text-brand-gray/55 rounded-[2px] resize-none"
       />
       <p id="report-contact-hint" className="font-ui text-xs text-brand-gray/60 leading-relaxed">
         Facultatif : votre email, pour recevoir un accusé de réception puis la décision de l&apos;équipe,
@@ -83,7 +83,7 @@ export default function ReportProfile({ memberId, messageId }: {
         onChange={(e) => setContact(e.target.value)}
         aria-label="Votre email ou @instagram (facultatif)" aria-describedby="report-contact-hint"
         placeholder="Email ou @instagram"
-        className="w-full bg-transparent border-b border-brand-gray/20 focus:border-brand-white/50 text-brand-white font-ui font-light text-base py-3 outline-none transition-colors placeholder:text-brand-gray/45"
+        className="w-full bg-transparent border-b border-brand-gray/20 focus:border-brand-white/50 text-brand-white font-ui font-light text-base py-3 outline-none transition-colors placeholder:text-brand-gray/55"
         style={{ minHeight: '44px' }}
       />
       <label htmlFor="report-good-faith" className="flex items-start gap-3 cursor-pointer py-1">

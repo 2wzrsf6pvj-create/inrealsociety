@@ -68,10 +68,10 @@ export default function LoginPage() {
           <div className="relative flex items-center justify-center mb-2">
             <div className="absolute w-16 h-16 rounded-full border border-brand-white/10 animate-ring-pulse" />
             <div className="w-12 h-12 rounded-full border border-brand-white/60 flex items-center justify-center">
-              <span className="font-display text-xl font-light">✦</span>
+              <span aria-hidden="true" className="font-display text-xl font-light">✦</span>
             </div>
           </div>
-          <h2 className="font-display text-3xl font-light tracking-[0.06em]">Connexion</h2>
+          <h1 className="font-display text-3xl font-light tracking-[0.06em]">Connexion</h1>
           <p className="font-ui text-sm font-light text-brand-gray/50">
             Accédez à votre espace membre.
           </p>

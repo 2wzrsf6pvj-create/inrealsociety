@@ -373,7 +373,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                 {when(d.createdAt)} · {DECISION_LABELS[d.action] ?? d.action}
                 {typeof d.metadata.motif === 'string' && <> · « {d.metadata.motif} »</>}
                 {typeof d.metadata.decision === 'string' && <> · {d.metadata.decision}</>}
-                {typeof d.metadata.by === 'string' && <span className="text-brand-gray/45"> · {d.metadata.by}</span>}
+                {typeof d.metadata.by === 'string' && <span className="text-brand-gray/55"> · {d.metadata.by}</span>}
               </li>
             ))}
           </ul>

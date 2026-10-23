@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
+import ScreenTitle from '@/app/components/ui/ScreenTitle';
 import { captureEvent, identifyMember } from '@/lib/posthog-client';
 import { recallCheckoutEmail, forgetCheckoutEmail } from '@/lib/checkout-email';
 
@@ -140,7 +141,7 @@ function ResendCodeBlock() {
 
   return (
     <div className="flex items-end gap-2 -mt-2">
-      <input type="email" placeholder="votre@email.com" value={email} onChange={e => setEmail(e.target.value)}
+      <input type="email" aria-label="Email de votre commande" autoComplete="email" placeholder="votre@email.com" value={email} onChange={e => setEmail(e.target.value)}
         className="flex-1 bg-transparent border-b border-brand-gray/20 focus:border-brand-white/50 font-ui font-light text-sm text-brand-white py-2 outline-none transition-colors"
         style={{ minHeight: '36px' }} />
       <button type="button" onClick={handleResend} disabled={sending || !email.trim()}
@@ -201,7 +202,7 @@ function StepAccount({ onNext, codeState }: {
   return (
     <div className="w-full flex flex-col gap-6 animate-stagger-2">
       <div className="text-center flex flex-col gap-2">
-        <h2 className="font-display text-3xl font-light tracking-[0.04em]">Votre compte.</h2>
+        <h1 className="font-display text-3xl font-light tracking-[0.04em]">Votre compte.</h1>
         <p className="font-ui text-sm font-light text-brand-gray/50 leading-relaxed">
           Le code d&apos;activation vous a été envoyé par email après votre commande.
         </p>
@@ -236,7 +237,7 @@ function StepAccount({ onNext, codeState }: {
         {error && <p className="font-ui text-sm text-red-400 text-center" role="alert">{error}</p>}
         {notice && (
           <div className="w-full bg-[#0a0a08] border border-[#C5A059]/30 rounded-[2px] px-4 py-3 flex flex-col items-center gap-1 text-center animate-fade-in">
-            <p className="font-ui text-xxs text-[#C5A059]/85 tracking-[0.18em] uppercase">✦ Vérifiez votre email</p>
+            <p className="font-ui text-xxs text-[#C5A059]/85 tracking-[0.18em] uppercase"><span aria-hidden="true">✦ </span>Vérifiez votre email</p>
             <p className="font-ui text-sm text-brand-gray/70 leading-relaxed">{notice}</p>
           </div>
         )}
@@ -307,9 +308,10 @@ function StepProfile({ form, onChange, onSubmit, onBack, loading, error, isEditi
   return (
     <div className="w-full flex flex-col gap-6">
       <div className="text-center flex flex-col gap-2 animate-stagger-1">
-        <h2 className="font-display text-3xl font-light tracking-[0.04em]">
+        {/* Remplace l'étape 1 sans changer de page : le titre prend le focus. */}
+        <ScreenTitle className="font-display text-3xl font-light tracking-[0.04em]">
           {isEditing ? 'Modifier votre profil.' : 'Votre présence.'}
-        </h2>
+        </ScreenTitle>
         <p className="font-ui text-sm font-light text-brand-gray/50">
           {isEditing ? 'Mettez à jour vos informations.' : 'Ce que vous êtes, en quelques mots.'}
         </p>

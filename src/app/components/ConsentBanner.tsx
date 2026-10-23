@@ -33,7 +33,8 @@ export default function ConsentBanner() {
   if (dismissed) return null;
 
   return (
-    <div data-consent-banner className="fixed bottom-0 left-0 right-0 z-[100] p-4 bg-brand-black/95 border-t border-brand-white/10 backdrop-blur-sm">
+    // Zone nommée : un lecteur d'écran la trouve dans la liste des repères.
+    <section data-consent-banner aria-label="Cookies" className="fixed bottom-0 left-0 right-0 z-[100] p-4 bg-brand-black/95 border-t border-brand-white/10 backdrop-blur-sm">
       <div className="max-w-2xl mx-auto flex flex-col md:flex-row md:items-center gap-3">
         <p className="font-ui text-xs md:text-sm text-brand-gray/60 leading-relaxed flex-1">
           Nous utilisons des cookies de mesure d&apos;audience pour comprendre comment vous utilisez le site.
@@ -55,6 +56,6 @@ export default function ConsentBanner() {
           </button>
         </div>
       </div>
-    </div>
+    </section>
   );
 }

@@ -20,7 +20,7 @@ const config: Config = {
         ui:      ['var(--font-ui)', 'system-ui', 'sans-serif'],
       },
       fontSize: {
-        'xxs':  ['0.65rem',  { lineHeight: '1rem' }],     // 10.4px — fine print, legal
+        'xxs':  ['0.6875rem', { lineHeight: '1rem' }],    // 11px — fine print, legal ; plus petit texte de l'app (minimum Apple : 11 pt)
         'xs':   ['0.75rem',  { lineHeight: '1.1rem' }],   // 12px — labels, meta
         'sm':   ['0.875rem', { lineHeight: '1.35rem' }],  // 14px — body small
         'base': ['1rem',     { lineHeight: '1.5rem' }],   // 16px — body

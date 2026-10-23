@@ -10,6 +10,7 @@ import { TSHIRT_PRICE_EUR, SHIPPING_STANDARD_CENTS } from '@/lib/constants';
 import type { BakedTagline } from '@/lib/taglines.generated';
 import TaglinePicker from '@/app/components/ui/TaglinePicker';
 import { BrandMark } from '@/app/components/ui/BrandMark';
+import ModalDialog, { closeDialog } from '@/app/components/ui/ModalDialog';
 import { isReferralToken } from '@/lib/referral-code';
 
 type TshirtColor = 'dark' | 'light';
@@ -219,6 +220,8 @@ function NewsletterCapture({ source }: { source: string }) {
       <div className="flex gap-2">
         <input
           type="email"
+          aria-label="Votre email"
+          autoComplete="email"
           placeholder="votre@email.com"
           value={email}
           onChange={e => setEmail(e.target.value)}
@@ -262,33 +265,35 @@ function SizeGuide() {
         Guide des tailles
       </button>
       {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-6" onClick={() => setOpen(false)}>
-          <div className="bg-[#0a0a0a] border border-brand-gray/15 rounded-[2px] p-6 w-full max-w-xs flex flex-col gap-4" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center justify-between">
-              <p className="font-ui text-xs text-brand-gray/50 tracking-[0.2em] uppercase">Guide des tailles</p>
-              <button onClick={() => setOpen(false)} aria-label="Fermer le guide des tailles" className="font-ui text-xs text-brand-gray/55 hover:text-brand-white transition-colors">✕</button>
-            </div>
-            <p className="font-ui text-xxs text-brand-gray/55">Stanley/Stella Creator 2.0 — coton bio, coupe droite. En cas de doute, prenez votre taille habituelle.</p>
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-brand-gray/10">
-                  <th className="font-ui text-xxs text-brand-gray/55 tracking-[0.15em] uppercase text-left py-2">Taille</th>
-                  <th className="font-ui text-xxs text-brand-gray/55 tracking-[0.15em] uppercase text-center py-2">Poitrine</th>
-                  <th className="font-ui text-xxs text-brand-gray/55 tracking-[0.15em] uppercase text-center py-2">Longueur</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sizes.map(s => (
-                  <tr key={s.size} className="border-b border-brand-gray/5">
-                    <td className="font-ui text-sm text-brand-white/70 py-2">{s.size}</td>
-                    <td className="font-ui text-sm text-brand-gray/50 text-center py-2">{s.chest} cm</td>
-                    <td className="font-ui text-sm text-brand-gray/50 text-center py-2">{s.length} cm</td>
+        <ModalDialog labelledBy="size-guide-title" onClose={() => setOpen(false)}>
+          <div className="h-full flex items-center justify-center bg-black/70 backdrop-blur-sm px-6" onClick={closeDialog}>
+            <div className="bg-[#0a0a0a] border border-brand-gray/15 rounded-[2px] p-6 w-full max-w-xs flex flex-col gap-4" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between">
+                <h2 id="size-guide-title" className="font-ui text-xs text-brand-gray/50 tracking-[0.2em] uppercase">Guide des tailles</h2>
+                <button onClick={closeDialog} aria-label="Fermer le guide des tailles" className="font-ui text-xs text-brand-gray/55 hover:text-brand-white transition-colors">✕</button>
+              </div>
+              <p className="font-ui text-xxs text-brand-gray/55">Stanley/Stella Creator 2.0 — coton bio, coupe droite. En cas de doute, prenez votre taille habituelle.</p>
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-brand-gray/10">
+                    <th className="font-ui text-xxs text-brand-gray/55 tracking-[0.15em] uppercase text-left py-2">Taille</th>
+                    <th className="font-ui text-xxs text-brand-gray/55 tracking-[0.15em] uppercase text-center py-2">Poitrine</th>
+                    <th className="font-ui text-xxs text-brand-gray/55 tracking-[0.15em] uppercase text-center py-2">Longueur</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {sizes.map(s => (
+                    <tr key={s.size} className="border-b border-brand-gray/5">
+                      <td className="font-ui text-sm text-brand-white/70 py-2">{s.size}</td>
+                      <td className="font-ui text-sm text-brand-gray/50 text-center py-2">{s.chest} cm</td>
+                      <td className="font-ui text-sm text-brand-gray/50 text-center py-2">{s.length} cm</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        </ModalDialog>
       )}
     </>
   );
@@ -397,7 +402,7 @@ export default function ShopClient() {
       {referral && (
         <div className="relative z-10 bg-[#0a0a08] border-b border-[#C5A059]/20 px-6 py-3">
           <p className="font-ui text-xs md:text-sm text-[#C5A059]/80 text-center tracking-wide">
-            ✦ Vous arrivez par un parrainage — votre remise sera appliquée au paiement.
+            <span aria-hidden="true">✦ </span>Vous arrivez par un parrainage — votre remise sera appliquée au paiement.
           </p>
         </div>
       )}
@@ -420,9 +425,9 @@ export default function ShopClient() {
           </p>
           <div className="flex items-center gap-4">
             <span className="font-ui text-xs text-brand-gray/50 tracking-[0.2em] uppercase">Anonyme</span>
-            <span className="text-brand-gray/15">·</span>
+            <span aria-hidden="true" className="text-brand-gray/15">·</span>
             <span className="font-ui text-xs text-brand-gray/50 tracking-[0.2em] uppercase">Éphémère</span>
-            <span className="text-brand-gray/15">·</span>
+            <span aria-hidden="true" className="text-brand-gray/15">·</span>
             {/* Pas « Sans compte » : vrai pour qui scanne, faux pour l'acheteur (il crée un compte à l'activation). */}
             <span className="font-ui text-xs text-brand-gray/50 tracking-[0.2em] uppercase">Sans swipe</span>
           </div>
@@ -533,7 +538,7 @@ export default function ShopClient() {
                   'Profil configurable en 2 minutes',
                 ].map((item) => (
                   <div key={item} className="flex items-center gap-3">
-                    <span className="font-ui text-sm text-[#C5A059]/60">✦</span>
+                    <span aria-hidden="true" className="font-ui text-sm text-[#C5A059]/60">✦</span>
                     <span className="font-ui text-sm text-brand-gray/50">{item}</span>
                   </div>
                 ))}
@@ -676,6 +681,7 @@ export default function ShopClient() {
           est à l'écran. Sous le bandeau cookies (z-[100]) tant qu'il est affiché. */}
       {!formInView && (
         <div
+          data-sticky-bottom
           role="region"
           aria-label="Commander"
           className="fixed inset-x-0 bottom-0 z-40 lg:hidden border-t border-brand-gray/15 bg-brand-black/95 backdrop-blur-sm px-6 pt-3 animate-fade-in"

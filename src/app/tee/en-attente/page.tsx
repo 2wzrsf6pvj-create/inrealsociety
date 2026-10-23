@@ -36,7 +36,7 @@ export default function TeeEnAttentePage() {
 
         {/* Rappel discret pour le porteur qui scanne son propre tee. */}
         <div className="w-full pt-2 border-t border-brand-gray/10 flex flex-col items-center gap-2">
-          <p className="font-ui text-xxs text-brand-gray/45 tracking-[0.15em] uppercase">C&apos;est votre t-shirt ?</p>
+          <p className="font-ui text-xxs text-brand-gray/55 tracking-[0.15em] uppercase">C&apos;est votre t-shirt ?</p>
           <p className="font-ui text-xs font-light text-brand-gray/50 leading-relaxed">
             Activez votre profil depuis le lien reçu par email après votre commande.
           </p>

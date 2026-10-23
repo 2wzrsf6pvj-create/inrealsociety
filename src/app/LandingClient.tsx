@@ -172,9 +172,9 @@ function LandingContent() {
               <ProductHero className="w-full max-w-[208px] mx-auto lg:hidden" />
               <div className="flex items-center justify-center gap-4 lg:justify-start">
                 <span className="font-ui text-xs text-brand-gray/55 tracking-[0.15em] uppercase">Anonyme</span>
-                <span className="text-brand-gray/15">·</span>
+                <span aria-hidden="true" className="text-brand-gray/15">·</span>
                 <span className="font-ui text-xs text-brand-gray/55 tracking-[0.15em] uppercase">Éphémère</span>
-                <span className="text-brand-gray/15">·</span>
+                <span aria-hidden="true" className="text-brand-gray/15">·</span>
                 <span className="font-ui text-xs text-brand-gray/55 tracking-[0.15em] uppercase">Sans compte</span>
               </div>
             </div>
@@ -219,21 +219,21 @@ function LandingContent() {
         >
           Manifeste
         </Link>
-        <span className="text-brand-gray/15">·</span>
+        <span aria-hidden="true" className="text-brand-gray/15">·</span>
         <Link href="/faq"
           className="font-ui text-xxs md:text-xs text-brand-gray/50 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white/80 transition-colors py-3"
           style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}
         >
           FAQ
         </Link>
-        <span className="text-brand-gray/15">·</span>
+        <span aria-hidden="true" className="text-brand-gray/15">·</span>
         <Link href="/shop"
           className="font-ui text-xxs md:text-xs text-brand-gray/50 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white/80 transition-colors py-3"
           style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}
         >
           Boutique
         </Link>
-        <span className="text-brand-gray/15">·</span>
+        <span aria-hidden="true" className="text-brand-gray/15">·</span>
         <Link href="/auth/login"
           className="font-ui text-xxs md:text-xs text-brand-gray/50 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white/80 transition-colors py-3"
           style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}

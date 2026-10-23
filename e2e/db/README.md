@@ -7,7 +7,12 @@ Les tests de `e2e/db/` parcourent l'app dans un vrai navigateur, devant une
   depuis « Mon espace », chacun son tour ; un profil signalé puis suspendu
   depuis /admin ; un message signalé, l'appareil banni ;
 - `notifications.spec.ts` : téléphone relevé à l'ouverture de « Mon espace »,
-  chiffres de /admin, désabonnement à la déconnexion.
+  chiffres de /admin, désabonnement à la déconnexion ;
+- `accessibilite.spec.ts` : axe-core sur les écrans du passant (aussi en plein
+  soleil), du porteur et de /admin, sans aucun écart WCAG 2.2 A/AA ni aux
+  bonnes pratiques ; puis le clavier et les lecteurs d'écran : fenêtres
+  (présentation de « Mon espace », guide des tailles), focus après l'envoi
+  d'un message, contour de focus en plein soleil.
 
 Les tests de fumée de `e2e/` (`npm run test:e2e`), eux, tournent sans base et ne
 voient que les pages publiques.
