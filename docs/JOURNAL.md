@@ -5,6 +5,80 @@
 
 ---
 
+## 2026-10-23 (suite) — Accessibilité (#39)
+
+### Analyse
+axe-core (le moteur des outils d'audit) sur 27 écrans : passant, porteur,
+`/admin`, mode plein soleil, bandeau cookies, présentation de « Mon espace ».
+Parcours au clavier dans un vrai navigateur sur 14 écrans, calcul des
+contrastes, lecture du code.
+
+**Cadre légal** : la directive européenne sur l'accessibilité (en vigueur
+depuis le 28 juin 2025) couvre le commerce en ligne, mais exempte les
+micro-entreprises qui fournissent des services (moins de 10 personnes, chiffre
+d'affaires ou bilan d'au plus 2 M€) : ni obligation, ni déclaration, sauf
+demande de la DGCCRF. In Real Society en relève tant qu'elle reste sous ces
+seuils. Sources : fiches DGCCRF et service-public, directive 2019/882, art. 4
+(pages officielles lues par extraits, inaccessibles depuis l'environnement de
+travail).
+
+**Déjà en ordre** : langue, lien « Aller au contenu principal », focus visible
+en mode sombre, réglages « moins d'animations » et « plus de contraste »
+respectés, zoom permis, cibles tactiles de 44 px, champs étiquetés, erreurs
+annoncées, onglets de « Mon espace » balisés, textes alternatifs.
+
+**Constats** :
+1. Plein soleil : contour de focus invisible (blanc sur fond papier, 1,1:1).
+2. Présentation de « Mon espace » : le focus passait derrière, un lecteur
+   d'écran lisait la page du dessous.
+3. Guide des tailles : focus resté derrière, Échap sans effet.
+4. Après « Envoyer », rien d'annoncé : une personne aveugle ne savait pas que
+   son message était parti.
+5. Réponses en direct et toasts non annoncés.
+6. Contrastes sous 4,5:1 : « Se déconnecter », « Bloqué », « Signalé »
+   (3,2), textes dorés (2,8 à 4,4), textes d'exemple des champs (2,5 à 4,4).
+7. Pas de titre principal sur six pages ; « Mon espace » annoncé « Aller au
+   dashboard » ; symboles ✦ lus à voix haute.
+
+### Décisions de Clément
+- Plus petit texte : 11 px (10,4 avant ; minimum recommandé par Apple).
+- Animations en boucle : arrêtées après ~4 s.
+
+### Fait
+- **PR #39 fusionnée** (`99a94c4`) :
+  - focus : contour sombre en plein soleil ; présentation et guide des
+    tailles en vraies fenêtres (`<dialog>`) ; boutique : le focus ne passe
+    plus sous « Commander » ni sous le bandeau cookies ;
+  - annonces : le focus va sur « Signal envoyé. » (et sur les écrans qui
+    remplacent le formulaire) ; fil de conversation et toasts annoncés ;
+  - structure : un titre principal par page, même apparence ; lien « Mon
+    espace » nommé comme affiché ; zones « Compte » et « Cookies » ;
+    symboles décoratifs muets ; badge premium, étapes du guide et graphique
+    des scans lus ;
+  - lisibilité : contraste d'au moins 4,5:1 sur le texte (gris, rouge, doré,
+    textes d'exemple) ; texte à 11 px au minimum ; animations d'attention
+    arrêtées après ~4 s ;
+  - **test E2E d'accessibilité** : axe-core sur les écrans du passant (aussi
+    en plein soleil), du porteur et de `/admin`, plus le clavier, les
+    fenêtres et le focus. Toute régression bloque la CI.
+- Vérifié :
+  - lint et typage ; 804 tests unitaires ;
+  - E2E avec base 16/16 ; test d'accessibilité 24/24 sur trois passages ;
+    tests de fumée publics ;
+  - dix défauts réintroduits, chacun détecté par le bon test ;
+  - captures relues à 390 px, rien de cassé par le passage à 11 px ;
+  - CI verte.
+
+### Limite
+- Pas d'essai avec un vrai lecteur d'écran (VoiceOver, TalkBack) : axe et
+  les tests clavier couvrent la structure, pas l'écoute réelle.
+
+### Ensuite
+- La préparation du test terrain : qui, où, seuils pour continuer, ajuster
+  ou arrêter.
+
+---
+
 ## 2026-10-23 (suite) — E2E avec base : plantage de Chromium en CI (#38)
 
 ### Contexte
@@ -27,7 +101,7 @@ probables plutôt que compter sur une relance.
   passages.
 
 ### Ensuite
-- L'accessibilité (analyse en cours).
+- L'accessibilité (#39).
 
 ---
 
