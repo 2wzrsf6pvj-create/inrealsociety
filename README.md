@@ -92,6 +92,7 @@ npm run dev
 | `npm run test:watch` | Vitest en watch mode |
 | `npm run test:e2e` | Tests E2E Playwright (smoke + tunnel) |
 | `npm run test:e2e:ui` | Playwright en mode UI interactive |
+| `npm run test:e2e:db` | E2E connecté, devant une vraie base (`e2e/db/README.md`) |
 | `npm run analyze` | Build avec bundle analyzer (3 rapports HTML) |
 
 Pour les tests E2E du tunnel achat complet (Stripe test mode + Supabase test) :
@@ -133,7 +134,7 @@ src/
 └── proxy.ts                       # Auth + cookies + redirect + CSP (ex-middleware.ts)
 
 supabase/migrations/               # SQL versionné (~30 fichiers, ordre numérique)
-e2e/                               # Tests Playwright
+e2e/                               # Tests Playwright (e2e/db : connecté, vraie base)
 public/
 ├── sw.js                          # Service worker (push + PWA cache)
 ├── manifest.json                  # PWA manifest (« Mon espace » et conversations : src/lib/web-manifest.ts)
@@ -211,7 +212,8 @@ Signaler une faille : voir [public/.well-known/security.txt](public/.well-known/
 
 Stack actuelle :
 - **Unitaires** (vitest) : 270+ tests, dont security-routes auto-discover
-- **E2E** (Playwright) : smoke tests pages publiques + skeleton tunnel
+- **E2E** (Playwright) : smoke tests pages publiques + skeleton tunnel ; avec
+  une vraie base (`e2e/db/`) : « Mon espace », /admin, déconnexion
 - **CI** (GitHub Actions) : lint + typecheck + vitest + build + playwright sur PR
 
 Couverture explicite :
