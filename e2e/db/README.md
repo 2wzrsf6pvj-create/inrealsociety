@@ -15,6 +15,7 @@ voient que les pages publiques.
 | Réel | Simulé |
 |---|---|
 | L'app construite comme en production (`next build`, `next start`) | La session Supabase : cookie posé par le test, jeton signé avec le secret de la base de test |
+| Chromium complet (`channel: 'chromium'`), et non sa version allégée, qui plantait parfois en CI | Pas de service worker (bloqué) : il préchargeait des pages pendant la fermeture des contextes ; il a ses propres tests |
 | Chromium (Playwright), un contexte par personne : le passant n'est jamais connecté, son appareil se reconnaît à son cookie | Le service de push du navigateur (absent du Chromium de test), quand un test en a besoin |
 | Postgres + PostgREST, migrations du dépôt (`integration/setup-db.sh`) | Les limites de débit (Upstash) : elles laissent tout passer |
 | Les routes, la modération sans clé OpenAI (liste de mots), les décisions de /admin | Les emails (Resend) : gardés par la passerelle, jamais envoyés ; les tests les lisent (`emailsTo`) |

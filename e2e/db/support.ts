@@ -65,10 +65,14 @@ export function createWearer(firstName: string): Wearer {
   return { id, email, memberId, name, shortCode };
 }
 
-/** Contexte de navigateur : la CSP de production n'autorise pas la base de
- *  test, qui répond sur localhost. */
+/** Contexte de navigateur :
+ *  - CSP contournée : celle de production n'autorise pas la base de test, qui
+ *    répond sur localhost ;
+ *  - sans service worker : il précharge des pages en arrière-plan pendant que le
+ *    test ferme déjà le contexte, moment où Chromium a planté en CI. Il a ses
+ *    propres tests (service-worker.test.ts). */
 export function newContext(browser: Browser, options: { userAgent?: string; viewport?: { width: number; height: number } } = {}) {
-  return browser.newContext({ baseURL: APP_URL, bypassCSP: true, ...options });
+  return browser.newContext({ baseURL: APP_URL, bypassCSP: true, serviceWorkers: 'block', ...options });
 }
 
 /** Visiteur qui a déjà répondu au bandeau des cookies et vu la présentation de
