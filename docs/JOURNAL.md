@@ -5,6 +5,32 @@
 
 ---
 
+## 2026-10-23 (suite) — E2E avec base : plantage de Chromium en CI (#38)
+
+### Contexte
+Après la fusion de #37, le job E2E avec base a échoué une fois sur main :
+Chromium, dans sa version allégée (headless shell), a planté (SIGSEGV) en
+ouvrant un contexte. Relancé une fois : vert. Décision : traiter les causes
+probables plutôt que compter sur une relance.
+
+### Fait
+- **PR #38 fusionnée** (`2bdedd9`) :
+  - navigateurs de test sans service worker : il préchargeait des pages en
+    arrière-plan pendant que le test fermait déjà le contexte. Il garde ses
+    propres tests (`service-worker.test.ts`) ;
+  - le Chromium complet (`channel: 'chromium'`) au lieu du headless shell.
+- Vérifié : CI verte ; le job lance bien le Chromium complet (Chrome for
+  Testing 148) et passe ses 8 scénarios.
+
+### Limite
+- Cause exacte du plantage non établie : à surveiller sur les prochains
+  passages.
+
+### Ensuite
+- L'accessibilité (analyse en cours).
+
+---
+
 ## 2026-10-23 (suite) — E2E avec base : parcours principaux (#37)
 
 ### Contexte
