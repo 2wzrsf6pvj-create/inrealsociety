@@ -5,6 +5,92 @@
 
 ---
 
+## 2026-10-23 (suite) — Économie unitaire : analyse et lot (#31)
+
+### Analyse
+Coût de revient du t-shirt et du premium, frais fixes, seuil de rentabilité.
+Les tarifs Printful ne sont pas consultables depuis la session : estimations
+publiques, à remplacer par les vrais coûts du compte.
+
+**Déjà en ordre** :
+- pas de droit de rétractation sur un t-shirt personnalisé (CGV, article 5) ;
+  un remboursement tente d'annuler la commande Printful si l'impression n'a
+  pas commencé ;
+- l'impression part dès le paiement, et une tâche quotidienne rattrape les
+  échecs.
+
+**Constats** :
+1. L'express, payé 12 €, partait en standard : la commande envoyée à Printful
+   ne précisait pas la méthode, et Printful prend alors la standard.
+2. Ventes hors UE (Suisse, Royaume-Uni, États-Unis, Canada) : port forfaitaire
+   insuffisant, droits et TVA d'import pour le client, TVA britannique dès la
+   première vente, cartes hors UE plus chères.
+3. Logo poitrine : environ 4 à 5 € par t-shirt, un cinquième de la marge.
+   Choix de marque, signalé comme levier.
+4. Frais fixes au lancement : environ 60 € par mois (Vercel Pro, Supabase Pro,
+   Resend Pro). L'offre gratuite de Vercel interdit l'usage commercial ;
+   celle de Supabase met le projet en pause après une semaine sans activité.
+5. Statut de TVA non renseigné, alors qu'il change la marge d'environ 20 %.
+6. Premium : 0,25 € fixes prélevés sur chaque mensualité ; une formule
+   annuelle réduirait les frais.
+
+### Décisions de Clément
+- Express retiré au lancement.
+- Livraison dans l'UE seulement : France, Belgique, Luxembourg, Allemagne.
+- Franchise en base de TVA (art. 293 B du CGI).
+
+### Fait
+- **PR #31 fusionnée** (`a86a504`) :
+  - livraison standard à 5 € seulement, vers la France métropolitaine, la
+    Belgique, le Luxembourg et l'Allemagne ;
+  - franchise (`VAT_EXEMPT`) : plus de calcul de TVA ni d'adresse de
+    facturation chez Stripe ; mention 293 B dans les CGV et les mentions
+    légales ; « TTC » retiré des prix, des CGV et des emails. Le passage à la
+    TVA se fait par cette constante ;
+  - test des sessions Stripe (livraison unique, pays, absence de TVA),
+    vérifié par mutation ;
+  - `docs/ECONOMIE_UNITAIRE.md` : marges (≈ 26 € par t-shirt, ≈ 2,67 € par
+    abonné et par mois), frais fixes, seuil (3 t-shirts par mois), leviers,
+    seuils de TVA, bascule vers la TVA ;
+  - `MISE_EN_PRODUCTION.md` : Vercel Pro, Supabase Pro, Stripe sans Stripe
+    Tax, pied de facture 293 B, comptable.
+- Vérifié :
+  - lint, typage, 655 tests, intégration 46/46, build, Playwright ;
+  - CGV, FAQ, mentions légales et boutique rendues en production locale ;
+  - CI et préversion Vercel vertes.
+
+### Échanges avec Clément
+- **Viabilité** : risque financier faible (pas de stock ; 3 t-shirts par mois
+  couvrent les frais fixes). La demande reste à prouver : porter un t-shirt
+  qui invite à être abordé, et recevoir assez de scans. Recommandation : un
+  test avec 20 à 50 porteurs dans un milieu dense, sur 3 à 4 semaines, avec
+  des seuils de décision fixés avant.
+- **Japon** : piste juste, car le t-shirt est un signal de consentement, utile
+  là où aborder un inconnu est mal vu. Deuxième marché seulement : loi
+  japonaise sur les services de rencontre à faire vérifier par un juriste,
+  traduction complète, logistique hors UE. L'angle « signal de consentement »
+  vaut aussi pour la communication en France.
+- **Avancement estimé** : produit et technique, environ 75 à 80 % analysés,
+  dont presque toutes les zones à risque ; côté entreprise, environ 20 %.
+
+### À faire par Clément
+- Stripe : pied de facture « TVA non applicable, art. 293 B du CGI » ; prices
+  en « inclusive ».
+- Vrais coûts Printful (commande test), à reporter dans
+  `ECONOMIE_UNITAIRE.md`.
+- Comptable : régime de TVA, autoliquidation sur les services achetés à
+  l'étranger (frais fixes portés à environ 72 € par mois si elle s'applique),
+  seuils.
+
+### Ensuite
+- La modération au quotidien : traitement des signalements, obligations du
+  règlement européen sur les services numériques (DSA).
+- La préparation du test terrain.
+- Le reste de la priorité 3 : app mobile, parrainage et newsletter,
+  accessibilité.
+
+---
+
 ## 2026-10-23 (suite) — Performance après Next 16 : analyse et lot (#30)
 
 ### Analyse
