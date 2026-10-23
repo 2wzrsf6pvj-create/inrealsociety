@@ -138,6 +138,9 @@ Détail : `docs/MONITORING.md`.
       ou d'échec.
 - [ ] Moniteur de disponibilité gratuit (UptimeRobot, Better Stack) sur
       `/api/health`.
+- [ ] Modération : lire `docs/MODERATION.md` (délais, gestes, modèles
+      d'email, autorités). `ADMIN_ALERT_EMAIL` sur une boîte lue chaque jour,
+      notifications activées sur le téléphone.
 - [ ] Printful : notifications du compte activées (commande en attente,
       échec de paiement).
 - [ ] GitHub → Settings → Advanced Security (ou Code security) : activer les

@@ -5,7 +5,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import SunToggle from '@/app/components/ui/SunToggle';
-import { MAX_THREAD_MESSAGES as MAX_THREAD } from '@/lib/constants';
+import { MAX_THREAD_MESSAGES as MAX_THREAD, MODERATION_REFUSAL_NOTICE } from '@/lib/constants';
+import ReportProfile from '@/app/components/ReportProfile';
 import { haptic } from '@/lib/haptics';
 
 interface ConversationMessage {
@@ -159,7 +160,7 @@ function ThreadReplyForm({ messageId, author, onSent, onClosed }: {
         throw new Error(data.error || 'Erreur.');
       }
       if (data.moderated) {
-        setError('Ce message enfreint nos règles et n’a pas été envoyé.');
+        setError(`Ce message n’a pas été envoyé. ${MODERATION_REFUSAL_NOTICE}`);
         return;
       }
       onSent({ id: data.replyId, content: text.trim(), author, created_at: new Date().toISOString() });
@@ -595,6 +596,13 @@ export default function ConversationClient({
           )}
           {isOwner && !isBlocked && blockError && (
             <p className="animate-fade-in font-ui text-xxs text-red-400 text-center" role="alert">{blockError}</p>
+          )}
+
+          {/* Signaler — pour le passant : réponse déplacée du porteur (DSA, art. 16) */}
+          {!isOwner && (
+            <div className="flex flex-col items-center">
+              <ReportProfile memberId={message.member_id} messageId={message.id} />
+            </div>
           )}
         </div>
       </div>

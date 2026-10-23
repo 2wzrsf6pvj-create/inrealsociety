@@ -1,7 +1,7 @@
 // Contrat des réponses d'erreur de POST /api/message.
 // Le composeur (/message) switche sur `data.code` (pas sur la copie FR). Ces
 // tests verrouillent ce contrat : window_expired (+ windowHours), conversation_limit,
-// paused. Une régression du wording ne doit pas casser la détection client.
+// paused, banned. Une régression du wording ne doit pas casser la détection client.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { NextRequest } from 'next/server';
@@ -34,10 +34,11 @@ const countWindow: { col: string; since: string }[] = [];
 const inserted: Record<string, unknown>[] = [];
 
 // Construit l'implémentation de supabaseAdmin.from selon le scénario.
-function wireSupabase({ member, firstScanAt, activeConvs }: {
+function wireSupabase({ member, firstScanAt, activeConvs, bannedToken }: {
   member: { id: string; name: string; email: string | null; is_paused: boolean; require_contact?: boolean; plan: string } | null;
   firstScanAt?: string | null;
   activeConvs?: number;
+  bannedToken?: string;
 }) {
   (supabaseAdmin.from as ReturnType<typeof vi.fn>).mockImplementation((table: string) => {
     if (table === 'members') {
@@ -65,13 +66,20 @@ function wireSupabase({ member, firstScanAt, activeConvs }: {
       return { select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: () =>
         Promise.resolve({ data: null, error: null }) }) }) }) };
     }
+    if (table === 'banned_devices') {
+      return { select: () => ({ eq: (_col: string, token: string) => ({ maybeSingle: () =>
+        Promise.resolve({ data: token === bannedToken ? { sender_token: token } : null, error: null }) }) }) };
+    }
     return {};
   });
 }
 
 // req sans cookie irs_sender (scanneur jamais vu) → getSenderToken renvoie null.
-function makeReq(body: Record<string, unknown>): NextRequest {
-  return { json: async () => body, cookies: { get: () => undefined } } as unknown as NextRequest;
+function makeReq(body: Record<string, unknown>, senderToken?: string): NextRequest {
+  return {
+    json:    async () => body,
+    cookies: { get: (name: string) => (name === 'irs_sender' && senderToken ? { value: senderToken } : undefined) },
+  } as unknown as NextRequest;
 }
 
 describe('POST /api/message — contrat des codes d\'erreur', () => {
@@ -82,6 +90,18 @@ describe('POST /api/message — contrat des codes d\'erreur', () => {
     const res = await POST(makeReq({ memberId: UUID, content: 'salut' }));
     expect(res.status).toBe(403);
     expect((await res.json()).code).toBe('paused');
+  });
+
+  it('appareil banni → 403 code=banned, avec la raison et le recours (pas « indisponible »)', async () => {
+    const token = '33333333-3333-4333-8333-333333333333';
+    wireSupabase({ member: { id: UUID, name: 'A', email: 'a@b.c', is_paused: false, plan: 'free' }, bannedToken: token });
+    const res = await POST(makeReq({ memberId: UUID, content: 'salut' }, token));
+    expect(res.status).toBe(403);
+    const data = await res.json();
+    expect(data.code).toBe('banned');
+    expect(data.error).toContain('CGV, article 9');
+    expect(data.error).toContain('hello@inrealsociety.com');
+    expect(inserted).toHaveLength(0);
   });
 
   it('fenêtre expirée (free 24h) → 403 code=window_expired, windowHours=24', async () => {

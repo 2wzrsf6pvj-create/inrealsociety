@@ -16,7 +16,7 @@ import { isBlocked, isDeviceBanned } from '@/lib/blocks';
 import { getActiveConversationsCount } from '@/lib/inbox';
 import { notifyMemberSubscribers } from '@/lib/push-notify';
 import { captureServerEvent } from '@/lib/posthog-server';
-import { APP_URL } from '@/lib/constants';
+import { APP_URL, BANNED_DEVICE_NOTICE } from '@/lib/constants';
 import { reportError } from '@/lib/report-error';
 
 const QUICK_REPLIES = new Set<string>(QUICK_REPLIES_LIST);
@@ -99,9 +99,11 @@ export async function POST(req: NextRequest) {
     }
 
     // ─── Bannissement global du device (anti-harcèlement en série) ─────────
-    // Réponse identique à « indisponible » pour ne pas révéler le ban au device.
+    // Dit clairement, avec sa raison et le recours (choix de Clément, art. 17
+    // du règlement sur les services numériques) ; le blocage par un porteur,
+    // lui, reste discret (ci-dessus).
     if (await isDeviceBanned(existingToken)) {
-      return NextResponse.json({ error: 'Ce membre est indisponible.', code: 'paused' }, { status: 403 });
+      return NextResponse.json({ error: BANNED_DEVICE_NOTICE, code: 'banned' }, { status: 403 });
     }
 
     // ─── §4 : un seul message racine par device et par porteur ─────────────

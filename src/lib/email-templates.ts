@@ -580,38 +580,111 @@ function alertRow(label: string, value: string): string {
     </tr>`;
 }
 
+/** Suite à donner, rappelée dans chaque alerte de modération. */
+function moderationNextSteps(): string {
+  return `
+      <p style="font-family:system-ui,sans-serif;font-size:12px;color:rgba(255,255,255,0.5);line-height:1.7;margin:24px 0 0;">
+        Marche à suivre et modèles d'email (porteur, auteur du signalement) : docs/MODERATION.md.
+        Menace pour la vie ou la sécurité d'une personne : prévenir la police sans attendre.
+      </p>`;
+}
+
 /**
  * Alerte à l'équipe : un profil a été signalé (règlement européen sur les services
  * numériques : tout hébergeur offre un moyen simple de signaler un contenu).
- * Rien n'est masqué automatiquement : l'équipe décide, SQL fourni.
+ * Rien n'est masqué automatiquement : l'équipe décide, SQL fourni. Chaque geste
+ * s'inscrit aussi dans audit_logs : trace en cas de contestation.
  */
 export function emailProfileReportAlert(params: {
-  memberName: string | null;
-  memberId:   string;
-  profileUrl: string;
-  reason:     string;
-  contact:    string | null;
+  memberName:       string | null;
+  memberId:         string;
+  profileUrl:       string;
+  reason:           string;
+  contact:          string | null;
+  /** Signalé depuis une conversation : lien vers celle-ci. */
+  conversationUrl?: string | null;
 }): { subject: string; html: string } {
   const id = escapeHtml(params.memberId);
   const url = escapeHtml(params.profileUrl);
+  const conversation = params.conversationUrl ? escapeHtml(params.conversationUrl) : null;
   return {
-    subject: 'Signalement : un profil a été signalé',
+    subject: conversation ? 'Signalement : une conversation a été signalée' : 'Signalement : un profil a été signalé',
     html: layout(`
-      <h1 style="font-size:22px;font-weight:300;margin:0 0 16px;text-align:center;">Profil signalé</h1>
+      <h1 style="font-size:22px;font-weight:300;margin:0 0 16px;text-align:center;">${conversation ? 'Conversation signalée' : 'Profil signalé'}</h1>
       <p style="font-family:system-ui,sans-serif;font-size:13px;color:rgba(255,255,255,0.5);text-align:center;line-height:1.8;margin:0 0 24px;">
         Rien n'est masqué automatiquement : à vous de décider.
       </p>
       <table role="presentation" style="width:100%;border-collapse:collapse;">
         ${alertRow('Porteur', `${escapeHtml(params.memberName ?? '—')} <span style="color:rgba(255,255,255,0.35);">(${id})</span>`)}
         ${alertRow('Profil', `<a href="${url}" style="color:#fff;word-break:break-all;">${url}</a>`)}
+        ${conversation ? alertRow('Conversation', `<a href="${conversation}" style="color:#fff;word-break:break-all;">${conversation}</a>`) : ''}
         ${alertRow('Motif', `« ${escapeHtml(params.reason)} »`)}
         ${alertRow('Contact', params.contact ? escapeHtml(params.contact) : 'non fourni')}
       </table>
       <p style="font-family:system-ui,sans-serif;font-size:11px;color:rgba(255,255,255,0.4);margin:24px 0 8px;">SQL (Supabase → SQL Editor)</p>
       <pre style="font-family:monospace;font-size:11px;color:rgba(255,255,255,0.75);background:#111;padding:12px;white-space:pre-wrap;margin:0;">-- Suspendre le profil (le porteur ne peut pas lever la suspension)
 UPDATE members SET suspended_at = now(), is_paused = true WHERE id = '${id}';
+INSERT INTO audit_logs (action, member_id, metadata) VALUES ('member.suspended', '${id}', '{"motif": "modération"}');
 -- Lever la suspension
-UPDATE members SET suspended_at = NULL, is_paused = false WHERE id = '${id}';</pre>
+UPDATE members SET suspended_at = NULL, is_paused = false WHERE id = '${id}';
+INSERT INTO audit_logs (action, member_id, metadata) VALUES ('member.unsuspended', '${id}', '{"motif": "modération"}');</pre>
+      ${moderationNextSteps()}
+    `),
+  };
+}
+
+/**
+ * Alerte à l'équipe : nouvelle photo de profil, visible par quiconque scanne le
+ * t-shirt. Pas de filtre automatique sur les photos (choix de Clément) : un coup
+ * d'œil humain, SQL fourni pour la retirer.
+ */
+export function emailPhotoReviewAlert(params: {
+  memberName: string | null;
+  memberId:   string;
+  photoUrl:   string;
+  profileUrl: string;
+}): { subject: string; html: string } {
+  const id = escapeHtml(params.memberId);
+  const photo = escapeHtml(params.photoUrl);
+  const url = escapeHtml(params.profileUrl);
+  return {
+    subject: 'Photo de profil à vérifier',
+    html: layout(`
+      <h1 style="font-size:22px;font-weight:300;margin:0 0 16px;text-align:center;">Nouvelle photo de profil</h1>
+      <p style="text-align:center;margin:0 0 24px;">
+        <a href="${photo}"><img src="${photo}" alt="Photo de profil" width="200" style="max-width:200px;height:auto;border:1px solid rgba(255,255,255,0.2);" /></a>
+      </p>
+      <table role="presentation" style="width:100%;border-collapse:collapse;">
+        ${alertRow('Porteur', `${escapeHtml(params.memberName ?? '—')} <span style="color:rgba(255,255,255,0.35);">(${id})</span>`)}
+        ${alertRow('Profil', `<a href="${url}" style="color:#fff;word-break:break-all;">${url}</a>`)}
+      </table>
+      <p style="font-family:system-ui,sans-serif;font-size:11px;color:rgba(255,255,255,0.4);margin:24px 0 8px;">SQL (Supabase → SQL Editor), puis supprimer le fichier : Storage → avatars → ${id}</p>
+      <pre style="font-family:monospace;font-size:11px;color:rgba(255,255,255,0.75);background:#111;padding:12px;white-space:pre-wrap;margin:0;">-- Retirer la photo
+UPDATE members SET photo_url = NULL WHERE id = '${id}';
+INSERT INTO audit_logs (action, member_id, metadata) VALUES ('member.photo_removed', '${id}', '{"motif": "modération"}');</pre>
+      ${moderationNextSteps()}
+    `),
+  };
+}
+
+/**
+ * Accusé de réception à l'auteur d'un signalement qui a laissé son email
+ * (règlement européen sur les services numériques, art. 16). La décision lui
+ * est communiquée ensuite, à la main (docs/MODERATION.md).
+ */
+export function emailReportReceipt(): { subject: string; html: string } {
+  const p = 'font-family:system-ui,sans-serif;font-size:13px;color:rgba(255,255,255,0.5);text-align:center;line-height:1.8;margin:0 0 16px;';
+  return {
+    subject: 'Votre signalement a bien été reçu',
+    html: layout(`
+      <h1 style="font-size:22px;font-weight:300;margin:0 0 24px;text-align:center;">Signalement reçu</h1>
+      <p style="${p}">
+        Merci. Votre signalement concernant un profil In Real Society a bien été reçu.
+        L’équipe l’examine et vous informera de sa décision à cette adresse.
+      </p>
+      <p style="${p}">
+        Si une personne est en danger, appelez le 17 ou le 112.
+      </p>
     `),
   };
 }
@@ -638,8 +711,10 @@ export function emailReportAlert(params: {
       <p style="font-family:system-ui,sans-serif;font-size:11px;color:rgba(255,255,255,0.4);margin:24px 0 8px;">SQL (Supabase → SQL Editor)</p>
       <pre style="font-family:monospace;font-size:11px;color:rgba(255,255,255,0.75);background:#111;padding:12px;white-space:pre-wrap;margin:0;">-- Bannir à la main
 INSERT INTO banned_devices (sender_token, reason) VALUES ('${token}', 'manuel') ON CONFLICT DO NOTHING;
+INSERT INTO audit_logs (action, metadata) VALUES ('device.banned', '{"senderToken": "${token}", "motif": "modération"}');
 -- Lever le bannissement
-DELETE FROM banned_devices WHERE sender_token = '${token}';</pre>` : '';
+DELETE FROM banned_devices WHERE sender_token = '${token}';
+INSERT INTO audit_logs (action, metadata) VALUES ('device.unbanned', '{"senderToken": "${token}"}');</pre>` : '';
   return {
     subject: outcome?.banned ? 'Signalement : appareil banni automatiquement' : 'Signalement : un porteur a signalé un message',
     html: layout(`
@@ -654,6 +729,7 @@ DELETE FROM banned_devices WHERE sender_token = '${token}';</pre>` : '';
         ${alertRow('Suite', escapeHtml(status))}
       </table>
       ${sql}
+      ${moderationNextSteps()}
     `),
   };
 }

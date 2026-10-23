@@ -10,7 +10,7 @@ import { requireAuth, requireOwnership, isHttpError } from '@/lib/require-auth';
 import { sendEmail, emailNouveauMessage, emailReponse } from '@/lib/email-templates';
 import { notifyThreadSubscribers, notifyMemberSubscribers } from '@/lib/push-notify';
 import { broadcastThreadMessage } from '@/lib/realtime-broadcast';
-import { APP_URL, MAX_THREAD_MESSAGES } from '@/lib/constants';
+import { APP_URL, MAX_THREAD_MESSAGES, BANNED_DEVICE_NOTICE } from '@/lib/constants';
 import { isValidEmail } from '@/lib/validators';
 import { moderateContent } from '@/lib/moderation';
 import { getSenderToken } from '@/lib/sender-token';
@@ -70,10 +70,14 @@ export async function POST(req: NextRequest) {
           { status: 403 },
         );
       }
-      // Device bloqué par ce porteur (ici ou ailleurs) OU banni globalement →
-      // réponse opaque « close » (ne révèle ni le blocage ni le ban).
-      if (await isBlocked(rootMsg.member_id, token) || await isDeviceBanned(token)) {
+      // Device bloqué par ce porteur (ici ou ailleurs) : réponse opaque
+      // « close », qui ne révèle pas le blocage.
+      if (await isBlocked(rootMsg.member_id, token)) {
         return NextResponse.json({ error: 'Cette conversation est close.', code: 'blocked' }, { status: 403 });
+      }
+      // Banni globalement : dit clairement, avec le recours (art. 17).
+      if (await isDeviceBanned(token)) {
+        return NextResponse.json({ error: BANNED_DEVICE_NOTICE, code: 'banned' }, { status: 403 });
       }
     }
 

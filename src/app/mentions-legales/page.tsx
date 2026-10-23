@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { BrandMark } from '@/app/components/ui/BrandMark';
-import { VAT_EXEMPT, VAT_EXEMPT_NOTICE } from '@/lib/constants';
+import { CONTACT_EMAIL, VAT_EXEMPT, VAT_EXEMPT_NOTICE } from '@/lib/constants';
 
 export const metadata = {
   // Le gabarit du layout ajoute « — In Real Society ».
@@ -158,6 +158,24 @@ export default function MentionsLegalesPage() {
             <a href="/.well-known/security.txt" className="underline underline-offset-4 hover:text-brand-white">
               fichier security.txt
             </a>.
+          </p>
+        </section>
+
+        <section className="flex flex-col gap-3">
+          <h2 className="font-ui text-sm font-bold tracking-[0.2em] uppercase text-brand-white">
+            9 — Point de contact et signalements
+          </h2>
+          <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
+            Point de contact unique des utilisateurs et des autorités (règlement européen sur les
+            services numériques, articles 11 et 12) :{' '}
+            <span className="text-brand-white/70">{CONTACT_EMAIL}</span>, en français ou en anglais.
+          </p>
+          <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
+            Pour signaler un contenu : « Signaler ce profil » sur la page d&apos;un profil, « Signaler
+            cette conversation » dans une conversation, ou la même adresse. Les règles de modération
+            figurent à l&apos;article 9 des{' '}
+            <Link href="/cgv" className="underline underline-offset-4 hover:text-brand-white">CGV</Link>.
+            Une personne est en danger ? Appelez le 17 ou le 112.
           </p>
         </section>
 

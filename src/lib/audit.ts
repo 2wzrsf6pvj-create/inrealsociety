@@ -44,6 +44,8 @@ export type AuditAction =
   | 'message.report_failed'
   | 'device.auto_banned'
   | 'profile.reported'
+  | 'profile.moderated'
+  | 'member.photo_updated'
   | 'conversation.blocked'
   | 'conversation.unblocked';
 

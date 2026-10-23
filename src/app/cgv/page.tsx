@@ -267,21 +267,28 @@ export default function CGVPage() {
             Article 9 — Modération et signalements
           </h2>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
-            Les messages, prénoms et contacts laissés par les personnes qui écrivent aux porteurs sont
-            analysés automatiquement avant transmission (outil de modération d&apos;OpenAI et règles
-            internes). Un contenu jugé abusif (menaces, harcèlement, insultes, contenus sexuels ou
-            haineux) n&apos;est pas transmis.
+            Les messages et réponses, ainsi que les prénoms et contacts laissés par les personnes qui
+            écrivent aux porteurs, sont analysés automatiquement avant transmission (outil de
+            modération d&apos;OpenAI et règles internes). Le prénom, la présentation et le compte
+            Instagram du porteur le sont avant publication sur son profil, et chaque nouvelle photo de
+            profil est vue par l&apos;équipe. Un contenu jugé abusif (menaces, harcèlement, insultes,
+            contenus sexuels ou haineux) n&apos;est ni transmis ni publié, et son auteur en est informé.
           </p>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
             Un porteur peut signaler un message reçu : le message est aussitôt masqué et l&apos;équipe est
             prévenue. L&apos;appareil à l&apos;origine de messages signalés par trois porteurs différents ne peut
-            plus écrire sur la plateforme. Un porteur peut aussi bloquer la personne qui lui écrit.
+            plus écrire sur la plateforme ; la personne en est informée lorsqu&apos;elle tente d&apos;écrire. Un
+            porteur peut aussi bloquer la personne qui lui écrit.
           </p>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
-            Toute personne, même sans compte, peut signaler un profil depuis la page de ce profil
-            (« Signaler ce profil ») ou en écrivant à hello@inrealsociety.com. L&apos;équipe examine chaque
-            signalement et peut suspendre un profil ou bloquer un appareil contraire aux présentes
-            conditions ou à la loi. Une décision de modération peut être contestée à la même adresse.
+            Toute personne, même sans compte, peut signaler un profil depuis sa page (« Signaler ce
+            profil »), une conversation depuis celle-ci (« Signaler cette conversation »), ou écrire à
+            hello@inrealsociety.com. L&apos;auteur d&apos;un signalement qui laisse son email reçoit un accusé
+            de réception, puis la décision. L&apos;équipe examine chaque signalement et peut suspendre un
+            profil, retirer une photo ou bloquer un appareil contraire aux présentes conditions ou à la
+            loi ; la personne visée en est informée, avec les motifs, lorsque son adresse est connue.
+            Une décision de modération peut être contestée à la même adresse. Les contenus qui
+            menacent la vie ou la sécurité d&apos;une personne sont signalés aux autorités.
           </p>
         </section>
 

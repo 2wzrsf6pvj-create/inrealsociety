@@ -173,6 +173,7 @@ Avant lancement public :
 - [docs/MONITORING.md](docs/MONITORING.md) — Uptime + Sentry alerts
 - [docs/PERFORMANCE.md](docs/PERFORMANCE.md) — Lighthouse + bundle budget
 - [docs/ECONOMIE_UNITAIRE.md](docs/ECONOMIE_UNITAIRE.md) — marges, frais fixes, TVA (franchise), seuils
+- [docs/MODERATION.md](docs/MODERATION.md) — signalements : délais, gestes, modèles d'email, autorités
 
 ---
 

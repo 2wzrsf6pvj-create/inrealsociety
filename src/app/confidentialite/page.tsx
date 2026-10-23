@@ -60,7 +60,7 @@ export default function ConfidentialitePage() {
             <li><strong>Passant (sans compte) :</strong> votre message et, si vous les laissez, votre prénom et votre contact (email ou @instagram). Un email laissé ne sert qu&apos;après sa confirmation par le lien que nous vous envoyons. Si vous partagez votre ville, la position de votre appareil, arrondie à environ 1 km, sert uniquement à trouver le nom de la ville : seule la ville est conservée.</li>
             <li><strong>Technique :</strong> adresse IP (rate limiting, logs de sécurité), user-agent, identifiants de session.</li>
             <li><strong>Sécurité (côté scanneur) :</strong> un jeton anonyme déposé sur votre appareil (cookie), sans lien avec votre identité, qui permet à un porteur de vous bloquer en cas d&apos;abus.</li>
-            <li><strong>Signalements :</strong> le motif d&apos;un signalement de message ou de profil et, si vous le laissez, votre contact.</li>
+            <li><strong>Signalements :</strong> le motif d&apos;un signalement de message, de profil ou de conversation et, si vous le laissez, votre contact (un email reçoit l&apos;accusé de réception puis la décision).</li>
             <li><strong>Analytique (avec consentement) :</strong> pages vues, événements de conversion (PostHog, Cloud EU).</li>
           </ul>
         </section>
@@ -86,12 +86,12 @@ export default function ConfidentialitePage() {
           </p>
           <ul className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed list-disc pl-5 flex flex-col gap-2">
             <li><strong>Le porteur du t-shirt</strong> reçoit le message du passant et, s&apos;il les laisse, son prénom, son contact et la ville du scan.</li>
-            <li><strong>L&apos;équipe In Real Society</strong> reçoit les messages et profils signalés, pour les examiner.</li>
+            <li><strong>L&apos;équipe In Real Society</strong> reçoit les messages, profils et conversations signalés, pour les examiner, ainsi que chaque nouvelle photo de profil.</li>
             <li><strong>Supabase</strong> (UE) — hébergement base de données et authentification.</li>
             <li><strong>Stripe</strong> (Irlande/USA) — traitement des paiements. Décision d&apos;adéquation UE-USA (Data Privacy Framework).</li>
             <li><strong>Resend</strong> (USA) — envoi des emails transactionnels (DPF).</li>
             <li><strong>PostHog Cloud EU</strong> (Allemagne) — mesure d&apos;audience (uniquement si vous consentez).</li>
-            <li><strong>OpenAI</strong> (USA) — modération de contenu des messages (DPF, données non utilisées pour l&apos;entraînement).</li>
+            <li><strong>OpenAI</strong> (USA) — modération de contenu des messages et des textes du profil : prénom, présentation, compte Instagram (DPF, données non utilisées pour l&apos;entraînement).</li>
             <li><strong>Printful</strong> (Lettonie) — impression et expédition des t-shirts.</li>
             <li><strong>Upstash Redis</strong> (UE) — rate limiting.</li>
             <li><strong>OpenStreetMap</strong> (Fondation OpenStreetMap, Royaume-Uni) — nom de la ville à partir d&apos;une position arrondie à environ 1 km, seulement si le passant partage sa ville.</li>

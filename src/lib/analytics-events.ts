@@ -11,6 +11,7 @@ export type AnalyticsEvent =
   | 'message_blocked_window_expired'
   | 'message_blocked_paused'
   | 'message_blocked_already_messaged'
+  | 'message_blocked_banned'          // appareil banni (signalements ou équipe)
   // Activation (côté membre)
   | 'member_dashboard_viewed'
   // Funnel ACHAT → ACTIVATION (client, même distinct_id anonyme de /shop à

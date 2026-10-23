@@ -1,11 +1,14 @@
 // src/app/api/member/avatar/route.ts
 // POST (FormData: file) — upload l'avatar du membre authentifié.
-// Protégé : session + ownership.
+// Protégé : session + ownership. Chaque nouvelle photo est envoyée à l'équipe.
 
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { requireAuth, isHttpError } from '@/lib/require-auth';
 import { checkAuthRateLimit, rateLimitHeaders } from '@/lib/ratelimit';
+import { audit } from '@/lib/audit';
+import { sendEmail, emailPhotoReviewAlert } from '@/lib/email-templates';
+import { APP_URL } from '@/lib/constants';
 import { reportError } from '@/lib/report-error';
 
 const MAX_SIZE = 5 * 1024 * 1024; // 5 Mo
@@ -41,7 +44,7 @@ export async function POST(req: NextRequest) {
     // ─── Récupère le membre lié à ce user ─────────────────────────────────
     const { data: member } = await supabaseAdmin
       .from('members')
-      .select('id')
+      .select('id, name')
       .eq('auth_user_id', auth.user.id)
       .single();
 
@@ -103,6 +106,26 @@ export async function POST(req: NextRequest) {
       .update({ photo_url: publicUrl })
       .eq('id', member.id)
       .eq('auth_user_id', auth.user.id);
+
+    // ─── Coup d'œil de l'équipe ───────────────────────────────────────────
+    // La photo est publique (quiconque scanne le t-shirt la voit) et aucun
+    // filtre ne l'analyse (choix de Clément) : chaque nouvelle photo part à
+    // l'équipe. Même chemin à chaque envoi : ?v= contourne le cache de l'image.
+    audit({ action: 'member.photo_updated', memberId: member.id });
+    const adminEmail = process.env.ADMIN_ALERT_EMAIL;
+    if (adminEmail) {
+      const { subject, html } = emailPhotoReviewAlert({
+        memberName: member.name ?? null,
+        memberId:   member.id,
+        photoUrl:   `${publicUrl}?v=${Date.now()}`,
+        profileUrl: `${APP_URL}/profil/${member.id}`,
+      });
+      // Attendue : une fonction serverless peut s'arrêter dès la réponse envoyée.
+      const sent = await sendEmail({ to: adminEmail, subject, html }).catch(() => false);
+      if (!sent) console.error('[api/member/avatar] alerte photo non envoyée');
+    } else {
+      console.warn('[api/member/avatar] ADMIN_ALERT_EMAIL absent : personne ne vérifie la photo');
+    }
 
     return NextResponse.json({ ok: true, photoUrl: publicUrl });
 
