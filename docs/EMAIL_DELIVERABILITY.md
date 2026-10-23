@@ -1,145 +1,122 @@
-# Email deliverability — SPF / DKIM / DMARC
+# Délivrabilité des emails
 
-Sans ces 3 enregistrements DNS sur `inrealsociety.com`, les emails d'activation
-envoyés via Resend ont une probabilité significative d'atterrir en spam — ce qui
-casse silencieusement le tunnel d'onboarding (client paie → ne reçoit jamais son
-code → support overload).
+Les emails automatiques partent par Resend depuis **`mail.inrealsociety.com`** :
+codes d'activation, scans, messages, réponses, premium, newsletter. C'est un
+choix de Clément, qui suit la recommandation de Resend : une plainte pour spam
+sur un email automatique ne pèse pas sur `hello@inrealsociety.com`. Les réponses
+des destinataires vont à `hello@` (Reply-To).
 
-Cette doc explique **exactement quels enregistrements ajouter** chez ton
-registrar (OVH, Gandi, Cloudflare, etc.) et **comment vérifier** que la config
-est bonne.
-
----
-
-## 1. SPF (Sender Policy Framework)
-
-**Quoi** : autorise Resend à envoyer des emails au nom de ton domaine.
-
-**Type d'enregistrement** : `TXT` sur `inrealsociety.com` (ou `@`)
-
-**Valeur** :
-```
-v=spf1 include:_spf.resend.com ~all
-```
-
-Si tu utilises d'autres services qui envoient au nom du domaine (ex. Google
-Workspace pour la boîte support), ajoute-les :
-```
-v=spf1 include:_spf.resend.com include:_spf.google.com ~all
-```
-
-⚠️ Un seul enregistrement SPF par domaine. Si tu en as déjà un, complète-le.
+Sources, lues le 22/10/2026 :
+[domaine](https://resend.com/docs/add-a-domain),
+[limites](https://resend.com/docs/api-reference/rate-limit),
+[quotas](https://resend.com/docs/knowledge-base/account-quotas-and-limits),
+[suppressions](https://resend.com/docs/dashboard/emails/email-suppressions),
+[SMTP](https://resend.com/docs/send-with-smtp),
+[règles Gmail](https://support.google.com/mail/answer/81126),
+[SMTP Supabase](https://supabase.com/docs/guides/auth/auth-smtp).
 
 ---
 
-## 2. DKIM (DomainKeys Identified Mail)
+## 1. Domaine d'envoi dans Resend
 
-**Quoi** : signe cryptographiquement chaque email pour prouver qu'il vient bien
-de ton domaine.
+1. Resend → *Domains* → *Add Domain* : **`mail.inrealsociety.com`**, pas le
+   domaine principal.
+2. Chez le registrar, copier **exactement** les enregistrements affichés par
+   Resend. En général :
+   - **SPF** : un `TXT` et un `MX` sur `send.mail` (le `TXT` contient
+     `include:amazonses.com`, le `MX` pointe vers `feedback-smtp.<région>.amazonses.com`).
+     Les domaines récents peuvent recevoir des `CNAME` à la place : suivre
+     Resend ;
+   - **DKIM** : un `TXT` sur `resend._domainkey.mail`.
+3. Ne rien ajouter au SPF du domaine principal : Resend ne le demande pas.
+4. Pièges fréquents :
+   - la plupart des registrars attendent le nom relatif (`send.mail`), sans
+     `inrealsociety.com` ;
+   - certains ajoutent le domaine à la valeur du `MX` : terminer la valeur par
+     un point.
+5. Resend → *Verify*. La propagation peut prendre jusqu'à 72 h.
+6. Vercel : `EMAIL_FROM` n'est à renseigner que pour changer d'expéditeur.
+   Par défaut : `In Real Society <noreply@mail.inrealsociety.com>`.
 
-Resend génère **automatiquement** les enregistrements DKIM quand tu vérifies ton
-domaine dans leur dashboard.
+## 2. DMARC, sur le domaine principal
 
-**Étapes** :
-1. Aller sur [resend.com/domains](https://resend.com/domains)
-2. Cliquer "Add Domain" → entrer `inrealsociety.com`
-3. Resend affiche 3 enregistrements DKIM à ajouter — typiquement :
-   ```
-   resend._domainkey.inrealsociety.com  CNAME  resend._domainkey.<resend-id>.dkim.resend.com
-   resend2._domainkey.inrealsociety.com CNAME  resend2._domainkey.<resend-id>.dkim.resend.com
-   resend3._domainkey.inrealsociety.com CNAME  resend3._domainkey.<resend-id>.dkim.resend.com
-   ```
-4. Coller ces 3 lignes dans ton DNS
-5. Retourner sur Resend → cliquer "Verify" — doit passer en vert
+`TXT` sur `_dmarc.inrealsociety.com` :
 
----
-
-## 3. DMARC (Domain-based Message Authentication)
-
-**Quoi** : indique aux serveurs receveurs (Gmail, Outlook, etc.) quoi faire des
-emails qui échouent SPF/DKIM, et où envoyer les rapports.
-
-**Type d'enregistrement** : `TXT` sur `_dmarc.inrealsociety.com`
-
-**Valeur** (mode démarrage, mode permissif) :
 ```
-v=DMARC1; p=none; rua=mailto:dmarc-reports@inrealsociety.com; pct=100
+v=DMARC1; p=none; rua=mailto:dmarc@inrealsociety.com
 ```
 
-- `p=none` : ne rejette rien pour l'instant, mais collecte des rapports
-- `rua=mailto:...` : où recevoir les rapports d'agrégation (doit être un email
-  qui existe — sinon, omets cette ligne)
-- `pct=100` : applique la politique à 100% des emails
+- Il couvre aussi `mail.inrealsociety.com`.
+- `rua` : une boîte qui existe, sinon retirer ce paramètre.
+- `p=none` ne bloque rien et fait remonter des rapports. Avant de passer à
+  `p=quarantine`, vérifier dans ces rapports que `hello@`, et tout service qui
+  écrit au nom du domaine, passe SPF ou DKIM.
+- Gmail exige DMARC au-delà de 5 000 emails par jour vers ses boîtes ; en
+  dessous, il demande SPF ou DKIM. Le poser dès le départ ne coûte rien.
 
-**Après 2-4 semaines de monitoring**, passer en mode strict :
-```
-v=DMARC1; p=quarantine; rua=mailto:dmarc-reports@inrealsociety.com; pct=100
-```
+## 3. Offre et réglages Resend
 
-Puis éventuellement `p=reject` quand SPF/DKIM sont stables sur 100% du trafic.
+- **Offre gratuite** : 100 emails par jour (journée UTC) et 3 000 par mois. Au
+  delà, Resend refuse tout, codes d'activation compris, jusqu'à minuit UTC ou
+  jusqu'au mois suivant.
+- **Offre Pro** : 20 $/mois, 50 000 emails par mois, sans plafond quotidien.
+  Recommandée dès le lancement.
+- **Débit** : 10 requêtes par seconde pour tout le compte, quelle que soit
+  l'offre. L'app réessaie quand Resend refuse pour débit, et la newsletter part
+  par lots de 100 (un lot compte pour une requête).
+- **Suivi des ouvertures et des clics** : laisser désactivé dans les réglages
+  du domaine. L'app n'en a pas besoin, et le suivi des clics réécrit les liens
+  des emails.
 
----
+## 4. (Supabase) Emails d'inscription et de mot de passe
 
-## 4. Vérification
+Sans SMTP personnalisé, Supabase n'envoie qu'aux membres de l'équipe du
+projet, à raison de 2 emails par heure. La confirmation d'inscription
+(obligatoire, cf. `MISE_EN_PRODUCTION.md`) et le mot de passe oublié ne
+partiraient pas.
 
-Après propagation DNS (5-30 min) :
+Supabase → *Authentication* → *Emails* → *SMTP Settings* :
+- hôte `smtp.resend.com`, port `465`, utilisateur `resend` ;
+- mot de passe : une clé API Resend ;
+- expéditeur : une adresse en `@mail.inrealsociety.com`.
 
-```bash
-# Vérifier SPF
-dig TXT inrealsociety.com +short | grep spf
+Puis *Rate Limits* : avec un SMTP personnalisé, Supabase part de 30 emails par
+heure ; relever si besoin.
 
-# Vérifier DKIM (remplace <selector> par 'resend')
-dig TXT resend._domainkey.inrealsociety.com +short
+## 5. Vérifier
 
-# Vérifier DMARC
-dig TXT _dmarc.inrealsociety.com +short
-```
+- Resend : le domaine est *Verified*.
+- Depuis un terminal :
+  ```bash
+  dig TXT resend._domainkey.mail.inrealsociety.com +short
+  dig TXT send.mail.inrealsociety.com +short
+  dig MX  send.mail.inrealsociety.com +short
+  dig TXT _dmarc.inrealsociety.com +short
+  ```
+- [mail-tester.com](https://www.mail-tester.com) : y envoyer un email de l'app,
+  par exemple « Code perdu ? Renvoyer l'email » sur `/register`. Viser 9/10.
+- Gmail → *Afficher l'original* : SPF, DKIM et DMARC à `PASS`.
 
-**Outils en ligne** :
-- [mxtoolbox.com/SuperTool](https://mxtoolbox.com/SuperTool.aspx) — analyse tout d'un coup
-- [mail-tester.com](https://www.mail-tester.com) — envoie un test, donne un score /10
-- [dmarcian.com/dmarc-inspector](https://dmarcian.com/dmarc-inspector/) — analyse DMARC
+## 6. Suivre
 
-**Cible** : score mail-tester ≥ 9/10. En dessous, lire les recommandations.
+- **Google Postmaster Tools** : ajouter `inrealsociety.com`. C'est le seul
+  endroit où voir le taux de plainte de Gmail, qui ne transmet pas les plaintes
+  à Resend. À garder sous 0,1 %, jamais 0,3 %.
+- **Resend → Emails** : rebonds et plaintes. Resend bloque d'office ces
+  adresses pour tout le compte (liste de suppression).
+- **Logs Vercel** : chaque refus de Resend est noté `[sendEmail]`, avec sa
+  raison : quota, débit, domaine non vérifié, adresse invalide.
 
----
+## 7. Ce que l'app fait déjà
 
-## 5. Test final manuel
-
-1. Envoyer un email de test via Resend à :
-   - une Gmail
-   - une Outlook/Hotmail
-   - une Yahoo
-   - une Apple iCloud
-2. Vérifier qu'il arrive **dans la boîte de réception, pas en spam**
-3. Vérifier les headers (Gmail : trois points → "Afficher l'original") :
-   - `SPF: PASS`
-   - `DKIM: PASS`
-   - `DMARC: PASS`
-
-Si l'un de ces 3 est `FAIL`, retourner aux étapes correspondantes.
-
----
-
-## 6. Bonnes pratiques complémentaires
-
-- **From address** : utiliser `<nom-de-personne>@inrealsociety.com`, pas
-  `noreply@`. Les filtres anti-spam pénalisent `noreply`.
-- **Reply-To** : configurer un Reply-To qui pointe sur une vraie boîte mail
-  (pour que les utilisateurs puissent répondre).
-- **Limite d'envoi initial** : Resend limite à ~3000 emails/jour sur les
-  nouveaux domaines. Augmente progressivement le volume au fil des semaines.
-- **Liste de désinscription** : pour les emails marketing (pas transactionnels),
-  ajouter un header `List-Unsubscribe` avec lien de désinscription en 1 clic
-  (obligatoire Gmail/Yahoo depuis 2024 pour les envois en masse).
-
----
-
-## 7. Monitoring continu
-
-- **Rapports DMARC hebdomadaires** : Resend les agrège dans son dashboard,
-  ou tu reçois des XML à parser sur `rua=mailto:`
-- **Alerte si bounce rate > 5%** : config Sentry alert sur l'event
-  `order.email_failed` qu'on a déjà câblé (voir [src/lib/audit.ts](../src/lib/audit.ts))
-- **Suivi délivrabilité** : Resend dashboard → tab "Logs" pour voir les bounces,
-  complaints, ouvertures.
+- Version texte de chaque email : générée par Resend.
+- Désinscription en un clic (`List-Unsubscribe`, reconnue par Gmail) :
+  newsletter et emails de scan. Les emails de scan se coupent aussi dans les
+  réglages (« Email au premier scan du jour »).
+- Fréquences : un email de scan par jour au plus, un email de plafond par
+  semaine au plus.
+- Réponses dirigées vers `hello@`. Les emails de conversation précisent que
+  répondre à l'email écrit à l'équipe, pas à l'autre personne.
+- Liens écrits par un passant ou un porteur : masqués dans les emails
+  (« [lien] »), lisibles dans la conversation.
+- Email du passant confirmé avant toute réponse, avec un plafond par adresse.

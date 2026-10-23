@@ -82,6 +82,12 @@ SELECT is_nullable = 'NO' AS rempli,
        has_column_privilege('anon', 'members', 'referral_code', 'SELECT') AS anon_select
 FROM information_schema.columns WHERE table_name = 'members' AND column_name = 'referral_code';
 
+\echo '=== 061 — emails de scan coupables : actifs par défaut, illisibles côté client, respectés par la réservation (attendu: 1 ligne  t | f | t) ==='
+SELECT column_default = 'true' AS actifs_par_defaut,
+       has_column_privilege('anon', 'members', 'scan_emails', 'SELECT') AS anon_select,
+       (SELECT prosrc LIKE '%AND scan_emails%' FROM pg_proc WHERE proname = 'claim_scan_email') AS reservation
+FROM information_schema.columns WHERE table_name = 'members' AND column_name = 'scan_emails';
+
 \echo '=== Rappel : RLS activée sur les tables sensibles (attendu: tous t) ==='
 SELECT relname, relrowsecurity
 FROM pg_class

@@ -55,7 +55,7 @@ const sent = {
   // quand on relance le test sur la même base.
   run:      Date.now().toString(36),
   printful: [] as { body: Record<string, unknown> }[],
-  emails:   [] as { to: string[]; subject: string; html: string }[],
+  emails:   [] as { to: string[]; subject: string; html: string; reply_to?: string; headers?: Record<string, string> }[],
   uploads:  [] as string[],
   stripeSessions: [] as Record<string, unknown>[],
 };
@@ -685,6 +685,58 @@ describe.skipIf(!ENABLED)('Emails du porteur : un par jour pour les scans, un pa
     }
     expect(toWearer().length - before).toBe(1);
     expect(toWearer().at(-1)!.subject).toContain('quelqu\'un a essayé de vous écrire');
+  });
+});
+
+// ─── Emails de scan coupables (061) ──────────────────────────────────────────
+describe.skipIf(!ENABLED)('Emails de scan : coupés en un clic, réactivés dans les réglages', () => {
+  let scan:   typeof import('@/app/api/scan/route');
+  let optOut: typeof import('@/app/api/scan-emails/unsubscribe/route');
+  let update: typeof import('@/app/api/member/update/route');
+  const wearer = { authId: crypto.randomUUID(), memberId: crypto.randomUUID() };
+  const email = `opt-${wearer.authId}@example.com`;
+  const toWearer = () => sent.emails.filter(e => e.to[0] === email);
+  const scanEmails = () => sql(`SELECT scan_emails FROM members WHERE id = '${wearer.memberId}'`);
+  // Le lendemain : l'email du jour est de nouveau disponible (059).
+  const nextDay = () => sql(`UPDATE members SET scan_email_on = current_date - 1 WHERE id = '${wearer.memberId}'`);
+  let ip = 10;
+  const scanOnce = () => scan.POST(req('/api/scan', { body: { memberId: wearer.memberId }, ip: `198.51.100.${ip++}` }));
+
+  beforeAll(async () => {
+    scan   = await import('@/app/api/scan/route');
+    optOut = await import('@/app/api/scan-emails/unsubscribe/route');
+    update = await import('@/app/api/member/update/route');
+    sql(`INSERT INTO auth.users (id, email, email_confirmed_at) VALUES ('${wearer.authId}', '${email}', now())`);
+    sql(`INSERT INTO members (id, auth_user_id, name, email) VALUES ('${wearer.memberId}', '${wearer.authId}', 'Noé', '${email}')`);
+  });
+
+  it('par défaut actifs ; l’email répond à hello@ et porte la désinscription en un clic', async () => {
+    expect(scanEmails()).toBe('t');
+    expect((await scanOnce()).status).toBe(200);
+    expect(toWearer()).toHaveLength(1);
+    expect(toWearer()[0].reply_to).toBe('hello@inrealsociety.com');
+    expect(toWearer()[0].headers?.['List-Unsubscribe-Post']).toBe('List-Unsubscribe=One-Click');
+  });
+
+  it('un clic (POST du client mail) : coupés ; le scan suivant compte, sans email', async () => {
+    const url = toWearer()[0].headers!['List-Unsubscribe'].slice(1, -1);
+    expect((await optOut.POST(new NextRequest(url, { method: 'POST' }))).status).toBe(200);
+    expect(scanEmails()).toBe('f');
+    nextDay();
+    expect((await scanOnce()).status).toBe(200);
+    expect(sql(`SELECT scan_count FROM members WHERE id = '${wearer.memberId}'`)).toBe('2');
+    expect(toWearer()).toHaveLength(1);
+  });
+
+  it('réactivés dans les réglages : l’email du jour repart', async () => {
+    currentUser = { id: wearer.authId, email };
+    const res = await update.PATCH(req('/api/member/update', { method: 'PATCH', body: { scan_emails: true } }));
+    currentUser = null;
+    expect(res.status).toBe(200);
+    expect(scanEmails()).toBe('t');
+    nextDay();
+    await scanOnce();
+    expect(toWearer()).toHaveLength(2);
   });
 });
 

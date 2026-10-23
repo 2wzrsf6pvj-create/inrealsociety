@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { sendEmail, emailNouveauScan } from '@/lib/email-templates';
+import { scanEmailsOptOutUrl } from '@/lib/unsubscribe-token';
 import { checkScanRateLimit, isNewScan, releaseScanDedup, getIp, rateLimitHeaders } from '@/lib/ratelimit';
 import { audit } from '@/lib/audit';
 import { captureServerEvent } from '@/lib/posthog-server';
@@ -159,17 +160,29 @@ export async function POST(req: NextRequest) {
     ];
 
     // Un email au premier scan de la journée seulement (choix de Clément,
-    // migration 059) ; les suivants sont dans le tableau de bord.
+    // migration 059) ; les suivants sont dans le tableau de bord. Le porteur
+    // peut les couper (061) : la réservation échoue alors.
     if (member.email && await claimScanEmail(memberId)) {
       const dashboardUrl = `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/${member.id}`;
+      const unsubscribeUrl = scanEmailsOptOutUrl(member.id);
       const { subject, html } = emailNouveauScan({
         memberName:   member.name,
         scannerName:  cleanName ?? undefined,  // le template attend string|undefined
         dashboardUrl,
+        unsubscribeUrl: unsubscribeUrl ?? undefined,
       });
-      notifications.push(
-        sendEmail({ to: member.email, subject, html }).catch((err) => console.error('[api/scan] Échec envoi email:', err)),
-      );
+      // sendEmail note lui-même ses échecs (sans exception).
+      notifications.push(sendEmail({
+        to: member.email,
+        subject,
+        html,
+        ...(unsubscribeUrl ? {
+          headers: {
+            'List-Unsubscribe':      `<${unsubscribeUrl}>`,
+            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+          },
+        } : {}),
+      }));
     }
 
     await Promise.all(notifications);

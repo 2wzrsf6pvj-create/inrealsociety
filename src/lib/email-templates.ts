@@ -2,7 +2,9 @@
 // Tous les templates d'email Resend au même endroit.
 // Modifier le design ici = modifier tous les emails d'un coup.
 
+import crypto from 'crypto';
 import { escapeHtml } from '@/lib/escape-html';
+import { maskLinks } from '@/lib/mask-links';
 import {
   EMAIL_FROM, RESEND_API_URL, APP_URL, CONTACT_EMAIL,
   PREMIUM_PERKS, PREMIUM_PRICE_LABEL, PREMIUM_WITHDRAWAL_DAYS,
@@ -67,18 +69,30 @@ function cta(label: string, url: string): string {
   `;
 }
 
+/** Message écrit par un passant ou un porteur. Ses liens sont masqués (cf.
+ *  mask-links.ts) ; la conversation les garde. */
 function quoteBlock(content: string, sender?: string): string {
   const senderLine = sender
-    ? `<p style="font-size:13px;color:rgba(255,255,255,0.5);margin:0 0 16px;">De : <strong style="color:#fff;">${escapeHtml(sender)}</strong></p>`
+    ? `<p style="font-size:13px;color:rgba(255,255,255,0.5);margin:0 0 16px;">De : <strong style="color:#fff;">${escapeHtml(maskLinks(sender))}</strong></p>`
     : `<p style="font-size:13px;color:rgba(255,255,255,0.3);margin:0 0 16px;font-style:italic;">Message anonyme</p>`;
 
   return `
     <div style="border:1px solid rgba(255,255,255,0.1);padding:24px;margin-bottom:32px;">
       ${senderLine}
       <p style="font-size:18px;font-style:italic;font-weight:300;color:rgba(255,255,255,0.85);margin:0;line-height:1.6;">
-        &ldquo;${escapeHtml(content)}&rdquo;
+        &ldquo;${escapeHtml(maskLinks(content))}&rdquo;
       </p>
     </div>
+  `;
+}
+
+/** Les réponses par email vont à CONTACT_EMAIL (Reply-To, cf. sendEmail) : on
+ *  le dit là où l'on croirait répondre à l'autre personne. `who` : HTML sûr. */
+function replyHint(who: string): string {
+  return `
+    <p style="font-family:system-ui,sans-serif;font-size:11px;color:rgba(255,255,255,0.35);text-align:center;line-height:1.7;margin:24px 0 0;">
+      Pour répondre à ${who}, passez par le bouton : répondre à cet email écrit à l'équipe In Real Society.
+    </p>
   `;
 }
 
@@ -108,6 +122,7 @@ export function emailNouveauMessage(params: {
       <h2 style="font-size:26px;font-weight:600;letter-spacing:0.04em;margin:0 0 32px;text-align:center;">${safeName}.</h2>
       ${quoteBlock(params.content, sender)}
       ${cta('Lire et répondre', params.conversationUrl)}
+      ${replyHint('cette personne')}
     `),
   };
 }
@@ -127,6 +142,7 @@ export function emailReponse(params: {
       </h1>
       ${quoteBlock(params.reply)}
       ${cta('Voir la conversation', params.convUrl)}
+      ${replyHint(safeName)}
     `),
   };
 }
@@ -159,12 +175,17 @@ export function emailContactVerification(params: {
   };
 }
 
-/** Email envoyé au membre quand son profil est scanné */
+/** Email envoyé au membre quand son profil est scanné. `unsubscribeUrl` : lien
+ *  signé qui coupe ces emails (migration 061), aussi posé en List-Unsubscribe. */
 export function emailNouveauScan(params: {
-  memberName:   string;
-  scannerName?: string;
-  dashboardUrl: string;
+  memberName:      string;
+  scannerName?:    string;
+  dashboardUrl:    string;
+  unsubscribeUrl?: string;
 }): { subject: string; html: string } {
+  const unsubscribe = params.unsubscribeUrl
+    ? `<br/><a href="${escapeHtml(params.unsubscribeUrl)}" style="color:rgba(255,255,255,0.4);text-decoration:underline;">Ne plus recevoir ces emails</a>, ici ou dans vos réglages.`
+    : '';
   const safeScanner = params.scannerName ? escapeHtml(params.scannerName) : null;
 
   const headline = safeScanner
@@ -182,7 +203,7 @@ export function emailNouveauScan(params: {
       </p>
       ${cta('Voir mon tableau de bord', params.dashboardUrl)}
       <p style="font-family:system-ui,sans-serif;font-size:11px;color:rgba(255,255,255,0.3);text-align:center;line-height:1.6;margin:24px 0 0;">
-        Un seul email par jour : les scans suivants vous attendent dans votre tableau de bord.
+        Un seul email par jour : les scans suivants vous attendent dans votre tableau de bord.${unsubscribe}
       </p>
     `),
   };
@@ -617,30 +638,107 @@ DELETE FROM banned_devices WHERE sender_token = '${token}';</pre>` : '';
 
 // ─── Envoi générique Resend ───────────────────────────────────────────────────
 
-export async function sendEmail(params: {
+/** Essais par requête. Resend refuse au-delà de 10 requêtes par seconde pour
+ *  tout le compte (429 rate_limit_exceeded) et peut tomber en panne (5xx) :
+ *  ceux-là se réessaient. Un quota épuisé (daily_/monthly_quota_exceeded), un
+ *  domaine non vérifié ou une adresse invalide, non. */
+export const SEND_ATTEMPTS = 3;
+
+export interface EmailParams {
   to:       string;
   subject:  string;
   html:     string;
-  headers?: Record<string, string>;   // ex. List-Unsubscribe (newsletter)
-}): Promise<boolean> {
-  try {
-    const res = await fetch(RESEND_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type':  'application/json',
-        'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
-      },
-      body: JSON.stringify({
-        from: EMAIL_FROM,
-        to:   [params.to],
-        subject: params.subject,
-        html: params.html,
-        ...(params.headers ? { headers: params.headers } : {}),
-      }),
-    });
-    return res.ok;
-  } catch (err) {
-    console.error('[sendEmail]', err);
-    return false;
+  headers?: Record<string, string>;   // ex. List-Unsubscribe
+}
+
+/** Corps attendu par l'API. Les réponses vont à CONTACT_EMAIL (Reply-To). */
+function apiEmail(params: EmailParams) {
+  return {
+    from:     EMAIL_FROM,
+    to:       [params.to],
+    reply_to: CONTACT_EMAIL,
+    subject:  params.subject,
+    html:     params.html,
+    ...(params.headers ? { headers: params.headers } : {}),
+  };
+}
+
+/** Attente avant l'essai suivant : celle que Resend demande (Retry-After, en
+ *  secondes), plafonnée à 2 s pour ne pas tenir la requête en cours, sinon un
+ *  délai croissant. */
+function retryDelayMs(res: Response | null, attempt: number): number {
+  const asked = Number(res?.headers.get('retry-after'));
+  return asked > 0 ? Math.min(asked * 1000, 2000) : 500 * attempt;
+}
+
+/** POST vers Resend, avec les nouveaux essais. `null` si rien n'est parti : la
+ *  raison est dans les logs, jamais en exception. */
+async function postToResend(
+  url: string,
+  payload: unknown,
+  extraHeaders: Record<string, string> = {},
+): Promise<{ data: unknown } | null> {
+  const body = JSON.stringify(payload);
+  // Même clé pour tous les essais de CETTE requête : si Resend l'a traitée mais
+  // que sa réponse s'est perdue, l'essai suivant ne crée pas de doublon (24 h).
+  const idempotencyKey = crypto.randomUUID();
+
+  for (let attempt = 1; ; attempt++) {
+    let res: Response | null = null;
+    let reason: string;
+    try {
+      res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type':    'application/json',
+          'Authorization':   `Bearer ${process.env.RESEND_API_KEY}`,
+          'Idempotency-Key': idempotencyKey,
+          ...extraHeaders,
+        },
+        body,
+      });
+      if (res.ok) return { data: await res.json().catch(() => null) };
+      const error = await res.json().catch(() => null) as { name?: string; message?: string } | null;
+      reason = [res.status, error?.name, error?.message].filter(Boolean).join(' ');
+      const retryable = res.status >= 500 || (res.status === 429 && error?.name === 'rate_limit_exceeded');
+      if (!retryable) {
+        console.error(`[sendEmail] refusé par Resend : ${reason}`);
+        return null;
+      }
+    } catch (err) {
+      reason = `Resend injoignable : ${err instanceof Error ? err.message : String(err)}`;
+    }
+    if (attempt >= SEND_ATTEMPTS) {
+      console.error(`[sendEmail] échec après ${SEND_ATTEMPTS} essais : ${reason}`);
+      return null;
+    }
+    await new Promise((resolve) => setTimeout(resolve, retryDelayMs(res, attempt)));
   }
+}
+
+/** Envoie un email. `false` si rien n'est parti : la raison est toujours dans
+ *  les logs (`[sendEmail]`), ne jamais l'attendre en exception. */
+export async function sendEmail(params: EmailParams): Promise<boolean> {
+  return (await postToResend(RESEND_API_URL, apiEmail(params))) !== null;
+}
+
+/** Taille maximale d'un lot Resend. Un lot compte pour UNE requête dans la
+ *  limite de débit. */
+export const BATCH_MAX = 100;
+
+/**
+ * Envoie jusqu'à BATCH_MAX emails en une requête. Validation « permissive » :
+ * une adresse refusée n'empêche pas les autres de partir. Renvoie le nombre
+ * d'emails acceptés par Resend.
+ */
+export async function sendEmailBatch(emails: EmailParams[]): Promise<number> {
+  if (emails.length === 0) return 0;
+  if (emails.length > BATCH_MAX) throw new Error(`[sendEmailBatch] ${emails.length} emails > ${BATCH_MAX}`);
+  const result = await postToResend(`${RESEND_API_URL}/batch`, emails.map(apiEmail), {
+    'x-batch-validation': 'permissive',
+  });
+  if (!result) return 0;
+  const errors = (result.data as { errors?: { index: number; message: string }[] } | null)?.errors ?? [];
+  for (const e of errors) console.error(`[sendEmailBatch] email n°${e.index} refusé : ${e.message}`);
+  return emails.length - errors.length;
 }

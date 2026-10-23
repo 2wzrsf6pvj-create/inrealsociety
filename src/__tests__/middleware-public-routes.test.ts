@@ -40,6 +40,7 @@ describe('middleware — parcours du passant anonyme', () => {
     '/tee/en-attente',
     '/opengraph-image',   // image d'aperçu des liens partagés (robots des messageries)
     '/api/shop/tagline/un-message-une-chance',
+    '/api/scan-emails/unsubscribe', // lien « ne plus recevoir », depuis l'email de scan
   ])('%s reste accessible sans compte', async (path) => {
     expect(await redirectOf(path)).toBeNull();
   });
