@@ -33,8 +33,8 @@ const productJsonLd = {
   },
 };
 
-export default function ShopPage() {
-  const nonce = headers().get('x-nonce') ?? undefined;
+export default async function ShopPage() {
+  const nonce = (await headers()).get('x-nonce') ?? undefined;
   return (
     <>
       <script type="application/ld+json" nonce={nonce} dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }} />

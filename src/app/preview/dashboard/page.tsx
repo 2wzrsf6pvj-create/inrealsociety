@@ -18,7 +18,10 @@ export const metadata = { title: 'Preview dashboard (dev)' };
 
 // ?empty=1 : porteur sans scan ni message ; ?plan=free : porteur gratuit (offre
 // premium) ; ?ends=1 : premium dont la résiliation est programmée.
-export default function PreviewDashboardPage({ searchParams }: { searchParams: { empty?: string; plan?: string; ends?: string } }) {
+export default async function PreviewDashboardPage(
+  props: { searchParams: Promise<{ empty?: string; plan?: string; ends?: string }> }
+) {
+  const searchParams = await props.searchParams;
   // Jamais accessible en prod.
   if (process.env.NODE_ENV === 'production') notFound();
 

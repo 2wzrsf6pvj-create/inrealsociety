@@ -16,7 +16,7 @@ import { getMessages, getMessagesCount, getActiveConversationsCount, getConversa
 import DashboardClient from './[memberId]/DashboardClient';
 
 export default async function DashboardPage() {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
   // Non authentifié → login

@@ -1,4 +1,4 @@
-// src/middleware.ts
+// src/proxy.ts — l'ancien middleware.ts, renommé par Next 16. Tourne sous Node.js.
 
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
@@ -75,7 +75,7 @@ function isPublicRoute(pathname: string): boolean {
   return false;
 }
 
-// Dev-friendly : sans les clés Supabase, on bypasse le middleware au lieu de
+// Dev-friendly : sans les clés Supabase, on bypasse le proxy au lieu de
 // crasher toutes les routes. Ça permet d'explorer le code et les pages
 // statiques (/, /shop, /manifeste, /cgv, /confidentialite) sans .env.local.
 // Les pages qui interrogent Supabase échoueront évidemment à l'exécution.
@@ -84,7 +84,7 @@ const SUPABASE_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const SUPABASE_CONFIGURED = !!(SUPABASE_URL && SUPABASE_ANON);
 
 if (!SUPABASE_CONFIGURED && process.env.NODE_ENV !== 'production') {
-  console.warn('[middleware] Supabase env vars absentes — auth check désactivé. Configure .env.local pour activer l\'auth.');
+  console.warn('[proxy] Supabase env vars absentes — auth check désactivé. Configure .env.local pour activer l\'auth.');
 }
 
 // CSP stricte à nonce — construite par requête, ENFORÇANTE (Phase 2). Seule
@@ -115,10 +115,10 @@ function buildCsp(nonce: string): string {
   ].join('; ');
 }
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Nonce unique par requête (Web Crypto, edge). On le pose sur les headers de
+  // Nonce unique par requête (Web Crypto). On le pose sur les headers de
   // REQUÊTE : x-nonce (lu par le root layout) + Content-Security-Policy (lue par
   // Next pour noncer automatiquement ses propres scripts inline d'hydratation).
   // Ces headers de requête ne sont PAS renvoyés au navigateur.
@@ -180,9 +180,9 @@ export async function middleware(req: NextRequest) {
 
 export const config = {
   matcher: [
-    // Hors middleware : fichiers statiques, et les deux fichiers publics que le
+    // Hors proxy : fichiers statiques, et les deux fichiers publics que le
     // navigateur va chercher tout seul. /sw.js et /manifest.json passaient par le
-    // middleware : un visiteur non connecté était redirigé vers la connexion, le
+    // proxy : un visiteur non connecté était redirigé vers la connexion, le
     // navigateur refusait alors le service worker (notifications « Me notifier de
     // sa réponse » du passant jamais reçues) et le manifeste (installation).
     '/((?!_next/static|_next/image|favicon.ico|sw\\.js$|manifest\\.json$|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',

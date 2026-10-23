@@ -31,7 +31,10 @@ const STATES = {
   },
 } as const;
 
-export default function ContactConfirmePage({ searchParams }: { searchParams: { statut?: string; conversation?: string } }) {
+export default async function ContactConfirmePage(
+  props: { searchParams: Promise<{ statut?: string; conversation?: string }> }
+) {
+  const searchParams = await props.searchParams;
   const statut = (searchParams.statut ?? '') in STATES ? (searchParams.statut as keyof typeof STATES) : 'invalide';
   const { title, text } = STATES[statut];
   const conversation = statut === 'ok' && UUID_RE.test(searchParams.conversation ?? '') ? searchParams.conversation : null;

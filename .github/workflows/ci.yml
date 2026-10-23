@@ -31,8 +31,8 @@ jobs:
         run: npm ci
 
       - name: Lint
-        # Bloquant : `next build` rejette de toute façon les erreurs ESLint — mieux
-        # vaut les voir ici, nommées, que dans un build et un déploiement Vercel cassés.
+        # Bloquant : depuis Next 16, `next build` ne lance plus ESLint. Ce job est
+        # le seul garde-fou avant un déploiement.
         run: npm run lint
 
       - name: Typecheck

@@ -14,7 +14,8 @@ import { z } from 'zod';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { checkPublicRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
 
-export async function GET(req: NextRequest, { params }: { params: { messageId: string } }) {
+export async function GET(req: NextRequest, props: { params: Promise<{ messageId: string }> }) {
+  const params = await props.params;
   const parsed = z.string().uuid().safeParse(params.messageId);
   if (!parsed.success) {
     return NextResponse.json({ error: 'ID invalide.' }, { status: 400 });

@@ -13,7 +13,8 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function JoinPage({ params }: { params: { code: string } }) {
+export default async function JoinPage(props: { params: Promise<{ code: string }> }) {
+  const params = await props.params;
   const referrer = await resolveReferrer(params.code);
   return <JoinClient code={referrer ? params.code : null} referrerName={referrer?.name ?? null} />;
 }

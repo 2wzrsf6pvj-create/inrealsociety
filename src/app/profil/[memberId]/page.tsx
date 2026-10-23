@@ -5,14 +5,15 @@ import { getFirstScanAt, isProfileOwner } from '@/lib/queries-server';
 import { createClient } from '@/lib/supabase-server';
 import ProfilClient from './ProfilClient';
 
-interface Props { params: { memberId: string }; searchParams: { preview?: string } }
+interface Props { params: Promise<{ memberId: string }>; searchParams: Promise<{ preview?: string }> }
 
 // Un profil se découvre en scannant un t-shirt, pas sur un moteur de recherche :
 // jamais indexé (prénom, photo, Instagram d'un porteur). Les balises de partage
 // restent, pour l'aperçu quand le porteur partage lui-même son lien.
 const NOINDEX = { index: false, follow: false } as const;
 
-export async function generateMetadata({ params }: Props) {
+export async function generateMetadata(props: Props) {
+  const params = await props.params;
   const member = await getPublicMember(params.memberId);
   if (!member) return { title: 'In Real Society', robots: NOINDEX };
 
@@ -45,7 +46,9 @@ export async function generateMetadata({ params }: Props) {
   };
 }
 
-export default async function ProfilPage({ params, searchParams }: Props) {
+export default async function ProfilPage(props: Props) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const member = await getPublicMember(params.memberId);
   if (!member) notFound();
 
@@ -53,7 +56,7 @@ export default async function ProfilPage({ params, searchParams }: Props) {
   // est nullé (profil public), donc on vérifie l'ownership côté serveur (admin).
   let isOwner = false;
   try {
-    const supabase = createClient();
+    const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
       isOwner = await isProfileOwner(params.memberId, user.id);

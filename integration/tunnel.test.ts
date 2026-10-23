@@ -303,7 +303,7 @@ describe.skipIf(!ENABLED)('Tunnel achat → impression → activation → scan �
   });
 
   it('4. QR scanné avant activation → page « bientôt »', async () => {
-    const res = await shortRedirect.GET(req(`/r/${shortCode}`, { method: 'GET' }), { params: { code: shortCode } });
+    const res = await shortRedirect.GET(req(`/r/${shortCode}`, { method: 'GET' }), { params: Promise.resolve({ code: shortCode }) });
     expect(res.headers.get('location')).toBe(`${APP_URL}/tee/en-attente`);
   });
 
@@ -341,7 +341,7 @@ describe.skipIf(!ENABLED)('Tunnel achat → impression → activation → scan �
   });
 
   it('7. QR scanné après activation → profil du porteur', async () => {
-    const res = await shortRedirect.GET(req(`/r/${shortCode}`, { method: 'GET' }), { params: { code: shortCode } });
+    const res = await shortRedirect.GET(req(`/r/${shortCode}`, { method: 'GET' }), { params: Promise.resolve({ code: shortCode }) });
     expect(res.headers.get('location')).toBe(`${APP_URL}/profil/${memberId}`);
   });
 

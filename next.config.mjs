@@ -26,10 +26,10 @@ const nextConfig = {
   },
   async headers() {
     // ⚠️ Content-Security-Policy : N'EST PLUS POSÉE ICI. Elle est désormais
-    // générée par requête dans `src/middleware.ts` avec un nonce + 'strict-dynamic'
+    // générée par requête dans `src/proxy.ts` avec un nonce + 'strict-dynamic'
     // (CSP3 stricte, sans 'unsafe-inline' sur les scripts). Voir DEPLOY_CHECKLIST
     // §2bis. Ne PAS ré-ajouter de CSP statique ici : elle entrerait en conflit
-    // avec celle du middleware (deux headers Content-Security-Policy enforçants).
+    // avec celle du proxy (deux headers Content-Security-Policy enforçants).
     const isProd = process.env.NODE_ENV === 'production';
 
     const headers = [

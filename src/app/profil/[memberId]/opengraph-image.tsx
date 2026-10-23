@@ -1,11 +1,9 @@
-/* eslint-disable @next/next/no-img-element, jsx-a11y/alt-text */
 // app/profil/[memberId]/opengraph-image.tsx
 // Génère une image OG dynamique pour chaque profil
 
 import { ImageResponse } from 'next/og';
 import { getPublicMember } from '@/lib/supabase';
 
-export const runtime = 'edge';
 export const alt = 'In Real Society — Profil';
 export const size = { width: 1200, height: 630 };
 export const contentType = 'image/png';
@@ -17,12 +15,14 @@ function getInitials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
+// Next 16 : params est une promesse (sans await, le nom du porteur manquait).
 export default async function OGImage({
   params,
 }: {
-  params: { memberId: string };
+  params: Promise<{ memberId: string }>;
 }) {
-  const member = await getPublicMember(params.memberId);
+  const { memberId } = await params;
+  const member = await getPublicMember(memberId);
 
   const name    = member?.name  ?? 'In Real Society';
   const pitch   = member?.pitch ?? 'The IRL Social Club';

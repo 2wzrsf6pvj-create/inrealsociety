@@ -63,8 +63,8 @@ const FAQ_GROUPS: FaqGroup[] = [
   },
 ];
 
-export default function FaqPage() {
-  const nonce = headers().get('x-nonce') ?? undefined;
+export default async function FaqPage() {
+  const nonce = (await headers()).get('x-nonce') ?? undefined;
   const faqJsonLd = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
