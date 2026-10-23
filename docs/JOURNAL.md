@@ -5,6 +5,77 @@
 
 ---
 
+## 2026-10-23 (suite) — Mesurer les notifications (#36)
+
+### Analyse
+Lu : l'abonnement aux notifications (route, envoi, purge hebdomadaire),
+`/admin`, la politique de confidentialité.
+
+**Constats** :
+1. La purge hebdomadaire (036, reprise en 058) supprimait aussi les
+   abonnements des porteurs au bout de 90 jours. Un porteur cessait d'être
+   notifié, sans le savoir.
+2. Rien dans `/admin` ne disait qui reçoit les notifications.
+3. Impossible de distinguer Android d'un ordinateur, ni de connaître la part
+   des porteurs sur iPhone.
+4. La politique de confidentialité ne parlait pas des notifications.
+5. Après la déconnexion, l'appareil restait abonné : il recevait encore
+   l'aperçu des messages du porteur.
+6. Trouvé en chemin : un passant qui suivait une nouvelle conversation depuis
+   le même appareil gardait la date de son premier abonnement. La purge
+   pouvait emporter le nouvel abonnement.
+
+### Décisions de Clément
+- Enregistrer le téléphone du porteur (iPhone ou Android) à l'ouverture de
+  « Mon espace ».
+- Dans la recherche de `/admin`, indiquer pour chaque porteur s'il reçoit les
+  notifications.
+- Après sa remarque (« il n'y a aucun E2E ») : des E2E avec une vraie base,
+  d'abord pour cette PR, puis pour les parcours principaux dans une PR à part.
+
+### Fait
+- **PR #36 fusionnée** (`4d23958`) :
+  - migration 062 : la purge ne touche plus que les abonnements des passants ;
+    colonnes `phone_os` et `app_installed_at` ;
+  - téléphone relevé à l'ouverture de « Mon espace ». L'app installée est
+    reconnue à son adresse de départ : `/dashboard?src=app`, ou `/?src=app`
+    que le proxy fait suivre ;
+  - `/admin` : bloc « Notifications » (porteurs prévenus, iPhone et app
+    installée, Android, passants qui suivent leur conversation). Dans la
+    recherche : notifications et téléphone de chaque porteur. Sans la
+    migration, « migration 062 à appliquer » au lieu d'une erreur ;
+  - déconnexion : l'appareil est désabonné, côté serveur et côté
+    navigateur, en 3 secondes au plus ;
+  - passant réabonné : la purge repart de son dernier abonnement ;
+  - politique de confidentialité : données, finalités, destinataires,
+    durées ;
+  - **E2E avec base**, nouveau job CI. L'app construite tourne devant la base
+    de test ; une passerelle se fait passer pour Supabase et Upstash. Cinq
+    scénarios dans un navigateur connecté. Jusqu'ici, aucun test ne passait
+    par une page qui demande un compte.
+- Vérifié :
+  - lint et typage ;
+  - 798 tests unitaires, 59 d'intégration (54 sans la migration : rien ne
+    casse avant qu'elle soit appliquée), E2E avec base 5/5 ;
+  - mutations détectées à chaque niveau (unitaires, intégration, E2E) ;
+  - build ; migration rejouable ; base neuve ; essai réel ;
+  - CI verte. Captures de `/admin` envoyées à Clément.
+
+### À faire — côté Clément
+- [ ] Appliquer la migration **062**, après 061.
+- [ ] Sur iPhone, réinstaller une app installée avant cette PR, pour qu'elle
+      compte.
+- [ ] Faire relire par le juriste les nouvelles lignes de la politique de
+      confidentialité.
+
+### Ensuite
+- PR des E2E des parcours principaux : passant (QR → profil → message →
+  conversation), réponse du porteur, décisions de `/admin`.
+- La préparation du test terrain : qui, où, seuils pour continuer, ajuster
+  ou arrêter.
+
+---
+
 ## 2026-10-23 (suite) — App mobile : analyse et app installable (#35)
 
 ### Avant : chiffres de `/admin` vérifiés
