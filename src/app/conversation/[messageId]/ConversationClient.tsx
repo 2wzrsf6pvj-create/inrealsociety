@@ -379,11 +379,11 @@ export default function ConversationClient({
           <div className="w-10 h-10 rounded-full border border-brand-gray/20 bg-[#0a0a0a] flex items-center justify-center overflow-hidden flex-shrink-0">
             {message.members?.photo_url
               ? <Image src={message.members.photo_url} alt={`Photo de ${memberName}`} width={40} height={40} className="w-full h-full object-cover" />
-              : <span className="font-display text-sm font-light text-brand-gray/50">{getInitials(memberName)}</span>
+              : <span aria-hidden="true" className="font-display text-sm font-light text-brand-gray/50">{getInitials(memberName)}</span>
             }
           </div>
           <div>
-            <p className="font-ui text-sm font-medium tracking-[0.2em]">{memberName.toUpperCase()}</p>
+            <p className="font-ui text-sm font-medium tracking-[0.2em] uppercase">{memberName}</p>
             <p className="font-ui text-xs text-brand-gray/55 tracking-[0.05em]">
               {isOwner
                 ? (message.sender_name ? `Message de ${message.sender_name}` : 'Message reçu')

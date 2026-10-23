@@ -3,6 +3,7 @@
 // Vérification d'ownership : si le membre a un auth_user_id,
 // seul l'utilisateur authentifié correspondant peut accéder.
 
+import type { Metadata } from 'next';
 import { headers } from 'next/headers';
 import { redirect, notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase-server';
@@ -14,6 +15,10 @@ import DashboardClient from './DashboardClient';
 interface Props {
   params: Promise<{ memberId: string }>;
 }
+
+export const metadata: Metadata = {
+  title: 'Mon espace',
+};
 
 export default async function DashboardByIdPage(props: Props) {
   const params = await props.params;
