@@ -48,6 +48,7 @@ qui manquent.
 | Variable | Sans elle |
 |---|---|
 | `RESEND_API_KEY` | aucun email : code d'activation, notifications, confirmations |
+| `ADMIN_EMAILS` | pas d'accès à l'administration de la modération (`/admin`) : emails autorisés, séparés par des virgules |
 | `ADMIN_ALERT_EMAIL` | personne n'est prévenu d'un message ou d'un profil signalé, ni d'un échec qui touche l'argent (paiement sans commande, code non envoyé, t-shirt non imprimé) |
 | `CRON_SECRET` | tâches planifiées non lancées (purge RGPD, relances) ; sans elle ni `INTERNAL_SECRET`, les emails de scan partent sans lien de désinscription |
 | `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN` | erreurs invisibles : les logs Vercel ne durent qu'une heure (Hobby) ou un jour (Pro) |
@@ -140,7 +141,8 @@ Détail : `docs/MONITORING.md`.
       `/api/health`.
 - [ ] Modération : lire `docs/MODERATION.md` (délais, gestes, modèles
       d'email, autorités). `ADMIN_ALERT_EMAIL` sur une boîte lue chaque jour,
-      notifications activées sur le téléphone.
+      notifications activées sur le téléphone. Accès à `/admin` :
+      `docs/MODERATION.md`, section 7.
 - [ ] Printful : notifications du compte activées (commande en attente,
       échec de paiement).
 - [ ] GitHub → Settings → Advanced Security (ou Code security) : activer les

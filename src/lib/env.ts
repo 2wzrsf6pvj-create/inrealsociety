@@ -39,6 +39,7 @@ const recommended = [
   'CRON_SECRET',
   'STRIPE_REFERRAL_COUPON_ID',
   'ADMIN_ALERT_EMAIL',
+  'ADMIN_EMAILS',
 ] as const;
 
 type EnvKey = typeof required[number] | typeof recommended[number];

@@ -31,9 +31,22 @@ téléphone.
 
 ## 3. Les gestes
 
-Supabase → *SQL Editor*. Chaque alerte contient déjà les requêtes, identifiant
-rempli. Chaque geste s'inscrit aussi dans `audit_logs` : c'est la trace en cas
-de contestation.
+**Dans l'administration, `/admin`** (réservée aux emails de `ADMIN_EMAILS`,
+lien dans chaque alerte) : chaque signalement et chaque photo à vérifier y
+figure avec ses boutons (suspendre, retirer la photo, bannir l'appareil,
+clore), ainsi que les profils suspendus et les appareils bannis, avec de quoi
+lever la mesure.
+
+- Le motif saisi part au porteur concerné, avec la règle et le recours
+  (section 4).
+- Une case propose de prévenir l'auteur du signalement, s'il a laissé son
+  email.
+- Chaque décision s'inscrit dans `audit_logs` (qui, quoi, pourquoi) et clôt le
+  signalement ; les dernières décisions s'affichent en bas de page.
+
+**En secours**, Supabase → *SQL Editor*. Chaque alerte contient déjà les
+requêtes, identifiant rempli. Chaque geste s'inscrit aussi dans `audit_logs` :
+c'est la trace en cas de contestation.
 
 ```sql
 -- Suspendre un profil (le porteur ne peut pas lever la pause lui-même)
@@ -68,8 +81,10 @@ l'ouvrir ne change rien pour ses participants.
 
 Le DSA demande d'informer la personne visée par une décision, avec ses motifs,
 quand son adresse est connue (article 17), et l'auteur d'un signalement de la
-suite donnée (article 16). Envoyer depuis `hello@inrealsociety.com`. Ne jamais
-donner à l'un l'identité ou le contact de l'autre.
+suite donnée (article 16). Depuis `/admin`, ces emails partent seuls ; les
+modèles ci-dessous servent après un geste fait en SQL, ou pour répondre à une
+contestation. Envoyer depuis `hello@inrealsociety.com`. Ne jamais donner à
+l'un l'identité ou le contact de l'autre.
 
 **Au porteur dont le profil est suspendu**
 
@@ -137,6 +152,10 @@ nombre moyen d'utilisateurs actifs par mois dans l'UE.
 
 - [ ] `ADMIN_ALERT_EMAIL` sur une boîte lue chaque jour, notifications
       activées sur le téléphone.
+- [ ] Accès à `/admin` : créer son compte (Supabase → *Authentication →
+      Users → Add user*, case « Auto Confirm User » cochée), mettre son email
+      dans `ADMIN_EMAILS` (Vercel), puis se connecter sur `/auth/login` et
+      ouvrir `/admin`. Sans adresse confirmée, l'accès est refusé.
 - [ ] `OPENAI_API_KEY` renseignée.
 - [ ] Faire relire par le juriste : l'article 9 des CGV, ce document et ses
       modèles d'email.
