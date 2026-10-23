@@ -5,6 +5,47 @@
 
 ---
 
+## 2026-10-23 (suite) — E2E avec base : parcours principaux (#37)
+
+### Contexte
+Remarque de Clément pendant #36 : « il n'y a aucun E2E ». L'E2E tournait sans
+base et ne voyait que les pages publiques. Décision : des E2E avec une vraie
+base, d'abord pour #36, puis pour les parcours principaux dans cette PR.
+
+### Fait
+- **PR #37 fusionnée** (`3d90d22`), chaque personne dans son propre navigateur :
+  - du QR à la conversation : scan, message, réponse du porteur depuis « Mon
+    espace », réponse du passant depuis son appareil, « Lu ✓ ». Le porteur
+    reçoit les emails du scan et du message ;
+  - `/admin` : un profil signalé par un passant est suspendu avec un motif.
+    Le porteur est prévenu par email, et le QR ne mène plus qu'à
+    « indisponible » ;
+  - message signalé par le porteur, appareil banni : il ne peut plus écrire,
+    même à un autre porteur ;
+  - emails : l'adresse de l'API Resend devient remplaçable
+    (`RESEND_API_URL`, jamais définie en production). En E2E, la passerelle
+    garde les emails et les tests les lisent : aucun appel sortant depuis la
+    CI.
+- Vérifié :
+  - lint et typage ; 798 tests unitaires, 59 d'intégration ;
+  - E2E avec base : 8 scénarios, 32/32 sur quatre passages d'affilée ;
+  - défauts réintroduits, chacun détecté à la bonne étape : conversation
+    redevenue privée, bannissement contourné, profil suspendu encore
+    affiché, appareil du passant non reconnu, emails supprimés ;
+  - un faux positif corrigé : le test trouvait le texte tapé dans le champ
+    de saisie avant que le serveur ait accepté le message ;
+  - CI verte.
+
+### Limite
+- Pas de temps réel (Supabase Realtime) en E2E : les nouveaux messages
+  s'affichent au rechargement de la page.
+
+### Ensuite
+- La préparation du test terrain : qui, où, seuils pour continuer, ajuster
+  ou arrêter.
+
+---
+
 ## 2026-10-23 (suite) — Mesurer les notifications (#36)
 
 ### Analyse
