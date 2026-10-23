@@ -582,11 +582,87 @@ function alertRow(label: string, value: string): string {
 
 /** Suite à donner, rappelée dans chaque alerte de modération. */
 function moderationNextSteps(): string {
+  const adminUrl = escapeHtml(`${APP_URL}/admin`);
   return `
       <p style="font-family:system-ui,sans-serif;font-size:12px;color:rgba(255,255,255,0.5);line-height:1.7;margin:24px 0 0;">
-        Marche à suivre et modèles d'email (porteur, auteur du signalement) : docs/MODERATION.md.
+        Traiter dans l'administration : <a href="${adminUrl}" style="color:#fff;">${adminUrl}</a>
+        (le SQL ci-dessus en secours). Marche à suivre : docs/MODERATION.md.
         Menace pour la vie ou la sécurité d'une personne : prévenir la police sans attendre.
       </p>`;
+}
+
+/**
+ * Décision de modération notifiée au porteur, avec ses motifs (règlement
+ * européen sur les services numériques, art. 17) : ce qui change, pourquoi,
+ * la règle appliquée, comment contester.
+ */
+export function emailModerationNotice(params: {
+  name:  string | null;
+  kind:  'suspended' | 'photo_removed' | 'unsuspended';
+  motif: string | null;
+  /** Date de la décision, déjà formatée (« 23 octobre 2026 »). */
+  date:  string;
+}): { subject: string; html: string } {
+  const p = 'font-family:system-ui,sans-serif;font-size:13px;color:rgba(255,255,255,0.5);text-align:center;line-height:1.8;margin:0 0 16px;';
+  const hello = params.name ? `Bonjour ${escapeHtml(params.name)},` : 'Bonjour,';
+  const date = escapeHtml(params.date);
+  const motif = params.motif ? `<p style="${p}">Motif : ${escapeHtml(params.motif)}</p>` : '';
+  const rule = `
+      <p style="${p}">
+        Cette décision applique l'article 9 de nos <a href="${APP_URL}/cgv" style="color:#fff;">CGV</a>.
+        Elle a été prise par l'équipe, après examen.
+      </p>
+      <p style="${p}">
+        Vous pouvez la contester en répondant à cet email ou en écrivant à ${CONTACT_EMAIL}.
+        Vous pouvez aussi saisir le juge compétent.
+      </p>`;
+  const content = {
+    suspended: {
+      subject: 'Votre profil In Real Society est suspendu',
+      title:   'Votre profil est suspendu',
+      body:    `Depuis le ${date}, votre profil n'est plus visible et ne reçoit plus de messages.`,
+      rule,
+    },
+    photo_removed: {
+      subject: 'Votre photo de profil a été retirée',
+      title:   'Votre photo a été retirée',
+      body:    `Le ${date}, votre photo de profil a été retirée. Vous pouvez en choisir une autre depuis votre tableau de bord.`,
+      rule,
+    },
+    unsuspended: {
+      subject: 'Votre profil In Real Society est rétabli',
+      title:   'Votre profil est rétabli',
+      body:    `Depuis le ${date}, votre profil est de nouveau visible et peut recevoir des messages.`,
+      rule:    '',
+    },
+  }[params.kind];
+  return {
+    subject: content.subject,
+    html: layout(`
+      <h1 style="font-size:22px;font-weight:300;margin:0 0 24px;text-align:center;">${content.title}</h1>
+      <p style="${p}">${hello}</p>
+      <p style="${p}">${content.body}</p>
+      ${params.kind === 'unsuspended' ? '' : motif}
+      ${content.rule}
+    `),
+  };
+}
+
+/**
+ * Suite donnée à un signalement, pour son auteur qui a laissé son email
+ * (règlement européen sur les services numériques, art. 16).
+ */
+export function emailReportOutcome(params: { decision: string }): { subject: string; html: string } {
+  const p = 'font-family:system-ui,sans-serif;font-size:13px;color:rgba(255,255,255,0.5);text-align:center;line-height:1.8;margin:0 0 16px;';
+  return {
+    subject: 'Suite de votre signalement',
+    html: layout(`
+      <h1 style="font-size:22px;font-weight:300;margin:0 0 24px;text-align:center;">Suite de votre signalement</h1>
+      <p style="${p}">Votre signalement a été examiné par l’équipe In Real Society.</p>
+      <p style="${p}">Décision : ${escapeHtml(params.decision)}</p>
+      <p style="${p}">Vous pouvez contester cette décision en répondant à cet email.</p>
+    `),
+  };
 }
 
 /**

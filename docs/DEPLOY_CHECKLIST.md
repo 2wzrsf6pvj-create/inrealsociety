@@ -160,6 +160,7 @@ plus exécuter `create_member_with_code` (service_role oui).
 ### 🟡 Features dégradées si absentes (warning, pas crash)
 - `OPENAI_API_KEY` → modération tombe sur le regex (fallback, faux négatifs possibles)
 - `ADMIN_ALERT_EMAIL` → adresse qui reçoit une alerte à chaque signalement de message (contenu, appareil, bannissement auto). Sans elle, personne n'est prévenu
+- `ADMIN_EMAILS` → emails autorisés sur `/admin` (modération), séparés par des virgules ; compte existant et adresse confirmée exigés
 - `RESEND_API_KEY` + **DNS SPF/DKIM/DMARC** → emails (codes, replies) non délivrés
 - `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY` → push no-op
 - `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST` → analytics off

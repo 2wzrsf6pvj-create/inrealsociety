@@ -48,6 +48,11 @@ describe('proxy — parcours du passant anonyme', () => {
   it('témoin : une page membre renvoie bien vers la connexion', async () => {
     expect(await redirectOf('/dashboard')).toContain('/auth/login');
   });
+
+  it('administration : connexion exigée, retour à /admin ensuite', async () => {
+    expect(await redirectOf('/admin')).toContain('/auth/login?redirect=%2Fadmin');
+    expect(await redirectOf('/api/admin/moderation')).toContain('/auth/login');
+  });
 });
 
 // Le navigateur va chercher ces fichiers seul, sans session : passés par le

@@ -152,7 +152,7 @@ vi.mock('stripe', () => {
 });
 
 // Session Supabase : l'utilisateur « connecté » est piloté par le test.
-let currentUser: { id: string; email: string } | null = null;
+let currentUser: { id: string; email: string; email_confirmed_at?: string } | null = null;
 vi.mock('@/lib/require-auth', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@/lib/require-auth')>();
   const { NextResponse } = await import('next/server');
@@ -897,5 +897,73 @@ describe.skipIf(!ENABLED)('Premium : CGV avant paiement, emails une seule fois, 
     expect(stripeState.cancelled).toEqual([`${subId}b`]);
     expect(toWearer('votre abonnement premium est résilié')).toHaveLength(1);
     expect(sql(`SELECT count(*) FROM members WHERE id = '${wearer.memberId}'`)).toBe('0');
+  });
+});
+
+// ─── Administration de la modération (/admin) ─────────────────────────────────
+describe.skipIf(!ENABLED)('Administration : un signalement traité depuis /admin', () => {
+  let admin:  typeof import('@/app/api/admin/moderation/route');
+  let report: typeof import('@/app/api/profile/report/route');
+  let queue:  typeof import('@/lib/moderation-queue');
+  const wearer = { authId: crypto.randomUUID(), memberId: crypto.randomUUID() };
+  const wearerEmail = `adm-${wearer.authId}@example.com`;
+  const ADMIN = { id: crypto.randomUUID(), email: 'clement@example.com', email_confirmed_at: new Date().toISOString() };
+  const decide = (body: Record<string, unknown>) => admin.POST(req('/api/admin/moderation', { body }));
+  const mailsTo = (to: string, subject: string) => sent.emails.filter(e => e.to[0] === to && e.subject === subject);
+  // audit() écrit en tâche de fond : on attend la ligne.
+  const until = async (check: () => boolean) => {
+    for (let i = 0; i < 50 && !check(); i++) await new Promise(r => setTimeout(r, 100));
+  };
+
+  beforeAll(async () => {
+    process.env.ADMIN_EMAILS = 'clement@example.com';
+    admin  = await import('@/app/api/admin/moderation/route');
+    report = await import('@/app/api/profile/report/route');
+    queue  = await import('@/lib/moderation-queue');
+    sql(`INSERT INTO auth.users (id, email, email_confirmed_at) VALUES ('${wearer.authId}', '${wearerEmail}', now())`);
+    sql(`INSERT INTO members (id, auth_user_id, name, email) VALUES ('${wearer.memberId}', '${wearer.authId}', 'Porteur', '${wearerEmail}')`);
+  });
+
+  it('le signalement apparaît dans la file, avec son motif et son auteur', async () => {
+    currentUser = null;
+    const res = await report.POST(req('/api/profile/report', {
+      body: { memberId: wearer.memberId, reason: 'Présentation insultante.', contact: 'temoin@example.com', goodFaith: true },
+    }));
+    expect(await res.json()).toEqual({ ok: true, receiptSent: true });
+    await until(() => sql(`SELECT count(*) FROM audit_logs WHERE action = 'profile.reported' AND member_id = '${wearer.memberId}'`) === '1');
+    const item = (await queue.loadModerationQueue()).profileReports.find(r => r.member?.id === wearer.memberId);
+    expect(item).toEqual(expect.objectContaining({ reason: 'Présentation insultante.', contact: 'temoin@example.com' }));
+  });
+
+  it('un compte qui n’est pas dans ADMIN_EMAILS est refusé (404), rien ne change', async () => {
+    currentUser = { id: wearer.authId, email: wearerEmail, email_confirmed_at: new Date().toISOString() };
+    const res = await decide({ action: 'suspend_member', memberId: wearer.memberId, motif: 'Présentation insultante' });
+    expect(res.status).toBe(404);
+    expect(sql(`SELECT suspended_at IS NULL FROM members WHERE id = '${wearer.memberId}'`)).toBe('t');
+  });
+
+  it('suspendre : profil suspendu, décision tracée, signalement clos, porteur et auteur prévenus', async () => {
+    currentUser = ADMIN;
+    const reportId = sql(`SELECT id FROM audit_logs WHERE action = 'profile.reported' AND member_id = '${wearer.memberId}'`);
+    const res = await decide({
+      action: 'suspend_member', memberId: wearer.memberId, motif: 'Présentation insultante',
+      reportKey: `profile:${reportId}`, notifyReporter: true,
+    });
+    expect(await res.json()).toEqual({ ok: true, memberNotified: true, reporterNotified: true });
+    expect(sql(`SELECT is_paused || '|' || (suspended_at IS NOT NULL) FROM members WHERE id = '${wearer.memberId}'`)).toBe('true|true');
+    expect(sql(`SELECT metadata->>'by' FROM audit_logs WHERE action = 'member.suspended' AND member_id = '${wearer.memberId}'`)).toBe('clement@example.com');
+    expect(mailsTo(wearerEmail, 'Votre profil In Real Society est suspendu')).toHaveLength(1);
+    expect(mailsTo('temoin@example.com', 'Suite de votre signalement')).toHaveLength(1);
+
+    const q = await queue.loadModerationQueue();
+    expect(q.profileReports.find(r => r.key === `profile:${reportId}`)).toBeUndefined();
+    expect(q.suspended.map(m => m.id)).toContain(wearer.memberId);
+    expect(q.decisions.map(d => d.action)).toEqual(expect.arrayContaining(['member.suspended', 'moderation.report_handled']));
+  });
+
+  it('lever la suspension : profil rétabli, porteur prévenu', async () => {
+    expect((await decide({ action: 'unsuspend_member', memberId: wearer.memberId })).status).toBe(200);
+    expect(sql(`SELECT is_paused || '|' || (suspended_at IS NULL) FROM members WHERE id = '${wearer.memberId}'`)).toBe('false|true');
+    expect(mailsTo(wearerEmail, 'Votre profil In Real Society est rétabli')).toHaveLength(1);
   });
 });
