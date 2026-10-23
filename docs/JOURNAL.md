@@ -5,6 +5,50 @@
 
 ---
 
+## 2026-10-23 (suite) — Lecteur d'écran : guide d'essai et corrections (#41)
+
+### Contexte
+Choix de Clément après #39 : un essai réel au lecteur d'écran (VoiceOver,
+TalkBack). axe et les tests clavier vérifient la structure, pas l'écoute.
+Pour écrire le guide, l'arbre d'accessibilité de chaque écran du parcours a
+été relevé (ce que le lecteur d'écran lit) : quatre défauts en sont sortis.
+
+### Fait
+- **PR #41 fusionnée** (`26f0218`) :
+  - `docs/ESSAI_LECTEUR_ECRAN.md` : 10 minutes, en navigation privée ; les
+    gestes de VoiceOver et TalkBack, puis 10 étapes (profil, message, envoi,
+    conversation, réponse en direct, « Mon espace »), chacune avec ce qu'il
+    faut entendre et ce qui serait un problème. Ajouté à la recette de
+    `MISE_EN_PRODUCTION.md` ;
+  - titre de page « Envoyer un message » : la page message gardait le titre
+    générique du site, annoncé à l'arrivée. « Mon espace » pour l'ancien
+    lien `/dashboard/<id>` ;
+  - prénoms en capitales par le style, et non dans le texte : le lecteur
+    d'écran lit « Camille », sans risque d'épeler ;
+  - initiale de l'avatar muette : un « C » isolé était lu avant le prénom ;
+  - chiffres de « Mon espace » lus en phrases, avec leur valeur finale
+    (« 1 scan ces 7 derniers jours ») au lieu de « 2 Conversations 1 Scans
+    1 7 jours » ;
+  - l'E2E d'accessibilité vérifie ces points.
+- Vérifié :
+  - lint et typage ; 805 tests unitaires ;
+  - E2E avec base 16/16 ; accessibilité 24/24 sur trois passages ;
+  - arbre d'accessibilité relevé avant et après ;
+  - CI verte.
+- CI de main : le build est tombé une fois au téléchargement des polices
+  Google (`next/font`, sans lien avec le code). Le job relancé est passé. À
+  surveiller : si ça revient, servir les polices depuis le dépôt.
+
+### À faire — côté Clément
+- [ ] Après le déploiement, faire l'essai de `docs/ESSAI_LECTEUR_ECRAN.md`
+      (10 minutes, en navigation privée) et me renvoyer le résultat.
+
+### Ensuite
+- Selon l'essai : corriger ce qui coince. Puis la préparation du test
+  terrain.
+
+---
+
 ## 2026-10-23 (suite) — Accessibilité (#39, #40)
 
 ### Analyse
