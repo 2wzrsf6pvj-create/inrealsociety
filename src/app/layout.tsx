@@ -50,13 +50,17 @@ export const metadata: Metadata = {
   },
   icons: {
     icon:  '/favicon.svg',
-    apple: '/icon.svg',
+    // PNG : l'iPhone ne lit pas le SVG et mettait une capture de la page sur
+    // l'écran d'accueil (cf. scripts/build-app-icons.mjs).
+    apple: '/apple-touch-icon.png',
   },
   manifest: '/manifest.json',
   appleWebApp: {
     capable:       true,
     title:         'In Real Society',
-    statusBarStyle: 'black-translucent',
+    // Barre noire opaque : en « black-translucent », l'app installée sur iPhone
+    // dessine sous l'heure et la batterie, et aucune page ne réserve cette marge.
+    statusBarStyle: 'black',
   },
 };
 

@@ -7,7 +7,8 @@
 //      installable comme PWA et offrir un fallback offline minimal.
 //      Les routes /api/ et /_next/ ne sont JAMAIS cachées (toujours fresh).
 
-const CACHE_NAME = 'irs-v1';
+// v2 : icônes PNG et manifestes de page — purge le manifeste gardé en cache.
+const CACHE_NAME = 'irs-v2';
 const PRECACHE_URLS = ['/', '/shop', '/manifeste', '/cgv', '/confidentialite', '/icon.svg', '/favicon.svg'];
 
 self.addEventListener('install', (event) => {
@@ -36,6 +37,9 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/_next/')) return;
+  // Manifestes : toujours le réseau, sinon l'installation garde de vieilles
+  // icônes ou une ancienne adresse de départ.
+  if (url.pathname === '/manifest.json' || url.pathname.endsWith('.webmanifest')) return;
   // Jamais en cache : pages authentifiées / contenu de conversation (données
   // perso au repos dans Cache Storage + risque offline cross-URL). Réseau direct.
   if (/^\/(dashboard|conversation)(\/|$)/.test(url.pathname)) return;
@@ -76,8 +80,10 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title || 'In Real Society', {
       body:    data.body || 'Nouvelle activité.',
-      icon:    '/icon.svg',
-      badge:   '/icon.svg',
+      // PNG : le SVG n'est pas lu partout. Le badge (barre de notifications
+      // Android) n'est gardé qu'en silhouette : logo blanc sur fond transparent.
+      icon:    '/icon-192.png',
+      badge:   '/notification-badge.png',
       tag:     data.tag  || 'irs',
       data:    { url: data.url || '/' },
       vibrate: [100, 50, 100],

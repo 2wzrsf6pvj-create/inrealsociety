@@ -7,6 +7,7 @@ import type { Member, Scan, Message } from '@/lib/types';
 import { daysActive, formatDate, getInitials, getWaitingPhrase, timeAgo } from './utils';
 import { useCountUp } from './hooks';
 import { captureEvent } from '@/lib/posthog-client';
+import { notificationOffer, subscribePush, type NotificationOffer } from '@/lib/push-client';
 import SectionDivider from '@/app/components/ui/SectionDivider';
 
 // ─── #1 Conversations en attente — la VRAIE valeur, remontée tout en haut ──────
@@ -70,42 +71,54 @@ function PhotoNudge() {
 // La réactivité du porteur fait la qualité du produit. Se masque si déjà
 // accordées / refusées / non supportées (pas de nag). No-op silencieux sans
 // VAPID (dev) ou service worker.
+// iPhone : Safari ne propose les notifications qu'à l'app ajoutée à l'écran
+// d'accueil, l'API n'existe pas dans le navigateur. Le porteur sur iPhone n'en
+// entendait donc jamais parler : on lui dit comment ajouter l'app (elle s'ouvre
+// ensuite sur « Mon espace »), jusqu'à ce qu'il masque l'aide.
+
+const IOS_HINT_HIDDEN_KEY = 'irs_ios_install_hint_hidden';
 
 function NotificationsPrompt({ memberId }: { memberId: string }) {
-  const [state, setState] = React.useState<'hidden' | 'idle' | 'loading'>('hidden');
+  const [state, setState] = React.useState<NotificationOffer | 'loading'>('none');
 
   React.useEffect(() => {
-    if (typeof window === 'undefined' || !('Notification' in window) || !('serviceWorker' in navigator)) return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- permission connue du navigateur seulement
-    if (Notification.permission === 'default') setState('idle');
+    let hintHidden = false;
+    try { hintHidden = !!localStorage.getItem(IOS_HINT_HIDDEN_KEY); } catch { /* no-op */ }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- appareil et permission connus du navigateur seulement
+    setState(notificationOffer(hintHidden));
   }, []);
 
   const enable = async () => {
     setState('loading');
-    try {
-      const perm = await Notification.requestPermission();
-      if (perm !== 'granted') { setState('hidden'); return; }
-      const reg = await navigator.serviceWorker.register('/sw.js');
-      const vapid = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-      if (!vapid) { setState('hidden'); return; }
-      const pad = '='.repeat((4 - vapid.length % 4) % 4);
-      const b64 = (vapid + pad).replace(/-/g, '+').replace(/_/g, '/');
-      const raw = window.atob(b64);
-      const key = Uint8Array.from(Array.from(raw), c => c.charCodeAt(0));
-      const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
-      const j = sub.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } };
-      await fetch('/api/push/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subscription: { endpoint: j.endpoint, keys: { p256dh: j.keys.p256dh, auth: j.keys.auth } }, memberId }),
-      });
-    } catch (err) {
-      console.warn('[notifs] activation échouée:', err);
-    }
-    setState('hidden');
+    await subscribePush({ memberId });
+    setState('none');
   };
 
-  if (state === 'hidden') return null;
+  const hideIosHint = () => {
+    try { localStorage.setItem(IOS_HINT_HIDDEN_KEY, '1'); } catch { /* no-op */ }
+    setState('none');
+  };
+
+  if (state === 'none') return null;
+
+  if (state === 'ios-install') {
+    return (
+      <div className="w-full border border-brand-gray/15 rounded-[2px] p-4 flex flex-col gap-2">
+        <p className="font-ui text-xs text-brand-white/80 tracking-[0.12em] uppercase">Être prévenu·e sur iPhone</p>
+        <p className="font-ui text-xs text-brand-gray/60 leading-relaxed">
+          Sur iPhone, les notifications passent par l&apos;app. Dans Safari, touchez{' '}
+          <span className="text-brand-white/70">Partager</span> (sous ⋯ depuis iOS 26), puis{' '}
+          <span className="text-brand-white/70">Sur l&apos;écran d&apos;accueil</span>. Ouvrez ensuite
+          In Real Society depuis son icône et activez les notifications.
+        </p>
+        <button type="button" onClick={hideIosHint}
+          className="self-start font-ui text-xxs text-brand-gray/50 underline underline-offset-4 hover:text-brand-white/70 transition-colors"
+          style={{ minHeight: '44px' }}>
+          Masquer
+        </button>
+      </div>
+    );
+  }
 
   return (
     <button onClick={enable} disabled={state === 'loading'}

@@ -276,7 +276,6 @@ function LogoutButton() {
     // Réinitialise l'identité PostHog : sinon, sur un device partagé, les events
     // du prochain visiteur seraient attribués à ce membre (distinct_id persisté).
     resetIdentity();
-    sessionStorage.removeItem('just_logged_in');
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- rechargement complet voulu : efface l'état client
     window.location.href = '/auth/login';
   };

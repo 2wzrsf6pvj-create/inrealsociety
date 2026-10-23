@@ -1,18 +1,23 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
-// Wrapping natif iOS + Android de l'app web déployée.
+// Wrapping natif iOS + Android de l'app web déployée. PAS ENCORE PUBLIÉ : l'app
+// installable depuis le site passe d'abord (décision du 23/10/2026, cf.
+// docs/CAPACITOR.md, qui liste ce qu'il manque pour les magasins).
 //
 // Mode `server.url` (PAS d'export statique) : l'app IRS est SSR + API routes
 // (auth, Stripe, webhooks) → elle ne peut pas être exportée en HTML statique. La
 // coque native charge donc le SITE DÉPLOYÉ. Conséquences :
 //   ✅ les mises à jour web sont instantanées dans l'app (pas de re-review store)
 //   ✅ 100% du code web réutilisé, zéro duplication
+//   ⚠️ Capacitor documente `server.url` comme « not intended for use in production »
+//   ⚠️ le push du site (Web Push) n'existe pas dans une WebView : sans push natif,
+//      l'app n'aurait pas de notifications
 //   ⚠️ Apple Guideline 4.2 (« minimum functionality ») : une app qui n'est qu'un
-//      site peut être refusée → on justifie par des plugins natifs (push, haptics,
-//      scan caméra). Voir docs/CAPACITOR.md.
+//      site peut être refusée → push natif, écran hors connexion, haptique native.
 //
-// `webDir` = écran de repli LOCAL (mobile-shell/) affiché si le serveur est
-// injoignable. L'URL réelle se surcharge via CAPACITOR_SERVER_URL (staging/prod).
+// `webDir` (mobile-shell/) est exigé par Capacitor mais n'est PAS affiché quand le
+// site est injoignable : il faudra `server.errorPath`, sinon écran vide hors
+// connexion. L'URL réelle se surcharge via CAPACITOR_SERVER_URL (staging/prod).
 
 const config: CapacitorConfig = {
   appId: 'com.inrealsociety.app',

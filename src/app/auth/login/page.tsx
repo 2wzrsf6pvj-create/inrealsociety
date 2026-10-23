@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase-browser';
 import { safeInternalPath } from '@/lib/safe-redirect';
+import { LOGIN_SUCCESS_KEY } from '@/lib/constants';
 
 export default function LoginPage() {
   const router       = useRouter();
@@ -47,6 +48,7 @@ export default function LoginPage() {
       return;
     }
 
+    try { sessionStorage.setItem(LOGIN_SUCCESS_KEY, '1'); } catch { /* stockage indispo */ }
     router.push(redirect);
     router.refresh();
   };

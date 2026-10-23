@@ -65,6 +65,10 @@ export const OG_IMAGE = { url: '/opengraph-image', width: 1200, height: 630, alt
 /** Adresse de contact (rétractation, support, modération). */
 export const CONTACT_EMAIL = 'hello@inrealsociety.com';
 
+/** Drapeau de session posé par la page de connexion : « Mon espace » affiche
+ *  « Connexion réussie. » une fois, puis l'efface. */
+export const LOGIN_SUCCESS_KEY = 'irs_login_success';
+
 /** Message refusé par le filtre automatique : ce qui est dit à son auteur. Le
  *  règlement européen sur les services numériques (art. 17) demande d'indiquer
  *  la décision automatique, la règle appliquée et le recours. */

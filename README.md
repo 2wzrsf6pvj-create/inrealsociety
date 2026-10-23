@@ -15,7 +15,7 @@
 - **Errors** : Sentry
 - **Rate limiting** : Upstash Redis
 - **Push** : Web Push API + VAPID
-- **PWA** : service worker + manifest
+- **App installable (PWA)** : service worker, manifestes par page, icônes PNG ; apps des magasins plus tard (`docs/CAPACITOR.md`)
 
 ---
 
@@ -136,7 +136,8 @@ supabase/migrations/               # SQL versionné (~30 fichiers, ordre numéri
 e2e/                               # Tests Playwright
 public/
 ├── sw.js                          # Service worker (push + PWA cache)
-├── manifest.json                  # PWA manifest
+├── manifest.json                  # PWA manifest (« Mon espace » et conversations : src/lib/web-manifest.ts)
+├── *.png, icon.svg                # Icônes de l'app installable (node scripts/build-app-icons.mjs)
 └── .well-known/security.txt       # Signalement de faille
 docs/                              # Guides ops (monitoring, perf, email DNS)
 ```
