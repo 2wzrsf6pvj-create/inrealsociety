@@ -5,6 +5,92 @@
 
 ---
 
+## 2026-10-23 — Délivrabilité des emails : analyse et lot (#26)
+
+### Analyse
+Lu : l'envoi par Resend, les 19 modèles d'email, la newsletter, les relances
+et les emails envoyés par Supabase. Les documentations de Resend, de Gmail et
+de Supabase ont été lues par la recherche web : le réseau de la session refuse
+resend.com.
+
+**Déjà en ordre** :
+- newsletter : double consentement, désinscription en un clic reconnue par
+  Gmail, désinscrits toujours retirés ;
+- email du passant confirmé avant toute réponse, avec un plafond par adresse ;
+- un email de scan par jour au plus, un email de plafond par semaine au plus ;
+- un code d'activation non envoyé est tracé et peut être renvoyé ;
+- Resend génère la version texte et bloque d'office les adresses en rebond ou
+  qui se sont plaintes. Exception : Gmail ne lui transmet pas les plaintes.
+
+**Constats** :
+1. Les refus de Resend étaient invisibles : `sendEmail` renvoyait `false`
+   sans la raison, et cinq emails attendaient une exception qui n'arrivait
+   jamais.
+2. Aucun nouvel essai. Resend refuse au-delà de 10 requêtes par seconde pour
+   tout le compte, et la newsletter enchaînait 10 envois à la fois sans pause.
+3. Offre gratuite de Resend : 100 emails par jour et 3 000 par mois. Au-delà,
+   tout est refusé, codes d'activation compris.
+4. (Supabase) Sans SMTP personnalisé, la confirmation d'inscription et le mot
+   de passe oublié ne partent qu'aux membres de l'équipe, 2 par heure.
+5. Emails de scan sans réglage ni désinscription : un porteur lassé n'avait
+   que « Signaler comme spam ».
+6. Les liens écrits par un passant étaient recopiés dans l'email au porteur.
+7. Pas d'adresse de réponse : une réponse à l'email premium, une rétractation
+   par exemple, partait vers `noreply@`.
+8. `docs/EMAIL_DELIVERABILITY.md` ne correspondait pas à Resend : SPF à la
+   racine, DKIM en 3 CNAME, « 3 000 emails par jour ».
+9. Resend recommande d'envoyer depuis un sous-domaine.
+
+### Décisions de Clément
+- Envoi depuis `mail.inrealsociety.com`.
+- Emails de scan : un réglage, et un lien de désinscription en un clic.
+- Liens écrits par les passants : masqués dans les emails.
+
+### Fait
+- **PR #26 fusionnée** (`df15c7e`), constats 1, 2 et 5 à 9 :
+  - chaque refus est noté avec sa raison ;
+  - nouvel essai sur débit dépassé ou panne, avec une clé d'idempotence :
+    jamais de doublon ;
+  - newsletter par lots de 100, une requête par lot ;
+  - réponses vers hello@, ce que précisent les emails de conversation ;
+  - expéditeur `noreply@mail.inrealsociety.com`, réglable par `EMAIL_FROM` ;
+  - migration **061** : réglage « Email au premier scan du jour », et lien en
+    un clic dans ces emails ;
+  - liens masqués (« [lien] ») dans les messages cités par les emails ;
+  - guide de délivrabilité réécrit, liste de mise en production complétée.
+- Vérifié avant la fusion :
+  - 620 tests ; intégration 46/46 sur une base neuve à 61 migrations ;
+  - anciens comportements réintroduits un à un : les tests échouent ;
+  - rendu des emails et du réglage, build.
+
+### À faire — côté Clément
+Détail : `docs/EMAIL_DELIVERABILITY.md`.
+- [ ] Resend : vérifier `mail.inrealsociety.com` (SPF et MX sur
+      `send.mail`, DKIM sur `resend._domainkey.mail`), et poser DMARC sur le
+      domaine principal. Si le domaine principal est déjà vérifié et sert aux
+      tests : `EMAIL_FROM=In Real Society <noreply@inrealsociety.com>` en
+      attendant.
+- [ ] Resend : offre Pro au lancement ; suivi des ouvertures et des clics
+      désactivé.
+- [ ] (Supabase) SMTP personnalisé avec Resend.
+- [ ] Google Postmaster Tools : ajouter `inrealsociety.com`.
+- [ ] Appliquer la migration **061**, après 059 et 060.
+
+### Ensuite
+- Reste de la priorité 2 : l'économie unitaire (marge sur 49 €). Il faudra les
+  tarifs Printful de Clément.
+- Priorité 3 (inventaire du 22/10) :
+  - observabilité ;
+  - app mobile ;
+  - parrainage et newsletter ;
+  - accessibilité ;
+  - mises à jour (Next.js 14, actions GitHub sur Node 20) ;
+  - petits restes.
+- Emails, plus tard : un lien « ne plus recevoir les réponses » pour le
+  passant.
+
+---
+
 ## 2026-10-22 (nuit, suite) — CI de main réparée (#25)
 
 - **PR #25 fusionnée** (`35753c7`). La CI de main avait échoué sur le commit
