@@ -1,10 +1,10 @@
 // src/lib/order-recap.ts — Récapitulatif d'une commande : page de confirmation
 // (/shop/success, via /api/order-code) et email d'activation (webhook Stripe).
 // Pur : aucun accès BDD ni Stripe, les appelants fournissent les données.
-// Montants en centimes, TTC.
+// Montants en centimes, tels que payés (franchise de TVA : sans TVA).
 
 import { getTagline } from '@/lib/taglines';
-import { SHIPPING_STANDARD_CENTS, SHIPPING_EXPRESS_CENTS } from '@/lib/constants';
+import { SHIPPING_STANDARD_CENTS } from '@/lib/constants';
 
 const SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
 const EUR = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' });
@@ -32,12 +32,9 @@ export function formatEuros(cents: number): string {
   return EUR.format(cents / 100);
 }
 
-// Le mode se déduit du montant : nos deux tarifs sont fixes (api/shop/checkout).
+// Le mode se déduit du montant : le tarif est fixe (api/shop/checkout).
 function shippingText(cents: number): string {
-  const mode = cents === SHIPPING_STANDARD_CENTS ? 'Standard'
-             : cents === SHIPPING_EXPRESS_CENTS  ? 'Express'
-             : null;
-  return mode ? `${mode} · ${formatEuros(cents)}` : formatEuros(cents);
+  return cents === SHIPPING_STANDARD_CENTS ? `Standard · ${formatEuros(cents)}` : formatEuros(cents);
 }
 
 function countryName(code: string): string {

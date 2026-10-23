@@ -15,7 +15,7 @@ import { getOptionalUser } from '@/lib/require-auth';
 import { checkPublicRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
 import { QR_STYLES, DEFAULT_QR_STYLE } from '@/lib/constants';
 import { isValidTaglineId } from '@/lib/taglines';
-import { TSHIRT_PRICE_CENTS, SHIPPING_STANDARD_CENTS, SHIPPING_EXPRESS_CENTS } from '@/lib/constants';
+import { TSHIRT_PRICE_CENTS, SHIPPING_STANDARD_CENTS, SHIPPING_COUNTRIES, VAT_EXEMPT } from '@/lib/constants';
 import { reportError } from '@/lib/report-error';
 
 const schema = z.object({
@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
         qr_style:      qrStyle,
         tagline_id:    taglineId ?? null,
         status:        'pending',
-        // Placeholder : le webhook réécrit avec le vrai total Stripe (TVA + port).
+        // Placeholder : le webhook réécrit avec le vrai total Stripe (port inclus).
         amount:        TSHIRT_PRICE_CENTS,
         referrer_id:   validReferrerId,
       })
@@ -114,17 +114,17 @@ export async function POST(req: NextRequest) {
     }
 
     // ─── Crée la session Stripe ───────────────────────────────────────────
-    // automatic_tax : Stripe calcule la TVA selon l'adresse de livraison.
-    // Requiert Stripe Tax activé dans le dashboard + enregistrements TVA déclarés
-    // (sinon Stripe applique 0%). Sans config, ça n'échoue pas en mode test.
+    // Franchise de TVA (VAT_EXEMPT) : pas d'automatic_tax. Assujetti, Stripe Tax
+    // calculerait la TVA selon l'adresse de livraison (Stripe Tax activé et
+    // enregistrements TVA déclarés dans le dashboard).
     const session = await stripe.checkout.sessions.create({
       mode:           'payment',
       customer_email: email,
       line_items:     [{ price: TSHIRT_PRICE_ID, quantity: 1 }],
-      automatic_tax:  { enabled: true },
+      ...(VAT_EXEMPT ? {} : { automatic_tax: { enabled: true } }),
 
       shipping_address_collection: {
-        allowed_countries: ['FR', 'BE', 'CH', 'LU', 'DE', 'GB', 'US', 'CA'],
+        allowed_countries: [...SHIPPING_COUNTRIES],
       },
 
       // Discount automatique uniquement si le parrainage est validé
@@ -132,9 +132,9 @@ export async function POST(req: NextRequest) {
         ? { discounts: [{ coupon: process.env.STRIPE_REFERRAL_COUPON_ID }] }
         : {}),
 
-      // tax_behavior « inclusive » : le port affiché (« 5€ ») est TTC, comme le t-shirt.
-      // Non précisé, Stripe appliquerait le réglage par défaut du compte et pourrait
-      // ajouter la TVA par-dessus (5 € affichés → 6 € débités).
+      // tax_behavior « inclusive » : si la TVA s'applique un jour, le port affiché
+      // (« 5€ ») reste le prix payé. Non précisé, Stripe appliquerait le réglage par
+      // défaut du compte et pourrait ajouter la TVA par-dessus (5 € → 6 €).
       shipping_options: [
         {
           shipping_rate_data: {
@@ -145,18 +145,6 @@ export async function POST(req: NextRequest) {
             delivery_estimate: {
               minimum: { unit: 'business_day', value: 5 },
               maximum: { unit: 'business_day', value: 10 },
-            },
-          },
-        },
-        {
-          shipping_rate_data: {
-            type:         'fixed_amount',
-            display_name: 'Livraison express',
-            fixed_amount: { amount: SHIPPING_EXPRESS_CENTS, currency: 'eur' },
-            tax_behavior: 'inclusive',
-            delivery_estimate: {
-              minimum: { unit: 'business_day', value: 2 },
-              maximum: { unit: 'business_day', value: 4 },
             },
           },
         },

@@ -172,6 +172,7 @@ Avant lancement public :
 - [docs/EMAIL_DELIVERABILITY.md](docs/EMAIL_DELIVERABILITY.md) — DNS SPF/DKIM/DMARC
 - [docs/MONITORING.md](docs/MONITORING.md) — Uptime + Sentry alerts
 - [docs/PERFORMANCE.md](docs/PERFORMANCE.md) — Lighthouse + bundle budget
+- [docs/ECONOMIE_UNITAIRE.md](docs/ECONOMIE_UNITAIRE.md) — marges, frais fixes, TVA (franchise), seuils
 
 ---
 

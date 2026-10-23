@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 };
 
 // Données produit pour les moteurs (prix, disponibilité, photos) : résultats
-// enrichis possibles. Prix = celui affiché (TTC), cf. TSHIRT_PRICE_EUR.
+// enrichis possibles. Prix = celui affiché, cf. TSHIRT_PRICE_EUR.
 const productJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Product',

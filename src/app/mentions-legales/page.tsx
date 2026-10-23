@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { BrandMark } from '@/app/components/ui/BrandMark';
+import { VAT_EXEMPT, VAT_EXEMPT_NOTICE } from '@/lib/constants';
 
 export const metadata = {
   // Le gabarit du layout ajoute « — In Real Society ».
@@ -53,7 +54,9 @@ export default function MentionsLegalesPage() {
             <strong>Raison sociale :</strong> In Real Society — [À COMPLÉTER : forme juridique (SAS, SARL, micro-entreprise…), capital social si applicable].<br />
             <strong>Siège social :</strong> [À COMPLÉTER : adresse postale complète].<br />
             <strong>Immatriculation :</strong> RCS [À COMPLÉTER : ville d&apos;immatriculation et numéro], SIRET [À COMPLÉTER].<br />
-            <strong>TVA intracommunautaire :</strong> [À COMPLÉTER ou indiquer &quot;non assujetti / franchise de TVA&quot; si applicable].<br />
+            {VAT_EXEMPT
+              ? <><strong>TVA :</strong> franchise en base ({VAT_EXEMPT_NOTICE}).<br /></>
+              : <><strong>TVA intracommunautaire :</strong> [À COMPLÉTER].<br /></>}
             <strong>Email de contact :</strong> <span className="text-brand-white/70">hello@inrealsociety.com</span><br />
             <strong>Téléphone :</strong> [À COMPLÉTER].
           </p>

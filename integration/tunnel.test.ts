@@ -274,7 +274,9 @@ describe.skipIf(!ENABLED)('Tunnel achat → impression → activation → scan �
     expect(html).toContain(code);
     expect(html).toContain('T-shirt Noir · L');
     expect(html).toContain('QR seul, sans accroche');
-    expect(html).toMatch(/59,00\s€ TTC/);
+    // Franchise de TVA : le total payé, sans « TTC ».
+    expect(html).toMatch(/Total payé[\s\S]*59,00\s€/);
+    expect(html).not.toContain('TTC');
     expect(html).toContain('Jeanne Test, 1 rue de Rivoli, 75001 Paris, France');
 
     // Page de confirmation : code et récapitulatif, sans donnée personnelle

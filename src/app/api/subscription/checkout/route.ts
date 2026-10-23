@@ -15,6 +15,7 @@ import { checkAuthRateLimit, rateLimitHeaders } from '@/lib/ratelimit';
 import { isActiveSubscriptionStatus } from '@/lib/subscription';
 import { activatePremium } from '@/lib/premium';
 import { reportError } from '@/lib/report-error';
+import { VAT_EXEMPT } from '@/lib/constants';
 
 const BodySchema = z.object({
   // Même règle qu'à l'activation du profil : pas d'acceptation implicite.
@@ -110,19 +111,21 @@ export async function POST(req: NextRequest) {
     }
 
     // Crée la session checkout pour l'abonnement
-    // automatic_tax + customer_update : Stripe calcule la TVA selon l'adresse
-    // de facturation. customer_update permet de mettre à jour le customer
-    // si l'utilisateur change son adresse.
+    // Franchise de TVA (VAT_EXEMPT) : ni TVA ni adresse de facturation à demander.
+    // Assujetti : automatic_tax calcule la TVA selon l'adresse de facturation,
+    // enregistrée sur le customer (customer_update) s'il en change.
     // Preuve d'acceptation des CGV : sur la session ET sur l'abonnement, qui vit
     // aussi longtemps que le contrat.
     const termsAcceptedAt = new Date().toISOString();
     const session = await stripe.checkout.sessions.create({
       mode:              'subscription',
       customer:          customerId,
-      customer_update:   { address: 'auto', name: 'auto' },
       line_items:        [{ price: priceId, quantity: 1 }],
-      automatic_tax:     { enabled: true },
-      billing_address_collection: 'required',
+      ...(VAT_EXEMPT ? {} : {
+        customer_update:            { address: 'auto', name: 'auto' },
+        automatic_tax:              { enabled: true },
+        billing_address_collection: 'required',
+      } as const),
       metadata:          { memberId: member.id, termsAcceptedAt },
       subscription_data: { metadata: { memberId: member.id, termsAcceptedAt } },
       success_url:       `${appUrl}/dashboard?upgraded=1`,

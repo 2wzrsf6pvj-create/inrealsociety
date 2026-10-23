@@ -129,7 +129,7 @@ function SuccessContent() {
         <dl aria-label="Votre commande" className="w-full border border-brand-gray/15 px-5 py-4 flex flex-col gap-2 text-left">
           <RecapRow label="Article" value={recap.article} />
           <RecapRow label="Accroche" value={recap.tagline ? `« ${recap.tagline} »` : 'QR seul'} />
-          {recap.total && <RecapRow label="Total payé" value={`${recap.total} TTC`} />}
+          {recap.total && <RecapRow label="Total payé" value={recap.total} />}
         </dl>
       )}
 

@@ -32,9 +32,18 @@ export const MAX_CONVERSATIONS = {
  *  après 3 messages, un porteur gratuit ne pouvait plus jamais être contacté. */
 export const CONVERSATION_WINDOW_DAYS = 7;
 
-/** Prix du premium, TTC — affichage seulement (réglages, FAQ, CGV, emails). Le
- *  montant débité vient du Stripe Price (STRIPE_PREMIUM_PRICE_ID), qui DOIT être
- *  en tax_behavior « inclusive » : sinon Stripe ajoute la TVA (3,59 €). */
+/** Franchise en base de TVA (art. 293 B du CGI, choix de Clément) : aucune TVA
+ *  facturée, donc pas d'automatic_tax (Stripe Tax) dans les sessions de paiement,
+ *  et la mention ci-dessous dans les CGV et les mentions légales. Si l'entreprise
+ *  devient assujettie : passer à `false` et suivre docs/ECONOMIE_UNITAIRE.md
+ *  (Stripe Tax, Prices en tax_behavior « inclusive », numéro de TVA). */
+export const VAT_EXEMPT = true;
+export const VAT_EXEMPT_NOTICE = 'TVA non applicable, art. 293 B du CGI';
+
+/** Prix du premium — affichage seulement (réglages, FAQ, CGV, emails). Le montant
+ *  débité vient du Stripe Price (STRIPE_PREMIUM_PRICE_ID). Si VAT_EXEMPT passe à
+ *  false, ce Price DOIT être en tax_behavior « inclusive » : sinon Stripe ajoute
+ *  la TVA (3,59 €). */
 export const PREMIUM_PRICE_LABEL = '2,99\u00A0€';
 
 /** Rétractation du premium : remboursé en entier dans ce délai (choix de Clément,
@@ -101,17 +110,24 @@ export const FULFILL_ON_PAYMENT: boolean = process.env.FULFILL_ON_PAYMENT !== 'f
 /** Prix du t-shirt — source UNIQUE côté app (affichage + `orders.amount` initial).
  *  ⚠️ Le montant réellement débité vient du Stripe Price (STRIPE_PRICE_ID) ; le
  *  webhook réécrit `orders.amount` avec le vrai total (`session.amount_total`,
- *  TVA + port inclus). Garder ces valeurs alignées avec le Stripe Price.
- *  ⚠️ TTC : le Price Stripe DOIT être en tax_behavior « inclusive », sinon
- *  `automatic_tax` ajoute la TVA par-dessus et l'affichage « 49€ » devient faux. */
+ *  port inclus). Garder ces valeurs alignées avec le Stripe Price.
+ *  ⚠️ Si VAT_EXEMPT passe à false : Price Stripe en tax_behavior « inclusive »,
+ *  sinon `automatic_tax` ajoute la TVA par-dessus et l'affichage « 49€ » devient faux. */
 export const TSHIRT_PRICE_EUR   = 49;
 export const TSHIRT_PRICE_CENTS = 4900;
 
-/** Frais de livraison TTC — source UNIQUE : options Stripe Checkout (api/shop/checkout,
+/** Frais de livraison — source UNIQUE : option Stripe Checkout (api/shop/checkout,
  *  en tax_behavior « inclusive ») ET affichage (boutique, FAQ). Un prix affiché doit
- *  toujours être le prix facturé. */
+ *  toujours être le prix facturé. Pas d'express au lancement (choix de Clément) :
+ *  Printful recevait toujours la livraison standard, même payée en express. */
 export const SHIPPING_STANDARD_CENTS = 500;
-export const SHIPPING_EXPRESS_CENTS  = 1200;
+
+/** Pays livrés : l'UE seulement au lancement (choix de Clément). Hors UE, le port
+ *  forfaitaire couvrait mal l'expédition, le client risquait droits et TVA à la
+ *  livraison, et le Royaume-Uni impose sa propre TVA dès la première vente.
+ *  FR désigne la métropole : l'outre-mer a ses propres codes pays. */
+export const SHIPPING_COUNTRIES = ['FR', 'BE', 'LU', 'DE'] as const;
+export const SHIPPING_COUNTRIES_LABEL = 'France métropolitaine, Belgique, Luxembourg et Allemagne';
 
 /** Formes de QR proposées au client à l'achat. Seules des formes PROUVÉES
  *  décodables (test qr-decode, y compris tee noir inversé) sont exposées :

@@ -24,9 +24,9 @@ describe('buildOrderRecap', () => {
     expect(r.address).toBe('Jeanne Test, 1 rue de Rivoli, 75001 Paris, France');
   });
 
-  it('express reconnu à son tarif ; un autre montant est affiché sans mode', () => {
+  it('un autre montant que le tarif standard est affiché sans mode', () => {
     const base = { color: 'light', size: 'M', taglineId: null };
-    expect(buildOrderRecap({ ...base, shippingCents: 1200 }).shipping).toMatch(/^Express · 12,00\s€$/);
+    expect(buildOrderRecap({ ...base, shippingCents: 1200 }).shipping).toMatch(/^12,00\s€$/);
     expect(buildOrderRecap({ ...base, shippingCents: 0 }).shipping).toMatch(/^0,00\s€$/);
   });
 
@@ -51,7 +51,9 @@ describe('emailActivation : récapitulatif', () => {
     expect(html).toContain('T-shirt Noir · L');
     expect(html).toContain('« Un message ? Une chance. »');
     expect(html).toMatch(/Standard · 5,00\s€/);
-    expect(html).toMatch(/54,00\s€ TTC/);
+    // Franchise de TVA : le total payé, sans « TTC ».
+    expect(html).toMatch(/Total payé[\s\S]*54,00\s€/);
+    expect(html).not.toContain('TTC');
     expect(html).toContain('1 rue de Rivoli');
     expect(html).toContain('/cgv');
   });
