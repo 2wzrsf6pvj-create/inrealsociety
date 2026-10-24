@@ -5,6 +5,40 @@
 
 ---
 
+## 2026-10-24 (suite) — Prix : 49 €, livraison offerte (#53)
+
+### Décisions de Clément
+- 49 € livraison comprise, au lieu de 49 € plus 5 € de port.
+- Puis « offerte » plutôt que « comprise » : le prix ne bouge pas et le
+  client ne paie plus le port, la livraison est donc vraiment gratuite pour
+  lui. « Comprise » laissait croire à un port caché dans le prix.
+- Logo poitrine gardé (≈ 5,40 € par t-shirt), à revoir avec les vraies
+  factures Printful.
+
+### Fait
+- **PR #53 fusionnée** (`d207213`) :
+  - Stripe : une seule livraison, « Livraison offerte », à 0 € ; le prix
+    Stripe reste 49 € ;
+  - boutique (« livraison offerte » sous le prix et dans la barre du bas,
+    « Frais de port : Offerts »), FAQ, CGV (le port n'y figurait pas),
+    email d'activation (« Livraison : Offerte »), données produit pour
+    Google ;
+  - « Livraison choisie à l'étape suivante », faux depuis le retrait de
+    l'express, devient « Adresse de livraison à l'étape suivante » ;
+  - barre d'achat du bas plus serrée sous 400 px : avec la mention de la
+    livraison, le bouton dépassait de l'écran à 360 px ;
+  - « Ma commande » : « 49,00 € » au lieu de « 49.00 € ».
+- Marge : ≈ 21 € par t-shirt au lieu de ≈ 26 € ; 3 t-shirts par mois
+  couvrent toujours les frais fixes (`ECONOMIE_UNITAIRE.md`).
+- Vérifié : 917 tests unitaires, fumée 15 réussis dont la barre d'achat à
+  360 px, E2E 28/28, intégration 72/72, CI verte.
+
+### À faire (Clément)
+- Rien dans Stripe. Pendant la recette, la page de paiement doit afficher
+  « Livraison offerte » à 0 € et un total de 49 €.
+
+---
+
 ## 2026-10-24 (suite) — Espaces et écriture (#52)
 
 ### Relevé
