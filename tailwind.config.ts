@@ -16,7 +16,9 @@ const config: Config = {
         'brand-accent': '#C5A059',
       },
       fontFamily: {
-        display: ['var(--font-display)', 'Georgia', 'serif'],
+        // Chiffres alignés (lnum) : ceux de Cormorant, par défaut à l'ancienne,
+        // font du « 1 » un « I » (« I conversation », « 2I:I7 »).
+        display: [['var(--font-display)', 'Georgia', 'serif'], { fontFeatureSettings: '"lnum"' }],
         ui:      ['var(--font-ui)', 'system-ui', 'sans-serif'],
       },
       fontSize: {

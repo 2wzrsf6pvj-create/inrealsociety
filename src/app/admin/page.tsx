@@ -314,9 +314,12 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
               detail={`${stats.funnel.replied} conversations où le porteur a répondu`} />
             <Stat label="Abonnés premium" value={`${stats.premium}`}
               detail={`sur ${plural(stats.wearers, 'porteur')}${stats.giftedPremium > 0 ? ` · plus ${stats.giftedPremium} premium offert${stats.giftedPremium > 1 ? 's' : ''}` : ''}`} />
-            <Stat label="Achats venus d’un scan" value={stats.fromScan ? `${stats.fromScan.recent}` : '—'}
-              detail={!stats.fromScan ? ORIGIN_MISSING
-                : `sur ${stats.paidOrders} commande${stats.paidOrders > 1 ? 's' : ''} payée${stats.paidOrders > 1 ? 's' : ''} ces ${STATS_WINDOW_DAYS} jours · ${stats.fromScan.total} depuis le début`} />
+            {/* Septième carte : sur toute la largeur, plutôt que seule sur sa ligne. */}
+            <div className="col-span-2 md:col-span-3">
+              <Stat label="Achats venus d’un scan" value={stats.fromScan ? `${stats.fromScan.recent}` : '—'}
+                detail={!stats.fromScan ? ORIGIN_MISSING
+                  : `sur ${stats.paidOrders} commande${stats.paidOrders > 1 ? 's' : ''} payée${stats.paidOrders > 1 ? 's' : ''} ces ${STATS_WINDOW_DAYS} jours · ${stats.fromScan.total} depuis le début`} />
+            </div>
           </div>
           <p className="font-ui text-xs text-brand-gray/55 leading-relaxed">
             Achat venu d&apos;un scan : commande payée sur l&apos;appareil qui a vu le profil d&apos;un porteur et suivi

@@ -17,6 +17,10 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { CONSENT_KEY, disableAnalytics, loadAnalytics } from '@/lib/posthog-client';
 
+/** Refuser et Accepter : un seul style. La CNIL demande de présenter le refus
+ *  au même niveau que l'acceptation. */
+const CHOICE = 'flex-1 md:flex-initial px-5 py-2.5 border border-brand-white/30 hover:border-brand-white/60 hover:bg-brand-white/5 font-ui text-xs tracking-[0.15em] uppercase text-brand-white/85 hover:text-brand-white rounded-[2px] transition-colors';
+
 export default function ConsentBanner() {
   const [dismissed, setDismissed] = useState(false);
 
@@ -44,14 +48,10 @@ export default function ConsentBanner() {
           </Link>
         </p>
         <div className="flex gap-2">
-          <button onClick={() => choose('denied')}
-            className="flex-1 md:flex-initial px-5 py-2.5 border border-brand-gray/25 hover:border-brand-gray/50 font-ui text-xs tracking-[0.15em] uppercase text-brand-gray/60 hover:text-brand-white rounded-[2px] transition-colors"
-            style={{ minHeight: '40px' }}>
+          <button onClick={() => choose('denied')} className={CHOICE} style={{ minHeight: '40px' }}>
             Refuser
           </button>
-          <button onClick={() => choose('granted')}
-            className="flex-1 md:flex-initial px-5 py-2.5 bg-brand-white text-brand-black font-ui font-bold text-xs tracking-[0.15em] uppercase rounded-[2px] hover:bg-gray-100 transition-colors"
-            style={{ minHeight: '40px' }}>
+          <button onClick={() => choose('granted')} className={CHOICE} style={{ minHeight: '40px' }}>
             Accepter
           </button>
         </div>

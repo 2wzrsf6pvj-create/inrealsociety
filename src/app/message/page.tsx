@@ -503,7 +503,8 @@ function MessageForm() {
           {[
             { label: 'Belle audace.',       symbol: '✦' },
             { label: "J'aime la démarche.", symbol: '◈' },
-            { label: "Envoyer un clin d'œil", symbol: '', emoji: '👁', value: '👁' },
+            // Le symbole, sans emoji en couleur ; le message envoyé reste « 👁 ».
+            { label: "Envoyer un clin d'œil", symbol: '◉', value: '👁' },
           ].map((r) => (
             <button key={r.label} disabled={sending || isPreview}
               onClick={() => sendMessage(r.value || r.label, true)}
@@ -511,7 +512,7 @@ function MessageForm() {
               style={{ minHeight: '44px' }}
             >
               {r.symbol && <span aria-hidden="true" style={{ fontSize: '14px', opacity: 0.5 }}>{r.symbol}</span>}
-              <span className="text-brand-white/80">{r.label}{r.emoji && <span aria-hidden="true"> {r.emoji}</span>}</span>
+              <span className="text-brand-white/80">{r.label}</span>
             </button>
           ))}
         </div>

@@ -12,9 +12,15 @@ interface AuthState {
   memberId: string | null;
 }
 
-// + pages réservées au passant qui scanne (/unlock, /message) : il n'a pas de compte,
-// un bouton « Connexion » y est du bruit au moment d'écrire.
-const HIDDEN_PATHS = ['/dashboard', '/auth/login', '/auth/signup', '/auth/forgot-password', '/auth/reset-password', '/unlock', '/message', '/contact/confirme'];
+// + pages réservées au passant qui scanne (/profil, /unlock, /message) : il n'a
+// pas de compte, un bouton « Connexion » y est du bruit au moment de lire ou
+// d'écrire.
+const HIDDEN_PATHS = ['/dashboard', '/auth/login', '/auth/signup', '/auth/forgot-password', '/auth/reset-password', '/profil', '/unlock', '/message', '/contact/confirme'];
+
+/** Pages sans le bouton du compte. */
+export function isHiddenPath(pathname: string): boolean {
+  return HIDDEN_PATHS.some((p) => pathname.startsWith(p));
+}
 
 const LOGGED_OUT: AuthState = { loggedIn: false, name: null, memberId: null };
 
@@ -96,18 +102,19 @@ export default function AuthIndicator() {
     return () => { cancelled = true; unsubscribe?.(); };
   }, [hasSession, checkAuth]);
 
-  if (HIDDEN_PATHS.some(p => pathname.startsWith(p))) return null;
+  if (isHiddenPath(pathname)) return null;
   if (!loaded) return null;
 
   // Dans une zone « Compte » (repère pour les lecteurs d'écran) ; le lien
   // s'annonce par son texte visible (« Mon espace », « Connexion »), ce que la
-  // commande vocale retrouve.
+  // commande vocale retrouve. En haut de la page, sans la suivre : fixé, il
+  // passait sur le contenu qui défile (délais et frais de la boutique).
   if (auth.loggedIn) {
     return (
       <nav aria-label="Compte">
         <Link
           href="/dashboard"
-          className="fixed top-4 right-4 z-50 flex items-center gap-2 px-3 py-1.5 rounded-full border border-brand-white/10 bg-brand-black/80 backdrop-blur-sm hover:border-brand-white/25 transition-all duration-300 group"
+          className="absolute top-4 right-4 z-50 flex items-center gap-2 px-3 py-1.5 rounded-full border border-brand-white/10 bg-brand-black/80 backdrop-blur-sm hover:border-brand-white/25 transition-all duration-300 group"
         >
           <div aria-hidden="true" className="w-6 h-6 rounded-full border border-brand-white/20 bg-brand-white/5 flex items-center justify-center group-hover:border-brand-white/40 transition-colors">
             <span className="font-ui text-xxs font-medium text-brand-white/70 tracking-wider">
@@ -126,7 +133,7 @@ export default function AuthIndicator() {
     <nav aria-label="Compte">
       <Link
         href="/auth/login"
-        className="fixed top-4 right-4 z-50 flex items-center gap-2 px-3 py-1.5 rounded-full border border-brand-gray/10 bg-brand-black/80 backdrop-blur-sm hover:border-brand-gray/25 transition-all duration-300"
+        className="absolute top-4 right-4 z-50 flex items-center gap-2 px-3 py-1.5 rounded-full border border-brand-gray/10 bg-brand-black/80 backdrop-blur-sm hover:border-brand-gray/25 transition-all duration-300"
       >
         <div aria-hidden="true" className="w-6 h-6 rounded-full border border-brand-gray/15 flex items-center justify-center">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-brand-gray/55">

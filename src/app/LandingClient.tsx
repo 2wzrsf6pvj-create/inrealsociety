@@ -170,12 +170,14 @@ function LandingContent() {
               {/* Instance MOBILE/tablette : reste exactement en flux, entre la copie et
                   la triade. Sur lg, c'est l'instance de la colonne de gauche qui prend le relais. */}
               <ProductHero className="w-full max-w-[208px] mx-auto lg:hidden" />
-              <div className="flex items-center justify-center gap-4 lg:justify-start">
-                <span className="font-ui text-xs text-brand-gray/55 tracking-[0.15em] uppercase">Anonyme</span>
+              {/* Sur une ligne dès 360 px ; plus étroit, « Sans compte » passe
+                  entier à la ligne, jamais coupé en deux. */}
+              <div className="flex flex-wrap items-center justify-center gap-x-2.5 sm:gap-x-4 gap-y-1 lg:justify-start">
+                <span className="font-ui text-xs text-brand-gray/55 tracking-[0.1em] sm:tracking-[0.15em] uppercase whitespace-nowrap">Anonyme</span>
                 <span aria-hidden="true" className="text-brand-gray/15">·</span>
-                <span className="font-ui text-xs text-brand-gray/55 tracking-[0.15em] uppercase">Éphémère</span>
+                <span className="font-ui text-xs text-brand-gray/55 tracking-[0.1em] sm:tracking-[0.15em] uppercase whitespace-nowrap">Éphémère</span>
                 <span aria-hidden="true" className="text-brand-gray/15">·</span>
-                <span className="font-ui text-xs text-brand-gray/55 tracking-[0.15em] uppercase">Sans compte</span>
+                <span className="font-ui text-xs text-brand-gray/55 tracking-[0.1em] sm:tracking-[0.15em] uppercase whitespace-nowrap">Sans compte</span>
               </div>
             </div>
           )}
