@@ -5,6 +5,57 @@
 
 ---
 
+## 2026-10-24 (suite) — Origine des achats venus d'un scan (#50)
+
+### Pourquoi
+Pendant le test terrain : le t-shirt donne-t-il envie à ceux qui le
+croisent ? Les achats venus d'un scan ne se voyaient que dans PostHog, donc
+seulement pour les visiteurs qui acceptent les mesures d'audience, et sans
+savoir de quel porteur ils venaient.
+
+### Décisions de Clément
+- l'origine en base, pas seulement dans PostHog ;
+- 30 jours, sur le même appareil ;
+- un lien discret en bas du profil ;
+- le porteur noté sur la commande, et une ligne dans la politique de
+  confidentialité, parrainage compris ;
+- l'origine effacée au bout de 24 mois, comme les scans (choisi à la
+  fusion).
+
+### Fait
+- **PR #50 fusionnée** (`861dd27`) :
+  - vers la boutique : « C'est quoi ce t-shirt ? » en bas du profil (pour
+    les passants seulement) et « Découvrir le t-shirt » après un message
+    mènent à `/shop?from=<porteur>` ; la boutique garde ce porteur 30 jours
+    sur l'appareil, l'envoie avec la commande, l'oublie après l'achat ;
+  - le serveur le note sur la commande (`orders.from_member_id`, migration
+    063) s'il existe et n'est pas l'acheteur ; une origine illisible ne
+    bloque jamais un achat ; sans la migration, la commande passe sans son
+    origine ;
+  - 063 : l'origine part avec le compte du porteur, ou au bout de 24 mois
+    (purge hebdomadaire) ; la commande reste ;
+  - /admin : « Achats venus d'un scan » (30 jours, depuis le début),
+    « Achats venus de son profil » dans le suivi des porteurs, migration
+    063 signalée dans « Configuration » ;
+  - politique de confidentialité : origine d'un achat (profil vu ou
+    parrainage), finalité et durée ; question ajoutée pour le juriste (le
+    lien gardé 30 jours sur l'appareil sans consentement) ;
+  - docs : migrations jusqu'à 063, `TEST_TERRAIN.md`, étape 5 de
+    `TESTER_DE_A_A_Z.md` pour le vérifier soi-même.
+- Vérifié :
+  - 903 tests unitaires, 8 mutations détectées sur 8 ;
+  - intégration 72/72, dont la purge à 24 mois et le compte supprimé, sur
+    vraie base ;
+  - E2E 28/28, fumée 11 réussis ; CI verte.
+
+### À faire — côté Clément
+- [ ] Supabase → *SQL Editor* : coller
+      `supabase/migrations/063_origine_achats.sql`, puis *Run*. Inutile si
+      la base part de `scripts/fresh-setup.sql` à jour : elle y est déjà.
+      Sans elle, rien ne casse, et `/admin` → « Configuration » l'affiche.
+
+---
+
 ## 2026-10-24 (suite) — Emails de compte à J0 (#49)
 
 ### Analyse
