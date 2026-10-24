@@ -52,7 +52,7 @@ export async function PATCH(req: NextRequest) {
     // pause ne se lève que côté support. La contrainte BDD (054) le garantit aussi.
     if (member.suspended_at && body.data.is_paused === false) {
       return NextResponse.json(
-        { error: 'Profil suspendu : contactez le support pour le réactiver.', code: 'suspended' },
+        { error: 'Profil suspendu\u00a0: contactez le support pour le réactiver.', code: 'suspended' },
         { status: 403 },
       );
     }

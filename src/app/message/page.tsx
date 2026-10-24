@@ -38,7 +38,7 @@ function BecomeWearerCTA({ source, hook, shopHref }: { source: string; hook: Rea
 
   return (
     <div className="w-full flex flex-col items-center gap-3">
-      <p className="font-ui text-xxs text-brand-gray/55 tracking-[0.25em] uppercase">Et toi ?</p>
+      <p className="font-ui text-xxs text-brand-gray/55 tracking-[0.25em] uppercase">Et toi&nbsp;?</p>
       <p className="font-display text-xl font-light leading-snug text-center tracking-[0.02em]">{hook}</p>
       <button onClick={goShop}
         className="w-full py-3 border border-brand-white/30 font-ui text-sm font-light tracking-[0.2em] uppercase hover:border-brand-white/60 hover:bg-brand-white/5 active:scale-[0.98] transition-all rounded-[1px]"
@@ -135,7 +135,7 @@ function MessageForm() {
       });
       const data = await res.json();
       if (!res.ok) {
-        const errorMsg = typeof data.error === 'string' ? data.error : 'Erreur lors de l\'envoi.';
+        const errorMsg = typeof data.error === 'string' ? data.error : 'Erreur lors de l’envoi.';
         // Détection par code structuré (pas par string-matching de la copie FR).
         if (data.code === 'window_expired') {
           captureEvent('message_blocked_window_expired', { member_id: memberId });
@@ -243,7 +243,7 @@ function MessageForm() {
           La prochaine occasion sera la bonne.
         </p>
         <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
-        <BecomeWearerCTA source="window_expired" shopHref={shopHref} hook={<>La prochaine fois,<br />sois de l&apos;autre côté.</>} />
+        <BecomeWearerCTA source="window_expired" shopHref={shopHref} hook={<>La prochaine fois,<br />sois de l’autre côté.</>} />
         <button onClick={() => memberId ? router.push(`/profil/${memberId}`) : router.push('/')}
           className="font-ui text-sm text-brand-gray/55 tracking-[0.15em] uppercase underline underline-offset-4 py-3"
           style={{ minHeight: '44px' }}>
@@ -259,7 +259,7 @@ function MessageForm() {
         <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
         <ScreenTitle className="font-display text-2xl font-light">{memberName} a déjà du monde autour.</ScreenTitle>
         <p className="font-ui text-sm text-brand-gray/65 leading-relaxed">
-          Cette personne attire l&apos;attention.<br />
+          Cette personne attire l’attention.<br />
           Ses conversations en cours sont au complet.
         </p>
         <p className="font-ui text-xxs text-brand-gray/55 leading-relaxed">
@@ -303,7 +303,7 @@ function MessageForm() {
           Peut-être une prochaine fois.
         </p>
         <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
-        <BecomeWearerCTA source="paused" shopHref={shopHref} hook={<>Et toi,<br />tu te montrerais ?</>} />
+        <BecomeWearerCTA source="paused" shopHref={shopHref} hook={<>Et toi,<br />tu te montrerais&nbsp;?</>} />
         <button onClick={() => memberId ? router.push(`/profil/${memberId}`) : router.push('/')}
           className="font-ui text-sm text-brand-gray/55 tracking-[0.15em] uppercase underline underline-offset-4 py-3"
           style={{ minHeight: '44px' }}>
@@ -317,7 +317,7 @@ function MessageForm() {
     return (
       <div className="flex flex-col items-center gap-6 text-center animate-stagger-1">
         <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
-        <ScreenTitle className="font-display text-2xl font-light">C&apos;est déjà lancé.</ScreenTitle>
+        <ScreenTitle className="font-display text-2xl font-light">C’est déjà lancé.</ScreenTitle>
         <p className="font-ui text-sm text-brand-gray/65 leading-relaxed">
           Vous avez déjà écrit à {memberName}.<br />
           La suite se passe dans votre conversation.
@@ -371,7 +371,7 @@ function MessageForm() {
           </p>
           {verifyEmailSent && (
             <p className="font-ui text-xs text-[#C5A059]/85 leading-relaxed">
-              Pour recevoir sa réponse par email, confirmez votre adresse : nous venons de vous écrire.
+              Pour recevoir sa réponse par email, confirmez votre adresse&nbsp;: nous venons de vous écrire.
             </p>
           )}
         </div>
@@ -394,7 +394,7 @@ function MessageForm() {
           </p>
         </div>
         <div className="w-full h-px bg-brand-gray/10" />
-        <BecomeWearerCTA source="message_sent" shopHref={shopHref} hook={<>Et si c&apos;était toi<br />qu&apos;on scannait ?</>} />
+        <BecomeWearerCTA source="message_sent" shopHref={shopHref} hook={<>Et si c’était toi<br />qu’on scannait&nbsp;?</>} />
         <button onClick={() => memberId ? router.push(`/profil/${memberId}`) : router.push('/')}
           className="font-ui text-xs text-brand-gray/55 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray transition-colors py-2"
           style={{ minHeight: '44px' }}>
@@ -429,7 +429,7 @@ function MessageForm() {
       />
       {!nameLooksValid && (
         <p className="font-ui text-xs text-[#C5A059]/85 leading-relaxed mt-1 animate-fade-in">
-          Lettres uniquement : sinon, votre message partira en anonyme.
+          Lettres uniquement&nbsp;: sinon, votre message partira en anonyme.
         </p>
       )}
     </div>
@@ -458,7 +458,7 @@ function MessageForm() {
           ni à un @handle — un contact mal tapé = le porteur ne peut pas répondre. */}
       {!contactLooksValid && (
         <p className="font-ui text-xs text-[#C5A059]/85 leading-relaxed mt-1 animate-fade-in">
-          Cela ne ressemble pas à un @instagram ou un email : vérifiez-le pour ne pas manquer sa réponse.
+          Cela ne ressemble pas à un @instagram ou un email&nbsp;: vérifiez-le pour ne pas manquer sa réponse.
         </p>
       )}
     </div>
@@ -470,7 +470,7 @@ function MessageForm() {
         <h1 className="font-display text-2xl md:text-3xl font-light tracking-[0.04em]">Un signal discret.</h1>
         <p className="font-ui text-sm font-light text-brand-gray/65 leading-relaxed">À {memberName}, qui pourra vous répondre directement.</p>
         <p className="font-ui text-xxs text-brand-gray/50 leading-relaxed">
-          Réservé aux 18 ans et plus : en envoyant un message, vous confirmez avoir l&apos;âge requis.{' '}
+          Réservé aux 18 ans et plus&nbsp;: en envoyant un message, vous confirmez avoir l’âge requis.{' '}
           <Link href="/confidentialite" className="underline underline-offset-2 hover:text-brand-white/80 transition-colors">
             Vos données
           </Link>
@@ -481,7 +481,7 @@ function MessageForm() {
         <div className="w-full bg-[#0a0a08] border border-[#C5A059]/25 rounded-[2px] px-4 py-3 flex flex-col gap-1 text-center">
           <p className="font-ui text-xxs text-[#C5A059]/85 tracking-[0.18em] uppercase"><span aria-hidden="true">✦ </span>Aperçu</p>
           <p className="font-ui text-xs text-brand-gray/65 leading-relaxed">
-            Voici le formulaire qu&apos;un scanneur remplit pour vous écrire. L&apos;envoi est désactivé ici.
+            Voici le formulaire qu’un scanneur remplit pour vous écrire. L’envoi est désactivé ici.
           </p>
         </div>
       )}
@@ -497,14 +497,14 @@ function MessageForm() {
       <div className="flex flex-col gap-2 animate-stagger-2">
         <p className="font-ui text-xs text-brand-gray/60 tracking-[0.2em] uppercase">Réponse rapide</p>
         {contactRequired && !contact.trim() && (
-          <p className="font-ui text-xs text-[#C5A059]/85 leading-relaxed">Renseignez d&apos;abord un contact ci-dessus.</p>
+          <p className="font-ui text-xs text-[#C5A059]/85 leading-relaxed">Renseignez d’abord un contact ci-dessus.</p>
         )}
         <div className="flex flex-col gap-2">
           {[
             { label: 'Belle audace.',       symbol: '✦' },
-            { label: "J'aime la démarche.", symbol: '◈' },
+            { label: "J’aime la démarche.", symbol: '◈' },
             // Le symbole, sans emoji en couleur ; le message envoyé reste « 👁 ».
-            { label: "Envoyer un clin d'œil", symbol: '◉', value: '👁' },
+            { label: "Envoyer un clin d’œil", symbol: '◉', value: '👁' },
           ].map((r) => (
             <button key={r.label} disabled={sending || isPreview}
               onClick={() => sendMessage(r.value || r.label, true)}
@@ -528,7 +528,7 @@ function MessageForm() {
       <div className="flex flex-col gap-3 animate-stagger-3">
         <div className="flex flex-col gap-1">
           <label htmlFor="msg-content" className="font-ui text-xs text-brand-gray/60 tracking-[0.2em] uppercase">Message libre</label>
-          <textarea id="msg-content" rows={4} placeholder="Quelque chose vous a traversé l'esprit..." value={message}
+          <textarea id="msg-content" rows={4} placeholder="Quelque chose vous a traversé l’esprit…" value={message}
             maxLength={1000} onChange={(e) => setMessage(e.target.value)}
             className="w-full bg-transparent border-b border-brand-gray/20 focus:border-brand-white/50 text-brand-white font-ui font-light text-base py-3 outline-none transition-colors resize-none placeholder:text-brand-gray/55 leading-relaxed"
           />
@@ -541,7 +541,7 @@ function MessageForm() {
           className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.3em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
           style={{ minHeight: '44px' }}
         >
-          {sending ? 'Envoi...' : 'Envoyer'}
+          {sending ? 'Envoi…' : 'Envoyer'}
         </button>
       </div>
 

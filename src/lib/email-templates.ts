@@ -38,9 +38,9 @@ export function emailProfileReminder(params: { registerUrl: string }): { subject
     html: layout(`
       <h1 style="font-size:26px;font-weight:300;letter-spacing:0.04em;margin:0 0 8px;text-align:center;">Il vous reste une étape.</h1>
       <p style="font-size:15px;font-weight:300;color:rgba(255,255,255,0.7);line-height:1.7;text-align:center;margin:0 0 8px;">
-        Votre compte est créé, mais votre profil ne l'est pas encore — et c'est lui
+        Votre compte est créé, mais votre profil ne l’est pas encore — et c’est lui
         qui active votre t-shirt. Quelques secondes suffisent (gardez votre code
-        d'activation sous la main).
+        d’activation sous la main).
       </p>
       ${cta('Finaliser mon profil', params.registerUrl)}
     `),
@@ -74,14 +74,14 @@ function cta(label: string, url: string): string {
  *  mask-links.ts) ; la conversation les garde. */
 function quoteBlock(content: string, sender?: string): string {
   const senderLine = sender
-    ? `<p style="font-size:13px;color:rgba(255,255,255,0.5);margin:0 0 16px;">De : <strong style="color:#fff;">${escapeHtml(maskLinks(sender))}</strong></p>`
+    ? `<p style="font-size:13px;color:rgba(255,255,255,0.5);margin:0 0 16px;">De\u00a0: <strong style="color:#fff;">${escapeHtml(maskLinks(sender))}</strong></p>`
     : `<p style="font-size:13px;color:rgba(255,255,255,0.3);margin:0 0 16px;font-style:italic;">Message anonyme</p>`;
 
   return `
     <div style="border:1px solid rgba(255,255,255,0.1);padding:24px;margin-bottom:32px;">
       ${senderLine}
       <p style="font-size:18px;font-style:italic;font-weight:300;color:rgba(255,255,255,0.85);margin:0;line-height:1.6;">
-        &ldquo;${escapeHtml(maskLinks(content))}&rdquo;
+        «\u00a0${escapeHtml(maskLinks(content))}\u00a0»
       </p>
     </div>
   `;
@@ -92,7 +92,7 @@ function quoteBlock(content: string, sender?: string): string {
 function replyHint(who: string): string {
   return `
     <p style="font-family:system-ui,sans-serif;font-size:11px;color:rgba(255,255,255,0.35);text-align:center;line-height:1.7;margin:24px 0 0;">
-      Pour répondre à ${who}, passez par le bouton : répondre à cet email écrit à l'équipe In Real Society.
+      Pour répondre à ${who}, passez par le bouton\u00a0: répondre à cet email écrit à l’équipe In Real Society.
     </p>
   `;
 }
@@ -117,7 +117,7 @@ export function emailNouveauMessage(params: {
     ? (contact ? `${name} (${contact})` : name)
     : contact;
   return {
-    subject: `${params.memberName}, quelqu'un vous a envoyé un signal.`,
+    subject: `${params.memberName}, quelqu’un vous a envoyé un signal.`,
     html: layout(`
       <h1 style="font-size:26px;font-weight:300;letter-spacing:0.04em;margin:0 0 8px;text-align:center;">Un signal pour vous,</h1>
       <h2 style="font-size:26px;font-weight:600;letter-spacing:0.04em;margin:0 0 32px;text-align:center;">${safeName}.</h2>
@@ -170,7 +170,7 @@ export function emailContactVerification(params: {
       ${cta('Confirmer mon adresse', params.verifyUrl)}
       <p style="font-family:system-ui,sans-serif;font-size:11px;color:rgba(255,255,255,0.35);text-align:center;line-height:1.7;margin:24px 0 0;">
         Lien valable ${params.ttlDays} jours.<br/>
-        Ce n'est pas vous ? Ignorez cet email : aucune réponse ne vous sera envoyée.
+        Ce n’est pas vous\u00a0? Ignorez cet email\u00a0: aucune réponse ne vous sera envoyée.
       </p>
     `),
   };
@@ -191,20 +191,20 @@ export function emailNouveauScan(params: {
 
   const headline = safeScanner
     ? `<strong style="font-weight:600;">${safeScanner}</strong> vient de voir votre profil.`
-    : 'Quelqu\'un vient de voir votre profil.';
+    : 'Quelqu’un vient de voir votre profil.';
 
   return {
-    subject: `${params.memberName}, quelqu'un vient de scanner votre profil.`,
+    subject: `${params.memberName}, quelqu’un vient de scanner votre profil.`,
     html: layout(`
       <h1 style="font-size:22px;font-weight:300;margin:0 0 24px;text-align:center;line-height:1.4;">
         ${headline}
       </h1>
       <p style="font-family:system-ui,sans-serif;font-size:13px;color:rgba(255,255,255,0.4);text-align:center;line-height:1.8;margin:0 0 32px;">
-        Vos chemins se sont peut-être croisés.<br/>La suite dépend d'eux.
+        Vos chemins se sont peut-être croisés.<br/>La suite dépend d’eux.
       </p>
       ${cta('Voir mon tableau de bord', params.dashboardUrl)}
       <p style="font-family:system-ui,sans-serif;font-size:11px;color:rgba(255,255,255,0.3);text-align:center;line-height:1.6;margin:24px 0 0;">
-        Un seul email par jour : les scans suivants vous attendent dans votre tableau de bord.${unsubscribe}
+        Un seul email par jour\u00a0: les scans suivants vous attendent dans votre tableau de bord.${unsubscribe}
       </p>
     `),
   };
@@ -222,14 +222,14 @@ export function emailConversationLimit(params: {
 }): { subject: string; html: string } {
   const safeName = escapeHtml(params.name);
   return {
-    subject: `${params.name}, quelqu'un a essayé de vous écrire.`,
+    subject: `${params.name}, quelqu’un a essayé de vous écrire.`,
     html: layout(`
       <h1 style="font-size:22px;font-weight:300;margin:0 0 24px;text-align:center;line-height:1.4;">
-        Quelqu'un a essayé de vous écrire, ${safeName}.
+        Quelqu’un a essayé de vous écrire, ${safeName}.
       </h1>
       <p style="font-family:system-ui,sans-serif;font-size:13px;color:rgba(255,255,255,0.5);text-align:center;line-height:1.8;margin:0 0 16px;">
-        Vous avez déjà ${params.maxConversations} conversations ouvertes sur ${params.windowDays} jours :
-        son message n'a pas pu partir. Un créneau se libère ${params.windowDays} jours après chaque conversation.
+        Vous avez déjà ${params.maxConversations} conversations ouvertes sur ${params.windowDays} jours\u00a0:
+        son message n’a pas pu partir. Un créneau se libère ${params.windowDays} jours après chaque conversation.
       </p>
       <p style="font-family:system-ui,sans-serif;font-size:13px;color:rgba(197,160,89,0.8);text-align:center;line-height:1.8;margin:0 0 32px;">
         Avec le premium, les conversations sont illimitées.
@@ -285,12 +285,12 @@ export function emailScanReminder(params: {
       </h1>
       <p style="font-family:system-ui,sans-serif;font-size:13px;color:rgba(255,255,255,0.5);text-align:center;line-height:1.8;margin:0 0 24px;">
         Votre profil est prêt depuis une semaine, mais votre vêtement reste silencieux.
-        La règle est simple : il doit être porté, et il doit être vu.
+        La règle est simple\u00a0: il doit être porté, et il doit être vu.
       </p>
       <div style="border:1px solid rgba(255,255,255,0.1);padding:24px;margin-bottom:8px;">
         <p style="font-family:system-ui,sans-serif;font-size:12px;color:rgba(255,255,255,0.5);line-height:1.8;margin:0;">
           ✦ Portez-le où vous allez naturellement<br/>
-          ✦ Choisissez les moments lents : café, librairie, vernissage<br/>
+          ✦ Choisissez les moments lents\u00a0: café, librairie, vernissage<br/>
           ✦ Faites confiance au hasard
         </p>
       </div>
@@ -319,7 +319,7 @@ export function emailPremium(params: {
         Bienvenue dans le cercle, ${safeName}.
       </h1>
       <p style="font-family:system-ui,sans-serif;font-size:13px;color:rgba(255,255,255,0.5);text-align:center;line-height:1.8;margin:0 0 32px;">
-        Votre abonnement premium est actif. Voici ce qui change :
+        Votre abonnement premium est actif. Voici ce qui change\u00a0:
       </p>
       <div style="border:1px solid rgba(197,160,89,0.3);padding:24px;margin-bottom:24px;">
         <p style="font-family:system-ui,sans-serif;font-size:11px;color:rgba(197,160,89,0.8);line-height:2;margin:0;">
@@ -333,20 +333,20 @@ export function emailPremium(params: {
           Souscrit le ${escapeHtml(params.subscribedOn)}.
         </p>
         <p style="${p}">
-          Résiliable à tout moment depuis vos réglages : le premium reste actif jusqu’à la fin du mois payé,
+          Résiliable à tout moment depuis vos réglages\u00a0: le premium reste actif jusqu’à la fin du mois payé,
           sans autre prélèvement.
         </p>
         <p style="${p}margin:0;">
-          Vous changez d’avis ? Vous avez ${PREMIUM_WITHDRAWAL_DAYS} jours pour vous rétracter, en écrivant à
-          ${CONTACT_EMAIL} : votre paiement vous sera remboursé en entier.
+          Vous changez d’avis\u00a0? Vous avez ${PREMIUM_WITHDRAWAL_DAYS} jours pour vous rétracter, en écrivant à
+          ${CONTACT_EMAIL}\u00a0: votre paiement vous sera remboursé en entier.
         </p>
       </div>
       ${cta('Voir mon tableau de bord', params.dashboardUrl)}
       <p style="font-family:system-ui,sans-serif;font-size:10px;color:rgba(255,255,255,0.3);line-height:1.7;margin:32px 0 0;">
-        Formulaire de rétractation, à renvoyer à ${CONTACT_EMAIL} : « Je vous notifie par la présente ma
-        rétractation du contrat portant sur la prestation de services ci-dessous : abonnement premium
-        In Real Society, souscrit le ${escapeHtml(params.subscribedOn)}. Nom, adresse, date. »
-        Conditions générales de vente, article 8 :
+        Formulaire de rétractation, à renvoyer à ${CONTACT_EMAIL}\u00a0: «\u00a0Je vous notifie par la présente ma
+        rétractation du contrat portant sur la prestation de services ci-dessous\u00a0: abonnement premium
+        In Real Society, souscrit le ${escapeHtml(params.subscribedOn)}. Nom, adresse, date.\u00a0»
+        Conditions générales de vente, article 8\u00a0:
         <a href="${escapeHtml(`${APP_URL}/cgv#premium`)}" style="color:rgba(255,255,255,0.45);">${escapeHtml(`${APP_URL}/cgv`)}</a>
       </p>
     `),
@@ -371,14 +371,14 @@ export function emailPremiumCancelled(params: {
       </h1>
       <p style="${p}">
         ${safeName}, votre abonnement premium est résilié. Il reste actif jusqu’au
-        ${escapeHtml(params.endsOn)} ; votre profil repasse ensuite en formule gratuite, et aucun
+        ${escapeHtml(params.endsOn)}\u00a0; votre profil repasse ensuite en formule gratuite, et aucun
         autre prélèvement n’aura lieu.
       </p>
       <p style="${p}">
         Vos scans et vos conversations restent dans votre tableau de bord.
       </p>
       <p style="${p}margin:0;">
-        Vous changez d’avis ? Vous pouvez réactiver l’abonnement depuis vos réglages jusqu’à cette date.
+        Vous changez d’avis\u00a0? Vous pouvez réactiver l’abonnement depuis vos réglages jusqu’à cette date.
       </p>
       ${cta('Mes réglages', params.settingsUrl)}
     `),
@@ -406,7 +406,7 @@ export function emailPremiumEnded(params: {
         </h1>
         <p style="${p}margin:0;">
           ${safeName}, votre compte est supprimé. Votre abonnement premium est résilié depuis le
-          ${endedOn} : aucun autre prélèvement n’aura lieu.
+          ${endedOn}\u00a0: aucun autre prélèvement n’aura lieu.
         </p>
       `),
     };
@@ -419,7 +419,7 @@ export function emailPremiumEnded(params: {
       </h1>
       <p style="${p}">
         ${safeName}, votre abonnement premium a pris fin le ${endedOn}. Votre profil est repassé en
-        formule gratuite : vos scans et vos conversations restent dans votre tableau de bord.
+        formule gratuite\u00a0: vos scans et vos conversations restent dans votre tableau de bord.
       </p>
       <p style="${p}margin:0;">
         Vous pouvez vous réabonner à tout moment depuis vos réglages.
@@ -449,7 +449,7 @@ export function emailPaymentFailed(params: {
       </p>
       <p style="font-family:system-ui,sans-serif;font-size:12px;color:rgba(255,255,255,0.4);text-align:center;line-height:1.8;margin:0 0 24px;">
         Stripe va automatiquement réessayer dans les prochains jours. Pour éviter une coupure de votre abonnement,
-        mettez à jour votre moyen de paiement depuis vos réglages (« Gérer ou résilier mon abonnement »).
+        mettez à jour votre moyen de paiement depuis vos réglages («\u00a0Gérer ou résilier mon abonnement\u00a0»).
       </p>
       ${cta('Mettre à jour ma carte', params.dashboardUrl)}
       <p style="font-family:system-ui,sans-serif;font-size:11px;color:rgba(255,255,255,0.25);text-align:center;line-height:1.6;margin:24px 0 0;">
@@ -477,16 +477,16 @@ export function emailOrderActivationReminder(params: {
         ${first ? 'Votre t-shirt est en route.' : 'Il ne manque que vous.'}
       </h1>
       <p style="font-family:system-ui,sans-serif;font-size:13px;color:rgba(255,255,255,0.5);text-align:center;line-height:1.8;margin:0 0 32px;">
-        Tant que votre profil n'est pas activé, ceux qui scannent votre dos tombent
-        sur une page « pas encore activé ». Une minute suffit, avec ce code.
+        Tant que votre profil n’est pas activé, ceux qui scannent votre dos tombent
+        sur une page «\u00a0pas encore activé\u00a0». Une minute suffit, avec ce code.
       </p>
       <div style="border:1px solid rgba(255,255,255,0.2);padding:28px;text-align:center;margin-bottom:8px;">
-        <p style="font-family:system-ui,sans-serif;font-size:10px;letter-spacing:0.2em;color:rgba(255,255,255,0.3);text-transform:uppercase;margin:0 0 16px;">Votre code d'activation</p>
+        <p style="font-family:system-ui,sans-serif;font-size:10px;letter-spacing:0.2em;color:rgba(255,255,255,0.3);text-transform:uppercase;margin:0 0 16px;">Votre code d’activation</p>
         <p style="font-family:monospace;font-size:30px;font-weight:700;letter-spacing:0.3em;color:#fff;margin:0;">${safeCode}</p>
       </div>
       ${cta('Activer mon profil', params.registerUrl)}
       <p style="font-family:system-ui,sans-serif;font-size:11px;color:rgba(255,255,255,0.3);text-align:center;margin:20px 0 0;">
-        Déjà activé ? Ignorez ce message.
+        Déjà activé\u00a0? Ignorez ce message.
       </p>
     `),
   };
@@ -529,14 +529,14 @@ export function emailActivation(params: {
 }): { subject: string; html: string } {
   const safeCode = escapeHtml(params.code);
   return {
-    subject: "Votre code d'activation In Real Society.",
+    subject: "Votre code d’activation In Real Society.",
     html: layout(`
       <h1 style="font-size:28px;font-weight:300;letter-spacing:0.04em;margin:0 0 16px;text-align:center;">Votre vêtement arrive.</h1>
       <p style="font-family:system-ui,sans-serif;font-size:13px;color:rgba(255,255,255,0.5);text-align:center;line-height:1.8;margin:0 0 40px;">
         Configurez dès maintenant votre profil avec ce code unique.
       </p>
       <div style="border:1px solid rgba(255,255,255,0.2);padding:32px;text-align:center;margin-bottom:8px;">
-        <p style="font-family:system-ui,sans-serif;font-size:10px;letter-spacing:0.2em;color:rgba(255,255,255,0.3);text-transform:uppercase;margin:0 0 16px;">Votre code d'activation</p>
+        <p style="font-family:system-ui,sans-serif;font-size:10px;letter-spacing:0.2em;color:rgba(255,255,255,0.3);text-transform:uppercase;margin:0 0 16px;">Votre code d’activation</p>
         <p style="font-family:monospace;font-size:32px;font-weight:700;letter-spacing:0.3em;color:#fff;margin:0;">${safeCode}</p>
       </div>
       ${cta('Créer mon profil maintenant', params.registerUrl)}
@@ -585,9 +585,9 @@ function moderationNextSteps(): string {
   const adminUrl = escapeHtml(`${APP_URL}/admin`);
   return `
       <p style="font-family:system-ui,sans-serif;font-size:12px;color:rgba(255,255,255,0.5);line-height:1.7;margin:24px 0 0;">
-        Traiter dans l'administration : <a href="${adminUrl}" style="color:#fff;">${adminUrl}</a>
-        (le SQL ci-dessus en secours). Marche à suivre : docs/MODERATION.md.
-        Menace pour la vie ou la sécurité d'une personne : prévenir la police sans attendre.
+        Traiter dans l’administration\u00a0: <a href="${adminUrl}" style="color:#fff;">${adminUrl}</a>
+        (le SQL ci-dessus en secours). Marche à suivre\u00a0: docs/MODERATION.md.
+        Menace pour la vie ou la sécurité d’une personne\u00a0: prévenir la police sans attendre.
       </p>`;
 }
 
@@ -609,8 +609,8 @@ export function emailModerationNotice(params: {
   const motif = params.motif ? `<p style="${p}">Motif : ${escapeHtml(params.motif)}</p>` : '';
   const rule = `
       <p style="${p}">
-        Cette décision applique l'article 9 de nos <a href="${APP_URL}/cgv" style="color:#fff;">CGV</a>.
-        Elle a été prise par l'équipe, après examen.
+        Cette décision applique l’article 9 de nos <a href="${APP_URL}/cgv" style="color:#fff;">CGV</a>.
+        Elle a été prise par l’équipe, après examen.
       </p>
       <p style="${p}">
         Vous pouvez la contester en répondant à cet email ou en écrivant à ${CONTACT_EMAIL}.
@@ -620,7 +620,7 @@ export function emailModerationNotice(params: {
     suspended: {
       subject: 'Votre profil In Real Society est suspendu',
       title:   'Votre profil est suspendu',
-      body:    `Depuis le ${date}, votre profil n'est plus visible et ne reçoit plus de messages.`,
+      body:    `Depuis le ${date}, votre profil n’est plus visible et ne reçoit plus de messages.`,
       rule,
     },
     photo_removed: {
@@ -659,7 +659,7 @@ export function emailReportOutcome(params: { decision: string }): { subject: str
     html: layout(`
       <h1 style="font-size:22px;font-weight:300;margin:0 0 24px;text-align:center;">Suite de votre signalement</h1>
       <p style="${p}">Votre signalement a été examiné par l’équipe In Real Society.</p>
-      <p style="${p}">Décision : ${escapeHtml(params.decision)}</p>
+      <p style="${p}">Décision\u00a0: ${escapeHtml(params.decision)}</p>
       <p style="${p}">Vous pouvez contester cette décision en répondant à cet email.</p>
     `),
   };
@@ -684,11 +684,11 @@ export function emailProfileReportAlert(params: {
   const url = escapeHtml(params.profileUrl);
   const conversation = params.conversationUrl ? escapeHtml(params.conversationUrl) : null;
   return {
-    subject: conversation ? 'Signalement : une conversation a été signalée' : 'Signalement : un profil a été signalé',
+    subject: conversation ? 'Signalement\u00a0: une conversation a été signalée' : 'Signalement\u00a0: un profil a été signalé',
     html: layout(`
       <h1 style="font-size:22px;font-weight:300;margin:0 0 16px;text-align:center;">${conversation ? 'Conversation signalée' : 'Profil signalé'}</h1>
       <p style="font-family:system-ui,sans-serif;font-size:13px;color:rgba(255,255,255,0.5);text-align:center;line-height:1.8;margin:0 0 24px;">
-        Rien n'est masqué automatiquement : à vous de décider.
+        Rien n’est masqué automatiquement\u00a0: à vous de décider.
       </p>
       <table role="presentation" style="width:100%;border-collapse:collapse;">
         ${alertRow('Porteur', `${escapeHtml(params.memberName ?? '—')} <span style="color:rgba(255,255,255,0.35);">(${id})</span>`)}
@@ -734,7 +734,7 @@ export function emailPhotoReviewAlert(params: {
         ${alertRow('Porteur', `${escapeHtml(params.memberName ?? '—')} <span style="color:rgba(255,255,255,0.35);">(${id})</span>`)}
         ${alertRow('Profil', `<a href="${url}" style="color:#fff;word-break:break-all;">${url}</a>`)}
       </table>
-      <p style="font-family:system-ui,sans-serif;font-size:11px;color:rgba(255,255,255,0.4);margin:24px 0 8px;">SQL (Supabase → SQL Editor), puis supprimer le fichier : Storage → avatars → ${id}</p>
+      <p style="font-family:system-ui,sans-serif;font-size:11px;color:rgba(255,255,255,0.4);margin:24px 0 8px;">SQL (Supabase → SQL Editor), puis supprimer le fichier\u00a0: Storage → avatars → ${id}</p>
       <pre style="font-family:monospace;font-size:11px;color:rgba(255,255,255,0.75);background:#111;padding:12px;white-space:pre-wrap;margin:0;">-- Retirer la photo
 UPDATE members SET photo_url = NULL WHERE id = '${id}';
 INSERT INTO audit_logs (action, member_id, metadata) VALUES ('member.photo_removed', '${id}', '{"motif": "modération"}');</pre>
@@ -777,12 +777,12 @@ export function emailReportAlert(params: {
   const token = params.senderToken ? escapeHtml(params.senderToken) : null;
   const excerpt = escapeHtml(params.content.length > 500 ? `${params.content.slice(0, 500)}…` : params.content);
   const status = !outcome
-    ? 'Signalement non enregistré (erreur) : voir les logs. Le message est tout de même masqué.'
+    ? 'Signalement non enregistré (erreur)\u00a0: voir les logs. Le message est tout de même masqué.'
     : outcome.banned
-      ? `Appareil banni automatiquement de toute la plateforme (${outcome.reporters} porteurs l'ont signalé).`
+      ? `Appareil banni automatiquement de toute la plateforme (${outcome.reporters} porteurs l’ont signalé).`
       : token
-        ? `Pas encore banni : ${outcome.reporters} porteur(s) sur ${threshold}.`
-        : 'Appareil inconnu (message ancien) : pas de bannissement possible.';
+        ? `Pas encore banni\u00a0: ${outcome.reporters} porteur(s) sur ${threshold}.`
+        : 'Appareil inconnu (message ancien)\u00a0: pas de bannissement possible.';
   const sql = token ? `
       <p style="font-family:system-ui,sans-serif;font-size:11px;color:rgba(255,255,255,0.4);margin:24px 0 8px;">SQL (Supabase → SQL Editor)</p>
       <pre style="font-family:monospace;font-size:11px;color:rgba(255,255,255,0.75);background:#111;padding:12px;white-space:pre-wrap;margin:0;">-- Bannir à la main
@@ -792,7 +792,7 @@ INSERT INTO audit_logs (action, metadata) VALUES ('device.banned', '{"senderToke
 DELETE FROM banned_devices WHERE sender_token = '${token}';
 INSERT INTO audit_logs (action, metadata) VALUES ('device.unbanned', '{"senderToken": "${token}"}');</pre>` : '';
   return {
-    subject: outcome?.banned ? 'Signalement : appareil banni automatiquement' : 'Signalement : un porteur a signalé un message',
+    subject: outcome?.banned ? 'Signalement\u00a0: appareil banni automatiquement' : 'Signalement\u00a0: un porteur a signalé un message',
     html: layout(`
       <h1 style="font-size:22px;font-weight:300;margin:0 0 16px;text-align:center;">Message signalé</h1>
       <p style="font-family:system-ui,sans-serif;font-size:13px;color:rgba(255,255,255,0.5);text-align:center;line-height:1.8;margin:0 0 24px;">
@@ -894,15 +894,15 @@ async function postToResend(
       kind   = error?.name ?? `http_${res.status}`;
       const retryable = res.status >= 500 || (res.status === 429 && error?.name === 'rate_limit_exceeded');
       if (!retryable) {
-        reportSendFailure(kind, `refusé par Resend : ${reason}`);
+        reportSendFailure(kind, `refusé par Resend\u00a0: ${reason}`);
         return null;
       }
     } catch (err) {
-      reason = `Resend injoignable : ${err instanceof Error ? err.message : String(err)}`;
+      reason = `Resend injoignable\u00a0: ${err instanceof Error ? err.message : String(err)}`;
       kind   = 'injoignable';
     }
     if (attempt >= SEND_ATTEMPTS) {
-      reportSendFailure(kind, `échec après ${SEND_ATTEMPTS} essais : ${reason}`);
+      reportSendFailure(kind, `échec après ${SEND_ATTEMPTS} essais\u00a0: ${reason}`);
       return null;
     }
     await new Promise((resolve) => setTimeout(resolve, retryDelayMs(res, attempt)));
@@ -954,11 +954,11 @@ export function supabaseConfirmSignup(): { subject: string; html: string } {
       <h1 style="font-size:26px;font-weight:300;letter-spacing:0.04em;margin:0 0 8px;text-align:center;">Une dernière vérification.</h1>
       <p style="font-size:15px;font-weight:300;color:rgba(255,255,255,0.7);line-height:1.7;text-align:center;margin:0 0 8px;">
         Confirmez votre adresse pour finaliser votre profil. Le lien vous y
-        ramène, sur ce téléphone ou un autre, avec votre code d'activation.
+        ramène, sur ce téléphone ou un autre, avec votre code d’activation.
       </p>
       ${cta('Confirmer mon adresse', '{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/register')}
       <p style="font-family:system-ui,sans-serif;font-size:12px;color:rgba(255,255,255,0.4);line-height:1.6;text-align:center;margin:24px 0 0;">
-        Vous n'avez pas créé de compte ? Ignorez cet email.
+        Vous n’avez pas créé de compte\u00a0? Ignorez cet email.
       </p>
     `),
   };
@@ -971,12 +971,12 @@ export function supabaseResetPassword(): { subject: string; html: string } {
     html: layout(`
       <h1 style="font-size:26px;font-weight:300;letter-spacing:0.04em;margin:0 0 8px;text-align:center;">Un nouveau mot de passe.</h1>
       <p style="font-size:15px;font-weight:300;color:rgba(255,255,255,0.7);line-height:1.7;text-align:center;margin:0 0 8px;">
-        Le lien ci-dessous vous permet d'en choisir un, sur ce téléphone ou un
+        Le lien ci-dessous vous permet d’en choisir un, sur ce téléphone ou un
         autre.
       </p>
       ${cta('Choisir un mot de passe', '{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/auth/reset-password')}
       <p style="font-family:system-ui,sans-serif;font-size:12px;color:rgba(255,255,255,0.4);line-height:1.6;text-align:center;margin:24px 0 0;">
-        Vous n'avez rien demandé ? Ignorez cet email : votre mot de passe ne
+        Vous n’avez rien demandé\u00a0? Ignorez cet email\u00a0: votre mot de passe ne
         change pas.
       </p>
     `),

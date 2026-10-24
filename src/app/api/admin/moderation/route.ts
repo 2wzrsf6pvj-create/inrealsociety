@@ -155,7 +155,7 @@ async function apply(d: Decision, by: string): Promise<{ memberNotified: boolean
       if (!order || order.status !== 'paid' || !order.activation_code) throw new NotFound();
       const { data: code } = await supabaseAdmin.from('activation_codes')
         .select('used').eq('code', order.activation_code).maybeSingle();
-      if (!code || code.used) throw new Conflict('Code déjà utilisé : le profil est activé.');
+      if (!code || code.used) throw new Conflict('Code déjà utilisé\u00a0: le profil est activé.');
       const { subject, html } = emailActivation({
         code:        order.activation_code,
         registerUrl: `${APP_URL}/register?code=${order.activation_code}`,
@@ -171,7 +171,7 @@ async function apply(d: Decision, by: string): Promise<{ memberNotified: boolean
       const member = await getMember(d.memberId);
       if (member.plan === 'premium') {
         throw new Conflict(member.stripe_subscription_id
-          ? 'Abonné : il paie son premium.'
+          ? 'Abonné\u00a0: il paie son premium.'
           : `Premium déjà offert${member.plan_expires_at ? ` jusqu’au ${formatDayFr(member.plan_expires_at)}` : ''}.`);
       }
       const until = new Date(Date.now() + PREMIUM_GIFT_DAYS * 86_400_000).toISOString();
@@ -182,7 +182,7 @@ async function apply(d: Decision, by: string): Promise<{ memberNotified: boolean
         .eq('id', d.memberId).eq('plan', 'free').is('stripe_subscription_id', null)
         .select('id');
       if (error) throw error;
-      if (!data || data.length === 0) throw new Conflict('Son premium vient de changer : actualiser la page.');
+      if (!data || data.length === 0) throw new Conflict('Son premium vient de changer\u00a0: actualiser la page.');
       await record('member.premium_gifted', d.memberId, { by, until });
       return { memberNotified: null, premiumUntil: until };
     }
@@ -190,7 +190,7 @@ async function apply(d: Decision, by: string): Promise<{ memberNotified: boolean
       const member = await getMember(d.memberId);
       if (member.plan !== 'premium' || member.stripe_subscription_id) {
         throw new Conflict(member.stripe_subscription_id
-          ? 'Abonné : il paie son premium, rien d’offert à arrêter.'
+          ? 'Abonné\u00a0: il paie son premium, rien d’offert à arrêter.'
           : 'Aucun premium offert en cours.');
       }
       const { data, error } = await supabaseAdmin.from('members')
@@ -198,7 +198,7 @@ async function apply(d: Decision, by: string): Promise<{ memberNotified: boolean
         .eq('id', d.memberId).eq('plan', 'premium').is('stripe_subscription_id', null)
         .select('id');
       if (error) throw error;
-      if (!data || data.length === 0) throw new Conflict('Son premium vient de changer : actualiser la page.');
+      if (!data || data.length === 0) throw new Conflict('Son premium vient de changer\u00a0: actualiser la page.');
       await record('member.premium_gift_ended', d.memberId, { by });
       return { memberNotified: null };
     }
@@ -224,7 +224,7 @@ export async function POST(req: NextRequest) {
 
     const body = schema.safeParse(await req.json().catch(() => null));
     if (!body.success) {
-      return NextResponse.json({ error: 'Données invalides : motif de 3 à 500 caractères.' }, { status: 400 });
+      return NextResponse.json({ error: 'Données invalides\u00a0: motif de 3 à 500 caractères.' }, { status: 400 });
     }
     const d = body.data;
     const by = auth.user.email!.toLowerCase();

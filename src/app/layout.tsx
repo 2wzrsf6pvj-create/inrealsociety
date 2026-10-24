@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     default:  'In Real Society — The IRL Social Club',
     template: '%s — In Real Society',
   },
-  description: 'Le premier vêtement conçu pour les rencontres dans la vraie vie. Pas d\'algorithme. Pas de swipe. Un QR code, une rencontre.',
+  description: 'Le premier vêtement conçu pour les rencontres dans la vraie vie. Pas d’algorithme. Pas de swipe. Un QR code, une rencontre.',
   openGraph: {
     title:       'In Real Society',
     description: 'Le premier vêtement conçu pour les rencontres dans la vraie vie.',

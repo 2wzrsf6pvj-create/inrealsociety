@@ -95,20 +95,20 @@ function PremiumBlock({ member }: { member: Member }) {
       {gift ? (
         <p className="font-ui text-xs text-[#C5A059]/85 leading-relaxed">
           {member.plan_expires_at
-            ? `Premium offert jusqu’au ${formatDayFr(member.plan_expires_at)} : rien à payer, il s’arrête seul à cette date.`
-            : 'Premium offert : rien à payer.'}
+            ? `Premium offert jusqu’au ${formatDayFr(member.plan_expires_at)}\u00a0: rien à payer, il s’arrête seul à cette date.`
+            : 'Premium offert\u00a0: rien à payer.'}
         </p>
       ) : isPremium ? (
         <div className="flex flex-col gap-2">
           {member.plan_expires_at && (
             <p className="font-ui text-xs text-[#C5A059]/85 leading-relaxed">
-              Résiliation enregistrée : votre premium reste actif jusqu’au {formatDayFr(member.plan_expires_at)}.
+              Résiliation enregistrée&nbsp;: votre premium reste actif jusqu’au {formatDayFr(member.plan_expires_at)}.
             </p>
           )}
           <button onClick={handleAction} disabled={loading}
             className="w-full py-2.5 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.15em] uppercase text-brand-gray/50 hover:border-brand-gray/30 hover:text-brand-white/80 transition-colors rounded-[2px] disabled:opacity-40">
             {/* « Résilier » explicite : résiliation en ligne (Code de la consommation, L215-1-1). */}
-            {loading ? 'Chargement...' : member.plan_expires_at ? 'Gérer mon abonnement' : 'Gérer ou résilier mon abonnement'}
+            {loading ? 'Chargement…' : member.plan_expires_at ? 'Gérer mon abonnement' : 'Gérer ou résilier mon abonnement'}
           </button>
           {error && <p className="font-ui text-xs text-red-400" role="alert">{error}</p>}
         </div>
@@ -123,19 +123,19 @@ function PremiumBlock({ member }: { member: Member }) {
               className="mt-0.5 h-4 w-4 shrink-0 accent-[#C5A059] cursor-pointer"
             />
             <span className="font-ui text-xxs md:text-xs text-brand-gray/55 leading-relaxed">
-              J&apos;ai lu et j&apos;accepte les{' '}
+              J’ai lu et j’accepte les{' '}
               <Link href="/cgv#premium" className="underline underline-offset-2 hover:text-brand-white/80 transition-colors">
                 Conditions Générales de Vente
-              </Link>, dont l&apos;article 8 sur l&apos;abonnement.
+              </Link>, dont l’article 8 sur l’abonnement.
             </span>
           </label>
           <button onClick={handleAction} disabled={loading}
             className="animate-shimmer w-full py-3 bg-[#C5A059] text-brand-black font-ui font-bold text-sm tracking-[0.25em] uppercase rounded-[1px] hover:bg-[#d4af6a] active:scale-[0.98] transition-all duration-200 disabled:opacity-50">
-            {loading ? 'Chargement...' : `Passer premium — ${PREMIUM_PRICE_LABEL}/mois`}
+            {loading ? 'Chargement…' : `Passer premium — ${PREMIUM_PRICE_LABEL}/mois`}
           </button>
           {error && <p className="font-ui text-xs text-red-400" role="alert">{error}</p>}
           <p className="font-ui text-xxs text-brand-gray/50 text-center leading-relaxed">
-            Sans engagement · Résiliable à tout moment · Changement d&apos;avis sous {PREMIUM_WITHDRAWAL_DAYS} jours : remboursement intégral
+            Sans engagement · Résiliable à tout moment · Changement d’avis sous {PREMIUM_WITHDRAWAL_DAYS} jours&nbsp;: remboursement intégral
           </p>
         </div>
       )}
@@ -175,7 +175,7 @@ function ReferralBlock({ memberId, referralCode }: { memberId: string; referralC
     <div className="w-full bg-[#080808] border border-brand-gray/10 rounded-[2px] p-4 flex flex-col gap-3">
       <SectionDivider label="parrainage" />
       <p className="font-ui text-xs md:text-sm text-brand-gray/50 leading-relaxed">
-        Partagez votre lien. Chaque personne qui commande via ce lien bénéficie d&apos;une remise — vous, vous suivez vos parrainages ici.
+        Partagez votre lien. Chaque personne qui commande via ce lien bénéficie d’une remise — vous, vous suivez vos parrainages ici.
       </p>
       <div className="flex items-center gap-2">
         <p className="font-mono text-xs text-brand-gray/50 break-all flex-1 leading-relaxed">{referralUrl}</p>
@@ -237,10 +237,10 @@ function FeedbackBlock({ memberId }: { memberId: string }) {
         setSent(true);
         setMessage('');
       } else {
-        setError("Erreur lors de l'envoi.");
+        setError("Erreur lors de l’envoi.");
       }
     } catch (err) {
-      setError(requestErrorMessage(err, "Erreur lors de l'envoi.", 'Votre message est gardé.'));
+      setError(requestErrorMessage(err, "Erreur lors de l’envoi.", 'Votre message est gardé.'));
     }
     setSending(false);
   };
@@ -251,7 +251,7 @@ function FeedbackBlock({ memberId }: { memberId: string }) {
 
       {sent ? (
         <p className="font-ui text-xs text-green-400/60 text-center py-2">
-          Merci pour votre retour. Il nous aide à améliorer l&apos;expérience.
+          Merci pour votre retour. Il nous aide à améliorer l’expérience.
         </p>
       ) : (
         <>
@@ -264,13 +264,13 @@ function FeedbackBlock({ memberId }: { memberId: string }) {
             maxLength={2000}
             rows={3}
             aria-label="Votre retour (bug, suggestion, impression)"
-            placeholder="Votre message..."
+            placeholder="Votre message…"
             className="w-full bg-transparent border border-brand-gray/15 focus:border-brand-white/30 text-brand-white font-ui font-light text-sm p-3 outline-none transition-colors placeholder:text-brand-gray/50 rounded-[2px] resize-none"
           />
           {error && <p className="font-ui text-xs text-red-400" role="alert">{error}</p>}
           <button onClick={handleSubmit} disabled={sending || !message.trim()}
             className="w-full py-2.5 bg-brand-white/10 text-center font-ui text-xs font-light tracking-[0.15em] uppercase text-brand-white/60 hover:bg-brand-white/15 transition-colors rounded-[2px] disabled:opacity-30 disabled:cursor-not-allowed">
-            {sending ? 'Envoi...' : 'Envoyer'}
+            {sending ? 'Envoi…' : 'Envoyer'}
           </button>
         </>
       )}
@@ -386,7 +386,7 @@ function DeleteAccountButton() {
         </button>
         <button onClick={handleDelete} disabled={deleting}
           className="flex-1 py-2.5 bg-red-500/80 text-center font-ui text-xs font-bold tracking-[0.15em] uppercase text-white rounded-[2px] hover:bg-red-500 transition-colors disabled:opacity-50">
-          {deleting ? 'Suppression...' : 'Confirmer'}
+          {deleting ? 'Suppression…' : 'Confirmer'}
         </button>
       </div>
       {error && <p className="font-ui text-xs text-red-400 text-center" role="alert">{error}</p>}
@@ -476,7 +476,7 @@ export default function SettingsSection({ member }: { member: Member }) {
             <p className="font-ui text-xs text-brand-gray/50 leading-relaxed">
               {suspended
                 ? <>Profil suspendu suite au remboursement de votre commande. Écrivez à <a href="mailto:hello@inrealsociety.com" className="text-brand-white/70 underline underline-offset-2">hello@inrealsociety.com</a> pour le réactiver.</>
-                : <>Votre profil sera masqué. Les scanneurs verront &ldquo;Ce membre est indisponible&rdquo;.</>}
+                : <>Votre profil sera masqué. Les scanneurs verront «&nbsp;Ce membre est indisponible&nbsp;».</>}
             </p>
           </div>
           <button
@@ -526,7 +526,7 @@ export default function SettingsSection({ member }: { member: Member }) {
               <div className="flex flex-col gap-0.5">
                 <p className="font-ui text-sm text-brand-white/80">Email au premier scan du jour</p>
                 <p className="font-ui text-xs text-brand-gray/50 leading-relaxed">
-                  Un email quand quelqu&apos;un scanne votre profil, une fois par jour au plus. Les scans restent dans votre tableau de bord.
+                  Un email quand quelqu’un scanne votre profil, une fois par jour au plus. Les scans restent dans votre tableau de bord.
                 </p>
               </div>
               <button
@@ -549,7 +549,7 @@ export default function SettingsSection({ member }: { member: Member }) {
           <div className="flex flex-col gap-0.5">
             <p className="font-ui text-sm text-brand-white/80">Newsletter et actualités</p>
             <p className="font-ui text-xs text-brand-gray/50 leading-relaxed">
-              Recevoir les nouveautés produit, mises à jour de l&apos;app et événements. Indépendant des emails transactionnels (codes, réponses).
+              Recevoir les nouveautés produit, mises à jour de l’app et événements. Indépendant des emails transactionnels (codes, réponses).
             </p>
           </div>
           <button
@@ -577,7 +577,7 @@ export default function SettingsSection({ member }: { member: Member }) {
       <div className="w-full bg-[#080808] border border-brand-gray/10 rounded-[2px] p-4 flex flex-col gap-3">
         <SectionDivider label="compte" />
         <div className="flex flex-col gap-0.5">
-          <p className="font-ui text-xs md:text-sm text-brand-gray/50">{member.email || 'Pas d\'email associé'}</p>
+          <p className="font-ui text-xs md:text-sm text-brand-gray/50">{member.email || 'Pas d’email associé'}</p>
           <p className="font-ui text-xxs text-brand-gray/55">
             Membre depuis le {new Date(member.created_at).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}
           </p>

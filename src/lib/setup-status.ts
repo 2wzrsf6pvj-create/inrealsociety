@@ -38,7 +38,7 @@ export function setupStatus(env: Env, { migration062, migration063 }: { migratio
   // Domaine court en place : les QR l'encodent, plus le domaine principal.
   const shortOk = !!shortHost && shortHost !== host;
   const push = vars('Notifications', ['VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY', 'NEXT_PUBLIC_VAPID_PUBLIC_KEY'], 'configurées',
-    'aucune notification : un message n’est vu qu’en ouvrant le site');
+    'aucune notification\u00a0: un message n’est vu qu’en ouvrant le site');
   // La clé publique sert deux fois : au serveur et au navigateur. Différentes,
   // les abonnements ne correspondent pas à la clé d'envoi : rien n'arrive.
   const pushKeysDiffer = push.ok && env.VAPID_PUBLIC_KEY?.trim() !== env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim();
@@ -51,30 +51,30 @@ export function setupStatus(env: Env, { migration062, migration063 }: { migratio
     { title: 'Site et base', checks: [
       { label: 'Domaine', ok: !!host && !provisional,
         detail: !host ? 'NEXT_PUBLIC_APP_URL manquante ou illisible'
-          : provisional && shortOk ? `${host} : domaine provisoire, à remplacer avant d'ouvrir (liens des emails, pages des profils).`
-          : provisional ? `${host} : domaine provisoire. Les QR imprimés l'encoderaient pour toujours.`
-          : shortOk ? `${host} : liens des emails et pages des profils.`
-          : `${host} : encodé dans les QR imprimés (${appUrl.replace(/\/$/, '')}/r/<code>).` },
+          : provisional && shortOk ? `${host}\u00a0: domaine provisoire, à remplacer avant d’ouvrir (liens des emails, pages des profils).`
+          : provisional ? `${host}\u00a0: domaine provisoire. Les QR imprimés l’encoderaient pour toujours.`
+          : shortOk ? `${host}\u00a0: liens des emails et pages des profils.`
+          : `${host}\u00a0: encodé dans les QR imprimés (${appUrl.replace(/\/$/, '')}/r/<code>).` },
       { label: 'Base', ok: migrations.length === 0,
         detail: migrations.length === 0 ? 'migrations à jour (063)'
           : `${migrations.length > 1 ? 'migrations' : 'migration'} ${migrations.join(', ')} à appliquer` },
       vars('Limites de débit', ['UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN'], 'Upstash configuré',
-        'scanner un QR, écrire, signaler : erreur'),
+        'scanner un QR, écrire, signaler\u00a0: erreur'),
     ] },
     { title: 'Paiement et impression', checks: [
       { label: 'Paiements', ok: !!stripeKey,
-        detail: !stripeKey ? 'STRIPE_SECRET_KEY manquante : pas de vente'
-          : live ? 'réels : une commande payée part à l’impression'
-          : 'de test (recette) : les commandes restent en brouillon chez Printful, rien n’est imprimé' },
+        detail: !stripeKey ? 'STRIPE_SECRET_KEY manquante\u00a0: pas de vente'
+          : live ? 'réels\u00a0: une commande payée part à l’impression'
+          : 'de test (recette)\u00a0: les commandes restent en brouillon chez Printful, rien n’est imprimé' },
       vars('Stripe', ['STRIPE_PRICE_ID', 'STRIPE_WEBHOOK_SECRET', 'STRIPE_PREMIUM_PRICE_ID'], 'prix et webhook configurés',
         'paiement ou premium indisponible, ou commandes payées non enregistrées'),
       vars('Printful', ['PRINTFUL_API_TOKEN'], 'configuré', 't-shirt payé jamais imprimé'),
-      { label: 'Printful : tailles et couleurs', ok: variants.length === 0,
+      { label: 'Printful\u00a0: tailles et couleurs', ok: variants.length === 0,
         detail: variants.length === 0 ? '10 variantes sur 10'
-          : `${PRINTFUL_VARIANTS.length - variants.length} variantes sur 10 : une taille sans variante part dans la variante par défaut, ou n’est pas imprimée s’il n’y en a pas (manque : ${variants.join(', ')})` },
+          : `${PRINTFUL_VARIANTS.length - variants.length} variantes sur 10\u00a0: une taille sans variante part dans la variante par défaut, ou n’est pas imprimée s’il n’y en a pas (manque\u00a0: ${variants.join(', ')})` },
     ] },
     { title: 'Emails, alertes, tâches', checks: [
-      vars('Emails', ['RESEND_API_KEY'], 'Resend configuré', 'aucun email : code d’activation, notifications'),
+      vars('Emails', ['RESEND_API_KEY'], 'Resend configuré', 'aucun email\u00a0: code d’activation, notifications'),
       vars('Alertes', ['ADMIN_ALERT_EMAIL'], 'configurées', 'personne n’est prévenu d’un signalement ni d’un échec qui touche l’argent'),
       vars('Tâches planifiées', ['CRON_SECRET'], 'configurées', 'purges et relances non lancées'),
       vars('Liens signés', ['INTERNAL_SECRET'], 'configurés', 'emails de scan sans lien de désinscription'),
@@ -82,15 +82,15 @@ export function setupStatus(env: Env, { migration062, migration063 }: { migratio
     ] },
     { title: 'Test terrain', checks: [
       pushKeysDiffer
-        ? { label: 'Notifications', ok: false, detail: 'NEXT_PUBLIC_VAPID_PUBLIC_KEY doit être identique à VAPID_PUBLIC_KEY : sinon rien n’arrive' }
+        ? { label: 'Notifications', ok: false, detail: 'NEXT_PUBLIC_VAPID_PUBLIC_KEY doit être identique à VAPID_PUBLIC_KEY\u00a0: sinon rien n’arrive' }
         : push,
       // Choix de Clément : QR en inreal.me/<code> (portée ≈ 2,5 m au lieu de 2,0 m).
       { label: 'Domaine court des QR', ok: shortOk,
         detail: !shortDomain
-          ? 'vide : les QR encoderaient le domaine principal, portée de scan ≈ 2,0 m au lieu de 2,5 m. À renseigner (https://inreal.me) une fois le domaine ajouté au projet Vercel.'
-          : !shortHost ? `${shortDomain} : adresse illisible`
-          : shortHost === host ? `${shortHost} : c'est le domaine principal, pas un domaine court`
-          : `${shortHost} : les QR encodent ${shortDomain}/<code>. Le domaine doit être ajouté au projet Vercel, sans redirection vers le domaine principal.` },
+          ? 'vide\u00a0: les QR encoderaient le domaine principal, portée de scan ≈ 2,0 m au lieu de 2,5 m. À renseigner (https://inreal.me) une fois le domaine ajouté au projet Vercel.'
+          : !shortHost ? `${shortDomain}\u00a0: adresse illisible`
+          : shortHost === host ? `${shortHost}\u00a0: c’est le domaine principal, pas un domaine court`
+          : `${shortHost}\u00a0: les QR encodent ${shortDomain}/<code>. Le domaine doit être ajouté au projet Vercel, sans redirection vers le domaine principal.` },
     ] },
   ];
 }

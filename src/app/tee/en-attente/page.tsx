@@ -26,17 +26,17 @@ export default function TeeEnAttentePage() {
 
         <div className="flex flex-col items-center gap-3">
           <h1 className="font-display text-2xl md:text-3xl font-light leading-snug">
-            Ce porteur n&apos;a pas<br />encore activé son profil.
+            Ce porteur n’a pas<br />encore activé son profil.
           </h1>
           <p className="font-ui text-sm font-light text-brand-gray/50 leading-relaxed">
-            Le t-shirt existe, le profil arrive. Revenez scanner un peu plus tard :
+            Le t-shirt existe, le profil arrive. Revenez scanner un peu plus tard&nbsp;:
             il sera peut-être en ligne.
           </p>
         </div>
 
         {/* Rappel discret pour le porteur qui scanne son propre tee. */}
         <div className="w-full pt-2 border-t border-brand-gray/10 flex flex-col items-center gap-2">
-          <p className="font-ui text-xxs text-brand-gray/55 tracking-[0.15em] uppercase">C&apos;est votre t-shirt ?</p>
+          <p className="font-ui text-xxs text-brand-gray/55 tracking-[0.15em] uppercase">C’est votre t-shirt&nbsp;?</p>
           <p className="font-ui text-xs font-light text-brand-gray/50 leading-relaxed">
             Activez votre profil depuis le lien reçu par email après votre commande.
           </p>
@@ -45,7 +45,7 @@ export default function TeeEnAttentePage() {
             className="font-ui text-xxs text-brand-gray/50 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white/80 transition-colors py-3"
             style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}
           >
-            Besoin d&apos;aide ?
+            Besoin d’aide&nbsp;?
           </Link>
         </div>
       </div>

@@ -25,7 +25,7 @@ async function passant(browser: Parameters<typeof newContext>[0]) {
 /** Bulle d'un message dans la conversation, entre guillemets. Le texte seul
  *  trouverait aussi le champ de saisie (React y recopie ce qu'on tape), avant
  *  même que le serveur ait accepté le message. */
-const bubble = (page: Page, text: string) => page.getByText(`“${text}”`);
+const bubble = (page: Page, text: string) => page.getByText(`«\u00a0${text}\u00a0»`);
 
 /** Carte d'un signalement dans /admin : le plus petit bloc qui contient son
  *  texte unique. Elle reste la même quand la décision remplace ses boutons. */
@@ -65,8 +65,8 @@ test('du QR à la conversation : le passant écrit, le porteur répond, chacun s
   // porteur est prévenu par email du scan puis du message.
   await expect.poll(() => sql(`SELECT count(*) FROM scans WHERE member_id = '${wearer.memberId}'`)).toBe('1');
   await expect.poll(() => emailsTo(wearer.email)).toEqual(expect.arrayContaining([
-    `${wearer.name}, quelqu'un vient de scanner votre profil.`,
-    `${wearer.name}, quelqu'un vous a envoyé un signal.`,
+    `${wearer.name}, quelqu’un vient de scanner votre profil.`,
+    `${wearer.name}, quelqu’un vous a envoyé un signal.`,
   ]));
 
   const wearerContext = await newContext(browser, { viewport: PHONE });

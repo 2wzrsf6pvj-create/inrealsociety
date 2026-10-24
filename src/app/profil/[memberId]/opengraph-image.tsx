@@ -112,7 +112,7 @@ export default async function OGImage({
             textAlign: 'center',
             lineHeight: 1.5,
           }}>
-            &quot;{pitch.length > 100 ? pitch.slice(0, 100) + '…' : pitch}&quot;
+            «&nbsp;{pitch.length > 100 ? pitch.slice(0, 100) + '…' : pitch}&nbsp;»
           </span>
         </div>
 

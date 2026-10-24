@@ -201,7 +201,7 @@ function NewsletterCapture({ source }: { source: string }) {
     return (
       <div className="flex flex-col items-center gap-2 text-center">
         <p className="font-display text-lg font-light italic text-brand-gray/60">
-          Vous serez prévenu·e.
+          On vous préviendra.
         </p>
         <p className="font-ui text-xs text-brand-gray/55">
           Pas de spam, juste les vrais moments du projet.
@@ -213,9 +213,9 @@ function NewsletterCapture({ source }: { source: string }) {
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-3 max-w-sm mx-auto">
       <div className="text-center flex flex-col gap-1">
-        <p className="font-ui text-xs text-brand-gray/55 tracking-[0.25em] uppercase">Pas encore prêt·e ?</p>
+        <p className="font-ui text-xs text-brand-gray/55 tracking-[0.25em] uppercase">Pas encore le moment&nbsp;?</p>
         <p className="font-display text-xl md:text-2xl font-light text-brand-gray/70">
-          Restez informé·e du lancement et des prochaines collections.
+          Recevez les nouvelles du lancement et des prochaines collections.
         </p>
       </div>
       <div className="flex gap-2">
@@ -233,12 +233,12 @@ function NewsletterCapture({ source }: { source: string }) {
         <button type="submit" disabled={sending || !email.trim()}
           className="px-5 py-3 border border-brand-gray/25 hover:border-brand-white/60 font-ui text-xs tracking-[0.15em] uppercase text-brand-gray/60 hover:text-brand-white rounded-[2px] transition-colors disabled:opacity-40"
           style={{ minHeight: '44px' }}>
-          {sending ? '...' : 'OK'}
+          {sending ? '…' : 'OK'}
         </button>
       </div>
       {failed && (
         <p className="font-ui text-xs text-red-400 text-center" role="alert">
-          L&apos;inscription a échoué. Vérifiez votre connexion et réessayez.
+          L’inscription a échoué. Vérifiez votre connexion et réessayez.
         </p>
       )}
       <p className="font-ui text-xxs text-brand-gray/50 text-center">
@@ -470,8 +470,8 @@ export default function ShopClient() {
                 </p>
               </div>
               <div className="flex flex-col items-end gap-1 shrink-0">
-                <span className="font-display text-3xl font-light">{TSHIRT_PRICE_EUR}€</span>
-                <span className="font-ui text-xxs text-brand-gray/55 whitespace-nowrap">+ livraison {SHIPPING_STANDARD_EUR}€</span>
+                <span className="font-display text-3xl font-light">{TSHIRT_PRICE_EUR}&nbsp;€</span>
+                <span className="font-ui text-xxs text-brand-gray/55 whitespace-nowrap">+ livraison {SHIPPING_STANDARD_EUR}&nbsp;€</span>
               </div>
             </div>
 
@@ -543,7 +543,7 @@ export default function ShopClient() {
                   'T-shirt coton bio Stanley/Stella Creator 2.0',
                   'Logo ( • ) imprimé sur la poitrine',
                   'QR unique + accroche imprimés dans le dos',
-                  'Code d\'activation unique par email',
+                  'Code d’activation unique par email',
                   'Accès à la plateforme In Real Society',
                   'Profil configurable en 2 minutes',
                 ].map((item) => (
@@ -567,7 +567,7 @@ export default function ShopClient() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-ui text-xxs text-brand-gray/50 tracking-[0.15em] uppercase">Frais</span>
-                  <span className="font-ui text-xs text-brand-gray/60">{SHIPPING_STANDARD_EUR}€</span>
+                  <span className="font-ui text-xs text-brand-gray/60">{SHIPPING_STANDARD_EUR}&nbsp;€</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-ui text-xxs text-brand-gray/50 tracking-[0.15em] uppercase">Zones</span>
@@ -579,7 +579,7 @@ export default function ShopClient() {
                 <div className="flex flex-col gap-1">
                   <label htmlFor="buy-email" className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Votre email</label>
                   <p id="buy-email-hint" className="font-ui text-xxs md:text-xs text-brand-gray/50 leading-relaxed">
-                    Votre code d&apos;activation vous sera envoyé ici après paiement.
+                    Votre code d’activation vous sera envoyé ici après paiement.
                   </p>
                   <input
                     id="buy-email"
@@ -607,7 +607,7 @@ export default function ShopClient() {
                     className="mt-0.5 h-4 w-4 shrink-0 accent-brand-white cursor-pointer"
                   />
                   <span className="font-ui text-xxs md:text-xs text-brand-gray/55 leading-relaxed">
-                    J&apos;ai lu et j&apos;accepte les{' '}
+                    J’ai lu et j’accepte les{' '}
                     <Link href="/cgv" className="underline underline-offset-2 hover:text-brand-white/80 transition-colors">
                       Conditions Générales de Vente
                     </Link>.
@@ -621,14 +621,14 @@ export default function ShopClient() {
                   style={{ minHeight: '44px' }}
                 >
                   {/* Espace insécable : plus étroit que 360 px, « — 49€ » passe ensemble à la ligne. */}
-                  {loading ? 'Redirection...' : `Commander en ${colorLabel} —\u00a0${TSHIRT_PRICE_EUR}€`}
+                  {loading ? 'Redirection…' : `Commander en ${colorLabel} —\u00a0${TSHIRT_PRICE_EUR}\u00a0€`}
                 </button>
 
                 <p className="font-ui text-xxs md:text-xs text-brand-gray/50 text-center leading-relaxed">
-                  Paiement sécurisé par Stripe · Livraison choisie à l&apos;étape suivante
+                  Paiement sécurisé par Stripe · Livraison choisie à l’étape suivante
                 </p>
                 <Link href="/faq" className="font-ui text-xxs text-brand-gray/50 text-center underline underline-offset-4 hover:text-brand-white/80 transition-colors">
-                  Comment ça marche ?
+                  Comment ça marche&nbsp;?
                 </Link>
               </form>
             </div>
@@ -640,14 +640,14 @@ export default function ShopClient() {
         <section className="max-w-lg mx-auto py-12 border-t border-brand-gray/10 animate-stagger-3">
           <div className="flex flex-col gap-8">
             <h2 className="font-display text-2xl md:text-3xl font-light tracking-[0.04em] text-center">
-              Comment ça marche ?
+              Comment ça marche&nbsp;?
             </h2>
             <div className="flex flex-col gap-6">
               {[
-                { step: '01', title: 'Commandez', desc: 'Recevez votre t-shirt et votre code d\'activation unique par email.' },
+                { step: '01', title: 'Commandez', desc: 'Recevez votre t-shirt et votre code d’activation unique par email.' },
                 { step: '02', title: 'Activez', desc: 'Créez votre profil en 2 minutes. Choisissez votre pitch, ajoutez une photo.' },
-                { step: '03', title: 'Portez', desc: 'Le QR code dans le dos est prêt. Vous n\'avez plus rien à faire.' },
-                { step: '04', title: 'Recevez', desc: 'Quelqu\'un ose scanner. Vous recevez un message. Vous décidez de la suite.' },
+                { step: '03', title: 'Portez', desc: 'Le QR code dans le dos est prêt. Vous n’avez plus rien à faire.' },
+                { step: '04', title: 'Recevez', desc: 'Quelqu’un ose scanner. Vous recevez un message. Vous décidez de la suite.' },
               ].map((item) => (
                 <div key={item.step} className="flex gap-5">
                   <span className="font-ui text-xs text-brand-gray/50 tracking-[0.1em] mt-1 flex-shrink-0">{item.step}</span>
@@ -674,7 +674,7 @@ export default function ShopClient() {
           <div className="flex items-center justify-between">
             <span className="font-ui text-xs text-brand-gray/50 tracking-[0.2em] uppercase">In Real Society</span>
             <Link href="/" className="font-ui text-xs text-brand-gray/50 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white/80 transition-colors">
-              L&apos;application
+              L’application
             </Link>
           </div>
           <div className="flex items-center gap-4">
@@ -700,9 +700,9 @@ export default function ShopClient() {
         >
           <div className="max-w-lg mx-auto flex items-center justify-between gap-4">
             <div className="flex flex-col">
-              <span className="font-display text-2xl font-light leading-none">{TSHIRT_PRICE_EUR}€</span>
+              <span className="font-display text-2xl font-light leading-none">{TSHIRT_PRICE_EUR}&nbsp;€</span>
               <span className="font-ui text-xxs text-brand-gray/55 mt-1 whitespace-nowrap">
-                {colorLabel} · {tshirtSize} · livraison {SHIPPING_STANDARD_EUR}€
+                {colorLabel} · {tshirtSize} · livraison {SHIPPING_STANDARD_EUR}&nbsp;€
               </span>
             </div>
             <button

@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
     ]);
   } catch (err) {
     reportError('newsletter/send', err, { step: 'audience fetch failed' });
-    return NextResponse.json({ error: 'Erreur de calcul d\'audience.' }, { status: 500 });
+    return NextResponse.json({ error: 'Erreur de calcul d’audience.' }, { status: 500 });
   }
 
   const optedOut = new Set<string>();
@@ -119,7 +119,7 @@ export async function POST(req: NextRequest) {
   // de claim la campagne, donc la key reste réutilisable après segmentation.
   if (recipients.length > MAX_AUDIENCE_PER_RUN) {
     return NextResponse.json({
-      error:    `Audience trop grande pour un seul envoi (${recipients.length} > ${MAX_AUDIENCE_PER_RUN}). Segmentez l'envoi pour éviter un timeout à mi-parcours.`,
+      error:    `Audience trop grande pour un seul envoi (${recipients.length} > ${MAX_AUDIENCE_PER_RUN}). Segmentez l’envoi pour éviter un timeout à mi-parcours.`,
       audience: recipients.length,
     }, { status: 413 });
   }

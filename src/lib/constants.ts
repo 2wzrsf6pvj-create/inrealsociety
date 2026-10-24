@@ -79,12 +79,12 @@ export const FROM_APP = { param: 'src', value: 'app' } as const;
  *  règlement européen sur les services numériques (art. 17) demande d'indiquer
  *  la décision automatique, la règle appliquée et le recours. */
 export const MODERATION_REFUSAL_NOTICE =
-  `Notre outil de modération automatique l’a jugé contraire à nos règles (CGV, article 9) : menaces, harcèlement, insultes, contenus sexuels ou haineux. Reformulez-le ; en cas d’erreur, écrivez à ${CONTACT_EMAIL}.`;
+  `Notre outil de modération automatique l’a jugé contraire à nos règles (CGV, article 9)\u00a0: menaces, harcèlement, insultes, contenus sexuels ou haineux. Reformulez-le\u00a0; en cas d’erreur, écrivez à ${CONTACT_EMAIL}.`;
 
 /** Appareil banni (signalements, ou décision de l'équipe) : la décision, sa
  *  raison et le recours lui sont dits clairement (choix de Clément, art. 17). */
 export const BANNED_DEVICE_NOTICE =
-  `Des messages envoyés depuis cet appareil ont été signalés et jugés contraires à nos règles (CGV, article 9) : il ne peut plus écrire sur In Real Society. Pour contester cette décision, écrivez à ${CONTACT_EMAIL}.`;
+  `Des messages envoyés depuis cet appareil ont été signalés et jugés contraires à nos règles (CGV, article 9)\u00a0: il ne peut plus écrire sur In Real Society. Pour contester cette décision, écrivez à ${CONTACT_EMAIL}.`;
 
 /** Un appareil (sender_token) signalé par ce nombre de porteurs DIFFÉRENTS est
  *  banni automatiquement de toute la plateforme (banned_devices). Plusieurs
@@ -98,7 +98,7 @@ export const REPORT_BAN_THRESHOLD = 3;
 export const MAX_THREAD_MESSAGES = 5;
 
 /** Réponses rapides qui bypassent la modération (envoi en 1 tap). */
-export const QUICK_REPLIES = ["Belle audace.", "J'aime la démarche.", "👁"] as const;
+export const QUICK_REPLIES = ["Belle audace.", "J’aime la démarche.", "👁"] as const;
 
 /** Passe à `true` une fois les mockups produit déposés dans public/shop/
  *  (tee-{noir|blanc}-{dos|face}.webp). Tant que false : la boutique ET l'accueil

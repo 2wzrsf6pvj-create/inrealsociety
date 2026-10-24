@@ -63,7 +63,7 @@ export async function recordReport(params: {
   const { error: banErr } = await supabaseAdmin
     .from('banned_devices')
     .upsert(
-      { sender_token: senderToken, reason: `auto : signalé par ${reporters} porteurs` },
+      { sender_token: senderToken, reason: `auto\u00a0: signalé par ${reporters} porteurs` },
       { onConflict: 'sender_token', ignoreDuplicates: true },
     );
   if (banErr) throw banErr;

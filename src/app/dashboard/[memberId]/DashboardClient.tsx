@@ -184,7 +184,7 @@ export default function DashboardClient({
       try {
         if (!localStorage.getItem('irs_first_scan_seen')) {
           localStorage.setItem('irs_first_scan_seen', '1');
-          return showToast('✦ Premier scan reçu. On vous a remarqué·e.', 4500);
+          return showToast('✦ Premier scan reçu. Votre t-shirt a été remarqué.', 4500);
         }
       } catch { /* stockage indispo */ }
     }
@@ -213,7 +213,7 @@ export default function DashboardClient({
       if (tries > 10) {
         clearInterval(timer);
         setAwaitingPremium(false);
-        showToast('L’activation prend plus de temps que prévu : rechargez la page dans un instant.', 5000);
+        showToast('L’activation prend plus de temps que prévu\u00a0: rechargez la page dans un instant.', 5000);
         return;
       }
       router.refresh();

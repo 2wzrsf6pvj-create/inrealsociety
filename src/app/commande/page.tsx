@@ -99,7 +99,7 @@ function CommandeContent() {
 
       {/* Recherche par code */}
       <form onSubmit={(e) => { e.preventDefault(); lookup(code); }} className="flex flex-col gap-2 animate-stagger-2">
-        <label htmlFor="commande-code" className="font-ui text-xs text-brand-gray/50 tracking-[0.2em] uppercase">Votre code d&apos;activation</label>
+        <label htmlFor="commande-code" className="font-ui text-xs text-brand-gray/50 tracking-[0.2em] uppercase">Votre code d’activation</label>
         <div className="flex gap-2">
           <input
             id="commande-code"
@@ -119,7 +119,7 @@ function CommandeContent() {
           <button type="submit" disabled={loading || !code.trim()}
             className="px-5 bg-brand-white text-brand-black font-ui font-bold text-xs tracking-[0.2em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all disabled:opacity-30"
             style={{ minHeight: '44px' }}>
-            {loading ? '...' : 'Suivre'}
+            {loading ? '…' : 'Suivre'}
           </button>
         </div>
         <p className="font-ui text-xxs text-brand-gray/50 leading-relaxed">
@@ -164,7 +164,7 @@ function CommandeContent() {
               <p className="font-ui text-sm text-brand-white/85">T-shirt In Real Society</p>
               <p className="font-ui text-xs text-brand-gray/50">{COLOR_LABEL[o.color] ?? o.color} · Taille {o.size}</p>
             </div>
-            <p className="font-ui text-sm text-brand-gray/55 tabular-nums">{(o.amount / 100).toFixed(2)} €</p>
+            <p className="font-ui text-sm text-brand-gray/55 tabular-nums">{(o.amount / 100).toFixed(2)}&nbsp;€</p>
           </div>
 
           {/* Timeline */}
@@ -202,7 +202,7 @@ function CommandeContent() {
             <div className="w-full bg-[#0a0a08] border border-[#C5A059]/20 rounded-[2px] p-4 flex flex-col gap-2">
               <p className="font-ui text-xs text-[#C5A059]/80 tracking-[0.15em] uppercase">À réception</p>
               <p className="font-ui text-xs text-brand-gray/55 leading-relaxed">
-                Créez votre profil avec votre code d&apos;activation, puis portez le t-shirt.
+                Créez votre profil avec votre code d’activation, puis portez le t-shirt.
               </p>
               <Link href="/register" className="font-ui text-xs text-brand-white/70 underline underline-offset-4 hover:text-brand-white transition-colors">
                 Créer mon profil →
@@ -213,7 +213,7 @@ function CommandeContent() {
       )}
 
       <Link href="/" className="font-ui text-xs text-brand-gray/50 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white/80 transition-colors text-center py-2" style={{ minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        ← retour à l&apos;accueil
+        ← retour à l’accueil
       </Link>
     </div>
   );

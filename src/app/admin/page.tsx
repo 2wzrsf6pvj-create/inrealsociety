@@ -51,7 +51,7 @@ const DECISION_LABELS: Record<string, string> = {
 
 const COLOR_LABELS: Record<string, string> = { dark: 'Noir', light: 'Blanc' };
 const STATUS_LABELS: Record<string, string> = { pending: 'en attente de paiement', paid: 'payée', refunded: 'remboursée' };
-const pct = (hit: number, total: number) => (total === 0 ? '—' : `${Math.round((hit / total) * 100)} %`);
+const pct = (hit: number, total: number) => (total === 0 ? '—' : `${Math.round((hit / total) * 100)}\u00a0%`);
 const plural = (n: number, word: string) => `${n} ${word}${n > 1 ? 's' : ''}`;
 const PHONES_MISSING = 'migration 062 à appliquer';
 const ORIGIN_MISSING = 'migration 063 à appliquer';
@@ -61,12 +61,12 @@ const PHONE_LABELS = { ios: 'iPhone', android: 'Android' } as const;
 function premiumLabel(p: PremiumState): string {
   if (!p) return '';
   if (p.gift) return p.until ? ` · premium offert jusqu’au ${day(p.until)}` : ' · premium offert, sans date de fin';
-  return p.until ? ` · premium, résilié : actif jusqu’au ${day(p.until)}` : ' · premium';
+  return p.until ? ` · premium, résilié\u00a0: actif jusqu’au ${day(p.until)}` : ' · premium';
 }
 
 const MOTIF_TO_MEMBER = { field: 'motif', label: 'Motif, envoyé au porteur avec la décision' } as const;
 const MOTIF_KEPT      = { field: 'motif', label: 'Motif, gardé dans le journal' } as const;
-const CLOSE           = { field: 'decision', label: 'Décision (par exemple : « rien de contraire aux règles »)' } as const;
+const CLOSE           = { field: 'decision', label: 'Décision (par exemple\u00a0: «\u00a0rien de contraire aux règles\u00a0»)' } as const;
 
 function Section({ title, count, empty = 'Rien à traiter.', children }: {
   title: string; count: number; empty?: string; children: React.ReactNode;
@@ -90,7 +90,7 @@ function Card({ children }: { children: React.ReactNode }) {
 function Line({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <p className="font-ui text-sm text-brand-gray/80 leading-relaxed break-words">
-      <span className="text-brand-gray/50">{label} : </span>{children}
+      <span className="text-brand-gray/50">{label}&nbsp;: </span>{children}
     </p>
   );
 }
@@ -130,8 +130,8 @@ function QrPreview({ code, name }: { code: string; name: string | null }) {
         {/* eslint-disable-next-line @next/next/no-img-element -- QR généré à la volée (data:), hors next/image */}
         <img src={qr.image} alt={`QR de ${name ?? 'ce porteur'}`} width={240} height={240} className="bg-white rounded-[2px]" />
         <p className="text-xs text-brand-gray/55 leading-relaxed break-words">
-          {qr.url} : à scanner avec un téléphone, comme un passant. Le QR imprimé garde l&apos;adresse du moment
-          de l&apos;impression.
+          {qr.url}&nbsp;: à scanner avec un téléphone, comme un passant. Le QR imprimé garde l’adresse du moment
+          de l’impression.
         </p>
       </div>
     </details>
@@ -257,8 +257,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         <header className="flex flex-col gap-2">
           <h1 className="font-display text-3xl font-light">Administration</h1>
           <p className="font-ui text-sm text-brand-gray/60 leading-relaxed">
-            Signalements des {QUEUE_WINDOW_DAYS} derniers jours ; marche à suivre : docs/MODERATION.md.
-            Menace pour la vie ou la sécurité d&apos;une personne : 17 ou 112, sans attendre.
+            Signalements des {QUEUE_WINDOW_DAYS} derniers jours&nbsp;; marche à suivre&nbsp;: docs/MODERATION.md.
+            Menace pour la vie ou la sécurité d’une personne&nbsp;: 17 ou 112, sans attendre.
           </p>
           <nav aria-label="Sections" className="flex flex-wrap gap-x-5 gap-y-1 font-ui text-xs tracking-[0.15em] uppercase">
             {[['#recherche', 'Recherche'], ['#chiffres', 'Chiffres'], ['#suivi', 'Suivi'], ['#avis', 'Avis'], ['#a-traiter', 'À traiter'], ['#commandes', 'Commandes'], ['#mesures', 'Mesures en cours'], ['#historique', 'Historique'], ['#configuration', 'Configuration']].map(([href, label]) => (
@@ -268,7 +268,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           </nav>
           {toSettle > 0 && (
             <p className="font-ui text-sm text-[#C5A059]/90 leading-relaxed">
-              Configuration : {plural(toSettle, 'point')} à régler (<a href="#configuration" className="underline underline-offset-4">voir « Configuration »</a>).
+              Configuration&nbsp;: {plural(toSettle, 'point')} à régler (<a href="#configuration" className="underline underline-offset-4">voir «&nbsp;Configuration&nbsp;»</a>).
             </p>
           )}
         </header>
@@ -286,7 +286,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
             </button>
           </form>
           {search && (search.members.length + search.orders.length === 0
-            ? <p className="font-ui text-sm text-brand-gray/50">Aucun résultat pour « {search.query} ».</p>
+            ? <p className="font-ui text-sm text-brand-gray/50">Aucun résultat pour «&nbsp;{search.query}&nbsp;».</p>
             : (
               <div className="flex flex-col gap-3">
                 {search.members.map((m) => <MemberCard key={m.id} member={m} />)}
@@ -322,9 +322,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
             </div>
           </div>
           <p className="font-ui text-xs text-brand-gray/55 leading-relaxed">
-            Achat venu d&apos;un scan : commande payée sur l&apos;appareil qui a vu le profil d&apos;un porteur et suivi
-            son lien vers la boutique, dans les {SCAN_ORIGIN_DAYS} jours ; le porteur est noté sur la commande (suivi
-            par porteur ci-dessous). Déroulé du test et seuils pour continuer, ajuster ou arrêter : docs/TEST_TERRAIN.md.
+            Achat venu d’un scan&nbsp;: commande payée sur l’appareil qui a vu le profil d’un porteur et suivi
+            son lien vers la boutique, dans les {SCAN_ORIGIN_DAYS} jours&nbsp;; le porteur est noté sur la commande (suivi
+            par porteur ci-dessous). Déroulé du test et seuils pour continuer, ajuster ou arrêter&nbsp;: docs/TEST_TERRAIN.md.
           </p>
 
           <h3 className="font-ui text-sm font-bold tracking-[0.2em] uppercase pt-4">Semaine par semaine</h3>
@@ -358,19 +358,19 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
             </tbody>
           </table>
           <p className="font-ui text-xs text-brand-gray/55 leading-relaxed">
-            Semaines du lundi au dimanche, heure de Paris. Porteurs scannés : au moins un scan dans la semaine, sur les
-            porteurs activés à sa fin. Répondus : premiers messages de la semaine auxquels le porteur a répondu, à ce jour.
+            Semaines du lundi au dimanche, heure de Paris. Porteurs scannés&nbsp;: au moins un scan dans la semaine, sur les
+            porteurs activés à sa fin. Répondus&nbsp;: premiers messages de la semaine auxquels le porteur a répondu, à ce jour.
           </p>
 
           <h3 className="font-ui text-sm font-bold tracking-[0.2em] uppercase pt-4">Notifications</h3>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <Stat label="Porteurs prévenus" value={pct(notif.wearers.notified, stats.wearers)}
               detail={`${notif.wearers.notified} sur ${plural(stats.wearers, 'porteur')} · ${notif.wearers.apple} par Apple, ${notif.wearers.google} par Google`} />
-            <Stat label="iPhone : app installée" value={phones ? pct(phones.iphone.installed, phones.iphone.total) : '—'}
+            <Stat label="iPhone&nbsp;: app installée" value={phones ? pct(phones.iphone.installed, phones.iphone.total) : '—'}
               detail={!phones ? PHONES_MISSING : phones.iphone.total === 0
                 ? 'aucun porteur sur iPhone pour l’instant'
                 : `${phones.iphone.installed} sur ${plural(phones.iphone.total, 'porteur')} sur iPhone · ${phones.iphone.notified} prévenu${phones.iphone.notified > 1 ? 's' : ''}`} />
-            <Stat label="Android : prévenus" value={phones ? pct(phones.android.notified, phones.android.total) : '—'}
+            <Stat label="Android&nbsp;: prévenus" value={phones ? pct(phones.android.notified, phones.android.total) : '—'}
               detail={!phones ? PHONES_MISSING : phones.android.total === 0
                 ? 'aucun porteur sur Android pour l’instant'
                 : `${phones.android.notified} sur ${plural(phones.android.total, 'porteur')} sur Android`} />
@@ -378,9 +378,9 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
               detail={`${notif.followed} sur ${plural(stats.funnel.messages, 'conversation')}, ces ${STATS_WINDOW_DAYS} jours`} />
           </div>
           <p className="font-ui text-xs text-brand-gray/55 leading-relaxed">
-            Prévenu : au moins un appareil abonné aux notifications. Téléphone relevé à chaque ouverture de « Mon espace »
-            depuis un téléphone ; app installée : ouverte au moins une fois depuis l&apos;écran d&apos;accueil, seule façon
-            d&apos;être prévenu sur iPhone. Service lu dans l&apos;abonnement : Apple (iPhone, Mac), Google (Chrome, Android),
+            Prévenu&nbsp;: au moins un appareil abonné aux notifications. Téléphone relevé à chaque ouverture de «&nbsp;Mon espace&nbsp;»
+            depuis un téléphone&nbsp;; app installée&nbsp;: ouverte au moins une fois depuis l’écran d’accueil, seule façon
+            d’être prévenu sur iPhone. Service lu dans l’abonnement&nbsp;: Apple (iPhone, Mac), Google (Chrome, Android),
             Mozilla (Firefox).
           </p>
         </section>
@@ -388,8 +388,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         <section id="suivi" className="flex flex-col gap-3 scroll-mt-8">
           <h2 className="font-display text-2xl font-light">Suivi des porteurs</h2>
           <p className="font-ui text-xs text-brand-gray/55 leading-relaxed">
-            Activés ces {FOLLOW_UP_DAYS} derniers jours, les plus récents d&apos;abord ({FOLLOW_UP_MAX} au plus). Chiffres
-            seulement, jamais le contenu des messages. Premium offert aux testeurs : {PREMIUM_GIFT_DAYS / 7} semaines,
+            Activés ces {FOLLOW_UP_DAYS} derniers jours, les plus récents d’abord ({FOLLOW_UP_MAX} au plus). Chiffres
+            seulement, jamais le contenu des messages. Premium offert aux testeurs&nbsp;: {PREMIUM_GIFT_DAYS / 7} semaines,
             puis retour au gratuit, seul (tâche quotidienne de 4 h UTC).
           </p>
           {stats.followUp.length === 0
@@ -400,10 +400,10 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         <section id="avis" className="flex flex-col gap-3 scroll-mt-8">
           <h2 className="font-display text-2xl font-light">Avis</h2>
           <p className="font-ui text-sm text-brand-gray/70 leading-relaxed">
-            Notes de fin de conversation, ces {STATS_WINDOW_DAYS} jours : {plural(feedback.ratings.positive, 'positive')},
+            Notes de fin de conversation, ces {STATS_WINDOW_DAYS} jours&nbsp;: {plural(feedback.ratings.positive, 'positive')},
             {' '}{plural(feedback.ratings.neutral, 'neutre')}, {plural(feedback.ratings.negative, 'négative')}.
           </p>
-          <Section title={`Écrits depuis « Votre avis », les ${NOTES_SHOWN} derniers`} count={feedback.notes.length} empty="Aucun avis pour l’instant.">
+          <Section title={`Écrits depuis «\u00a0Votre avis\u00a0», les ${NOTES_SHOWN} derniers`} count={feedback.notes.length} empty="Aucun avis pour l’instant.">
             {feedback.notes.map((n) => (
               <Card key={n.id}>
                 <Line label="De">
@@ -431,7 +431,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                   <Link href={`/conversation/${r.messageId}`} className="underline underline-offset-4">lire</Link>
                 </Line>
               )}
-              <Line label="Motif">« {r.reason} »</Line>
+              <Line label="Motif">«&nbsp;{r.reason}&nbsp;»</Line>
               <Line label="Auteur">{r.contact ?? 'contact non fourni'}</Line>
               {r.member && (
                 <div className="flex flex-wrap gap-2">
@@ -457,7 +457,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
               <Line label="Signalé par">
                 <MemberLink member={r.member} /> · {when(r.createdAt)}
               </Line>
-              <Line label="Message (masqué pour le porteur)">« {r.content ?? 'supprimé'} »</Line>
+              <Line label="Message (masqué pour le porteur)">«&nbsp;{r.content ?? 'supprimé'}&nbsp;»</Line>
               <Line label="Appareil">
                 {r.senderToken
                   ? <>{r.senderToken.slice(0, 8)}… · signalé par {r.reporters} porteur{r.reporters > 1 ? 's' : ''}{r.banned ? ' · banni' : ''}</>
@@ -498,16 +498,16 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
 
         <Section title="Payées, pas encore envoyées à l’impression" count={orders.unprinted.length}>
           <p className="font-ui text-xs text-brand-gray/55 leading-relaxed">
-            L&apos;envoi à Printful part au paiement ; une tâche quotidienne le retente à 5 h (UTC). Au-delà d&apos;un
+            L’envoi à Printful part au paiement&nbsp;; une tâche quotidienne le retente à 5 h (UTC). Au-delà d’un
             jour, vérifier dans Printful et dans Sentry. En paiement de test, Printful garde les commandes en
-            brouillon : rien n&apos;est imprimé.
+            brouillon&nbsp;: rien n’est imprimé.
           </p>
           {orders.unprinted.map((o) => <OrderCard key={o.id} order={o} />)}
         </Section>
 
         <Section title={`Codes non utilisés depuis ${NOT_ACTIVATED_AFTER_DAYS} jours`} count={orders.notActivated.length}>
           <p className="font-ui text-xs text-brand-gray/55 leading-relaxed">
-            Les relances automatiques sont déjà parties (2e et 7e jour). Renvoyer le code, ou écrire à l&apos;acheteur.
+            Les relances automatiques sont déjà parties (2e et 7e jour). Renvoyer le code, ou écrire à l’acheteur.
           </p>
           {orders.notActivated.map((o) => <OrderCard key={o.id} order={o} />)}
         </Section>
@@ -547,7 +547,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
             {q.decisions.map((d, i) => (
               <li key={i} className="font-ui text-xs text-brand-gray/70 leading-relaxed break-words">
                 {when(d.createdAt)} · {DECISION_LABELS[d.action] ?? d.action}
-                {typeof d.metadata.motif === 'string' && <> · « {d.metadata.motif} »</>}
+                {typeof d.metadata.motif === 'string' && <> · «&nbsp;{d.metadata.motif}&nbsp;»</>}
                 {typeof d.metadata.decision === 'string' && <> · {d.metadata.decision}</>}
                 {typeof d.metadata.by === 'string' && <span className="text-brand-gray/55"> · {d.metadata.by}</span>}
               </li>
@@ -558,8 +558,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
         <section id="configuration" className="flex flex-col gap-3 scroll-mt-8">
           <h2 className="font-display text-2xl font-light">Configuration</h2>
           <p className="font-ui text-xs text-brand-gray/55 leading-relaxed">
-            Ce que l&apos;app voit de sa configuration, sans jamais afficher un secret. Le reste (emails de Supabase,
-            DNS, Stripe, Printful) : docs/MISE_EN_PRODUCTION.md, « Chemin vers J0 ».
+            Ce que l’app voit de sa configuration, sans jamais afficher un secret. Le reste (emails de Supabase,
+            DNS, Stripe, Printful)&nbsp;: docs/MISE_EN_PRODUCTION.md, «&nbsp;Chemin vers J0&nbsp;».
           </p>
           {setup.map((g) => (
             <div key={g.title} className="flex flex-col gap-2">
@@ -568,7 +568,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
                 {g.checks.map((c) => (
                   <li key={c.label} className="font-ui text-sm text-brand-gray/80 leading-relaxed break-words">
                     <span className={c.ok ? 'text-green-400/85' : 'text-[#C5A059]/90'}>{c.ok ? 'OK' : 'À régler'}</span>
-                    {' '}· {c.label} : {c.detail}
+                    {' '}· {c.label}&nbsp;: {c.detail}
                   </li>
                 ))}
               </ul>

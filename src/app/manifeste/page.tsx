@@ -15,7 +15,7 @@ type ManifestoBlock = {
 export const metadata = {
   // Le gabarit du layout ajoute « — In Real Society ».
   title: 'Manifeste',
-  description: 'Zéro algorithme. Une seule promesse : chaque scan que vous recevrez sera une véritable intersection du destin.',
+  description: 'Zéro algorithme. Une seule promesse\u00a0: chaque scan que vous recevrez sera une véritable intersection du destin.',
   // Image du site (app/opengraph-image). L'ancienne pointait vers
   // /images/og-image.jpg, qui n'existe pas.
   openGraph: {
@@ -131,7 +131,7 @@ export default function ManifestePage() {
           <div className="flex flex-col items-center gap-6 pt-8 text-center">
             <div className="w-px h-12 bg-gradient-to-b from-transparent via-brand-white/20 to-transparent" />
             <p className="font-display text-lg md:text-xl font-light italic text-brand-gray/60">
-              &quot;Derrière chaque scan, il y a quelqu&apos;un<br />qui vous a vraiment regardé.&quot;
+              «&nbsp;Derrière chaque scan, il y a quelqu’un<br />qui vous a vraiment regardé.&nbsp;»
             </p>
             <div className="flex flex-col gap-3 w-full max-w-xs mt-4">
               <Link
@@ -144,7 +144,7 @@ export default function ManifestePage() {
                 href="/register"
                 className="w-full py-3 border border-brand-gray/25 hover:border-brand-white/60 font-ui text-xs tracking-[0.2em] uppercase text-brand-gray/60 hover:text-brand-white rounded-[1px] transition-colors block text-center"
               >
-                J&apos;ai déjà un code · M&apos;inscrire
+                J’ai déjà un code · M’inscrire
               </Link>
               <Link
                 href="/cgv"
@@ -156,7 +156,7 @@ export default function ManifestePage() {
                 href="/"
                 className="font-ui text-xs text-brand-gray/50 tracking-[0.1em] underline underline-offset-4 hover:text-brand-white/80 transition-colors text-center"
               >
-                &larr; retour &agrave; l&apos;accueil
+                &larr; retour &agrave; l’accueil
               </Link>
             </div>
           </div>

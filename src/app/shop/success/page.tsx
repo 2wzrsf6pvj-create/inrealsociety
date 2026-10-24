@@ -93,7 +93,7 @@ function SuccessContent() {
     return (
       <div className="flex flex-col items-center gap-6 animate-pulse" role="status" aria-live="polite">
         <div className="w-14 h-14 rounded-full border border-brand-gray/20" />
-        <p className="font-ui text-sm text-brand-gray/55 tracking-[0.2em] uppercase">Confirmation en cours...</p>
+        <p className="font-ui text-sm text-brand-gray/55 tracking-[0.2em] uppercase">Confirmation en cours…</p>
       </div>
     );
   }
@@ -121,8 +121,8 @@ function SuccessContent() {
         <p className="font-ui text-sm font-light text-brand-gray/50 leading-relaxed">
           Votre t-shirt est en préparation.<br />
           {code
-            ? 'Votre code d\'activation est prêt — créez votre profil maintenant.'
-            : 'Votre code d\'activation vous sera envoyé par email dans quelques minutes.'
+            ? 'Votre code d’activation est prêt — créez votre profil maintenant.'
+            : 'Votre code d’activation vous sera envoyé par email dans quelques minutes.'
           }
         </p>
       </div>
@@ -137,7 +137,7 @@ function SuccessContent() {
 
       {code && (
         <div className="w-full border border-brand-white/15 p-5 flex flex-col items-center gap-3">
-          <p className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Votre code d&apos;activation</p>
+          <p className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Votre code d’activation</p>
           <p className="font-mono text-2xl font-bold tracking-[0.3em] text-brand-white select-all">{code}</p>
           <button
             type="button"

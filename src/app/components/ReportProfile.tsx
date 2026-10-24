@@ -49,7 +49,7 @@ export default function ReportProfile({ memberId, messageId }: {
   if (sent) {
     return (
       <p role="status" className="font-ui text-xs text-brand-gray/60 text-center leading-relaxed py-2">
-        Merci. Votre signalement a été transmis à l&apos;équipe.
+        Merci. Votre signalement a été transmis à l’équipe.
         {receiptSent && <> Un accusé de réception vous a été envoyé par email.</>}
       </p>
     );
@@ -71,15 +71,15 @@ export default function ReportProfile({ memberId, messageId }: {
         {label}
       </label>
       <p className="font-ui text-xs text-brand-gray/60 leading-relaxed">
-        Une personne est en danger ? Appelez le 17 ou le 112.
+        Une personne est en danger&nbsp;? Appelez le 17 ou le 112.
       </p>
       <textarea id="report-reason" rows={3} maxLength={1000} value={reason}
         onChange={(e) => setReason(e.target.value)}
-        placeholder="Que se passe-t-il ?"
+        placeholder="Que se passe-t-il&nbsp;?"
         className="w-full bg-transparent border border-brand-gray/20 focus:border-brand-white/50 text-brand-white font-ui font-light text-base p-3 outline-none transition-colors placeholder:text-brand-gray/55 rounded-[2px] resize-none"
       />
       <p id="report-contact-hint" className="font-ui text-xs text-brand-gray/60 leading-relaxed">
-        Facultatif : votre email, pour recevoir un accusé de réception puis la décision de l&apos;équipe,
+        Facultatif&nbsp;: votre email, pour recevoir un accusé de réception puis la décision de l’équipe,
         ou votre @instagram.
       </p>
       <input type="text" inputMode="email" autoCapitalize="none" autoCorrect="off" maxLength={200} value={contact}
@@ -98,14 +98,14 @@ export default function ReportProfile({ memberId, messageId }: {
           className="mt-0.5 h-4 w-4 shrink-0 accent-[#C5A059] cursor-pointer"
         />
         <span className="font-ui text-xs text-brand-gray/60 leading-relaxed">
-          Je fais ce signalement de bonne foi : à ma connaissance, ce que j&apos;indique est exact et complet.
+          Je fais ce signalement de bonne foi&nbsp;: à ma connaissance, ce que j’indique est exact et complet.
         </span>
       </label>
       {error && <p role="alert" className="font-ui text-xs text-red-400 leading-relaxed">{error}</p>}
       <button type="submit" disabled={sending}
         className="w-full py-3 border border-brand-white/30 font-ui text-xs tracking-[0.2em] uppercase hover:border-brand-white/60 transition-colors rounded-[1px] disabled:opacity-40"
         style={{ minHeight: '44px' }}>
-        {sending ? 'Envoi...' : 'Envoyer le signalement'}
+        {sending ? 'Envoi…' : 'Envoyer le signalement'}
       </button>
     </form>
   );

@@ -24,7 +24,7 @@ export default function ShopError({ error, reset }: { error: Error & { digest?: 
           </button>
           <Link href="/" className="font-ui text-xs text-brand-gray/55 tracking-[0.15em] uppercase underline underline-offset-4 py-2"
             style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}>
-            &larr; retour &agrave; l&apos;accueil
+            &larr; retour &agrave; l’accueil
           </Link>
         </div>
       </div>

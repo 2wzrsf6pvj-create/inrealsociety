@@ -23,7 +23,7 @@ export default function LoginPage() {
   // Un lien de confirmation ouvert dans un autre navigateur que celui de
   // l'inscription échoue ici alors que l'adresse est bien confirmée.
   const urlErrorMsg = urlError === 'auth_failed'
-    ? 'Ce lien n’a pas pu être ouvert ici. Si vous veniez de confirmer votre adresse, c’est sans doute fait : connectez-vous. Sinon, demandez un nouveau lien.'
+    ? 'Ce lien n’a pas pu être ouvert ici. Si vous veniez de confirmer votre adresse, c’est sans doute fait\u00a0: connectez-vous. Sinon, demandez un nouveau lien.'
     : urlError === 'missing_code'
     ? 'Lien de connexion incomplet. Réessayez.'
     : '';
@@ -119,7 +119,7 @@ export default function LoginPage() {
                 href="/auth/forgot-password"
                 className="font-ui text-xs text-brand-gray/55 tracking-[0.1em] hover:text-brand-white/80 transition-colors"
               >
-                Oublié ?
+                Oublié&nbsp;?
               </Link>
             </div>
             <input
@@ -143,7 +143,7 @@ export default function LoginPage() {
             className="animate-shimmer w-full py-4 mt-2 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 disabled:opacity-50"
             style={{ minHeight: '44px' }}
           >
-            {loading ? 'Connexion...' : 'Se connecter'}
+            {loading ? 'Connexion…' : 'Se connecter'}
           </button>
         </form>
 
@@ -152,7 +152,7 @@ export default function LoginPage() {
             href="/register"
             className="font-ui text-sm text-brand-gray/50 tracking-[0.1em] hover:text-brand-white transition-colors"
           >
-            Pas encore membre ? Créer un compte
+            Pas encore membre&nbsp;? Créer un compte
           </Link>
           <Link
             href="/manifeste"
@@ -164,7 +164,7 @@ export default function LoginPage() {
             href="/"
             className="font-ui text-xs text-brand-gray/50 tracking-[0.1em] underline underline-offset-4 hover:text-brand-white/80 transition-colors"
           >
-            &larr; retour &agrave; l&apos;accueil
+            &larr; retour &agrave; l’accueil
           </Link>
         </div>
 

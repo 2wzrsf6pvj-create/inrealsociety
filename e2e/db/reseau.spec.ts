@@ -30,7 +30,7 @@ async function passant(browser: Browser) {
 const alertWith = (page: Page, text: string) => page.getByRole('alert').filter({ hasText: text });
 
 /** Bulle d'un message dans la conversation, entre guillemets. */
-const bubble = (page: Page, text: string) => page.getByText(`“${text}”`);
+const bubble = (page: Page, text: string) => page.getByText(`«\u00a0${text}\u00a0»`);
 
 /**
  * La prochaine requête vers `url` arrive au serveur, qui la traite ; sa réponse

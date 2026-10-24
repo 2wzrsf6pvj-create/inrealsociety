@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
   }
   const link = signedLink(req);
   if (!link) {
-    return actionPage('Lien invalide', "Ce lien n'est pas valide.");
+    return actionPage('Lien invalide', "Ce lien n’est pas valide.");
   }
   // Reconstruit depuis les seules valeurs vérifiées : jamais la query brute,
   // qui peut porter d'autres paramètres, dans le HTML.
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
   const form = `<form method="POST" action="${q}"><button type="submit">Ne plus les recevoir</button></form>`;
   return actionPage(
     'Emails de scan',
-    "Vous ne recevrez plus d'email quand quelqu'un scanne votre profil. Les scans restent dans votre tableau de bord, et vous pourrez réactiver ces emails dans vos réglages.",
+    "Vous ne recevrez plus d’email quand quelqu’un scanne votre profil. Les scans restent dans votre tableau de bord, et vous pourrez réactiver ces emails dans vos réglages.",
     form,
   );
 }
@@ -70,5 +70,5 @@ export async function POST(req: NextRequest) {
   }
   // Page lisible pour le bouton de confirmation ; le client mail du one-click
   // ne regarde que le statut 200.
-  return actionPage('C’est noté', "Vous ne recevrez plus d'email à chaque scan. Pour les réactiver : réglages de votre tableau de bord.");
+  return actionPage('C’est noté', "Vous ne recevrez plus d’email à chaque scan. Pour les réactiver\u00a0: réglages de votre tableau de bord.");
 }

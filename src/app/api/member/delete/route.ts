@@ -67,7 +67,7 @@ export async function DELETE(req: NextRequest) {
       } catch (err) {
         console.error('[member/delete] Résiliation Stripe impossible, suppression annulée:', err);
         return NextResponse.json(
-          { error: 'Impossible de résilier votre abonnement premium pour le moment : votre compte n\'a pas été supprimé. Réessayez dans quelques minutes.' },
+          { error: 'Impossible de résilier votre abonnement premium pour le moment\u00a0: votre compte n’a pas été supprimé. Réessayez dans quelques minutes.' },
           { status: 502 },
         );
       }
@@ -164,7 +164,7 @@ export async function DELETE(req: NextRequest) {
     if (piiFailed.length) {
       reportError('member/delete', new Error(`Effacement PII non-cascade échoué : ${piiFailed.map(r => r.error?.message).join(' ; ')}`));
       return NextResponse.json(
-        { error: 'La suppression n\'a pas pu être complétée entièrement. Réessayez.' },
+        { error: 'La suppression n’a pas pu être complétée entièrement. Réessayez.' },
         { status: 500 },
       );
     }

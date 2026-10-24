@@ -88,13 +88,13 @@ function CodeField({ code, codeOk, codeErr, checking, onChange }: {
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor="activation-code" className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Code d&apos;activation</label>
+      <label htmlFor="activation-code" className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Code d’activation</label>
       <div className="flex items-end gap-2">
         <input id="activation-code" type="text" placeholder="XXXXXXXX" value={code} maxLength={12}
           onChange={e => onChange(e.target.value)}
           className={`flex-1 bg-transparent border-b font-mono text-lg text-brand-white py-3 outline-none tracking-[0.3em] transition-colors ${codeErr ? 'border-red-500' : codeOk ? 'border-brand-white/60' : 'border-brand-gray/20 focus:border-brand-white/50'}`}
           style={{ minHeight: '44px' }} />
-        <span className="font-ui text-xs text-brand-gray/55 pb-3">{checking ? '...' : codeOk ? 'Valide' : ''}</span>
+        <span className="font-ui text-xs text-brand-gray/55 pb-3">{checking ? '…' : codeOk ? 'Valide' : ''}</span>
       </div>
       {codeErr && <p className="font-ui text-sm text-red-400" role="alert">{codeErr}</p>}
     </div>
@@ -127,7 +127,7 @@ function ResendCodeBlock() {
     return (
       <button type="button" onClick={() => setOpen(true)}
         className="font-ui text-xxs md:text-xs text-brand-gray/50 underline underline-offset-4 hover:text-brand-white/80 transition-colors -mt-2 self-start">
-        Code perdu ? Renvoyer l&apos;email.
+        Code perdu&nbsp;? Renvoyer l’email.
       </button>
     );
   }
@@ -147,7 +147,7 @@ function ResendCodeBlock() {
         style={{ minHeight: '36px' }} />
       <button type="button" onClick={handleResend} disabled={sending || !email.trim()}
         className="font-ui text-xxs tracking-[0.15em] uppercase text-brand-gray/50 hover:text-brand-white/80 transition-colors disabled:opacity-40 py-2">
-        {sending ? '...' : 'Envoyer'}
+        {sending ? '…' : 'Envoyer'}
       </button>
     </div>
   );
@@ -178,7 +178,7 @@ function StepAccount({ onNext, codeState }: {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!codeState.codeOk) { setError("Code d'activation invalide."); return; }
+    if (!codeState.codeOk) { setError("Code d’activation invalide."); return; }
     if (!email.trim())     { setError('Email requis.'); return; }
     if (password.length < 8) { setError('Mot de passe trop court (8 caractères min).'); return; }
     if (isOffline()) { setError(offlineMessage()); return; }
@@ -200,7 +200,7 @@ function StepAccount({ onNext, codeState }: {
     forgetCheckoutEmail();
     captureEvent('account_created', { needs_confirmation: !data.session });
     if (!data.session) {
-      setNotice('Compte créé. Ouvrez le lien reçu par email (pensez aux spams) : il vous ramène ici pour finaliser votre profil, sur ce téléphone ou un autre.');
+      setNotice('Compte créé. Ouvrez le lien reçu par email (pensez aux spams)\u00a0: il vous ramène ici pour finaliser votre profil, sur ce téléphone ou un autre.');
       return;
     }
     onNext();
@@ -211,14 +211,14 @@ function StepAccount({ onNext, codeState }: {
       <div className="text-center flex flex-col gap-2">
         <h1 className="font-display text-3xl font-light tracking-[0.04em]">Votre compte.</h1>
         <p className="font-ui text-sm font-light text-brand-gray/50 leading-relaxed">
-          Le code d&apos;activation vous a été envoyé par email après votre commande.
+          Le code d’activation vous a été envoyé par email après votre commande.
         </p>
       </div>
       <form onSubmit={handleSubmit} className="flex flex-col gap-5">
         <CodeField {...codeState} onChange={codeState.handleChange} />
         <ResendCodeBlock />
         <p className="font-ui text-xxs md:text-xs text-brand-gray/50 -mt-3">
-          Pas encore de t-shirt ? <a href="/shop" className="underline underline-offset-4 hover:text-brand-white/80 transition-colors">Commander</a>
+          Pas encore de t-shirt&nbsp;? <a href="/shop" className="underline underline-offset-4 hover:text-brand-white/80 transition-colors">Commander</a>
         </p>
         <div className="flex flex-col gap-1">
           <label htmlFor="register-email" className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Email</label>
@@ -229,7 +229,7 @@ function StepAccount({ onNext, codeState }: {
             style={{ minHeight: '44px' }} />
           {prefilled && (
             <p id="register-email-hint" className="font-ui text-xxs md:text-xs text-brand-gray/50">
-              L&apos;email de votre commande. Vous pouvez le modifier.
+              L’email de votre commande. Vous pouvez le modifier.
             </p>
           )}
         </div>
@@ -251,10 +251,10 @@ function StepAccount({ onNext, codeState }: {
         <button type="submit" disabled={loading || !codeState.codeOk}
           className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.3em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 disabled:opacity-30 disabled:cursor-not-allowed"
           style={{ minHeight: '44px' }}>
-          {loading ? 'Création du compte...' : 'Créer mon compte'}
+          {loading ? 'Création du compte…' : 'Créer mon compte'}
         </button>
         <a href="/auth/login" className="font-ui text-xs text-brand-gray/55 tracking-[0.15em] uppercase text-center hover:text-brand-white/80 transition-colors">
-          Déjà un compte ? Se connecter
+          Déjà un compte&nbsp;? Se connecter
         </a>
       </form>
     </div>
@@ -300,9 +300,9 @@ function StepProfile({ form, onChange, onSubmit, onBack, loading, error, isEditi
   };
 
   const handleSubmit = () => {
-    if (needsCode && !codeState.codeOk) { setLocalError("Code d'activation requis."); return; }
+    if (needsCode && !codeState.codeOk) { setLocalError("Code d’activation requis."); return; }
     if (!form.name.trim()) { setLocalError('Votre prénom est requis.'); return; }
-    if (!composePitch(form).trim()) { setLocalError('Rédigez votre pitch : remplissez au moins une des trois phrases.'); return; }
+    if (!composePitch(form).trim()) { setLocalError('Rédigez votre pitch\u00a0: remplissez au moins une des trois phrases.'); return; }
     // §8/9 — consentement requis à l'activation (pas en édition de profil).
     if (!isEditing && !form.isAdult) { setLocalError('In Real Society est réservé aux personnes de 18 ans ou plus.'); return; }
     if (!isEditing && !form.acceptedTerms) { setLocalError('Vous devez accepter les CGV pour activer votre vêtement.'); return; }
@@ -338,8 +338,8 @@ function StepProfile({ form, onChange, onSubmit, onBack, loading, error, isEditi
         <div className="flex flex-col gap-3">
           <p className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Votre pitch</p>
           {[
-            { key: 'who',     label: 'Qui êtes-vous ?',                ph: 'En une phrase, juste.' },
-            { key: 'intent',  label: 'Que cherchez-vous à provoquer ?', ph: 'Une conversation, une rencontre...' },
+            { key: 'who',     label: 'Qui êtes-vous\u00a0?',                ph: 'En une phrase, juste.' },
+            { key: 'intent',  label: 'Que cherchez-vous à provoquer\u00a0?', ph: 'Une conversation, une rencontre…' },
             { key: 'closing', label: 'Votre phrase de fin',             ph: 'Celle qui reste.' },
           ].map(f => (
             <div key={f.key} className="flex flex-col gap-1">
@@ -353,7 +353,7 @@ function StepProfile({ form, onChange, onSubmit, onBack, loading, error, isEditi
           {composePitch(form) && (
             <div className="p-3 border border-brand-gray/10 rounded-[1px]">
               <p className="font-ui text-xxs text-brand-gray/55 tracking-[0.15em] uppercase mb-1">Aperçu</p>
-              <p className="font-display text-base font-light italic text-brand-gray/50 leading-relaxed">&ldquo;{composePitch(form)}&rdquo;</p>
+              <p className="font-display text-base font-light italic text-brand-gray/50 leading-relaxed">«&nbsp;{composePitch(form)}&nbsp;»</p>
             </div>
           )}
         </div>
@@ -403,7 +403,7 @@ function StepProfile({ form, onChange, onSubmit, onBack, loading, error, isEditi
               className="mt-0.5 h-4 w-4 flex-shrink-0 accent-brand-white cursor-pointer"
               style={{ minWidth: '16px' }} />
             <span className="font-ui text-xxs text-brand-gray/65 leading-relaxed">
-              J&apos;ai 18 ans ou plus.
+              J’ai 18 ans ou plus.
             </span>
           </label>
         )}
@@ -416,9 +416,9 @@ function StepProfile({ form, onChange, onSubmit, onBack, loading, error, isEditi
               className="mt-0.5 h-4 w-4 flex-shrink-0 accent-brand-white cursor-pointer"
               style={{ minWidth: '16px' }} />
             <span className="font-ui text-xxs text-brand-gray/65 leading-relaxed">
-              J&apos;accepte les <Link href="/cgv" target="_blank" className="underline underline-offset-2 hover:text-brand-white">CGV/CGU</Link> et
-              je demande l&apos;activation immédiate du service de messagerie. Je reconnais
-              qu&apos;en commençant l&apos;exécution du service maintenant, je renonce à mon
+              J’accepte les <Link href="/cgv" target="_blank" className="underline underline-offset-2 hover:text-brand-white">CGV/CGU</Link> et
+              je demande l’activation immédiate du service de messagerie. Je reconnais
+              qu’en commençant l’exécution du service maintenant, je renonce à mon
               droit de rétractation <span className="text-brand-gray/80">sur ce service</span>
               (les conditions de retour du t-shirt sont précisées dans les CGV).
             </span>
@@ -430,7 +430,7 @@ function StepProfile({ form, onChange, onSubmit, onBack, loading, error, isEditi
         <button onClick={handleSubmit} disabled={loading}
           className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.3em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 disabled:opacity-50"
           style={{ minHeight: '44px' }}>
-          {loading ? 'Activation...' : isEditing ? 'Sauvegarder' : 'Activer mon vêtement'}
+          {loading ? 'Activation…' : isEditing ? 'Sauvegarder' : 'Activer mon vêtement'}
         </button>
         {!isLoggedIn && (
           <button onClick={onBack} className="font-ui text-xs text-brand-gray/55 tracking-[0.15em] uppercase underline underline-offset-4 py-2">
@@ -544,7 +544,7 @@ function RegisterContent() {
         if (!photoUrl) {
           // Le profil est créé/à jour ; seule la photo a échoué. On le dit au
           // lieu de rediriger en laissant croire que tout a réussi.
-          setError("Votre profil est enregistré, mais la photo n'a pas pu être ajoutée. Réessayez, ou ajoutez-la plus tard depuis votre profil.");
+          setError("Votre profil est enregistré, mais la photo n’a pas pu être ajoutée. Réessayez, ou ajoutez-la plus tard depuis votre profil.");
           setLoading(false);
           return;
         }

@@ -60,7 +60,7 @@ function PhotoNudge() {
       <span aria-hidden="true" className="font-ui text-base text-[#C5A059]/70 leading-none">◎</span>
       <div className="flex-1 flex flex-col gap-0.5">
         <span className="font-ui text-xs tracking-[0.12em] uppercase text-[#C5A059]/80">Ajoutez une photo</span>
-        <span className="font-ui text-xxs text-brand-gray/50">C&apos;est la première chose que voient les scanneurs.</span>
+        <span className="font-ui text-xxs text-brand-gray/50">C’est la première chose que voient les scanneurs.</span>
       </div>
       <span className="font-ui text-xxs text-[#C5A059]/85 tracking-[0.15em] uppercase flex-shrink-0">Ajouter →</span>
     </Link>
@@ -116,11 +116,11 @@ function NotificationsPrompt({ memberId }: { memberId: string }) {
   if (state === 'ios-install') {
     return (
       <div className="w-full border border-brand-gray/15 rounded-[2px] p-4 flex flex-col gap-2">
-        <p className="font-ui text-xs text-brand-white/80 tracking-[0.12em] uppercase">Être prévenu·e sur iPhone</p>
+        <p className="font-ui text-xs text-brand-white/80 tracking-[0.12em] uppercase">Les notifications sur iPhone</p>
         <p className="font-ui text-xs text-brand-gray/60 leading-relaxed">
-          Sur iPhone, les notifications passent par l&apos;app. Dans Safari, touchez{' '}
+          Sur iPhone, les notifications passent par l’app. Dans Safari, touchez{' '}
           <span className="text-brand-white/70">Partager</span> (sous ⋯ depuis iOS 26), puis{' '}
-          <span className="text-brand-white/70">Sur l&apos;écran d&apos;accueil</span>. Ouvrez ensuite
+          <span className="text-brand-white/70">Sur l’écran d’accueil</span>. Ouvrez ensuite
           In Real Society depuis son icône et activez les notifications.
         </p>
         <button type="button" onClick={hideIosHint}
@@ -137,11 +137,11 @@ function NotificationsPrompt({ memberId }: { memberId: string }) {
       <button onClick={enable} disabled={state === 'loading'}
         className="w-full py-3 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.1em] text-brand-gray/60 hover:border-brand-gray/35 hover:text-brand-white/80 transition-colors rounded-[2px] disabled:opacity-40"
         style={{ minHeight: '44px' }}>
-        {state === 'loading' ? 'Activation...' : 'Être prévenu·e quand on m’écrit'}
+        {state === 'loading' ? 'Activation…' : 'Recevoir une notification quand on m’écrit'}
       </button>
       {failed && state !== 'loading' && (
         <p role="status" className="font-ui text-xxs text-brand-gray/55">
-          L&apos;activation n&apos;a pas abouti. Réessayez dans un instant.
+          L’activation n’a pas abouti. Réessayez dans un instant.
         </p>
       )}
     </div>
@@ -171,7 +171,7 @@ function ActivationGuide({ member }: { member: Member }) {
     <div className="w-full bg-[#080808] border border-brand-gray/10 rounded-[2px] p-4 flex flex-col gap-4">
       <SectionDivider label="préparez votre arrivée" />
       <p className="font-ui text-xs text-brand-gray/50 leading-relaxed">
-        Le premier scan est le plus dur. Trois étapes pour y être prêt·e.
+        Le premier scan est le plus dur. Trois étapes pour s’y préparer.
       </p>
 
       {/* 1 — Profil complet */}
@@ -203,7 +203,7 @@ function ActivationGuide({ member }: { member: Member }) {
         <StepDot done={false} />
         <div className="flex flex-col gap-0.5">
           <span className="font-ui text-sm text-brand-white/70">Portez-le. Sortez.</span>
-          <span className="font-ui text-xxs text-brand-gray/55">C&apos;est là que tout se joue.</span>
+          <span className="font-ui text-xxs text-brand-gray/55">C’est là que tout se joue.</span>
         </div>
       </div>
     </div>
@@ -233,7 +233,7 @@ function StatsBlock({ member, weekScans, conversations }: { member: Member; week
       <div className="flex flex-col items-center gap-3 py-2 text-center">
         <div className="w-px h-6 bg-gradient-to-b from-transparent via-brand-white/20 to-transparent" />
         <p className="font-display text-lg md:text-xl font-light italic text-brand-gray/50 leading-relaxed">
-          &ldquo;{getWaitingPhrase(member.id)}&rdquo;
+          «&nbsp;{getWaitingPhrase(member.id)}&nbsp;»
         </p>
         <p className="font-ui text-xs text-brand-gray/55 tracking-[0.15em] uppercase">
           Membre depuis {days} jour{days > 1 ? 's' : ''}
@@ -283,7 +283,7 @@ function ScanChart({ data }: { data: { date: string; count: number }[] }) {
         <div className="flex-1 h-px bg-brand-gray/10" />
       </div>
       <div className="flex items-end gap-1.5 h-16 w-full" role="img"
-        aria-label={`Scans par jour : ${data.map(d => `${new Date(d.date).toLocaleDateString('fr-FR', { weekday: 'long' })} ${d.count}`).join(', ')}`}>
+        aria-label={`Scans par jour\u00a0: ${data.map(d => `${new Date(d.date).toLocaleDateString('fr-FR', { weekday: 'long' })} ${d.count}`).join(', ')}`}>
         {data.map(d => (
           <div key={d.date} className="flex-1 flex flex-col items-center gap-1">
             <div className="w-full relative" style={{ height: '48px' }}>
@@ -367,7 +367,7 @@ export default function HomeSection({ member, recentScans, scansByDay = [], week
           </div>
         </div>
         <p className="font-display text-lg font-light italic text-brand-gray/50 leading-relaxed">
-          &ldquo;{member.pitch}&rdquo;
+          «&nbsp;{member.pitch}&nbsp;»
         </p>
       </div>
 

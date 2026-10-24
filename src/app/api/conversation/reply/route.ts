@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
       // ne peut pas vérifier, on tolère.
       if (rootMsg.sender_token && token !== rootMsg.sender_token) {
         return NextResponse.json(
-          { error: "Répondez depuis l'appareil d'origine de la conversation.", code: 'wrong_device' },
+          { error: "Répondez depuis l’appareil d’origine de la conversation.", code: 'wrong_device' },
           { status: 403 },
         );
       }

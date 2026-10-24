@@ -49,7 +49,7 @@ export default function TaglinePicker({ value, onChange }: {
           </p>
         </div>
         {/* Langue IMPRIMÉE (l'anglais couvre voyage/étranger + le style streetwear). */}
-        <div className="flex gap-1 shrink-0" role="group" aria-label="Langue de l'accroche imprimée">
+        <div className="flex gap-1 shrink-0" role="group" aria-label="Langue de l’accroche imprimée">
           {TAGLINE_LANGS.map((l) => (
             <button
               key={l}
@@ -89,7 +89,7 @@ export default function TaglinePicker({ value, onChange }: {
 
       {/* Niveau 2 — LE CHOIX : « QR seul » puis les accroches du registre ouvert */}
       <div className="flex flex-col gap-1.5">
-        <p className="font-ui text-xxs text-brand-gray/55 tracking-[0.15em] uppercase">Choisis ta phrase</p>
+        <p className="font-ui text-xxs text-brand-gray/55 tracking-[0.15em] uppercase">Choisissez votre phrase</p>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
