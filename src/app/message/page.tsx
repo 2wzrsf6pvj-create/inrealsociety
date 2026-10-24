@@ -10,6 +10,8 @@ import { haptic } from '@/lib/haptics';
 import SunToggle from '@/app/components/ui/SunToggle';
 import ScreenTitle from '@/app/components/ui/ScreenTitle';
 import { BANNED_DEVICE_NOTICE, MODERATION_REFUSAL_NOTICE } from '@/lib/constants';
+import { isOffline, offlineMessage, requestErrorMessage, SEND_TIMEOUT_MS, timeoutSignal } from '@/lib/request';
+import { useDraft } from '@/lib/use-draft';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -57,7 +59,8 @@ function MessageForm() {
   // (pas de message à soi-même, pas de fausse donnée).
   const isPreview = searchParams.get('preview') === '1';
 
-  const [message, setMessage]     = useState('');
+  // Gardé si la page se recharge (réseau qui flanche), effacé à l'envoi.
+  const [message, setMessage, clearDraft] = useDraft(`draft:message:${memberId}`);
   const [contact, setContact]     = useState('');
   // Prénom optionnel — humanise le signal côté porteur. Pré-rempli depuis le
   // nom déjà connu (saisi sur /unlock ou lors d'un précédent message), persisté
@@ -106,6 +109,9 @@ function MessageForm() {
       contactRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
+    // Le texte tapé reste dans le champ (et dans le brouillon) : on le dit.
+    const kept = isQuickReply ? undefined : 'Votre message est gardé.';
+    if (isOffline()) { setError(offlineMessage(kept)); return; }
     setSending(true);
     setError('');
     haptic('light'); // accusé de réception tactile du tap d'envoi
@@ -113,6 +119,9 @@ function MessageForm() {
       const res = await fetch('/api/message', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        // Réseau qui stagne : abandon, puis un nouvel essai sans risque de doublon
+        // (appareil reconnu dès l'ouverture du formulaire, cf. proxy).
+        signal: timeoutSignal(SEND_TIMEOUT_MS),
         body: JSON.stringify({
           memberId,
           content:       content.trim(),
@@ -158,13 +167,19 @@ function MessageForm() {
           // aval poussent le chemin tel quel.
           const prior = localStorage.getItem(`conversation_${memberId}`);
           if (typeof data.conversationId === 'string' && UUID_RE.test(data.conversationId)) {
-            setConversationUrl(`/conversation/${data.conversationId}`);
+            const convPath = `/conversation/${data.conversationId}`;
+            setConversationUrl(convPath);
+            // Réponse au premier envoi perdue (réseau) : l'appareil retient sa
+            // conversation, comme après un envoi réussi (lien sur le profil).
+            localStorage.setItem(`conversation_${memberId}`, `${window.location.origin}${convPath}`);
           } else if (prior) {
             try {
               const u = new URL(prior, window.location.origin);
               if (u.origin === window.location.origin) setConversationUrl(u.pathname + u.search);
             } catch { /* valeur corrompue → ignorée */ }
           }
+          // Ce formulaire n'enverra plus rien à ce porteur : brouillon effacé.
+          clearDraft();
           setAlreadyMessaged(true); setSending(false); return;
         }
         throw new Error(errorMsg);
@@ -193,10 +208,11 @@ function MessageForm() {
       localStorage.setItem(`conversation_${memberId}`, `${window.location.origin}${convPath}`);
       setVerifyEmailSent(data.contactVerification === 'sent');
       setConversationUrl(convPath);
+      clearDraft();
       haptic('success'); // signal envoyé — confirmation tactile du moment clé
 
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Une erreur est survenue. Réessayez.');
+      setError(requestErrorMessage(err, 'Une erreur est survenue. Réessayez.', kept));
     } finally {
       setSending(false);
     }

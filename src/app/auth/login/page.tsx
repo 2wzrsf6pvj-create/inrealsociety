@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase-browser';
 import { safeInternalPath } from '@/lib/safe-redirect';
 import { LOGIN_SUCCESS_KEY } from '@/lib/constants';
+import { authFailureMessage, isOffline, offlineMessage } from '@/lib/request';
 import { openFullPage } from '@/lib/full-page';
 
 export default function LoginPage() {
@@ -32,6 +33,7 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isOffline()) { setError(offlineMessage()); return; }
     setError('');
     setLoading(true);
 
@@ -44,7 +46,8 @@ export default function LoginPage() {
     setLoading(false);
 
     if (authError) {
-      setError('Email ou mot de passe incorrect.');
+      // Une coupure réseau n'est pas un mauvais mot de passe.
+      setError(authFailureMessage(authError) ?? 'Email ou mot de passe incorrect.');
       return;
     }
 

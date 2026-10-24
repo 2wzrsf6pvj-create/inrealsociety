@@ -12,7 +12,12 @@ Les tests de `e2e/db/` parcourent l'app dans un vrai navigateur, devant une
   soleil), du porteur et de /admin, sans aucun écart WCAG 2.2 A/AA ni aux
   bonnes pratiques ; puis le clavier et les lecteurs d'écran : fenêtres
   (présentation de « Mon espace », guide des tailles), focus après l'envoi
-  d'un message, contour de focus en plein soleil.
+  d'un message, contour de focus en plein soleil ;
+- `reseau.spec.ts` : réseau faible. Hors ligne, le message est gardé et part
+  au retour du réseau ; la réponse à un envoi se perd alors que le serveur l'a
+  reçu : le nouvel essai ne crée pas de doublon, ni dans la conversation ; le
+  texte tapé survit au rechargement ; une coupure à la connexion n'est pas
+  « Email ou mot de passe incorrect ».
 
 Les tests de fumée de `e2e/` (`npm run test:e2e`), eux, tournent sans base et ne
 voient que les pages publiques.
@@ -24,6 +29,7 @@ voient que les pages publiques.
 | Chromium (Playwright), un contexte par personne : le passant n'est jamais connecté, son appareil se reconnaît à son cookie | Le service de push du navigateur (absent du Chromium de test), quand un test en a besoin |
 | Postgres + PostgREST, migrations du dépôt (`integration/setup-db.sh`) | Les limites de débit (Upstash) : elles laissent tout passer |
 | Les routes, la modération sans clé OpenAI (liste de mots), les décisions de /admin | Les emails (Resend) : gardés par la passerelle, jamais envoyés ; les tests les lisent (`emailsTo`) |
+| Le serveur qui reçoit et enregistre un envoi dont la réponse se perd | Le réseau du téléphone : coupé (`setOffline`), ou réponse interrompue en route (la requête part du test, le navigateur ne voit qu'une coupure) |
 
 `supabase-gateway.mjs` se fait passer pour Supabase devant la base :
 `/rest/v1` → PostgREST, `/auth/v1/user` → l'utilisateur du jeton, `/upstash` →

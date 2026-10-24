@@ -817,6 +817,9 @@ INSERT INTO audit_logs (action, metadata) VALUES ('device.unbanned', '{"senderTo
  *  ceux-là se réessaient. Un quota épuisé (daily_/monthly_quota_exceeded), un
  *  domaine non vérifié ou une adresse invalide, non. */
 export const SEND_ATTEMPTS = 3;
+/** Délai d'un essai : un Resend qui ne répond pas ne retient pas la fonction
+ *  indéfiniment. L'essai suivant reprend la même clé d'idempotence. */
+export const SEND_ATTEMPT_TIMEOUT_MS = 8_000;
 
 export interface EmailParams {
   to:       string;
@@ -883,6 +886,7 @@ async function postToResend(
           ...extraHeaders,
         },
         body,
+        signal: AbortSignal.timeout(SEND_ATTEMPT_TIMEOUT_MS),
       });
       if (res.ok) return { data: await res.json().catch(() => null) };
       const error = await res.json().catch(() => null) as { name?: string; message?: string } | null;

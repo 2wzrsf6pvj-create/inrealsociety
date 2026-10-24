@@ -1,6 +1,7 @@
 // src/lib/sender-token.ts
 // Jeton de device pseudonyme pour le scanneur anonyme. Posé en cookie httpOnly
-// au premier message, il sert UNIQUEMENT à la sécurité : permettre à un porteur
+// dès l'ouverture du formulaire de message (cf. proxy), sinon au premier
+// message. Il sert UNIQUEMENT à la sécurité : permettre à un porteur
 // de bloquer un scanneur au-delà d'une seule conversation (anti-harcèlement,
 // intérêt légitime art. 6.1.f RGPD). Jamais utilisé pour l'analytics.
 //

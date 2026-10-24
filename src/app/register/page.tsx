@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
 import ScreenTitle from '@/app/components/ui/ScreenTitle';
+import { authFailureMessage, isOffline, offlineMessage, requestErrorMessage, SEND_TIMEOUT_MS, timeoutSignal, UPLOAD_TIMEOUT_MS } from '@/lib/request';
 import { captureEvent, identifyMember } from '@/lib/posthog-client';
 import { recallCheckoutEmail, forgetCheckoutEmail } from '@/lib/checkout-email';
 
@@ -180,6 +181,7 @@ function StepAccount({ onNext, codeState }: {
     if (!codeState.codeOk) { setError("Code d'activation invalide."); return; }
     if (!email.trim())     { setError('Email requis.'); return; }
     if (password.length < 8) { setError('Mot de passe trop court (8 caractères min).'); return; }
+    if (isOffline()) { setError(offlineMessage()); return; }
     setLoading(true); setError(''); setNotice('');
     const supabase = createClient();
     const { data, error: authError } = await supabase.auth.signUp({
@@ -189,7 +191,7 @@ function StepAccount({ onNext, codeState }: {
       options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent('/register?code=' + codeState.code)}` },
     });
     setLoading(false);
-    if (authError) { setError(friendlyAuthError(authError.code)); return; }
+    if (authError) { setError(authFailureMessage(authError) ?? friendlyAuthError(authError.code)); return; }
     forgetCheckoutEmail();
     captureEvent('account_created', { needs_confirmation: !data.session });
     if (!data.session) {
@@ -475,16 +477,23 @@ function RegisterContent() {
     });
   }, []);
 
+  // `null` si la photo n'est pas partie (refus, réseau, délai dépassé) : le
+  // profil, lui, est enregistré, et on le dit (cf. handleSubmit).
   const uploadPhoto = async (file: File): Promise<string | null> => {
     const formData = new FormData();
     formData.append('file', file);
-    const res = await fetch('/api/member/avatar', { method: 'POST', body: formData });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data.photoUrl ?? null;
+    try {
+      const res = await fetch('/api/member/avatar', { method: 'POST', body: formData, signal: timeoutSignal(UPLOAD_TIMEOUT_MS) });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data.photoUrl ?? null;
+    } catch {
+      return null;
+    }
   };
 
   const handleSubmit = async () => {
+    if (isOffline()) { setError(offlineMessage('Vos réponses sont gardées.')); return; }
     setLoading(true); setError('');
     try {
       const pitch = composePitch(form);
@@ -495,10 +504,13 @@ function RegisterContent() {
           // instagram envoyé TOUJOURS (même ''), sinon vider le champ ne l'efface
           // jamais (undefined = omis = colonne intacte).
           body: JSON.stringify({ name: form.name.trim(), pitch: pitch.trim(), instagram: form.instagram.trim() }),
+          signal: timeoutSignal(SEND_TIMEOUT_MS),
         });
         if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Erreur de mise à jour.'); }
       } else {
-        const res  = await fetch('/api/member/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: form.name.trim(), pitch: pitch.trim(), instagram: form.instagram.trim() || undefined, activationCode: codeState.code, acceptedTerms: form.acceptedTerms, isAdult: form.isAdult }) });
+        // Un nouvel essai après une réponse perdue est sans risque : le serveur
+        // reconnaît le profil déjà créé (alreadyExists).
+        const res  = await fetch('/api/member/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: form.name.trim(), pitch: pitch.trim(), instagram: form.instagram.trim() || undefined, activationCode: codeState.code, acceptedTerms: form.acceptedTerms, isAdult: form.isAdult }), signal: timeoutSignal(SEND_TIMEOUT_MS) });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Erreur de création.');
         // Fin du funnel post-achat : profil créé → fulfillment déclenché. On lie
@@ -528,7 +540,7 @@ function RegisterContent() {
       if (isEditing) sessionStorage.setItem('profile_updated', '1');
       router.push('/dashboard');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Une erreur est survenue.');
+      setError(requestErrorMessage(err, 'Une erreur est survenue.', 'Vos réponses sont gardées.'));
     } finally { setLoading(false); }
   };
 

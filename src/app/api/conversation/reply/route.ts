@@ -17,6 +17,7 @@ import { getSenderToken } from '@/lib/sender-token';
 import { isBlocked, isDeviceBanned } from '@/lib/blocks';
 import { isContactVerified } from '@/lib/contact-verification';
 import { reportError } from '@/lib/report-error';
+import { waitUntil } from '@/lib/wait-until';
 
 const schema = z.object({
   messageId: z.string().uuid(),      // ID du message racine (le premier)
@@ -164,8 +165,10 @@ export async function POST(req: NextRequest) {
 
     if (insertErr) throw insertErr;
 
-    // Notifications attendues avant de répondre, pas en tâche de fond : une
-    // fonction serverless peut s'arrêter dès la réponse envoyée (cf. /api/report).
+    // Notifications parties après la réponse : l'auteur, souvent sur une 4G
+    // faible, n'attend ni Resend ni les services de push (sa réponse est déjà
+    // enregistrée). waitUntil garde la fonction serverless en vie jusqu'au bout
+    // des envois, sinon elle pourrait s'arrêter dès la réponse et les perdre.
     const notifications: Promise<unknown>[] = [];
 
     // Realtime — diffuse aux clients abonnés au canal du thread (scanner anon
@@ -233,7 +236,7 @@ export async function POST(req: NextRequest) {
       }).catch((err) => console.error('[conversation/reply] Échec push membre:', err)));
     }
 
-    await Promise.all(notifications);
+    waitUntil(Promise.allSettled(notifications));
     return NextResponse.json({ ok: true, moderated: false, replyId: newMsg?.id });
 
   } catch (err) {

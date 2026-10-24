@@ -187,5 +187,9 @@ En mode test Stripe (carte `4242 4242 4242 4242`) :
 - [ ] Signaler ce message : une alerte arrive à `ADMIN_ALERT_EMAIL`. Même chose
       avec « Signaler ce profil ».
 - [ ] Rembourser la commande dans Stripe : le profil est suspendu.
+- [ ] Réseau coupé, sur un téléphone : ouvrir la page message d'un profil,
+      taper un texte, passer en mode avion, appuyer sur « Envoyer » : la page
+      dit « Pas de réseau pour le moment… Votre message est gardé. » et le
+      texte reste. Réactiver le réseau, « Envoyer » : « Signal envoyé. »
 - [ ] Écouter le parcours du passant au lecteur d'écran (VoiceOver ou
       TalkBack), 10 minutes : [ESSAI_LECTEUR_ECRAN.md](ESSAI_LECTEUR_ECRAN.md).

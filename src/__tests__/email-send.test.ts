@@ -2,7 +2,8 @@
 // - un refus de Resend est noté avec sa raison ; avant, sendEmail renvoyait
 //   false sans rien dire, et cinq appelants attendaient une exception ;
 // - débit (429 rate_limit_exceeded) et panne (5xx) se réessaient, avec la même
-//   clé d'idempotence : jamais de doublon ; un quota épuisé, non ;
+//   clé d'idempotence : jamais de doublon ; un quota épuisé, non ; un essai sans
+//   réponse abandonne à son délai (réseau faible, 2026-10-24) ;
 // - les réponses vont à hello@ (Reply-To), l'expéditeur est un sous-domaine ;
 // - la newsletter part par lots (une requête pour 100 emails) ;
 // - les liens écrits par un passant ou un porteur sont masqués dans les emails.
@@ -18,7 +19,7 @@ import { CONTACT_EMAIL } from '@/lib/constants';
 const sentry = vi.hoisted(() => ({ captureMessage: vi.fn() }));
 vi.mock('@sentry/nextjs', () => sentry);
 
-type Call = { url: string; headers: Record<string, string>; body: unknown };
+type Call = { url: string; headers: Record<string, string>; body: unknown; signal?: AbortSignal | null };
 const calls: Call[] = [];
 let replies: Array<Response | Error> = [];
 
@@ -32,7 +33,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   vi.spyOn(console, 'error').mockImplementation(() => {});
   vi.stubGlobal('fetch', vi.fn(async (url: string, init: RequestInit) => {
-    calls.push({ url, headers: init.headers as Record<string, string>, body: JSON.parse(String(init.body)) });
+    calls.push({ url, headers: init.headers as Record<string, string>, body: JSON.parse(String(init.body)), signal: init.signal });
     const next = replies.shift() ?? json(200, { id: 'e_1' });
     if (next instanceof Error) throw next;
     return next;
@@ -70,6 +71,14 @@ describe('sendEmail', () => {
     replies = [json(429, { name: 'rate_limit_exceeded', message: 'Too many requests' }, { 'retry-after': '1' })];
     expect(await settle(sendEmail(EMAIL))).toBe(true);
     expect(calls).toHaveLength(2);
+    expect(calls[1].headers['Idempotency-Key']).toBe(calls[0].headers['Idempotency-Key']);
+  });
+
+  it('Resend qui ne répond pas : l’essai abandonne à son délai, le suivant reprend la même clé', async () => {
+    replies = [new DOMException('The operation was aborted due to timeout', 'TimeoutError')];
+    expect(await settle(sendEmail(EMAIL))).toBe(true);
+    expect(calls).toHaveLength(2);
+    expect(calls.every((c) => c.signal instanceof AbortSignal)).toBe(true);
     expect(calls[1].headers['Idempotency-Key']).toBe(calls[0].headers['Idempotency-Key']);
   });
 

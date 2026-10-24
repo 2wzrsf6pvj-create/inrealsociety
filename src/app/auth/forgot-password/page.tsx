@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase-browser';
+import { authFailureMessage } from '@/lib/request';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -36,7 +37,7 @@ export default function ForgotPasswordPage() {
     setLoading(false);
 
     if (authError) {
-      setError('Une erreur est survenue. Réessayez dans quelques instants.');
+      setError(authFailureMessage(authError) ?? 'Une erreur est survenue. Réessayez dans quelques instants.');
       return;
     }
 

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase-browser';
+import { authFailureMessage } from '@/lib/request';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -64,7 +65,8 @@ export default function ResetPasswordPage() {
     setLoading(false);
 
     if (authError) {
-      setError('Erreur lors de la réinitialisation. Recommencez depuis le début.');
+      // Une coupure réseau : réessayer suffit, inutile de redemander un lien.
+      setError(authFailureMessage(authError) ?? 'Erreur lors de la réinitialisation. Recommencez depuis le début.');
       return;
     }
 

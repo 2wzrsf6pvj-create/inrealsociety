@@ -20,6 +20,9 @@ vi.mock('@/lib/email-templates', () => ({
 vi.mock('@/lib/moderation', () => ({
   moderateContent: vi.fn().mockResolvedValue({ flagged: false, source: 'regex', categories: [] }),
 }));
+// Tâches confiées à waitUntil (envois après la réponse).
+const handedOver = vi.hoisted(() => [] as Promise<unknown>[]);
+vi.mock('@/lib/wait-until', () => ({ waitUntil: (p: Promise<unknown>) => { handedOver.push(p); } }));
 
 import { POST } from '@/app/api/message/route';
 import { supabaseAdmin } from '@/lib/supabase-admin';
@@ -216,12 +219,13 @@ describe('POST /api/message — contrat des codes d\'erreur', () => {
   });
 });
 
-// Notifications du porteur attendues avant la réponse : en serverless, un envoi
-// en tâche de fond peut se perdre quand la fonction s'arrête.
+// Notifications du porteur après la réponse : le passant, souvent sur une 4G
+// faible, n'attend pas Resend. waitUntil garde la fonction serverless en vie
+// jusqu'au bout de l'envoi, sinon il se perdrait quand elle s'arrête.
 describe('POST /api/message — notification du porteur', () => {
-  beforeEach(() => { vi.clearAllMocks(); countWindow.length = 0; inserted.length = 0; });
+  beforeEach(() => { vi.clearAllMocks(); countWindow.length = 0; inserted.length = 0; handedOver.length = 0; });
 
-  it('l’email au porteur est parti avant la réponse, et mène à la conversation', async () => {
+  it('répond sans attendre l’email au porteur, confié à waitUntil, qui mène à la conversation', async () => {
     wireSupabase({
       member: { id: UUID, name: 'Camille', email: 'camille@example.com', is_paused: false, plan: 'free' },
       firstScanAt: null,
@@ -233,6 +237,9 @@ describe('POST /api/message — notification du porteur', () => {
 
     const res = await POST(makeReq({ memberId: UUID, content: 'Belle audace.' }));
     expect(res.status).toBe(200);
+    expect(delivered).toBe(false);
+    expect(handedOver).toHaveLength(1);
+    await handedOver[0];
     expect(delivered).toBe(true);
     expect(emailNouveauMessage).toHaveBeenCalledWith(
       expect.objectContaining({ conversationUrl: expect.stringContaining('/conversation/msg-1') }));
@@ -249,10 +256,11 @@ describe('POST /api/message — plafond atteint : email au porteur', () => {
   });
   beforeEach(() => {
     vi.clearAllMocks();
+    handedOver.length = 0;
     (sendEmail as ReturnType<typeof vi.fn>).mockResolvedValue(true);
   });
 
-  it('premier refus de la semaine → refusé, et le porteur est prévenu', async () => {
+  it('premier refus de la semaine → refusé, et le porteur est prévenu (après la réponse)', async () => {
     capped();
     (supabaseAdmin.rpc as ReturnType<typeof vi.fn>).mockResolvedValue({ data: true, error: null });
     const res = await POST(makeReq({ memberId: UUID, content: 'salut' }));
@@ -262,6 +270,7 @@ describe('POST /api/message — plafond atteint : email au porteur', () => {
       maxConversations: 3, windowDays: 7, dashboardUrl: expect.stringContaining('/dashboard?tab=inbox'),
     }));
     expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({ to: 'camille@example.com' }));
+    expect(handedOver).toHaveLength(1);
   });
 
   it('déjà prévenu cette semaine → refusé, sans email', async () => {

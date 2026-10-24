@@ -1,6 +1,7 @@
-// POST /api/conversation/reply : les notifications (email, push, temps réel) sont
-// attendues avant la réponse. En serverless, un envoi en tâche de fond peut se
-// perdre quand la fonction s'arrête dès la réponse envoyée.
+// POST /api/conversation/reply : les notifications (email, push, temps réel)
+// partent après la réponse. L'auteur, souvent sur une 4G faible, n'attend ni
+// Resend ni les services de push ; waitUntil garde la fonction serverless en vie
+// jusqu'au bout des envois, sinon ils se perdraient quand elle s'arrête.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { NextRequest } from 'next/server';
@@ -30,6 +31,9 @@ vi.mock('@/lib/push-notify', () => ({
   notifyMemberSubscribers: vi.fn(),
 }));
 vi.mock('@/lib/realtime-broadcast', () => ({ broadcastThreadMessage: vi.fn().mockResolvedValue(undefined) }));
+// Tâches confiées à waitUntil (envois après la réponse).
+const handedOver = vi.hoisted(() => [] as Promise<unknown>[]);
+vi.mock('@/lib/wait-until', () => ({ waitUntil: (p: Promise<unknown>) => { handedOver.push(p); } }));
 
 import { POST } from '@/app/api/conversation/reply/route';
 import { supabaseAdmin } from '@/lib/supabase-admin';
@@ -64,10 +68,10 @@ function wire() {
 const delayed = (flag: { done: boolean }) => () =>
   new Promise((resolve) => setTimeout(() => { flag.done = true; resolve(true); }, 20));
 
-describe('POST /api/conversation/reply — notifications attendues', () => {
-  beforeEach(() => { vi.clearAllMocks(); wire(); });
+describe('POST /api/conversation/reply — notifications après la réponse', () => {
+  beforeEach(() => { vi.clearAllMocks(); handedOver.length = 0; wire(); });
 
-  it('le passant répond : email et push au porteur partis avant la réponse', async () => {
+  it('le passant répond : réponse immédiate, email et push au porteur confiés à waitUntil', async () => {
     const email = { done: false };
     const push  = { done: false };
     (sendEmail as ReturnType<typeof vi.fn>).mockImplementation(delayed(email));
@@ -77,6 +81,10 @@ describe('POST /api/conversation/reply — notifications attendues', () => {
     const res = await POST(req);
 
     expect(res.status).toBe(200);
+    expect(email.done).toBe(false);
+    expect(push.done).toBe(false);
+    expect(handedOver).toHaveLength(1);
+    await handedOver[0];
     expect(email.done).toBe(true);
     expect(push.done).toBe(true);
     expect(emailNouveauMessage).toHaveBeenCalledWith(
