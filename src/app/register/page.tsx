@@ -64,7 +64,7 @@ function useCodeValidation(initialCode: string) {
     if (initialCode) {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- le code de l'URL peut changer sans remonter la page
       setCode(initialCode);
-      if (initialCode.length >= 6) validate(initialCode);  // depuis l'URL : direct
+      if (initialCode.length >= 6) validate(initialCode);  // depuis l'URL ou le compte : direct
     }
   }, [initialCode]);
 
@@ -186,16 +186,21 @@ function StepAccount({ onNext, codeState }: {
     const supabase = createClient();
     const { data, error: authError } = await supabase.auth.signUp({
       email: email.trim(), password,
-      // Propage le code dans le redirect : sinon, après confirmation email,
-      // l'utilisateur revient sur /register sans code et doit le re-saisir.
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent('/register?code=' + codeState.code)}` },
+      options: {
+        // Le code est gardé sur le compte : /register le retrouve après la
+        // confirmation, même ouverte dans un autre navigateur (lien du modèle
+        // Supabase vers /auth/confirm, cf. supabaseConfirmSignup).
+        data: { activation_code: codeState.code },
+        // Lien par défaut de Supabase : le code suit dans l'adresse de retour.
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent('/register?code=' + codeState.code)}`,
+      },
     });
     setLoading(false);
     if (authError) { setError(authFailureMessage(authError) ?? friendlyAuthError(authError.code)); return; }
     forgetCheckoutEmail();
     captureEvent('account_created', { needs_confirmation: !data.session });
     if (!data.session) {
-      setNotice('Compte créé. Confirmez votre email (vérifiez vos spams), puis revenez ici pour finaliser votre profil.');
+      setNotice('Compte créé. Ouvrez le lien reçu par email (pensez aux spams) : il vous ramène ici pour finaliser votre profil, sur ce téléphone ou un autre.');
       return;
     }
     onNext();
@@ -450,11 +455,14 @@ function RegisterContent() {
   const [error,          setError]          = useState('');
   const [form, setForm] = useState<FormData>({ name: '', who: '', intent: '', closing: '', instagram: '', photo: null, acceptedTerms: false, isAdult: false });
 
-  const initialCode = searchParams.get('code')?.toUpperCase() || '';
-  const codeState   = useCodeValidation(initialCode);
+  const urlCode = searchParams.get('code')?.toUpperCase() || '';
+  // Confirmation ouverte dans un autre navigateur : le lien n'a pas le code, le
+  // compte l'a gardé depuis l'inscription (user_metadata, cf. StepAccount).
+  const [keptCode, setKeptCode] = useState('');
+  const codeState = useCodeValidation(urlCode || keptCode);
 
   // Funnel post-achat : ouverture de /register (avec ou sans code prérempli).
-  useEffect(() => { captureEvent('register_viewed', { has_code: !!initialCode }); }, [initialCode]);
+  useEffect(() => { captureEvent('register_viewed', { has_code: !!urlCode }); }, [urlCode]);
 
   useEffect(() => {
     const supabase = createClient();
@@ -471,6 +479,10 @@ function RegisterContent() {
         setIsEditing(true);
         setExistingId(member.id);
         setForm(f => ({ ...f, name: member.name, who: member.pitch, instagram: member.instagram || '' }));
+      } else {
+        // Pas encore de profil : le code gardé sur le compte à l'inscription.
+        const kept = user.user_metadata?.activation_code;
+        if (typeof kept === 'string' && kept.length >= 6) setKeptCode(kept.toUpperCase());
       }
 
       setStep(2);

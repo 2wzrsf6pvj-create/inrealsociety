@@ -6,10 +6,10 @@
 // initié la demande (verifier en cookie/localStorage du device d'origine).
 // C'est le correctif du reset cross-device : « demande sur PC, ouvre sur mobile ».
 //
-// ⚠️ Nécessite que le template email Supabase pointe ici, ex. (template
-// « Reset Password ») :
-//   {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/auth/reset-password
-// (template « Confirm signup » : type=signup&next=/dashboard, etc.)
+// ⚠️ Nécessite que les modèles d'email Supabase pointent ici : ceux de
+// supabase/templates/ (cf. supabaseConfirmSignup, supabaseResetPassword) :
+//   « Confirm signup » : {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/register
+//   « Reset Password » : {{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/auth/reset-password
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';

@@ -142,8 +142,21 @@ liste dans ses logs les variables recommandées qui manquent.
 - [ ] *Auth → Providers → Email* : **« Confirm email » activé**. Sinon,
       n'importe qui peut récupérer le profil d'un autre en s'inscrivant avec
       son email.
-- [ ] *Auth → Email templates* et *URL Configuration* : modèles et adresses de
-      redirection (`DEPLOY_CHECKLIST.md`, section 2).
+- [ ] *Authentication → Email Templates* : remplacer deux modèles par les
+      nôtres, en français, dont le lien marche dans n'importe quel navigateur,
+      y compris celui de l'app Gmail :
+  - « Confirm signup » : sujet « Confirmez votre adresse email », contenu
+    `supabase/templates/confirmation.html` ;
+  - « Reset Password » : sujet « Réinitialisez votre mot de passe », contenu
+    `supabase/templates/recovery.html`.
+
+  Sans eux, les emails partent en anglais, et une confirmation ouverte hors
+  du navigateur de l'inscription affiche une erreur alors que l'adresse est
+  confirmée.
+- [ ] *Authentication → URL Configuration* : *Site URL* = l'adresse du site,
+      sans « / » final (les modèles s'en servent) ; *Redirect URLs* : cette
+      adresse suivie de `/auth/callback`, puis de `/auth/confirm`
+      (`DEPLOY_CHECKLIST.md`, section 2).
 
 ## 3. Stripe et Printful
 
