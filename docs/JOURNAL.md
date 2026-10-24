@@ -5,6 +5,55 @@
 
 ---
 
+## 2026-10-24 (suite) — Revue du visuel, finitions (#51)
+
+### Revue
+Faite sur captures : le t-shirt (maquettes et fichiers d'impression), et
+toutes les pages sur iPhone, petit Android (360 px) et ordinateur.
+
+**Réussi** :
+- une vraie identité : noir profond, Cormorant Garamond et Montserrat en
+  capitales espacées, un seul accent or, le (·) partout ;
+- le profil vu après un scan, clair, avec un seul bouton ;
+- le t-shirt : QR grand et assumé (25 cm), (·) au centre, accroche dessous.
+
+**Constats, hors code** :
+- on ne voit jamais le t-shirt porté : l'accueil montre un téléphone, la
+  boutique une maquette sur fond beige. Des photos du t-shirt porté, même
+  au téléphone, seraient le plus gros levier ;
+- à vérifier sur un vrai exemplaire de chaque couleur avant les dix : le
+  « IN REAL SOCIETY » sous le logo de poitrine est très fin (logo de 9 cm),
+  et le QR blanc sur noir se teste avec plusieurs téléphones (la feuille A4
+  ne teste que le noir sur blanc).
+
+**Constat laissé de côté** : au premier passage, le passant voit trois
+demandes d'un coup (message, ville pendant 6 secondes, cookies). La ville
+étant rattachée au scan dès l'arrivée, c'est un sujet de parcours, à
+reprendre à part.
+
+### Décision de Clément
+- Le lot de finitions recommandé.
+
+### Fait
+- **PR #51 fusionnée** (`8e7cd6a`) :
+  - bandeau des cookies : « Refuser » et « Accepter » au même style (CNIL) ;
+  - Cormorant en chiffres alignés : son « 1 » se lisait « I » ;
+  - triade et bouton « Commander en … — 49€ » sur une ligne dès 360 px ;
+  - « Connexion » et « plein soleil » ne passent plus sur le contenu qui
+    défile ; plus de « Connexion » sur le profil d'un porteur ;
+  - clin d'œil en symbole monochrome ; carte /admin rangée.
+- Vérifié : 907 tests unitaires, fumée 14 réussis dont 3 à 360 px, E2E
+  28/28 avec l'accessibilité, captures avant/après, CI verte.
+- Incident : un fichier écrit par `next dev` (`AGENTS.md`) est entré dans
+  le premier commit de la branche, puis a été retiré ; il n'est pas dans
+  la fusion.
+
+### En cours
+- Clément demande de vérifier aussi les espaces et le type d'écriture :
+  relevé du texte affiché sur 23 pages, constats à présenter.
+
+---
+
 ## 2026-10-24 (suite) — Origine des achats venus d'un scan (#50)
 
 ### Pourquoi
