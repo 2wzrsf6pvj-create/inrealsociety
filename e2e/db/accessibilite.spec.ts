@@ -206,6 +206,9 @@ test('/admin', async ({ browser }) => {
   const page = await context.newPage();
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto(`/admin?q=${wearer.name}`);
+  // L'aperçu du QR ouvert, avec son image.
+  await page.locator('#recherche').getByText('Voir le QR').click();
+  await expect(page.getByRole('img', { name: `QR de ${wearer.name}` })).toBeVisible();
   await expectAccessible(page, page.getByRole('heading', { name: 'Notifications' }), 'admin');
   await context.close();
 });

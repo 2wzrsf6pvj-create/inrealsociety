@@ -27,7 +27,9 @@ Les tests de `e2e/db/` parcourent l'app dans un vrai navigateur, devant une
   afficher un secret ;
 - `premium-offert.spec.ts` : `/admin` offre le premium 4 semaines à un
   testeur, qui le voit dans ses réglages (date de fin, rien à payer ni à
-  résilier) ; l'arrêt depuis `/admin` le repasse en gratuit.
+  résilier) ; l'arrêt depuis `/admin` le repasse en gratuit ;
+- `qr-admin.spec.ts` : `/admin` → « Voir le QR » ; le QR affiché se lit, et
+  un passant qui le suit arrive sur le profil du porteur.
 
 Les tests de fumée de `e2e/` (`npm run test:e2e`), eux, tournent sans base et ne
 voient que les pages publiques.
