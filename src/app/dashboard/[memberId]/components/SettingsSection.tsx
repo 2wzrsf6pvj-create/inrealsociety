@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { createClient } from '@/lib/supabase-browser';
 import { captureEvent, resetIdentity } from '@/lib/posthog-client';
 import { unsubscribePush } from '@/lib/push-client';
+import { isOffline, offlineMessage, requestErrorMessage, SEND_TIMEOUT_MS, timeoutSignal } from '@/lib/request';
 import type { Member } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import { PREMIUM_PERKS, PREMIUM_PRICE_LABEL, PREMIUM_WITHDRAWAL_DAYS } from '@/lib/constants';
@@ -213,6 +214,7 @@ function FeedbackBlock({ memberId }: { memberId: string }) {
 
   const handleSubmit = async () => {
     if (!message.trim()) return;
+    if (isOffline()) { setError(offlineMessage('Votre message est gardé.')); return; }
     setSending(true);
     setError('');
     try {
@@ -220,6 +222,7 @@ function FeedbackBlock({ memberId }: { memberId: string }) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: 'app', message: message.trim(), memberId }),
+        signal: timeoutSignal(SEND_TIMEOUT_MS),
       });
       if (res.ok) {
         setSent(true);
@@ -227,8 +230,8 @@ function FeedbackBlock({ memberId }: { memberId: string }) {
       } else {
         setError("Erreur lors de l'envoi.");
       }
-    } catch {
-      setError('Erreur réseau.');
+    } catch (err) {
+      setError(requestErrorMessage(err, "Erreur lors de l'envoi.", 'Votre message est gardé.'));
     }
     setSending(false);
   };

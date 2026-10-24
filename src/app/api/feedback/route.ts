@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { checkPublicRateLimit, getIp, rateLimitHeaders } from '@/lib/ratelimit';
+import { getOptionalUser } from '@/lib/require-auth';
 import { reportError } from '@/lib/report-error';
 
 const schema = z.object({
@@ -55,11 +56,23 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Avis écrit depuis « Mon espace » : rattaché au porteur connecté, jamais à
+    // l'identifiant envoyé par le navigateur. Sinon n'importe qui pourrait
+    // écrire au nom d'un porteur, et /admin l'afficherait comme le sien.
+    let storedMemberId = memberId || null;
+    if (type === 'app') {
+      const user = await getOptionalUser(req);
+      const { data: own } = user
+        ? await supabaseAdmin.from('members').select('id').eq('auth_user_id', user.id).maybeSingle()
+        : { data: null };
+      storedMemberId = (own as { id: string } | null)?.id ?? null;
+    }
+
     const { error: insertError } = await supabaseAdmin.from('feedback').insert({
       type,
       rating:     rating || null,
       message:    message?.trim() || null,
-      member_id:  memberId || null,
+      member_id:  storedMemberId,
       message_id: messageId || null,
       metadata:   { ip },
     });

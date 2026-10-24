@@ -1104,3 +1104,62 @@ describe.skipIf(!ENABLED)('Notifications : abonnements des porteurs gardés, té
     expect((await watch.searchAdmin(`lou${tag}`))!.members[0].pushServices).toEqual([]);
   });
 });
+
+// ─── Test terrain : semaine par semaine, suivi des porteurs, avis ────────────
+describe.skipIf(!ENABLED)('Test terrain : semaine par semaine, suivi des porteurs, avis dans /admin', () => {
+  let stats:    typeof import('@/lib/field-stats');
+  let digest:   typeof import('@/lib/feedback-digest');
+  let feedback: typeof import('@/app/api/feedback/route');
+  const tag    = crypto.randomUUID().slice(0, 8);
+  const wearer = { authId: crypto.randomUUID(), memberId: crypto.randomUUID() };
+  const other  = crypto.randomUUID();   // un autre porteur, au nom duquel on tenterait d'écrire
+  const root   = crypto.randomUUID();
+  const note   = `Les notifications arrivent bien (${tag}).`;
+
+  beforeAll(async () => {
+    stats    = await import('@/lib/field-stats');
+    digest   = await import('@/lib/feedback-digest');
+    feedback = await import('@/app/api/feedback/route');
+    // Porteur activé à l'instant (le plus récent : le suivi en garde 50), scanné ;
+    // un passant écrit, le porteur répond, puis note la conversation.
+    sql(`INSERT INTO auth.users (id, email, email_confirmed_at) VALUES ('${wearer.authId}', 'sam-${tag}@example.com', now())`);
+    sql(`INSERT INTO members (id, auth_user_id, name, email, short_code)
+         VALUES ('${wearer.memberId}', '${wearer.authId}', 'Sam${tag}', 'sam-${tag}@example.com', '${tag.slice(0, 6)}')`);
+    sql(`INSERT INTO scans (member_id) VALUES ('${wearer.memberId}')`);
+    sql(`INSERT INTO messages (id, member_id, content, author) VALUES ('${root}', '${wearer.memberId}', 'Bonjour', 'scanner')`);
+    sql(`INSERT INTO messages (member_id, parent_id, content, author) VALUES ('${wearer.memberId}', '${root}', 'Salut !', 'member')`);
+    sql(`INSERT INTO feedback (type, rating, message_id) VALUES ('conversation', 'positive', '${root}')`);
+  });
+
+  it('« Votre avis » : rattaché au porteur connecté, pas à l’identifiant envoyé', async () => {
+    currentUser = { id: wearer.authId, email: `sam-${tag}@example.com` };
+    const res = await feedback.POST(req('/api/feedback', { body: { type: 'app', message: note, memberId: other } }));
+    currentUser = null;
+    expect(res.status).toBe(200);
+    expect(sql(`SELECT member_id FROM feedback WHERE message = '${note}'`)).toBe(wearer.memberId);
+  });
+
+  it('suivi : le porteur, ses scans, ses messages et ses réponses', async () => {
+    const s = await stats.loadFieldStats();
+    expect(s.followUp.find((w) => w.id === wearer.memberId)).toEqual(expect.objectContaining({
+      name: `Sam${tag}`, shortCode: tag.slice(0, 6), days: 0, state: 'active',
+      scans: 1, recentScans: 1, lastScanAt: expect.any(String), messages: 1, replied: 1, notified: false,
+    }));
+  });
+
+  it('semaine par semaine : 8 semaines, le scan et la conversation de ces jours-ci comptés', async () => {
+    const weeks = (await stats.loadFieldStats()).weeks;
+    expect(weeks).toHaveLength(stats.WEEKS);
+    const thisWeek = weeks.find((w) => w.start === stats.parisWeekStart(Date.now()))!;
+    expect(thisWeek.scanned).toBeGreaterThanOrEqual(1);
+    expect(thisWeek.messages).toBeGreaterThanOrEqual(1);
+    expect(thisWeek.replied).toBeGreaterThanOrEqual(1);
+    expect(thisWeek.scanned).toBeLessThanOrEqual(thisWeek.wearers);
+  });
+
+  it('avis : l’écrit, avec son porteur ; la note de fin de conversation comptée', async () => {
+    const d = await digest.loadFeedbackDigest();
+    expect(d.notes.find((n) => n.message === note)).toEqual(expect.objectContaining({ member: { id: wearer.memberId, name: `Sam${tag}` } }));
+    expect(d.ratings.positive).toBeGreaterThanOrEqual(1);
+  });
+});

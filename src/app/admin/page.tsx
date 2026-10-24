@@ -1,6 +1,8 @@
 // /admin — pilotage au quotidien (choix de Clément) : recherche d'un porteur ou
-// d'une commande, chiffres du test terrain, signalements et photos à traiter,
-// commandes à surveiller, mesures en cours, dernières décisions.
+// d'une commande, chiffres du test terrain (aussi semaine par semaine), suivi
+// des porteurs récents, avis, signalements et photos à traiter, commandes à
+// surveiller, mesures en cours, dernières décisions. Déroulé du test :
+// docs/TEST_TERRAIN.md.
 // Réservé à ADMIN_EMAILS (adresse confirmée) ; pour tout autre compte, 404.
 // Le proxy renvoie déjà vers la connexion un visiteur non connecté.
 
@@ -11,7 +13,11 @@ import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase-server';
 import { isAdmin } from '@/lib/admin';
 import { loadModerationQueue, QUEUE_WINDOW_DAYS, type QueueMember } from '@/lib/moderation-queue';
-import { loadFieldStats, STATS_WINDOW_DAYS, FIRST_SCAN_DAYS, STILL_WORN_AFTER_DAYS, RECENT_SCAN_DAYS, LOOKBACK_DAYS } from '@/lib/field-stats';
+import {
+  loadFieldStats, STATS_WINDOW_DAYS, FIRST_SCAN_DAYS, STILL_WORN_AFTER_DAYS, RECENT_SCAN_DAYS, LOOKBACK_DAYS,
+  FOLLOW_UP_DAYS, FOLLOW_UP_MAX, RECENT_DAYS, type WearerFollowUp,
+} from '@/lib/field-stats';
+import { loadFeedbackDigest, NOTES_SHOWN } from '@/lib/feedback-digest';
 import { loadOrderWatch, searchAdmin, NOT_ACTIVATED_AFTER_DAYS, type WatchedOrder, type MemberHit } from '@/lib/order-watch';
 import { PUSH_SERVICE_LABELS } from '@/lib/push-service';
 import AdminAction from './AdminAction';
@@ -21,6 +27,11 @@ export const metadata = { title: 'Administration', robots: { index: false, follo
 
 const WHEN = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeStyle: 'short', timeZone: 'Europe/Paris' });
 const when = (iso: string) => WHEN.format(new Date(iso));
+const DAY_FMT = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeZone: 'Europe/Paris' });
+const day = (iso: string) => DAY_FMT.format(new Date(iso));
+/** Lundi d'une semaine (AAAA-MM-JJ) : « 19 oct. ». */
+const WEEK_FMT = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+const weekLabel = (start: string) => WEEK_FMT.format(new Date(`${start}T00:00:00Z`));
 
 const DECISION_LABELS: Record<string, string> = {
   'member.suspended':          'Profil suspendu',
@@ -131,6 +142,33 @@ function MemberCard({ member }: { member: MemberHit }) {
   );
 }
 
+/** Porteur récent : ses chiffres pendant le test, jamais le contenu de ses
+ *  messages. Le prénom mène à sa fiche dans la recherche (état, suspension). */
+function FollowUpCard({ wearer: w, phonesKnown }: { wearer: WearerFollowUp; phonesKnown: boolean }) {
+  // En pause ou suspendu : pas de scan attendu, rien à signaler.
+  const idle = w.state === 'active' && w.days >= RECENT_DAYS && w.recentScans === 0;
+  const phone = !phonesKnown ? '' : !w.phone ? ' · téléphone pas encore relevé'
+    : ` · ${PHONE_LABELS[w.phone.os]}${w.phone.os === 'ios' ? (w.phone.appInstalled ? ', app installée' : ', app pas installée') : ''}`;
+  return (
+    <Card>
+      <Line label="Porteur">
+        <Link href={`/admin?q=${encodeURIComponent(w.shortCode ?? w.name ?? '')}#recherche`} className="underline underline-offset-4">
+          {w.name ?? 'sans prénom'}
+        </Link>
+        {' '}· activé le {day(w.activatedAt)} (J{w.days})
+        {w.state === 'suspended' ? ' · suspendu' : w.state === 'paused' ? ' · en pause' : ''}
+        {w.premium ? ' · premium' : ''}
+      </Line>
+      <Line label="Scans">
+        {w.scans} · {w.recentScans} ces {RECENT_DAYS} derniers jours · {w.lastScanAt ? `dernier le ${when(w.lastScanAt)}` : 'aucun pour l’instant'}
+      </Line>
+      <Line label="Messages">{w.messages} · {w.replied} avec réponse</Line>
+      <Line label="Notifications">{w.notified ? 'activées' : 'non activées'}{phone}</Line>
+      {idle && <p className="font-ui text-xs text-[#C5A059]/85">Aucun scan depuis {RECENT_DAYS} jours.</p>}
+    </Card>
+  );
+}
+
 function MemberLink({ member }: { member: QueueMember | null }) {
   if (!member) return <>profil supprimé</>;
   return (
@@ -147,11 +185,12 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   if (!isAdmin(user)) notFound();
 
   const raw = (await searchParams).q;
-  const [q, stats, orders, search] = await Promise.all([
+  const [q, stats, orders, search, feedback] = await Promise.all([
     loadModerationQueue(),
     loadFieldStats(),
     loadOrderWatch(),
     searchAdmin(typeof raw === 'string' ? raw : ''),
+    loadFeedbackDigest(),
   ]);
   const notif = stats.notifications;
   const phones = notif.phones;
@@ -166,7 +205,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
             Menace pour la vie ou la sécurité d&apos;une personne : 17 ou 112, sans attendre.
           </p>
           <nav aria-label="Sections" className="flex flex-wrap gap-x-5 gap-y-1 font-ui text-xs tracking-[0.15em] uppercase">
-            {[['#recherche', 'Recherche'], ['#chiffres', 'Chiffres'], ['#a-traiter', 'À traiter'], ['#commandes', 'Commandes'], ['#mesures', 'Mesures en cours'], ['#historique', 'Historique']].map(([href, label]) => (
+            {[['#recherche', 'Recherche'], ['#chiffres', 'Chiffres'], ['#suivi', 'Suivi'], ['#avis', 'Avis'], ['#a-traiter', 'À traiter'], ['#commandes', 'Commandes'], ['#mesures', 'Mesures en cours'], ['#historique', 'Historique']].map(([href, label]) => (
               <a key={href} href={href} className="underline underline-offset-4 py-2">{label}</a>
             ))}
             <a href="/admin" className="underline underline-offset-4 py-2 text-brand-gray/60">Actualiser</a>
@@ -216,8 +255,43 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
               detail={`sur ${stats.wearers} porteur${stats.wearers > 1 ? 's' : ''}`} />
           </div>
           <p className="font-ui text-xs text-brand-gray/55 leading-relaxed">
-            Achats venus d&apos;un scan : dans PostHog (événement wearer_cta_clicked). Fixer avant le test les seuils
-            pour continuer, ajuster ou arrêter.
+            Achats venus d&apos;un scan : dans PostHog (événement wearer_cta_clicked, avec consentement). Déroulé du test
+            et seuils pour continuer, ajuster ou arrêter : docs/TEST_TERRAIN.md.
+          </p>
+
+          <h3 className="font-ui text-sm font-bold tracking-[0.2em] uppercase pt-4">Semaine par semaine</h3>
+          <table className="w-full table-fixed font-ui text-xs text-brand-gray/80">
+            <caption className="sr-only">Semaine par semaine, la semaine en cours d’abord</caption>
+            <thead className="text-brand-gray/60">
+              <tr>
+                <th scope="col" className="text-left font-normal py-2 pr-1">Semaine du</th>
+                <th scope="col" className="text-right font-normal py-2 px-1">Porteurs scannés</th>
+                <th scope="col" className="text-right font-normal py-2 px-1">Scans</th>
+                <th scope="col" className="text-right font-normal py-2 px-1">Messages</th>
+                <th scope="col" className="text-right font-normal py-2 pl-1">Répondus</th>
+              </tr>
+            </thead>
+            <tbody>
+              {stats.weeks.map((w, i) => (
+                <tr key={w.start} className="border-t border-brand-gray/15">
+                  <th scope="row" className="text-left font-normal py-2 pr-1">
+                    {weekLabel(w.start)}
+                    {i === 0 && <span className="block text-brand-gray/60">en cours</span>}
+                  </th>
+                  <td className="text-right py-2 px-1">
+                    {w.wearers === 0 ? '—' : `${w.scanned} sur ${w.wearers}`}
+                    {w.newWearers > 0 && <span className="block text-brand-gray/60">+{w.newWearers} activé{w.newWearers > 1 ? 's' : ''}</span>}
+                  </td>
+                  <td className="text-right py-2 px-1">{w.scans}</td>
+                  <td className="text-right py-2 px-1">{w.messages}</td>
+                  <td className="text-right py-2 pl-1">{w.replied}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="font-ui text-xs text-brand-gray/55 leading-relaxed">
+            Semaines du lundi au dimanche, heure de Paris. Porteurs scannés : au moins un scan dans la semaine, sur les
+            porteurs activés à sa fin. Répondus : premiers messages de la semaine auxquels le porteur a répondu, à ce jour.
           </p>
 
           <h3 className="font-ui text-sm font-bold tracking-[0.2em] uppercase pt-4">Notifications</h3>
@@ -241,6 +315,38 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
             d&apos;être prévenu sur iPhone. Service lu dans l&apos;abonnement : Apple (iPhone, Mac), Google (Chrome, Android),
             Mozilla (Firefox).
           </p>
+        </section>
+
+        <section id="suivi" className="flex flex-col gap-3 scroll-mt-8">
+          <h2 className="font-display text-2xl font-light">Suivi des porteurs</h2>
+          <p className="font-ui text-xs text-brand-gray/55 leading-relaxed">
+            Activés ces {FOLLOW_UP_DAYS} derniers jours, les plus récents d&apos;abord ({FOLLOW_UP_MAX} au plus). Chiffres
+            seulement, jamais le contenu des messages.
+          </p>
+          {stats.followUp.length === 0
+            ? <p className="font-ui text-sm text-brand-gray/50">Aucun porteur activé ces {FOLLOW_UP_DAYS} derniers jours.</p>
+            : stats.followUp.map((w) => <FollowUpCard key={w.id} wearer={w} phonesKnown={phones !== null} />)}
+        </section>
+
+        <section id="avis" className="flex flex-col gap-3 scroll-mt-8">
+          <h2 className="font-display text-2xl font-light">Avis</h2>
+          <p className="font-ui text-sm text-brand-gray/70 leading-relaxed">
+            Notes de fin de conversation, ces {STATS_WINDOW_DAYS} jours : {plural(feedback.ratings.positive, 'positive')},
+            {' '}{plural(feedback.ratings.neutral, 'neutre')}, {plural(feedback.ratings.negative, 'négative')}.
+          </p>
+          <Section title={`Écrits depuis « Votre avis », les ${NOTES_SHOWN} derniers`} count={feedback.notes.length} empty="Aucun avis pour l’instant.">
+            {feedback.notes.map((n) => (
+              <Card key={n.id}>
+                <Line label="De">
+                  {n.member
+                    ? <Link href={`/profil/${n.member.id}`} className="underline underline-offset-4">{n.member.name ?? 'sans prénom'}</Link>
+                    : 'compte supprimé ou inconnu'}
+                  {' '}· {when(n.createdAt)}
+                </Line>
+                <p className="font-ui text-sm text-brand-gray/80 leading-relaxed whitespace-pre-wrap break-words">{n.message}</p>
+              </Card>
+            ))}
+          </Section>
         </section>
 
         <h2 id="a-traiter" className="font-display text-2xl font-light scroll-mt-8">À traiter</h2>

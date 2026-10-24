@@ -144,8 +144,10 @@ Détail : `docs/MONITORING.md`.
       notifications activées sur le téléphone. Accès à `/admin` :
       `docs/MODERATION.md`, section 7. La page sert aussi au quotidien :
       recherche d'un porteur ou d'une commande (renvoi du code d'activation),
-      chiffres du test terrain, commandes payées mais pas imprimées, codes
-      non utilisés après 7 jours.
+      chiffres du test terrain (aussi semaine par semaine), suivi des
+      porteurs récents, avis, commandes payées mais pas imprimées, codes non
+      utilisés après 7 jours. Déroulé du test terrain :
+      [`TEST_TERRAIN.md`](TEST_TERRAIN.md).
 - [ ] Printful : notifications du compte activées (commande en attente,
       échec de paiement).
 - [ ] GitHub → Settings → Advanced Security (ou Code security) : activer les

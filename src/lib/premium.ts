@@ -14,7 +14,6 @@
 
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { sendEmail, emailPremium, emailPremiumCancelled, emailPremiumEnded } from '@/lib/email-templates';
-import { captureServerEvent } from '@/lib/posthog-server';
 import { audit } from '@/lib/audit';
 import { APP_URL } from '@/lib/constants';
 import { formatDayFr } from '@/lib/dates';
@@ -96,12 +95,6 @@ export async function activatePremium(p: {
     dashboardUrl: `${APP_URL}/dashboard`,
     subscribedOn: formatDayFr(new Date()),
   }), 'de bienvenue premium');
-
-  await captureServerEvent({
-    distinctId: p.memberId,
-    event:      'subscription_active',
-    properties: { member_id: p.memberId, plan: 'premium' },
-  });
   return true;
 }
 
@@ -168,11 +161,5 @@ export async function endPremium(
     endedOn:     formatDayFr(p.endedAt),
     settingsUrl: PREMIUM_SETTINGS_URL,
   }), 'de fin du premium');
-
-  await captureServerEvent({
-    distinctId: memberId,
-    event:      'subscription_cancelled',
-    properties: { member_id: memberId, reason: p.reason },
-  });
   return true;
 }

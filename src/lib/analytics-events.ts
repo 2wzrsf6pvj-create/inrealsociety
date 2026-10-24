@@ -27,21 +27,16 @@ export type AnalyticsEvent =
   // Conversion premium
   | 'upgrade_cta_viewed'
   | 'upgrade_clicked'
-  | 'subscription_active'
-  | 'subscription_cancelled'
   // Boucle virale (scanner → porteur) : le scanneur est le lead le plus chaud,
   // on mesure s'il bascule vers la boutique depuis le flow message.
   | 'wearer_cta_viewed'
   | 'wearer_cta_clicked'
   // Activation / cold-start : engager le porteur entre l'achat et son 1er scan.
   | 'activation_guide_viewed'
-  | 'activation_preview_viewed'
-  // Rétention (P0) : signaux SERVEUR keyés sur le MEMBRE (distinctId = member_id),
-  // pour construire la vraie courbe de rétention porteur dans PostHog (« est-il
-  // encore scanné / sollicité N semaines après ? »). scan_submitted/message_submitted
-  // ci-dessus sont côté SCANNER (acquisition) → ne mesurent pas le retour du porteur.
-  | 'member_scanned'           // le porteur a reçu un scan (rencontre réelle)
-  | 'member_signal_received';  // le porteur a reçu un message non modéré
+  | 'activation_preview_viewed';
+// Rien ne part du serveur : un événement serveur ne connaît pas le choix de
+// consentement du navigateur. La rétention des porteurs (scans, messages,
+// premium) se lit dans /admin, depuis la base (cf. lib/field-stats).
 
 export interface AnalyticsProperties {
   member_id?:    string;

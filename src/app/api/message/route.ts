@@ -15,7 +15,6 @@ import { getSenderToken, createSenderToken, setSenderTokenCookie } from '@/lib/s
 import { isBlocked, isDeviceBanned } from '@/lib/blocks';
 import { getActiveConversationsCount } from '@/lib/inbox';
 import { notifyMemberSubscribers } from '@/lib/push-notify';
-import { captureServerEvent } from '@/lib/posthog-server';
 import { APP_URL, BANNED_DEVICE_NOTICE } from '@/lib/constants';
 import { reportError } from '@/lib/report-error';
 import { waitUntil } from '@/lib/wait-until';
@@ -287,14 +286,7 @@ export async function POST(req: NextRequest) {
     // waitUntil garde la fonction serverless en vie jusqu'au bout des envois,
     // sinon elle pourrait s'arrêter dès la réponse et les perdre. Chacune
     // rattrape sa propre erreur : un échec ne bloque pas les autres.
-    const notifications: Promise<unknown>[] = [
-      // Rétention (P0) : signal reçu par le PORTEUR (distinctId = member_id)
-      captureServerEvent({
-        distinctId: memberId,
-        event:      'member_signal_received',
-        properties: { member_id: memberId, is_quick_reply: isKnownQuickReply, has_contact: !!senderContact?.trim() },
-      }).catch(() => {}),
-    ];
+    const notifications: Promise<unknown>[] = [];
 
     if (member.email) {
       const { subject, html } = emailNouveauMessage({

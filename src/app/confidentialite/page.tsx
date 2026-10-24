@@ -63,6 +63,7 @@ export default function ConfidentialitePage() {
             <li><strong>Téléphone du porteur :</strong> iPhone ou Android, relevé à l&apos;ouverture de « Mon espace » depuis un téléphone, et la date de la première ouverture depuis l&apos;app installée sur l&apos;écran d&apos;accueil. Ils servent à savoir si les notifications parviennent aux porteurs : sur iPhone, seule l&apos;app installée les reçoit.</li>
             <li><strong>Sécurité (côté scanneur) :</strong> un jeton anonyme déposé sur votre appareil (cookie), sans lien avec votre identité, qui permet à un porteur de vous bloquer en cas d&apos;abus.</li>
             <li><strong>Signalements :</strong> le motif d&apos;un signalement de message, de profil ou de conversation et, si vous le laissez, votre contact (un email reçoit l&apos;accusé de réception puis la décision).</li>
+            <li><strong>Avis :</strong> ce que vous écrivez dans « Votre avis » depuis « Mon espace », et la note laissée à la fin d&apos;une conversation.</li>
             <li><strong>Analytique (avec consentement) :</strong> pages vues, événements de conversion (PostHog, Cloud EU).</li>
           </ul>
         </section>
@@ -73,7 +74,7 @@ export default function ConfidentialitePage() {
           </h2>
           <ul className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed list-disc pl-5 flex flex-col gap-2">
             <li><strong>Exécution du contrat (art. 6.1.b RGPD) :</strong> création du compte, gestion des commandes, envoi du t-shirt, gestion de l&apos;abonnement premium, transmission des messages entre passant et porteur, par notification si vous l&apos;activez.</li>
-            <li><strong>Intérêt légitime (art. 6.1.f) :</strong> sécurité du service (rate limiting, audit logs, modération), traitement des signalements, blocage des comportements abusifs (anti-harcèlement), prévention de la fraude, vérification que les notifications parviennent aux porteurs (type de téléphone).</li>
+            <li><strong>Intérêt légitime (art. 6.1.f) :</strong> sécurité du service (rate limiting, audit logs, modération), traitement des signalements, blocage des comportements abusifs (anti-harcèlement), prévention de la fraude, vérification que les notifications parviennent aux porteurs (type de téléphone), suivi de l&apos;utilisation du service par l&apos;équipe pour l&apos;améliorer (pour chaque porteur, le nombre de scans, de messages et de réponses, jamais leur contenu ; vos avis).</li>
             <li><strong>Consentement (art. 6.1.a) :</strong> mesure d&apos;audience (PostHog), cookies non essentiels, ville du scan.</li>
             <li><strong>Obligation légale (art. 6.1.c) :</strong> conservation des factures (10 ans).</li>
           </ul>

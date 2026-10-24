@@ -8,12 +8,15 @@ import { classifyOrders, cleanQuery, type WatchedOrder } from '@/lib/order-watch
 const NOW = new Date('2026-10-23T12:00:00Z');
 const daysAgo = (d: number) => new Date(NOW.getTime() - d * 86_400_000).toISOString();
 
+const member = (id: string, days: number, plan = 'free') =>
+  ({ id, created_at: daysAgo(days), plan, name: id, short_code: null, is_paused: false, suspended_at: null });
+
 describe('computeFieldStats', () => {
   const members = [
-    { id: 'recent', created_at: daysAgo(5),   plan: 'free' },      // trop récent pour le premier scan
-    { id: 'a',      created_at: daysAgo(20),  plan: 'premium' },   // scanné au 3e jour
-    { id: 'b',      created_at: daysAgo(40),  plan: 'free' },      // jamais scanné dans ses 14 jours
-    { id: 'c',      created_at: daysAgo(200), plan: 'free' },      // ancien : hors premier scan, encore porté
+    member('recent', 5),            // trop récent pour le premier scan
+    member('a', 20, 'premium'),     // scanné au 3e jour
+    member('b', 40),                // jamais scanné dans ses 14 jours
+    member('c', 200),               // ancien : hors premier scan, encore porté
   ];
   const scans = [
     { member_id: 'a', scanned_at: daysAgo(17) },
@@ -23,8 +26,13 @@ describe('computeFieldStats', () => {
   ];
   const stats = computeFieldStats({
     members, scans,
-    roots:        [{ id: 'm1' }, { id: 'm2' }, { id: 'm3' }],
-    replyParents: ['m1', 'm1', 'm3', 'ailleurs', null],
+    roots: [
+      { id: 'm1', member_id: 'a', created_at: daysAgo(2) },
+      { id: 'm2', member_id: 'a', created_at: daysAgo(12) },
+      { id: 'm3', member_id: 'b', created_at: daysAgo(29) },
+      { id: 'm0', member_id: 'b', created_at: daysAgo(31) },   // hors fenêtre de 30 jours
+    ],
+    replyParents: ['m1', 'm1', 'm3', 'm0', 'ailleurs', null],
     paidOrders:   4,
     subscriptions: [],
     phones:       null,
