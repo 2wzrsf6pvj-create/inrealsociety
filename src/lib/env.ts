@@ -40,6 +40,8 @@ const recommended = [
   'STRIPE_REFERRAL_COUPON_ID',
   'ADMIN_ALERT_EMAIL',
   'ADMIN_EMAILS',
+  // Domaine court des QR imprimés (inreal.me), indispensable pour le test terrain.
+  'SHORT_DOMAIN',
 ] as const;
 
 type EnvKey = typeof required[number] | typeof recommended[number];

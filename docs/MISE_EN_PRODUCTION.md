@@ -102,9 +102,9 @@ liste dans ses logs les variables recommandées qui manquent.
 | Variable | Sans elle |
 |---|---|
 | `RESEND_API_KEY` | aucun email : code d'activation, notifications, confirmations |
-| `ADMIN_EMAILS` | pas d'accès à l'administration de la modération (`/admin`) : emails autorisés, séparés par des virgules |
+| `ADMIN_EMAILS` | pas d'accès à `/admin` (modération, chiffres et suivi du test, premium offert, commandes, configuration) : emails autorisés, séparés par des virgules |
 | `ADMIN_ALERT_EMAIL` | personne n'est prévenu d'un message ou d'un profil signalé, ni d'un échec qui touche l'argent (paiement sans commande, code non envoyé, t-shirt non imprimé) |
-| `CRON_SECRET` | tâches planifiées non lancées (purge RGPD, relances) ; sans elle ni `INTERNAL_SECRET`, les emails de scan partent sans lien de désinscription |
+| `CRON_SECRET` | tâches planifiées non lancées (purge RGPD, relances, premium et fin du premium offert, rattrapage d'impression) ; sans elle ni `INTERNAL_SECRET`, les emails de scan partent sans lien de désinscription |
 | `INTERNAL_SECRET` | liens signés des emails ; newsletter et notifications externes désactivées |
 | `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN` | erreurs invisibles : les logs Vercel ne durent qu'une heure (Hobby) ou un jour (Pro) |
 
@@ -122,6 +122,7 @@ liste dans ses logs les variables recommandées qui manquent.
 | `OPENAI_API_KEY` | modération par règles seules, moins fine |
 | `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST` | pas de mesure d'audience |
 | `EMAIL_FROM` | rien : à ne régler que pour changer d'expéditeur (défaut `In Real Society <noreply@mail.inrealsociety.com>`) |
+| `VAPID_SUBJECT` | rien : contact transmis aux services de notifications (défaut `mailto:hello@inrealsociety.com`) |
 
 - [ ] Toutes les variables indispensables et de vente sont renseignées.
 - [ ] Vercel → *Cron Jobs* : les 5 tâches de `vercel.json` apparaissent.
