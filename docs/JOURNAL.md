@@ -5,6 +5,29 @@
 
 ---
 
+## 2026-10-24 (suite) — Décisions de Clément, liste des clés à jour (#47)
+
+### Décisions de Clément
+Prises par les questions à sélectionner, qu'il préfère et qu'il a
+redemandées. Une réponse arrivée pendant son absence (après un redémarrage
+de la session) lui est reposée.
+- Premium offert aux testeurs pendant les 4 semaines : confirmé.
+- #46 : gardée telle quelle.
+- Achat après un scan : origine en base ; `/admin` comptera les commandes
+  venues d'un scan, et de quel testeur.
+- Pour tester lui-même de A à Z : un guide pas à pas, et un lien « Voir le
+  QR » sur chaque porteur dans `/admin`.
+- Ordre : le guide et le lien QR, puis les emails de compte à J0, puis
+  l'origine des achats.
+
+### Fait
+- **PR #47 fusionnée** (`7fe3d22`) : `.env.example` à jour (`EMAIL_FROM`,
+  commentaires), listes de variables alignées, et un test qui vérifie que
+  chaque variable lue par le code y figure, sans rien d'obsolète.
+- Vérifié : 878 tests unitaires, mutations détectées, CI verte.
+
+---
+
 ## 2026-10-24 (suite) — Point d'étape : décisions en attente, liste des clés (#47)
 
 ### Réponses enregistrées sans Clément
