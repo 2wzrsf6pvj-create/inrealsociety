@@ -1,6 +1,8 @@
 // Régression H3 : si le membre n'a pas de short_code au moment du fulfillment,
 // fulfillOrder DOIT en générer + persister un, puis encoder l'URL COURTE dans le
 // QR imprimé (jamais l'URL longue /profil/<uuid>, qui serait figée sur le t-shirt).
+// Paiement réel : la commande Printful est confirmée, donc imprimée ; avant,
+// toutes restaient en brouillon (choix de Clément, 2026-10-24).
 //
 // Happy path entièrement mocké (Stripe, Supabase, QR, short-code, Printful).
 
@@ -62,7 +64,11 @@ vi.mock('@/lib/supabase-admin', () => ({
   },
 }));
 
+vi.mock('@/lib/audit', () => ({ audit: vi.fn() }));
+
 import { fulfillOrder, BACK_POSITION, PRINT_QUIET_MODULES } from '@/lib/fulfillment';
+import { createGelatoOrder } from '@/lib/gelato';
+import { audit } from '@/lib/audit';
 import { composeBackPrintSVG, generateBrandMonogramSVG } from '@/lib/generate-qr-svg';
 import { generateUniqueShortCode } from '@/lib/short-code';
 
@@ -147,5 +153,54 @@ describe('fulfillOrder — garantie short_code (H3)', () => {
     expect(files[1].position.height).toBeLessThan(files[1].position.width);
     // Poitrine GAUCHE du porteur = à droite de la zone d'impression (centre = 750).
     expect(files[1].position.left).toBeGreaterThan(750);
+  });
+});
+
+describe('paiement réel : la commande part à l’impression ; en test, elle reste en brouillon', () => {
+  const printful = (status = 'pending') => vi.fn().mockResolvedValue({ ok: true, json: async () => ({ result: { id: 'pf99', status } }) });
+  const printfulUrl = () => String((global.fetch as unknown as ReturnType<typeof vi.fn>).mock.calls
+    .find(([url]) => String(url).includes('api.printful.com/orders'))![0]);
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.stubEnv('NEXT_PUBLIC_APP_URL', 'https://app.test');
+    vi.stubEnv('PRINTFUL_VARIANT_ID_DARK', '123');
+    vi.stubEnv('PRINTFUL_API_TOKEN', 'pf_token');
+  });
+  afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); });
+
+  it('paiement de test (recette) : brouillon chez Printful, ni imprimé ni facturé', async () => {
+    vi.stubEnv('STRIPE_SECRET_KEY', 'sk_test_123');
+    vi.stubGlobal('fetch', printful('draft'));
+    expect((await fulfillOrder({ orderId: 'o1', memberId: 'm1', tshirtColor: 'dark', tshirtSize: 'M' })).ok).toBe(true);
+    expect(printfulUrl()).toBe('https://api.printful.com/orders');
+    expect(audit).not.toHaveBeenCalled();
+  });
+
+  it.each(['sk_live_123', 'rk_live_123'])('clé réelle (%s) : commande confirmée, donc imprimée', async (key) => {
+    vi.stubEnv('STRIPE_SECRET_KEY', key);
+    vi.stubGlobal('fetch', printful('pending'));
+    await fulfillOrder({ orderId: 'o1', memberId: 'm1', tshirtColor: 'dark', tshirtSize: 'M' });
+    expect(printfulUrl()).toBe('https://api.printful.com/orders?confirm=true');
+    expect(audit).not.toHaveBeenCalled();
+  });
+
+  it('restée en brouillon malgré la confirmation (coût calculé en différé) : alerte « argent »', async () => {
+    vi.stubEnv('STRIPE_SECRET_KEY', 'sk_live_123');
+    vi.stubGlobal('fetch', printful('draft'));
+    await fulfillOrder({ orderId: 'o1', memberId: 'm1', tshirtColor: 'dark', tshirtSize: 'M' });
+    expect(audit).toHaveBeenCalledWith({ action: 'order.printful_draft', metadata: { orderId: 'o1', printfulOrderId: 'pf99' } });
+  });
+
+  it.each([['sk_test_123', 'draft'], ['sk_live_123', 'order']])('Gelato (%s) : %s', async (key, orderType) => {
+    vi.stubEnv('STRIPE_SECRET_KEY', key);
+    vi.stubEnv('GELATO_API_KEY', 'gelato');
+    vi.stubEnv('GELATO_PRODUCT_UID_DARK_M', 'uid-dark-m');
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ id: 'g1' }) });
+    vi.stubGlobal('fetch', fetchMock);
+    await createGelatoOrder({
+      orderId: 'o1', email: 'a@example.com', color: 'dark', size: 'M', backUrl: 'https://store.test/qr.svg', frontUrl: null,
+      recipient: { name: 'Jean Dupont', address1: '1 rue de Rivoli', city: 'Paris', state_code: '', country_code: 'FR', zip: '75001' },
+    });
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).orderType).toBe(orderType);
   });
 });

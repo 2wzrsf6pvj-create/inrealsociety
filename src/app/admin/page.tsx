@@ -1,8 +1,8 @@
 // /admin — pilotage au quotidien (choix de Clément) : recherche d'un porteur ou
 // d'une commande, chiffres du test terrain (aussi semaine par semaine), suivi
 // des porteurs récents, avis, signalements et photos à traiter, commandes à
-// surveiller, mesures en cours, dernières décisions. Déroulé du test :
-// docs/TEST_TERRAIN.md.
+// surveiller, mesures en cours, dernières décisions, état de la configuration.
+// Déroulé du test : docs/TEST_TERRAIN.md.
 // Réservé à ADMIN_EMAILS (adresse confirmée) ; pour tout autre compte, 404.
 // Le proxy renvoie déjà vers la connexion un visiteur non connecté.
 
@@ -18,6 +18,7 @@ import {
   FOLLOW_UP_DAYS, FOLLOW_UP_MAX, RECENT_DAYS, type WearerFollowUp,
 } from '@/lib/field-stats';
 import { loadFeedbackDigest, NOTES_SHOWN } from '@/lib/feedback-digest';
+import { setupStatus } from '@/lib/setup-status';
 import { loadOrderWatch, searchAdmin, NOT_ACTIVATED_AFTER_DAYS, type WatchedOrder, type MemberHit } from '@/lib/order-watch';
 import { PUSH_SERVICE_LABELS } from '@/lib/push-service';
 import AdminAction from './AdminAction';
@@ -98,7 +99,7 @@ function OrderCard({ order }: { order: WatchedOrder }) {
   return (
     <Card>
       <Line label="Commande">{order.email} · {when(order.createdAt)} · {STATUS_LABELS[order.status] ?? order.status}</Line>
-      <Line label="T-shirt">{COLOR_LABELS[order.color] ?? order.color} · {order.size} · {order.printed ? 'imprimé' : 'pas encore imprimé'}</Line>
+      <Line label="T-shirt">{COLOR_LABELS[order.color] ?? order.color} · {order.size} · {order.printed ? 'envoyé à Printful' : 'pas encore envoyé à Printful'}</Line>
       {order.code && <Line label="Code d’activation">{order.code} · {order.codeUsed ? 'utilisé' : 'pas encore utilisé'}</Line>}
       {canResend && (
         <div className="flex flex-wrap gap-2">
@@ -194,6 +195,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   ]);
   const notif = stats.notifications;
   const phones = notif.phones;
+  const setup = setupStatus(process.env, { migration062: phones !== null });
+  const toSettle = setup.flatMap((g) => g.checks).filter((c) => !c.ok).length;
 
   return (
     <main className="min-h-screen bg-brand-black text-brand-white px-4 py-16">
@@ -205,11 +208,16 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
             Menace pour la vie ou la sécurité d&apos;une personne : 17 ou 112, sans attendre.
           </p>
           <nav aria-label="Sections" className="flex flex-wrap gap-x-5 gap-y-1 font-ui text-xs tracking-[0.15em] uppercase">
-            {[['#recherche', 'Recherche'], ['#chiffres', 'Chiffres'], ['#suivi', 'Suivi'], ['#avis', 'Avis'], ['#a-traiter', 'À traiter'], ['#commandes', 'Commandes'], ['#mesures', 'Mesures en cours'], ['#historique', 'Historique']].map(([href, label]) => (
+            {[['#recherche', 'Recherche'], ['#chiffres', 'Chiffres'], ['#suivi', 'Suivi'], ['#avis', 'Avis'], ['#a-traiter', 'À traiter'], ['#commandes', 'Commandes'], ['#mesures', 'Mesures en cours'], ['#historique', 'Historique'], ['#configuration', 'Configuration']].map(([href, label]) => (
               <a key={href} href={href} className="underline underline-offset-4 py-2">{label}</a>
             ))}
             <a href="/admin" className="underline underline-offset-4 py-2 text-brand-gray/60">Actualiser</a>
           </nav>
+          {toSettle > 0 && (
+            <p className="font-ui text-sm text-[#C5A059]/90 leading-relaxed">
+              Configuration : {plural(toSettle, 'point')} à régler (<a href="#configuration" className="underline underline-offset-4">voir « Configuration »</a>).
+            </p>
+          )}
         </header>
 
         <section id="recherche" className="flex flex-col gap-3 scroll-mt-8">
@@ -427,10 +435,11 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
 
         <h2 id="commandes" className="font-display text-2xl font-light scroll-mt-8">Commandes à surveiller</h2>
 
-        <Section title="Payées, pas encore imprimées" count={orders.unprinted.length}>
+        <Section title="Payées, pas encore envoyées à l’impression" count={orders.unprinted.length}>
           <p className="font-ui text-xs text-brand-gray/55 leading-relaxed">
-            L&apos;impression part au paiement ; une tâche quotidienne la retente à 5 h (UTC). Au-delà d&apos;un jour,
-            vérifier dans Printful et dans Sentry.
+            L&apos;envoi à Printful part au paiement ; une tâche quotidienne le retente à 5 h (UTC). Au-delà d&apos;un
+            jour, vérifier dans Printful et dans Sentry. En paiement de test, Printful garde les commandes en
+            brouillon : rien n&apos;est imprimé.
           </p>
           {orders.unprinted.map((o) => <OrderCard key={o.id} order={o} />)}
         </Section>
@@ -484,6 +493,27 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
             ))}
           </ul>
         </Section>
+
+        <section id="configuration" className="flex flex-col gap-3 scroll-mt-8">
+          <h2 className="font-display text-2xl font-light">Configuration</h2>
+          <p className="font-ui text-xs text-brand-gray/55 leading-relaxed">
+            Ce que l&apos;app voit de sa configuration, sans jamais afficher un secret. Le reste (emails de Supabase,
+            DNS, Stripe, Printful) : docs/MISE_EN_PRODUCTION.md, « Chemin vers J0 ».
+          </p>
+          {setup.map((g) => (
+            <div key={g.title} className="flex flex-col gap-2">
+              <h3 className="font-ui text-sm font-bold tracking-[0.2em] uppercase">{g.title}</h3>
+              <ul className="flex flex-col gap-2">
+                {g.checks.map((c) => (
+                  <li key={c.label} className="font-ui text-sm text-brand-gray/80 leading-relaxed break-words">
+                    <span className={c.ok ? 'text-green-400/85' : 'text-[#C5A059]/90'}>{c.ok ? 'OK' : 'À régler'}</span>
+                    {' '}· {c.label} : {c.detail}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </section>
       </div>
     </main>
   );

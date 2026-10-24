@@ -39,7 +39,8 @@ demande plusieurs mois d'abonnement.
 ### J-14 : commander et vérifier
 
 - [ ] Recette complète (`MISE_EN_PRODUCTION.md`, section 7), paiements réels
-      activés.
+      activés : `/admin` → « Configuration » dit « Paiements : réels », et
+      rien à régler.
 - [ ] Commander les 10 t-shirts sur la boutique, **une commande par
       t-shirt** (taille et couleur de chaque testeur), livrés chez toi ou chez
       le testeur. Chaque commande t'envoie un code d'activation : les garder,
@@ -47,7 +48,8 @@ demande plusieurs mois d'abonnement.
       Printful, frais Stripe), puisque le paiement te revient : ≈ 280 € pour
       10. Impression puis livraison : compter jusqu'à 10 jours.
 - [ ] Le lendemain, `/admin` → « Commandes à surveiller » : aucune commande
-      payée mais pas imprimée.
+      payée mais pas envoyée à l'impression. Dans Printful → *Orders*, les 10
+      sont confirmées, aucune en brouillon.
 - [ ] `ADMIN_ALERT_EMAIL` sur une boîte lue chaque jour, avec les
       notifications du téléphone : les signalements arrivent là.
 - [ ] Préparer le questionnaire de fin (section 7) : formulaire en ligne, ou

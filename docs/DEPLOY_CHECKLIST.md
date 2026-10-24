@@ -163,11 +163,11 @@ plus exécuter `create_member_with_code` (service_role oui).
 - `ADMIN_ALERT_EMAIL` → adresse qui reçoit une alerte à chaque signalement de message (contenu, appareil, bannissement auto). Sans elle, personne n'est prévenu
 - `ADMIN_EMAILS` → emails autorisés sur `/admin` (modération), séparés par des virgules ; compte existant et adresse confirmée exigés
 - `RESEND_API_KEY` + **DNS SPF/DKIM/DMARC** → emails (codes, replies) non délivrés
-- `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY` → push no-op
+- `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY` → push no-op (indispensables pour le test terrain)
 - `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST` → analytics off
 - `CRON_SECRET` → crons (cleanup, scan-reminders) non protégés/non déclenchés
 - `INTERNAL_SECRET` → `/api/push/notify` + `/api/newsletter/send` (endpoints externes) fail-closed
-- `SHORT_DOMAIN` (optionnel) → sinon les QR utilisent `${APP_URL}/r/<code>`
+- `SHORT_DOMAIN` (optionnel) → sinon les QR utilisent `${APP_URL}/r/<code>`. ⚠️ À laisser vide tant que rien ne redirige le domaine court vers `/r/<code>` : renseignée, chaque QR imprimé mène à une page introuvable
 
 ---
 
@@ -267,7 +267,7 @@ curl -s "$SUPABASE_URL/rest/v1/members?select=id,name,plan"      -H "apikey: $AN
 | **RGPD delete — preuve consentement** | membre toggle consent puis supprime son compte | ligne `audit_logs.action='member.marketing_consent_changed'` SURVIT (member_id → NULL) ; activity logs effacés |
 | **RGPD delete/export — orders par code** | order au checkout sous un email ≠ email d'auth, puis delete / export | delete : `orders.email` anonymisé ; export : la commande APPARAÎT (matchée par activation_code) |
 | **Webhook — filet money-path** | order avec `stripe_session_id` NULL mais `metadata.orderId` posé → `stripe trigger checkout.session.completed` | order finalisée (paid + code), `stripe_session_id` back-fillé |
-| **Cron fulfillment-reconcile** | order `paid` + membre + `printful_order_id` NULL → `curl -H "Authorization: Bearer $CRON_SECRET" $URL/api/cron/fulfillment-reconcile` ; puis sans header | 1er : `{fulfilled:≥1}` + commande Printful créée ; sans header : `403` |
+| **Cron fulfillment-reconcile** | order `paid` + membre + `printful_order_id` NULL → `curl -H "Authorization: Bearer $CRON_SECRET" $URL/api/cron/fulfillment-reconcile` ; puis sans header | 1er : `{fulfilled:≥1}` + commande Printful créée (confirmée en paiement réel, en brouillon en test) ; sans header : `403` |
 | **Cron premium-reconcile** | sans `Authorization` | `403` (et avec : balaie TOUS les premium, pas 100) |
 
 ```bash

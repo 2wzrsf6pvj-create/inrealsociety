@@ -16,6 +16,7 @@
 //
 // Réf. API : POST https://order.gelatoapis.com/v4/orders (X-API-KEY, items[].files[{type,url}]).
 
+import { livePayments } from '@/lib/payments-mode';
 import type { PrintfulAddress } from '@/lib/printful.types';
 
 type TshirtColor = 'dark' | 'light';
@@ -92,7 +93,8 @@ export async function createGelatoOrder(params: {
   ];
 
   const body = {
-    orderType:           'order',
+    // Paiement réel : commande ; en test (recette) : brouillon, ni imprimé ni facturé.
+    orderType:           livePayments() ? 'order' : 'draft',
     orderReferenceId:    params.orderId,
     customerReferenceId: params.email,
     currency:            'EUR',

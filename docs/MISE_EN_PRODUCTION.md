@@ -4,7 +4,52 @@
 > emails, juridique), dans l'ordre, avec la façon de vérifier chaque point.
 > Le détail technique (migrations, dry-run, CSP) est dans
 > [`DEPLOY_CHECKLIST.md`](./DEPLOY_CHECKLIST.md). Marges, frais fixes et seuils
-> de TVA : [`ECONOMIE_UNITAIRE.md`](./ECONOMIE_UNITAIRE.md). État au 23 octobre 2026.
+> de TVA : [`ECONOMIE_UNITAIRE.md`](./ECONOMIE_UNITAIRE.md). État au 24 octobre 2026.
+
+## Chemin vers J0 (le test terrain)
+
+Au 24 octobre 2026, rien n'est encore en place. Voici l'ordre : d'abord ce
+qui demande le plus de délai, puis les réglages, chaque étape renvoyant à sa
+section. `/admin` →
+« Configuration » montre ce que l'app voit déjà : variables présentes ou
+manquantes, paiements réels ou de test, domaine encodé dans les QR.
+
+1. **Statut et SIRET**, si ce n'est pas fait (quelques jours à deux
+   semaines) : Stripe en paiement réel, les mentions légales et le médiateur
+   le demandent.
+2. **Juridique, à lancer tout de suite** (plusieurs semaines) : médiateur,
+   juriste, comptable (section 6). Prêt avant la première vente réelle.
+3. **Domaine définitif** (une heure) : l'acheter, l'ajouter au projet Vercel,
+   le mettre dans `NEXT_PUBLIC_APP_URL` (sections 0 et 1). Le QR imprimé
+   l'encode pour toujours : aucune impression avec un domaine provisoire
+   (`*.vercel.app`). `SHORT_DOMAIN` reste vide : rien ne redirige encore un
+   domaine court.
+4. **Offres payantes** (une heure) : Vercel Pro, Supabase Pro, Resend Pro
+   (sections 0, 2 et 4).
+5. **Base** (une heure) : migrations jusqu'à 062, vérification, réglages de
+   l'authentification (section 2).
+6. **Emails** (une heure, puis jusqu'à 48 h de propagation DNS) : domaine
+   d'envoi vérifié chez Resend, puis **l'envoi des emails de Supabase par
+   Resend**. Sans lui, Supabase n'écrit qu'aux membres de l'équipe du
+   projet, 2 emails par heure : les testeurs ne pourraient pas confirmer leur
+   compte (section 4).
+7. **Variables** (une heure) : indispensables, vente, emails et alertes, et
+   les **clés de notifications**, indispensables pour le test (section 1).
+   Comptes gratuits à créer : Upstash, Sentry.
+8. **Stripe en mode test et Printful** (une heure) : prix, webhook, portail ;
+   carte de paiement enregistrée chez Printful, les 10 variantes (section 3).
+9. **Recette** en paiement de test (section 7). Les commandes restent en
+   brouillon chez Printful : rien n'est imprimé ni facturé.
+10. **Surveillance** (30 minutes) : alertes Sentry, moniteur de
+    disponibilité, notifications Printful, Dependabot (section 5).
+11. **Paiement réel** (30 minutes) : clés, webhook et prix Stripe en mode
+    réel. Une commande payée part alors à l'impression d'elle-même. `/admin`
+    → « Configuration » : « Paiements : réels », rien à régler.
+12. **J-14** : les 10 commandes du test (`TEST_TERRAIN.md`, section 3).
+13. **J0** : remise des t-shirts.
+
+Compter deux à trois semaines (statut, juridique, DNS, impression et
+livraison), dont une journée de réglages.
 
 ## 0. État des lieux (5 minutes)
 
@@ -51,17 +96,26 @@ qui manquent.
 | `ADMIN_EMAILS` | pas d'accès à l'administration de la modération (`/admin`) : emails autorisés, séparés par des virgules |
 | `ADMIN_ALERT_EMAIL` | personne n'est prévenu d'un message ou d'un profil signalé, ni d'un échec qui touche l'argent (paiement sans commande, code non envoyé, t-shirt non imprimé) |
 | `CRON_SECRET` | tâches planifiées non lancées (purge RGPD, relances) ; sans elle ni `INTERNAL_SECRET`, les emails de scan partent sans lien de désinscription |
+| `INTERNAL_SECRET` | liens signés des emails ; newsletter et notifications externes désactivées |
 | `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN` | erreurs invisibles : les logs Vercel ne durent qu'une heure (Hobby) ou un jour (Pro) |
+
+**Indispensables pour le test terrain.**
+
+| Variable | Sans elle |
+|---|---|
+| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | aucune notification : un message n'est vu qu'en ouvrant le site. Les générer avec `npx web-push generate-vapid-keys` ; la clé publique va dans les deux variables `…PUBLIC_KEY` |
 
 **Confort.**
 
 | Variable | Sans elle |
 |---|---|
 | `OPENAI_API_KEY` | modération par règles seules, moins fine |
-| `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | pas de notifications push |
 | `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST` | pas de mesure d'audience |
-| `INTERNAL_SECRET` | newsletter et notifications externes désactivées |
 | `EMAIL_FROM` | rien : à ne régler que pour changer d'expéditeur (défaut `In Real Society <noreply@mail.inrealsociety.com>`) |
+
+**À laisser vide.** `SHORT_DOMAIN` : rien ne redirige encore un domaine court
+vers les profils. Renseignée, chaque QR imprimé mènerait à une page
+introuvable.
 
 - [ ] Toutes les variables indispensables et de vente sont renseignées.
 - [ ] Vercel → *Cron Jobs* : les 5 tâches de `vercel.json` apparaissent.
@@ -80,7 +134,7 @@ qui manquent.
 - [ ] *Auth → Email templates* et *URL Configuration* : modèles et adresses de
       redirection (`DEPLOY_CHECKLIST.md`, section 2).
 
-## 3. Stripe
+## 3. Stripe et Printful
 
 - [ ] Franchise de TVA : **pas de Stripe Tax**, le code ne le demande pas
       (`VAT_EXEMPT`). Dans les réglages des factures, pied de page par défaut :
@@ -105,6 +159,18 @@ qui manquent.
 L'application envoie elle-même la confirmation de résiliation, avec la date de
 fin (Code de la consommation, L215-1-1) : rien à régler dans Stripe.
 
+**Printful.**
+- [ ] Carte de paiement enregistrée (*Billing*). En paiement réel, chaque
+      commande payée est confirmée chez Printful, qui débite l'impression et
+      la livraison. En paiement de test, elle reste en brouillon : rien n'est
+      imprimé ni facturé.
+- [ ] Les 10 variantes (couleur et taille) dans les variables
+      `PRINTFUL_VARIANT_ID_*` (section 1) ; `/admin` → « Configuration » les
+      compte.
+- [ ] Une commande restée en brouillon malgré un paiement réel (coût calculé
+      en différé chez Printful) déclenche une alerte : la confirmer à la main
+      dans Printful → *Orders*.
+
 **Rétractation du premium** (14 jours, remboursée en entier, CGV article 8) :
 sur demande à hello@inrealsociety.com, rembourser le paiement dans Stripe puis
 annuler l'abonnement immédiatement. Le porteur reçoit l'email de fin du
@@ -120,8 +186,10 @@ Détail et vérifications : `docs/EMAIL_DELIVERABILITY.md`.
 - [ ] Resend : offre **Pro** au lancement. L'offre gratuite plafonne à 100
       emails par jour : au-delà, plus rien ne part, codes d'activation compris.
 - [ ] Resend : suivi des ouvertures et des clics désactivé.
-- [ ] (Supabase) SMTP personnalisé avec Resend (section 4) : sans lui, la
-      confirmation d'inscription et le mot de passe oublié ne partent pas.
+- [ ] **Bloquant pour J0** : (Supabase) SMTP personnalisé avec Resend
+      (section 4). Sans lui, Supabase n'envoie qu'aux membres de l'équipe du
+      projet, 2 emails par heure : la confirmation d'inscription et le mot de
+      passe oublié ne partent pas aux porteurs.
 - [ ] Google Postmaster Tools : ajouter `inrealsociety.com`, pour voir les
       plaintes de Gmail (qui ne les transmet pas à Resend).
 - [ ] S'envoyer un email de test, par exemple « Code perdu ? Renvoyer
@@ -176,7 +244,10 @@ Détail : `docs/MONITORING.md`.
 
 ## 7. Recette : un parcours complet avant d'ouvrir
 
-En mode test Stripe (carte `4242 4242 4242 4242`) :
+En mode test Stripe (carte `4242 4242 4242 4242`). Les commandes de la
+recette restent en brouillon chez Printful : rien n'est imprimé ni facturé.
+Pour vérifier une impression réelle, confirmer un brouillon à la main dans
+Printful (il est alors facturé).
 
 - [ ] Commander un t-shirt : le paiement ne propose que la livraison standard
       (5 €) vers la France, la Belgique, le Luxembourg et l'Allemagne, et

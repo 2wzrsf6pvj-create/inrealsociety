@@ -22,8 +22,8 @@ const recommended = [
   'UPSTASH_REDIS_REST_URL',
   'UPSTASH_REDIS_REST_TOKEN',
   'PRINTFUL_API_TOKEN',
-  'PRINTFUL_VARIANT_ID_DARK',
-  'PRINTFUL_VARIANT_ID_LIGHT',
+  // Une variante par couleur et par taille (cf. fulfillment, lib/setup-status).
+  ...['DARK', 'LIGHT'].flatMap((c) => ['S', 'M', 'L', 'XL', 'XXL'].map((s) => `PRINTFUL_VARIANT_ID_${c}_${s}`)),
   'STRIPE_PREMIUM_PRICE_ID',
   'VAPID_PUBLIC_KEY',
   'VAPID_PRIVATE_KEY',

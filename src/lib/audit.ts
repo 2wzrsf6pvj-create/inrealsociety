@@ -44,6 +44,7 @@ export type AuditAction =
   | 'message.hidden'
   | 'member.suspension_failed'
   | 'order.fulfillment_failed'
+  | 'order.printful_draft'
   | 'order.fulfilled'
   | 'push.subscribed'
   | 'message.reported'
@@ -83,6 +84,10 @@ export const MONEY_ALERTS: Partial<Record<AuditAction, { title: string; todo: st
   'order.fulfillment_failed': {
     title: 'T-shirt payé non transmis à Printful',
     todo:  'Nouvel essai chaque jour à 5 h UTC (fulfillment-reconcile). Vérifier Printful : variantes, facturation.',
+  },
+  'order.printful_draft': {
+    title: 'T-shirt payé resté en brouillon chez Printful',
+    todo:  'Printful → Commandes : confirmer la commande à la main. Tant qu’elle est en brouillon, rien n’est imprimé.',
   },
   'member.suspension_failed': {
     title: 'Remboursement : profil non suspendu',
