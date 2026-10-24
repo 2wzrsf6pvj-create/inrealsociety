@@ -8,6 +8,7 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { isMissingColumn } from '@/lib/phone';
 import { pushService, type PushService } from '@/lib/push-service';
+import { isGiftedPremium, premiumState, type PremiumState } from '@/lib/subscription';
 import type { PhoneOs } from '@/lib/types';
 
 const DAY = 86_400_000;
@@ -81,7 +82,7 @@ export interface WearerFollowUp {
   /** Jours depuis l'activation (J0 le jour même). */
   days:        number;
   state:       'active' | 'paused' | 'suspended';
-  premium:     boolean;
+  premium:     PremiumState;
   scans:       number;
   /** Scans des RECENT_DAYS derniers jours. */
   recentScans: number;
@@ -98,7 +99,10 @@ export interface WearerFollowUp {
 export interface FieldStats {
   wearers:    number;
   newWearers: number;
+  /** Abonnés premium (payants). */
   premium:    number;
+  /** Premium offert depuis /admin (testeurs). */
+  giftedPremium: number;
   paidOrders: number;
   /** Activés entre J-120 et J-14 : scannés dans leurs 14 premiers jours. */
   firstScan:  Ratio;
@@ -116,6 +120,7 @@ export interface FieldStats {
 type MemberRow = {
   id: string; created_at: string; plan: string | null; name: string | null;
   short_code: string | null; is_paused: boolean | null; suspended_at: string | null;
+  stripe_subscription_id: string | null; plan_expires_at: string | null;
 };
 type RootRow = { id: string; member_id: string; created_at: string };
 
@@ -195,7 +200,8 @@ export function computeFieldStats(input: {
   return {
     wearers:    input.members.length,
     newWearers: input.members.filter((m) => Date.parse(m.created_at) >= ago(STATS_WINDOW_DAYS)).length,
-    premium:    input.members.filter((m) => m.plan === 'premium').length,
+    premium:    input.members.filter((m) => m.plan === 'premium' && !isGiftedPremium(m)).length,
+    giftedPremium: input.members.filter(isGiftedPremium).length,
     paidOrders: input.paidOrders,
     firstScan,
     stillWorn,
@@ -280,7 +286,7 @@ function followUp(
         id: m.id, name: m.name, shortCode: m.short_code, activatedAt: m.created_at,
         days:  Math.floor((now.getTime() - Date.parse(m.created_at)) / DAY),
         state: m.suspended_at ? 'suspended' : m.is_paused ? 'paused' : 'active',
-        premium:     m.plan === 'premium',
+        premium:     premiumState(m),
         scans:       times.length,
         recentScans: times.filter((at) => at >= recentSince).length,
         lastScanAt:  times.length ? new Date(times.reduce((a, b) => Math.max(a, b))).toISOString() : null,
@@ -369,7 +375,7 @@ export async function loadFieldStats(now = new Date()): Promise<FieldStats> {
   const since = (days: number) => new Date(now.getTime() - days * DAY).toISOString();
   const [members, scans, roots, replies, paid, subscriptions, phones] = await Promise.all([
     allRows<MemberRow>((from, to) =>
-      supabaseAdmin.from('members').select('id, created_at, plan, name, short_code, is_paused, suspended_at')
+      supabaseAdmin.from('members').select('id, created_at, plan, name, short_code, is_paused, suspended_at, stripe_subscription_id, plan_expires_at')
         .order('id').range(from, to)),
     allRows<{ member_id: string; scanned_at: string }>((from, to) =>
       supabaseAdmin.from('scans').select('member_id, scanned_at')

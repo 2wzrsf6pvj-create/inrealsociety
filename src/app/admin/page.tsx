@@ -1,7 +1,8 @@
 // /admin — pilotage au quotidien (choix de Clément) : recherche d'un porteur ou
 // d'une commande, chiffres du test terrain (aussi semaine par semaine), suivi
-// des porteurs récents, avis, signalements et photos à traiter, commandes à
-// surveiller, mesures en cours, dernières décisions, état de la configuration.
+// des porteurs récents et premium offert aux testeurs, avis, signalements et
+// photos à traiter, commandes à surveiller, mesures en cours, dernières
+// décisions, état de la configuration.
 // Déroulé du test : docs/TEST_TERRAIN.md.
 // Réservé à ADMIN_EMAILS (adresse confirmée) ; pour tout autre compte, 404.
 // Le proxy renvoie déjà vers la connexion un visiteur non connecté.
@@ -21,6 +22,7 @@ import { loadFeedbackDigest, NOTES_SHOWN } from '@/lib/feedback-digest';
 import { setupStatus } from '@/lib/setup-status';
 import { loadOrderWatch, searchAdmin, NOT_ACTIVATED_AFTER_DAYS, type WatchedOrder, type MemberHit } from '@/lib/order-watch';
 import { PUSH_SERVICE_LABELS } from '@/lib/push-service';
+import { PREMIUM_GIFT_DAYS, type PremiumState } from '@/lib/subscription';
 import AdminAction from './AdminAction';
 
 export const dynamic = 'force-dynamic';
@@ -51,6 +53,13 @@ const pct = (hit: number, total: number) => (total === 0 ? '—' : `${Math.round
 const plural = (n: number, word: string) => `${n} ${word}${n > 1 ? 's' : ''}`;
 const PHONES_MISSING = 'migration 062 à appliquer';
 const PHONE_LABELS = { ios: 'iPhone', android: 'Android' } as const;
+
+/** « · premium », payé ou offert, et jusqu'à quand. */
+function premiumLabel(p: PremiumState): string {
+  if (!p) return '';
+  if (p.gift) return p.until ? ` · premium offert jusqu’au ${day(p.until)}` : ' · premium offert, sans date de fin';
+  return p.until ? ` · premium, résilié : actif jusqu’au ${day(p.until)}` : ' · premium';
+}
 
 const MOTIF_TO_MEMBER = { field: 'motif', label: 'Motif, envoyé au porteur avec la décision' } as const;
 const MOTIF_KEPT      = { field: 'motif', label: 'Motif, gardé dans le journal' } as const;
@@ -93,6 +102,18 @@ function Stat({ label, value, detail }: { label: string; value: string; detail: 
   );
 }
 
+/** Premium offert aux testeurs (choix de Clément) : PREMIUM_GIFT_DAYS jours,
+ *  puis retour au gratuit, seul. Rien pour un abonné : il paie. */
+function GiftPremium({ memberId, premium }: { memberId: string; premium: PremiumState }) {
+  if (!premium) {
+    return <AdminAction label={`Offrir le premium ${PREMIUM_GIFT_DAYS / 7} semaines`} payload={{ action: 'gift_premium', memberId }} />;
+  }
+  if (premium.gift) {
+    return <AdminAction label="Arrêter le premium offert" payload={{ action: 'end_gift_premium', memberId }} />;
+  }
+  return null;
+}
+
 /** Commande : état, t-shirt, code ; renvoi du code s'il n'a pas servi. */
 function OrderCard({ order }: { order: WatchedOrder }) {
   const canResend = order.status === 'paid' && !!order.code && !order.codeUsed;
@@ -120,7 +141,7 @@ function MemberCard({ member }: { member: MemberHit }) {
       <Line label="Email">{member.email ?? '—'}</Line>
       <Line label="État">
         {member.suspended ? 'suspendu' : member.paused ? 'en pause' : 'actif'}
-        {member.plan === 'premium' ? ' · premium' : ''}
+        {premiumLabel(member.premium)}
         {member.shortCode ? ` · QR ${member.shortCode}` : ''}
       </Line>
       <Line label="Notifications">
@@ -138,6 +159,7 @@ function MemberCard({ member }: { member: MemberHit }) {
         {member.suspended
           ? <AdminAction label="Lever la suspension" payload={{ action: 'unsuspend_member', memberId: member.id }} />
           : <AdminAction label="Suspendre le profil" danger payload={{ action: 'suspend_member', memberId: member.id }} ask={MOTIF_TO_MEMBER} />}
+        <GiftPremium memberId={member.id} premium={member.premium} />
       </div>
     </Card>
   );
@@ -158,7 +180,7 @@ function FollowUpCard({ wearer: w, phonesKnown }: { wearer: WearerFollowUp; phon
         </Link>
         {' '}· activé le {day(w.activatedAt)} (J{w.days})
         {w.state === 'suspended' ? ' · suspendu' : w.state === 'paused' ? ' · en pause' : ''}
-        {w.premium ? ' · premium' : ''}
+        {premiumLabel(w.premium)}
       </Line>
       <Line label="Scans">
         {w.scans} · {w.recentScans} ces {RECENT_DAYS} derniers jours · {w.lastScanAt ? `dernier le ${when(w.lastScanAt)}` : 'aucun pour l’instant'}
@@ -166,6 +188,11 @@ function FollowUpCard({ wearer: w, phonesKnown }: { wearer: WearerFollowUp; phon
       <Line label="Messages">{w.messages} · {w.replied} avec réponse</Line>
       <Line label="Notifications">{w.notified ? 'activées' : 'non activées'}{phone}</Line>
       {idle && <p className="font-ui text-xs text-[#C5A059]/85">Aucun scan depuis {RECENT_DAYS} jours.</p>}
+      {(!w.premium || w.premium.gift) && (
+        <div className="flex flex-wrap gap-2">
+          <GiftPremium memberId={w.id} premium={w.premium} />
+        </div>
+      )}
     </Card>
   );
 }
@@ -260,7 +287,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
             <Stat label="Messages → réponses" value={pct(stats.funnel.replied, stats.funnel.messages)}
               detail={`${stats.funnel.replied} conversations où le porteur a répondu`} />
             <Stat label="Abonnés premium" value={`${stats.premium}`}
-              detail={`sur ${stats.wearers} porteur${stats.wearers > 1 ? 's' : ''}`} />
+              detail={`sur ${plural(stats.wearers, 'porteur')}${stats.giftedPremium > 0 ? ` · plus ${stats.giftedPremium} premium offert${stats.giftedPremium > 1 ? 's' : ''}` : ''}`} />
           </div>
           <p className="font-ui text-xs text-brand-gray/55 leading-relaxed">
             Achats venus d&apos;un scan : dans PostHog (événement wearer_cta_clicked, avec consentement). Déroulé du test
@@ -329,7 +356,8 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
           <h2 className="font-display text-2xl font-light">Suivi des porteurs</h2>
           <p className="font-ui text-xs text-brand-gray/55 leading-relaxed">
             Activés ces {FOLLOW_UP_DAYS} derniers jours, les plus récents d&apos;abord ({FOLLOW_UP_MAX} au plus). Chiffres
-            seulement, jamais le contenu des messages.
+            seulement, jamais le contenu des messages. Premium offert aux testeurs : {PREMIUM_GIFT_DAYS / 7} semaines,
+            puis retour au gratuit, seul (tâche quotidienne de 4 h UTC).
           </p>
           {stats.followUp.length === 0
             ? <p className="font-ui text-sm text-brand-gray/50">Aucun porteur activé ces {FOLLOW_UP_DAYS} derniers jours.</p>

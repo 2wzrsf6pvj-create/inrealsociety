@@ -135,6 +135,22 @@ export async function applyScheduledEnd(
   if (again) throw new Error(`[premium] date de fin non mise à jour : ${again.message}`);
 }
 
+/** Premium offert depuis /admin (test terrain) arrivé à sa date : retour au
+ *  gratuit, tracé. Pas d'email : aucun contrat ne se termine, les testeurs
+ *  connaissent la date. Renvoie le nombre de porteurs concernés. */
+export async function endExpiredGifts(now = new Date()): Promise<number> {
+  const { data, error } = await supabaseAdmin
+    .from('members').update({ plan: 'free', plan_expires_at: null })
+    .eq('plan', 'premium').is('stripe_subscription_id', null)
+    .lte('plan_expires_at', now.toISOString())
+    .select('id');
+  if (error) throw new Error(`[premium] fin du premium offert impossible : ${error.message}`);
+  for (const m of (data ?? []) as { id: string }[]) {
+    audit({ action: 'member.premium_gift_ended', memberId: m.id, metadata: { reason: 'date' } });
+  }
+  return data?.length ?? 0;
+}
+
 /** Fin de l'abonnement courant : premium → gratuit. true si c'est cet appel qui l'a
  *  fait (email de fin envoyé), false si le membre était déjà gratuit. */
 export async function endPremium(

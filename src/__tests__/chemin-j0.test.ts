@@ -7,6 +7,7 @@ import { setupStatus, PRINTFUL_VARIANTS } from '@/lib/setup-status';
 
 const COMPLETE: Record<string, string> = {
   NEXT_PUBLIC_APP_URL:          'https://inrealsociety.com',
+  SHORT_DOMAIN:                 'https://inreal.me',
   UPSTASH_REDIS_REST_URL:       'https://eu1.upstash.io',
   UPSTASH_REDIS_REST_TOKEN:     'SECRET-upstash',
   STRIPE_SECRET_KEY:            'sk_live_SECRET',
@@ -33,7 +34,9 @@ describe('configuration vue de /admin', () => {
   it('tout est en place : rien à régler, paiements réels', () => {
     expect(checks(COMPLETE).filter((c) => !c.ok)).toEqual([]);
     expect(check(COMPLETE, 'Paiements').detail).toBe('réels : une commande payée part à l’impression');
-    expect(check(COMPLETE, 'Domaine').detail).toContain('https://inrealsociety.com/r/<code>');
+    expect(check(COMPLETE, 'Domaine').detail).toBe('inrealsociety.com : liens des emails et pages des profils.');
+    // Sans domaine court : le domaine principal est celui des QR.
+    expect(check({ ...COMPLETE, SHORT_DOMAIN: '' }, 'Domaine').detail).toContain('https://inrealsociety.com/r/<code>');
   });
 
   it('jamais la valeur d’un secret', () => {
@@ -48,16 +51,23 @@ describe('configuration vue de /admin', () => {
     expect(c).toEqual({ label: 'Paiements', ok: true, detail: expect.stringContaining('rien n’est imprimé') });
   });
 
-  it('domaine provisoire : les QR imprimés l’encoderaient pour toujours', () => {
-    const c = check({ ...COMPLETE, NEXT_PUBLIC_APP_URL: 'https://inrealsociety.vercel.app' }, 'Domaine');
+  it('domaine provisoire : à remplacer ; les QR l’encoderaient pour toujours sans domaine court', () => {
+    const provisional = { ...COMPLETE, NEXT_PUBLIC_APP_URL: 'https://inrealsociety.vercel.app' };
+    const c = check(provisional, 'Domaine');
     expect(c.ok).toBe(false);
-    expect(c.detail).toContain('domaine provisoire');
+    expect(c.detail).toContain('domaine provisoire, à remplacer');
+    expect(check({ ...provisional, SHORT_DOMAIN: '' }, 'Domaine').detail).toContain('Les QR imprimés l\'encoderaient pour toujours');
   });
 
-  it('domaine court renseigné : rien ne le redirige, les QR mèneraient à une page introuvable', () => {
-    const c = check({ ...COMPLETE, SHORT_DOMAIN: 'https://inreal.me' }, 'Domaine court des QR');
-    expect(c.ok).toBe(false);
-    expect(c.detail).toContain('page introuvable');
+  it('domaine court des QR (choix de Clément : inreal.me) : à renseigner, et distinct du domaine principal', () => {
+    expect(check(COMPLETE, 'Domaine court des QR')).toEqual({
+      label: 'Domaine court des QR', ok: true, detail: expect.stringContaining('les QR encodent https://inreal.me/<code>'),
+    });
+    const empty = check({ ...COMPLETE, SHORT_DOMAIN: '' }, 'Domaine court des QR');
+    expect(empty.ok).toBe(false);
+    expect(empty.detail).toContain('portée de scan ≈ 2,0 m au lieu de 2,5 m');
+    expect(check({ ...COMPLETE, SHORT_DOMAIN: 'https://inrealsociety.com' }, 'Domaine court des QR').ok).toBe(false);
+    expect(check({ ...COMPLETE, SHORT_DOMAIN: 'inreal' }, 'Domaine court des QR').ok).toBe(false);
   });
 
   it('variantes Printful incomplètes : combien, et lesquelles', () => {

@@ -11,6 +11,9 @@
 // plan_expires_at : date de fin d'une résiliation PROGRAMMÉE (l'abonnement est
 // encore actif jusque-là), sinon null. Affichée dans les réglages et reprise par
 // l'email de confirmation de résiliation (Code de la consommation, L215-1-1).
+// Premium OFFERT depuis /admin (test terrain, choix de Clément) : premium sans
+// abonnement Stripe ; plan_expires_at est alors la fin du cadeau, appliquée par
+// premium-reconcile.
 
 export interface MemberPlanUpdate {
   plan: 'premium' | 'free';
@@ -60,4 +63,22 @@ export function subscriptionMemberUpdate(sub: SubscriptionLike): MemberPlanUpdat
     stripe_subscription_id: isActive ? sub.id : null,
     plan_expires_at:        scheduledEnd(sub),
   };
+}
+
+/** Durée du premium offert depuis /admin : celle du test terrain. */
+export const PREMIUM_GIFT_DAYS = 28;
+
+type PlanFields = { plan: string | null; stripe_subscription_id: string | null; plan_expires_at?: string | null };
+
+/** Premium offert : premium sans abonnement Stripe. */
+export function isGiftedPremium(m: PlanFields): boolean {
+  return m.plan === 'premium' && !m.stripe_subscription_id;
+}
+
+/** Pour /admin : premium payé ou offert, et jusqu'à quand (fin du cadeau, ou
+ *  résiliation programmée). null : gratuit. */
+export type PremiumState = { gift: boolean; until: string | null } | null;
+
+export function premiumState(m: PlanFields): PremiumState {
+  return m.plan === 'premium' ? { gift: isGiftedPremium(m), until: m.plan_expires_at ?? null } : null;
 }

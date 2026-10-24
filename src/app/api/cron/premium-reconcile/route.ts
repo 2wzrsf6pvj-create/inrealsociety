@@ -6,7 +6,8 @@
 // (email de fin compris). Il rattrape aussi une résiliation programmée dont le
 // webhook a été manqué : date de fin et email de confirmation (L215-1-1). Les
 // transitions sont réservées en base (lib/premium) : jamais d'email en double
-// avec le webhook.
+// avec le webhook. Il arrête enfin le premium offert depuis /admin (test
+// terrain) arrivé à sa date, sans Stripe.
 //
 // Protégé par CRON_SECRET (Vercel Cron envoie Authorization: Bearer).
 
@@ -16,7 +17,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { subscriptionMemberUpdate, isActiveSubscriptionStatus, scheduledEnd } from '@/lib/subscription';
-import { applyScheduledEnd, endPremium } from '@/lib/premium';
+import { applyScheduledEnd, endPremium, endExpiredGifts } from '@/lib/premium';
 import { isAuthorizedCron } from '@/lib/cron-auth';
 import { reportError } from '@/lib/report-error';
 
@@ -30,13 +31,23 @@ export async function GET(req: NextRequest) {
   if (!isAuthorizedCron(req)) {
     return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
   }
+
+  // Premium offert : avant Stripe, dont il ne dépend pas.
+  let giftsEnded = 0, errors = 0;
+  try {
+    giftsEnded = await endExpiredGifts();
+  } catch (err) {
+    errors++;
+    reportError('cron/premium-reconcile', err);
+  }
+
   if (!process.env.STRIPE_SECRET_KEY) {
     reportError('cron/premium-reconcile', new Error('STRIPE_SECRET_KEY non défini'));
-    return NextResponse.json({ error: 'Stripe non configuré.' }, { status: 500 });
+    return NextResponse.json({ error: 'Stripe non configuré.', giftsEnded }, { status: 500 });
   }
 
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2026-03-25.dahlia' });
-  let checked = 0, downgraded = 0, errors = 0;
+  let checked = 0, downgraded = 0;
 
   // Pagination KEYSET par id (pas .limit() seul ni offset) : couvre TOUS les
   // membres premium, pas seulement les 100 premiers — sinon un webhook
@@ -56,7 +67,7 @@ export async function GET(req: NextRequest) {
 
     if (error) {
       reportError('cron/premium-reconcile', error);
-      return NextResponse.json({ error: 'Erreur SQL.', checked, downgraded, errors }, { status: 500 });
+      return NextResponse.json({ error: 'Erreur SQL.', giftsEnded, checked, downgraded, errors }, { status: 500 });
     }
     if (!members || members.length === 0) break;
 
@@ -96,6 +107,6 @@ export async function GET(req: NextRequest) {
     if (members.length < BATCH_SIZE) break;
   }
 
-  console.log('[cron/premium-reconcile] checked:', checked, 'downgraded:', downgraded, 'errors:', errors);
-  return NextResponse.json({ ok: true, checked, downgraded, errors });
+  console.log('[cron/premium-reconcile] giftsEnded:', giftsEnded, 'checked:', checked, 'downgraded:', downgraded, 'errors:', errors);
+  return NextResponse.json({ ok: true, giftsEnded, checked, downgraded, errors });
 }

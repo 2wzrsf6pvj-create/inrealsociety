@@ -1163,3 +1163,89 @@ describe.skipIf(!ENABLED)('Test terrain : semaine par semaine, suivi des porteur
     expect(d.ratings.positive).toBeGreaterThanOrEqual(1);
   });
 });
+
+// ─── Premium offert aux testeurs (test terrain) ──────────────────────────────
+describe.skipIf(!ENABLED)('Premium offert : 4 semaines depuis /admin, puis gratuit, seul ; jamais un abonné', () => {
+  let admin:     typeof import('@/app/api/admin/moderation/route');
+  let reconcile: typeof import('@/app/api/cron/premium-reconcile/route');
+  let watch:     typeof import('@/lib/order-watch');
+  let stats:     typeof import('@/lib/field-stats');
+  const tag    = crypto.randomUUID().slice(0, 8);
+  const tester = crypto.randomUUID();   // offert, puis arrivé à sa date
+  const other  = crypto.randomUUID();   // offert, date à venir
+  const paid   = crypto.randomUUID();   // abonné payant
+  const paidSub = `sub_paid${sent.run}`;
+  const plan = (id: string) => sql(`SELECT concat_ws('|', plan, coalesce(stripe_subscription_id, '-'), coalesce(plan_expires_at::text, '-')) FROM members WHERE id = '${id}'`);
+  const decide = (body: Record<string, unknown>) => admin.POST(req('/api/admin/moderation', { body }));
+  const audited = (action: string, id: string) => sql(`SELECT count(*) FROM audit_logs WHERE action = '${action}' AND member_id = '${id}'`);
+
+  beforeAll(async () => {
+    process.env.ADMIN_EMAILS = 'clement@example.com';
+    admin     = await import('@/app/api/admin/moderation/route');
+    reconcile = await import('@/app/api/cron/premium-reconcile/route');
+    watch     = await import('@/lib/order-watch');
+    stats     = await import('@/lib/field-stats');
+    sql(`INSERT INTO members (id, name, email) VALUES
+      ('${tester}', 'Testeur${tag}', 'testeur-${tag}@example.com'),
+      ('${other}', 'Autre${tag}', 'autre-${tag}@example.com')`);
+    sql(`INSERT INTO members (id, name, email, plan, stripe_customer_id, stripe_subscription_id) VALUES
+      ('${paid}', 'Abonne${tag}', 'abonne-${tag}@example.com', 'premium', 'cus_paid${sent.run}', '${paidSub}')`);
+    stripeState.subs.push({ id: paidSub, customer: `cus_paid${sent.run}`, status: 'active' });
+    currentUser = { id: crypto.randomUUID(), email: 'clement@example.com', email_confirmed_at: new Date().toISOString() };
+  });
+
+  it('offert à un porteur gratuit : premium jusqu’à dans 28 jours, sans abonnement, tracé', async () => {
+    const res = await decide({ action: 'gift_premium', memberId: tester });
+    expect(res.status).toBe(200);
+    const { premiumUntil } = await res.json();
+    expect(sql(`SELECT plan || '|' || (stripe_subscription_id IS NULL) || '|' || (plan_expires_at = '${premiumUntil}')
+      || '|' || (plan_expires_at BETWEEN now() + interval '27 days 23 hours' AND now() + interval '28 days 1 hour')
+      FROM members WHERE id = '${tester}'`)).toBe('premium|true|true|true');
+    expect(sql(`SELECT metadata->>'by' FROM audit_logs WHERE action = 'member.premium_gifted' AND member_id = '${tester}'`)).toBe('clement@example.com');
+    expect((await decide({ action: 'gift_premium', memberId: other })).status).toBe(200);
+  });
+
+  it('/admin : offert se distingue d’un abonnement, avec sa date de fin', async () => {
+    const hits = (await watch.searchAdmin(tag))!.members;
+    expect(Object.fromEntries(hits.map((m) => [m.id, m.premium]))).toEqual({
+      [tester]: { gift: true, until: expect.any(String) },
+      [other]:  { gift: true, until: expect.any(String) },
+      [paid]:   { gift: false, until: null },
+    });
+    const s = await stats.loadFieldStats();
+    expect(s.giftedPremium).toBeGreaterThanOrEqual(2);
+    expect(s.followUp.find((w) => w.id === tester)?.premium).toEqual({ gift: true, until: expect.any(String) });
+  });
+
+  it('jamais à un abonné payant, ni deux fois : rien ne change', async () => {
+    expect((await decide({ action: 'gift_premium', memberId: paid })).status).toBe(409);
+    expect(plan(paid)).toBe(`premium|${paidSub}|-`);
+    const before = plan(tester);
+    expect((await decide({ action: 'gift_premium', memberId: tester })).status).toBe(409);
+    expect(plan(tester)).toBe(before);
+    expect((await decide({ action: 'end_gift_premium', memberId: paid })).status).toBe(409);
+    expect(plan(paid)).toBe(`premium|${paidSub}|-`);
+  });
+
+  it('date atteinte : la tâche quotidienne le repasse en gratuit, sans email ; le reste ne bouge pas', async () => {
+    sql(`UPDATE members SET plan_expires_at = now() - interval '1 minute' WHERE id = '${tester}'`);
+    const emailsBefore = sent.emails.length;
+    const res = await reconcile.GET(req('/api/cron/premium-reconcile', {
+      method: 'GET', headers: { authorization: 'Bearer cron-integration-secret' },
+    }));
+    expect(res.status).toBe(200);
+    expect((await res.json()).giftsEnded).toBeGreaterThanOrEqual(1);
+    expect(plan(tester)).toBe('free|-|-');
+    expect(plan(other)).toMatch(/^premium\|-\|\d{4}-/);
+    expect(plan(paid)).toBe(`premium|${paidSub}|-`);
+    expect(sent.emails.slice(emailsBefore).filter((e) => e.to[0] === `testeur-${tag}@example.com`)).toEqual([]);
+    await vi.waitFor(() => expect(audited('member.premium_gift_ended', tester)).toBe('1'));
+  });
+
+  it('arrêté avant sa date depuis /admin : gratuit, tracé', async () => {
+    expect((await decide({ action: 'end_gift_premium', memberId: other })).status).toBe(200);
+    expect(plan(other)).toBe('free|-|-');
+    expect(sql(`SELECT metadata->>'by' FROM audit_logs WHERE action = 'member.premium_gift_ended' AND member_id = '${other}'`)).toBe('clement@example.com');
+    currentUser = null;
+  });
+});

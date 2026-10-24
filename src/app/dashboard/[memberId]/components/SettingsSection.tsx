@@ -10,6 +10,7 @@ import type { Member } from '@/lib/types';
 import { useRouter } from 'next/navigation';
 import { PREMIUM_PERKS, PREMIUM_PRICE_LABEL, PREMIUM_WITHDRAWAL_DAYS } from '@/lib/constants';
 import { formatDayFr } from '@/lib/dates';
+import { isGiftedPremium } from '@/lib/subscription';
 import SectionDivider from '@/app/components/ui/SectionDivider';
 
 // ─── Premium Block ────────────────────────────────────────────────────────────
@@ -20,6 +21,8 @@ function PremiumBlock({ member }: { member: Member }) {
   const [accepted, setAccepted] = useState(false);
   const [error, setError]       = useState('');
   const isPremium = member.plan === 'premium';
+  // Offert pendant le test terrain : ni abonnement à gérer, ni paiement.
+  const gift = isGiftedPremium(member);
 
   const handleAction = async () => {
     // Acceptation EXPLICITE des CGV avant paiement, comme à la boutique (article 8 :
@@ -89,7 +92,13 @@ function PremiumBlock({ member }: { member: Member }) {
         ))}
       </ul>
 
-      {isPremium ? (
+      {gift ? (
+        <p className="font-ui text-xs text-[#C5A059]/85 leading-relaxed">
+          {member.plan_expires_at
+            ? `Premium offert jusqu’au ${formatDayFr(member.plan_expires_at)} : rien à payer, il s’arrête seul à cette date.`
+            : 'Premium offert : rien à payer.'}
+        </p>
+      ) : isPremium ? (
         <div className="flex flex-col gap-2">
           {member.plan_expires_at && (
             <p className="font-ui text-xs text-[#C5A059]/85 leading-relaxed">

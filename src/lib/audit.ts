@@ -38,6 +38,8 @@ export type AuditAction =
   | 'member.suspended'
   | 'member.unsuspended'
   | 'member.photo_removed'
+  | 'member.premium_gifted'
+  | 'member.premium_gift_ended'
   | 'device.banned'
   | 'device.unbanned'
   | 'moderation.report_handled'

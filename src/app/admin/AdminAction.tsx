@@ -5,6 +5,7 @@
 
 import React, { useId, useState } from 'react';
 import { requestErrorMessage, SEND_TIMEOUT_MS, timeoutSignal } from '@/lib/request';
+import { formatDayFr } from '@/lib/dates';
 
 export default function AdminAction({ label, payload, ask, notifyReporter = false, danger = false }: {
   label:   string;
@@ -55,6 +56,7 @@ export default function AdminAction({ label, payload, ask, notifyReporter = fals
         data.reporterNotified === false ? 'Auteur du signalement non prévenu : pas d’email laissé, ou envoi impossible.' : '',
         data.buyerNotified === true  ? 'Code renvoyé par email.' : '',
         data.buyerNotified === false ? 'Code non envoyé : envoi impossible, réessayer plus tard.' : '',
+        typeof data.premiumUntil === 'string' ? `Premium offert jusqu’au ${formatDayFr(data.premiumUntil)}.` : '',
       ].filter(Boolean).join(' '));
     } catch (err) {
       setError(requestErrorMessage(err, 'Erreur.'));

@@ -217,6 +217,7 @@ describe('« Mon espace » relève le téléphone', () => {
 describe('chiffres de /admin : notifications', () => {
   const members = ['i1', 'i2', 'i3', 'a1', 'a2', 'a3', 'd1', 'n1'].map((id) => ({
     id, created_at: daysAgo(60), plan: 'free', name: id, short_code: null, is_paused: false, suspended_at: null,
+    stripe_subscription_id: null, plan_expires_at: null,
   }));
   const sub = (member_id: string | null, endpoint: string, message_id: string | null = null) => ({ member_id, message_id, endpoint });
   const roots = ['m1', 'm2', 'm3'].map((id) => ({ id, member_id: 'i1', created_at: daysAgo(2) }));

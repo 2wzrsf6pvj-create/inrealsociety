@@ -1,6 +1,6 @@
 // src/app/api/admin/moderation/route.ts
-// POST — décisions prises depuis /admin : modération, et renvoi d'un code
-// d'activation (service client).
+// POST — décisions prises depuis /admin : modération, renvoi d'un code
+// d'activation (service client), premium offert aux testeurs (test terrain).
 // Réservé à ADMIN_EMAILS (adresse confirmée) ; pour tout autre compte, 404 sans
 // rien révéler. Chaque décision s'inscrit dans audit_logs (qui, quoi, pourquoi),
 // clôt le signalement d'où elle part, et prévient par email la personne visée
@@ -17,6 +17,8 @@ import { REPORT_KEY_RE } from '@/lib/moderation-queue';
 import { sendEmail, emailActivation, emailModerationNotice, emailReportOutcome } from '@/lib/email-templates';
 import { APP_URL } from '@/lib/constants';
 import type { AuditAction } from '@/lib/audit';
+import { PREMIUM_GIFT_DAYS } from '@/lib/subscription';
+import { formatDayFr } from '@/lib/dates';
 import { reportError } from '@/lib/report-error';
 
 const motif     = z.string().trim().min(3).max(500);
@@ -32,11 +34,14 @@ const schema = z.discriminatedUnion('action', [
   z.object({ action: z.literal('hide_message'),     messageId: z.string().uuid(), motif, ...fromReport }),
   z.object({ action: z.literal('mark_handled'),     reportKey, decision: motif, notifyReporter: z.boolean().default(false) }),
   z.object({ action: z.literal('resend_code'),      orderId: z.string().uuid() }),
+  z.object({ action: z.literal('gift_premium'),     memberId: z.string().uuid() }),
+  z.object({ action: z.literal('end_gift_premium'), memberId: z.string().uuid() }),
 ]);
 type Decision = z.infer<typeof schema>;
 
 /** Ce que l'auteur du signalement apprend de la suite donnée. */
-const OUTCOME: Record<Exclude<Decision['action'], 'mark_handled' | 'unsuspend_member' | 'unban_device' | 'resend_code'>, string> = {
+const OUTCOME: Record<Exclude<Decision['action'],
+  'mark_handled' | 'unsuspend_member' | 'unban_device' | 'resend_code' | 'gift_premium' | 'end_gift_premium'>, string> = {
   suspend_member: 'le profil signalé a été suspendu.',
   remove_photo:   'la photo signalée a été retirée.',
   ban_device:     'l’appareil à l’origine des messages ne peut plus écrire sur In Real Society.',
@@ -56,10 +61,13 @@ async function record(action: AuditAction, memberId: string | null, metadata: Re
 
 async function getMember(memberId: string) {
   const { data, error } = await supabaseAdmin
-    .from('members').select('id, name, email').eq('id', memberId).maybeSingle();
+    .from('members').select('id, name, email, plan, stripe_subscription_id, plan_expires_at').eq('id', memberId).maybeSingle();
   if (error) throw error;
   if (!data) throw new NotFound();
-  return data as { id: string; name: string | null; email: string | null };
+  return data as {
+    id: string; name: string | null; email: string | null;
+    plan: string; stripe_subscription_id: string | null; plan_expires_at: string | null;
+  };
 }
 
 async function notifyMember(
@@ -84,8 +92,9 @@ async function notifyReporter(key: string, decision: string): Promise<boolean> {
 }
 
 /** memberNotified : null quand la décision ne vise pas un porteur ;
- *  buyerNotified : seulement pour le renvoi d'un code d'activation. */
-async function apply(d: Decision, by: string): Promise<{ memberNotified: boolean | null; buyerNotified?: boolean }> {
+ *  buyerNotified : seulement pour le renvoi d'un code d'activation ;
+ *  premiumUntil : fin du premium offert. */
+async function apply(d: Decision, by: string): Promise<{ memberNotified: boolean | null; buyerNotified?: boolean; premiumUntil?: string }> {
   switch (d.action) {
     case 'suspend_member': {
       const member = await getMember(d.memberId);
@@ -155,6 +164,44 @@ async function apply(d: Decision, by: string): Promise<{ memberNotified: boolean
       await record('order.email_resent', null, { by, orderId: order.id, email: order.email, sent });
       return { memberNotified: null, buyerNotified: sent };
     }
+    case 'gift_premium': {
+      // Test terrain (choix de Clément) : premium sans abonnement jusqu'à une
+      // date, puis retour au gratuit (premium-reconcile). Pas d'email : les
+      // testeurs l'apprennent de vive voix.
+      const member = await getMember(d.memberId);
+      if (member.plan === 'premium') {
+        throw new Conflict(member.stripe_subscription_id
+          ? 'Abonné : il paie son premium.'
+          : `Premium déjà offert${member.plan_expires_at ? ` jusqu’au ${formatDayFr(member.plan_expires_at)}` : ''}.`);
+      }
+      const until = new Date(Date.now() + PREMIUM_GIFT_DAYS * 86_400_000).toISOString();
+      // Seulement s'il est toujours gratuit : un abonnement pris entre-temps
+      // n'est pas écrasé.
+      const { data, error } = await supabaseAdmin.from('members')
+        .update({ plan: 'premium', plan_expires_at: until })
+        .eq('id', d.memberId).eq('plan', 'free').is('stripe_subscription_id', null)
+        .select('id');
+      if (error) throw error;
+      if (!data || data.length === 0) throw new Conflict('Son premium vient de changer : actualiser la page.');
+      await record('member.premium_gifted', d.memberId, { by, until });
+      return { memberNotified: null, premiumUntil: until };
+    }
+    case 'end_gift_premium': {
+      const member = await getMember(d.memberId);
+      if (member.plan !== 'premium' || member.stripe_subscription_id) {
+        throw new Conflict(member.stripe_subscription_id
+          ? 'Abonné : il paie son premium, rien d’offert à arrêter.'
+          : 'Aucun premium offert en cours.');
+      }
+      const { data, error } = await supabaseAdmin.from('members')
+        .update({ plan: 'free', plan_expires_at: null })
+        .eq('id', d.memberId).eq('plan', 'premium').is('stripe_subscription_id', null)
+        .select('id');
+      if (error) throw error;
+      if (!data || data.length === 0) throw new Conflict('Son premium vient de changer : actualiser la page.');
+      await record('member.premium_gift_ended', d.memberId, { by });
+      return { memberNotified: null };
+    }
   }
 }
 
@@ -182,7 +229,7 @@ export async function POST(req: NextRequest) {
     const d = body.data;
     const by = auth.user.email!.toLowerCase();
 
-    const { memberNotified, buyerNotified } = await apply(d, by);
+    const { memberNotified, buyerNotified, premiumUntil } = await apply(d, by);
 
     // Clôt le signalement d'où part la décision, puis prévient son auteur
     // (reporterNotified : null quand ce n'était pas demandé).
@@ -193,7 +240,11 @@ export async function POST(req: NextRequest) {
       if (d.notifyReporter) reporterNotified = await notifyReporter(d.reportKey, decision);
     }
 
-    return NextResponse.json({ ok: true, memberNotified, reporterNotified, ...(buyerNotified === undefined ? {} : { buyerNotified }) });
+    return NextResponse.json({
+      ok: true, memberNotified, reporterNotified,
+      ...(buyerNotified === undefined ? {} : { buyerNotified }),
+      ...(premiumUntil === undefined ? {} : { premiumUntil }),
+    });
   } catch (err) {
     if (err instanceof NotFound) return NextResponse.json({ error: 'Introuvable.' }, { status: 404 });
     if (err instanceof Conflict) return NextResponse.json({ error: err.message }, { status: 409 });

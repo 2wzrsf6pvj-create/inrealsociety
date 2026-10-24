@@ -32,7 +32,11 @@ export function setupStatus(env: Env, { migration062 }: { migration062: boolean 
   const stripeKey = env.STRIPE_SECRET_KEY?.trim() ?? '';
   const live = /^(sk|rk)_live_/.test(stripeKey);
   const variants = absent(PRINTFUL_VARIANTS);
-  const shortDomain = env.SHORT_DOMAIN?.trim();
+  const shortDomain = env.SHORT_DOMAIN?.trim().replace(/\/$/, '');
+  let shortHost = '';
+  try { shortHost = shortDomain ? new URL(shortDomain).host : ''; } catch { /* adresse illisible */ }
+  // Domaine court en place : les QR l'encodent, plus le domaine principal.
+  const shortOk = !!shortHost && shortHost !== host;
   const push = vars('Notifications', ['VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY', 'NEXT_PUBLIC_VAPID_PUBLIC_KEY'], 'configurées',
     'aucune notification : un message n’est vu qu’en ouvrant le site');
   // La clé publique sert deux fois : au serveur et au navigateur. Différentes,
@@ -43,7 +47,9 @@ export function setupStatus(env: Env, { migration062 }: { migration062: boolean 
     { title: 'Site et base', checks: [
       { label: 'Domaine', ok: !!host && !provisional,
         detail: !host ? 'NEXT_PUBLIC_APP_URL manquante ou illisible'
+          : provisional && shortOk ? `${host} : domaine provisoire, à remplacer avant d'ouvrir (liens des emails, pages des profils).`
           : provisional ? `${host} : domaine provisoire. Les QR imprimés l'encoderaient pour toujours.`
+          : shortOk ? `${host} : liens des emails et pages des profils.`
           : `${host} : encodé dans les QR imprimés (${appUrl.replace(/\/$/, '')}/r/<code>).` },
       { label: 'Base', ok: migration062,
         detail: migration062 ? 'migrations à jour (062)' : 'migration 062 à appliquer (téléphone des porteurs)' },
@@ -73,10 +79,13 @@ export function setupStatus(env: Env, { migration062 }: { migration062: boolean 
       pushKeysDiffer
         ? { label: 'Notifications', ok: false, detail: 'NEXT_PUBLIC_VAPID_PUBLIC_KEY doit être identique à VAPID_PUBLIC_KEY : sinon rien n’arrive' }
         : push,
-      { label: 'Domaine court des QR', ok: !shortDomain,
-        detail: shortDomain
-          ? `${shortDomain} : rien ne redirige encore ce domaine, les QR imprimés mèneraient à une page introuvable. Vider SHORT_DOMAIN.`
-          : 'non utilisé : les QR encodent le domaine principal' },
+      // Choix de Clément : QR en inreal.me/<code> (portée ≈ 2,5 m au lieu de 2,0 m).
+      { label: 'Domaine court des QR', ok: shortOk,
+        detail: !shortDomain
+          ? 'vide : les QR encoderaient le domaine principal, portée de scan ≈ 2,0 m au lieu de 2,5 m. À renseigner (https://inreal.me) une fois le domaine ajouté au projet Vercel.'
+          : !shortHost ? `${shortDomain} : adresse illisible`
+          : shortHost === host ? `${shortHost} : c'est le domaine principal, pas un domaine court`
+          : `${shortHost} : les QR encodent ${shortDomain}/<code>. Le domaine doit être ajouté au projet Vercel, sans redirection vers le domaine principal.` },
     ] },
   ];
 }

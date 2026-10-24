@@ -8,6 +8,7 @@
 //
 //   /preview/dashboard          → membre actif (scans, messages, premium)
 //   /preview/dashboard?empty=1  → état cold-start (0 scan : guide d'activation)
+//   /preview/dashboard?gift=1   → premium offert (test terrain)
 
 import { notFound } from 'next/navigation';
 import DashboardClient from '../../dashboard/[memberId]/DashboardClient';
@@ -17,9 +18,10 @@ import { CONVERSATION_WINDOW_DAYS } from '@/lib/constants';
 export const metadata = { title: 'Preview dashboard (dev)' };
 
 // ?empty=1 : porteur sans scan ni message ; ?plan=free : porteur gratuit (offre
-// premium) ; ?ends=1 : premium dont la résiliation est programmée.
+// premium) ; ?ends=1 : premium dont la résiliation est programmée ; ?gift=1 :
+// premium offert depuis /admin.
 export default async function PreviewDashboardPage(
-  props: { searchParams: Promise<{ empty?: string; plan?: string; ends?: string }> }
+  props: { searchParams: Promise<{ empty?: string; plan?: string; ends?: string; gift?: string }> }
 ) {
   const searchParams = await props.searchParams;
   // Jamais accessible en prod.
@@ -27,6 +29,7 @@ export default async function PreviewDashboardPage(
 
   const empty = searchParams?.empty === '1';
   const free  = searchParams?.plan === 'free';
+  const gift  = !free && searchParams?.gift === '1';
   // eslint-disable-next-line react-hooks/purity -- page de démonstration : l'heure du rendu est voulue
   const now = Date.now();
   const ago = (ms: number) => new Date(now - ms).toISOString();
@@ -43,9 +46,9 @@ export default async function PreviewDashboardPage(
     is_paused:              false,
     require_contact:        false,
     plan:                   free ? 'free' : 'premium',
-    stripe_customer_id:     null,
-    stripe_subscription_id: null,
-    plan_expires_at:        !free && searchParams?.ends === '1' ? ago(-20 * D) : null,
+    stripe_customer_id:     free || gift ? null : 'cus_preview',
+    stripe_subscription_id: free || gift ? null : 'sub_preview',
+    plan_expires_at:        gift || (!free && searchParams?.ends === '1') ? ago(-20 * D) : null,
     marketing_consent:      false,
     marketing_consent_at:   null,
     scan_emails:            true,

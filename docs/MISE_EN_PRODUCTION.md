@@ -12,18 +12,20 @@ Au 24 octobre 2026, rien n'est encore en place. Voici l'ordre : d'abord ce
 qui demande le plus de délai, puis les réglages, chaque étape renvoyant à sa
 section. `/admin` →
 « Configuration » montre ce que l'app voit déjà : variables présentes ou
-manquantes, paiements réels ou de test, domaine encodé dans les QR.
+manquantes, paiements réels ou de test, domaines encodés dans les QR.
 
 1. **Statut et SIRET**, si ce n'est pas fait (quelques jours à deux
    semaines) : Stripe en paiement réel, les mentions légales et le médiateur
    le demandent.
 2. **Juridique, à lancer tout de suite** (plusieurs semaines) : médiateur,
    juriste, comptable (section 6). Prêt avant la première vente réelle.
-3. **Domaine définitif** (une heure) : l'acheter, l'ajouter au projet Vercel,
-   le mettre dans `NEXT_PUBLIC_APP_URL` (sections 0 et 1). Le QR imprimé
-   l'encode pour toujours : aucune impression avec un domaine provisoire
-   (`*.vercel.app`). `SHORT_DOMAIN` reste vide : rien ne redirige encore un
-   domaine court.
+3. **Domaines** (une heure) : le domaine définitif, l'ajouter au projet
+   Vercel, le mettre dans `NEXT_PUBLIC_APP_URL` ; puis **`inreal.me`**, ajouté
+   au **même** projet Vercel **sans redirection** vers le domaine principal,
+   et `SHORT_DOMAIN=https://inreal.me` (sections 0 et 1). Les QR imprimés
+   encodent `inreal.me/<code>` pour toujours : aucune impression avant que
+   `/admin` → « Configuration » n'affiche les deux domaines sans point à
+   régler.
 4. **Offres payantes** (une heure) : Vercel Pro, Supabase Pro, Resend Pro
    (sections 0, 2 et 4).
 5. **Base** (une heure) : migrations jusqu'à 062, vérification, réglages de
@@ -46,7 +48,8 @@ manquantes, paiements réels ou de test, domaine encodé dans les QR.
     réel. Une commande payée part alors à l'impression d'elle-même. `/admin`
     → « Configuration » : « Paiements : réels », rien à régler.
 12. **J-14** : les 10 commandes du test (`TEST_TERRAIN.md`, section 3).
-13. **J0** : remise des t-shirts.
+13. **J0** : remise des t-shirts, et le premium offert à chaque testeur
+    depuis `/admin` (`TEST_TERRAIN.md`, section 3).
 
 Compter deux à trois semaines (statut, juridique, DNS, impression et
 livraison), dont une journée de réglages.
@@ -57,6 +60,11 @@ livraison), dont une journée de réglages.
       préversion). Dans Vercel → *Settings → Git*, vérifier que la branche de
       production est `main` : chaque fusion part alors en production. Noter le
       domaine de production (*Settings → Domains*).
+- [ ] Vercel → *Settings → Domains* : **`inreal.me`** ajouté au même projet,
+      rattaché à la production, **sans** redirection vers le domaine
+      principal (ne pas choisir « Redirect to… »). Chez le registraire
+      d'`inreal.me` : les enregistrements DNS que Vercel indique. L'app envoie
+      elle-même `inreal.me/<code>` vers le profil, et le reste vers le site.
 - [ ] Vercel : offre **Pro** (20 $/mois) avant la première vente. L'offre
       gratuite (Hobby) est réservée à un usage non commercial.
 - [ ] Ouvrir `https://<domaine>/api/health` :
@@ -67,8 +75,9 @@ livraison), dont une journée de réglages.
 ## 1. Variables d'environnement
 
 Vercel → *Settings → Environment Variables*, environnement **Production**.
-Au démarrage, l'application liste dans ses logs les variables recommandées
-qui manquent.
+Une variable ajoutée ou modifiée ne compte qu'au déploiement suivant :
+*Deployments* → dernier déploiement → *Redeploy*. Au démarrage, l'application
+liste dans ses logs les variables recommandées qui manquent.
 
 **Indispensables : sans elles, le site ou les QR codes ne fonctionnent pas.**
 
@@ -104,6 +113,7 @@ qui manquent.
 | Variable | Sans elle |
 |---|---|
 | `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | aucune notification : un message n'est vu qu'en ouvrant le site. Les générer avec `npx web-push generate-vapid-keys` ; la clé publique va dans les deux variables `…PUBLIC_KEY` |
+| `SHORT_DOMAIN` | les QR encodent le domaine principal (`<site>/r/<code>`) : plus longs, ils se lisent de moins loin (≈ 2,0 m au lieu de 2,5 m). Valeur : `https://inreal.me`, une fois ce domaine ajouté au projet Vercel sans redirection. Avec une redirection Vercel vers le domaine principal, chaque QR imprimé mènerait à une page introuvable |
 
 **Confort.**
 
@@ -112,10 +122,6 @@ qui manquent.
 | `OPENAI_API_KEY` | modération par règles seules, moins fine |
 | `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST` | pas de mesure d'audience |
 | `EMAIL_FROM` | rien : à ne régler que pour changer d'expéditeur (défaut `In Real Society <noreply@mail.inrealsociety.com>`) |
-
-**À laisser vide.** `SHORT_DOMAIN` : rien ne redirige encore un domaine court
-vers les profils. Renseignée, chaque QR imprimé mènerait à une page
-introuvable.
 
 - [ ] Toutes les variables indispensables et de vente sont renseignées.
 - [ ] Vercel → *Cron Jobs* : les 5 tâches de `vercel.json` apparaissent.
@@ -254,6 +260,9 @@ Printful (il est alors facturé).
       l'email avec le code d'activation arrive.
 - [ ] Activer le profil avec ce code (case 18 ans comprise).
 - [ ] Scanner le QR code avec un autre téléphone : le profil s'ouvre.
+- [ ] Domaine court : sur un téléphone, ouvrir `inreal.me/<code>` (le code
+      du QR : `/admin` → recherche du porteur, ligne « État ») : le profil
+      s'ouvre. `inreal.me` seul mène à l'accueil du site.
 - [ ] Envoyer un message avec un email : le lien de confirmation arrive.
       Cliquer, puis répondre depuis le tableau de bord : la réponse arrive par
       email et dans la conversation.
