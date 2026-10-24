@@ -35,9 +35,12 @@ Facultatifs pour ce test :
 - [ ] *Authentication → Providers → Email* : « Confirm email » activé. C'est
       le réglage par défaut : ne jamais le désactiver.
 - [ ] *Authentication → URL Configuration* :
-  - *Site URL* : l'adresse du site (étape 6) ;
+  - *Site URL* : l'adresse du site (étape 6), sans « / » final ;
   - *Redirect URLs* : cette adresse suivie de `/auth/callback`, puis de
     `/auth/confirm`.
+- [ ] *Authentication → Email Templates* : coller nos deux modèles, en
+      français (`MISE_EN_PRODUCTION.md`, section 2). Facultatif pour ton test
+      seul, puisque ton compte est créé à la main ; indispensable pour J0.
 - [ ] *Authentication → Users → Add user* : ton email, un mot de passe, case
       « Auto Confirm User » cochée. C'est ton compte admin, et ce sera aussi
       ton compte de porteur pendant le test.

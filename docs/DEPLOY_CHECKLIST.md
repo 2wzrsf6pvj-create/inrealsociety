@@ -118,13 +118,21 @@ plus exécuter `create_member_with_code` (service_role oui).
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `NEXT_PUBLIC_APP_URL`
 
-### 🟠 Dashboard Supabase — Auth (reset mot de passe cross-device)
-- **Email templates** → modèle **« Reset Password »** : remplacer le lien par
-  `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/auth/reset-password`.
-  Sans ça, le lien par défaut est un `?code=` PKCE lié à l'appareil d'origine :
-  « demande sur PC, ouvre sur mobile » échoue (lien affiché « expiré »). La route
-  `/auth/confirm` (verifyOtp serveur) gère le token cross-device. Idem modèle
-  **« Confirm signup »** si besoin : `…&type=signup&next=/dashboard`.
+### 🟠 Dashboard Supabase — Auth (emails de compte, liens valables partout)
+- **Email templates** → coller nos deux modèles, en français
+  (`supabase/templates/`, générés par `npx tsx scripts/supabase-email-templates.mts`
+  depuis `src/lib/email-templates.ts`) :
+  - **« Confirm signup »** (sujet « Confirmez votre adresse email ») : lien
+    `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/register` ;
+  - **« Reset Password »** (sujet « Réinitialisez votre mot de passe ») : lien
+    `{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/auth/reset-password`.
+
+  Sans eux, le lien par défaut est un `?code=` PKCE lié au navigateur d'origine :
+  « inscription sur le téléphone, lien ouvert dans l'app Gmail » ou « demande sur
+  PC, ouvre sur mobile » échoue (lien affiché « expiré »). `/auth/confirm`
+  (verifyOtp serveur) ouvre la session où que le lien soit ouvert ; le code
+  d'activation, gardé sur le compte à l'inscription (`user_metadata`), est
+  retrouvé par `/register`.
 - **URL Configuration** : ajouter `${APP_URL}/auth/confirm` et
   `${APP_URL}/auth/callback` aux **Redirect URLs** autorisées.
 - 🔴 **« Confirm email » DOIT rester ACTIVÉ** (Auth → Providers → Email →

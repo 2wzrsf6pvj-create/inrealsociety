@@ -3,6 +3,11 @@
 //   /rest/v1/*       → PostgREST : la vraie base, migrations du dépôt ;
 //   /auth/v1/user    → l'utilisateur porté par le jeton de session, signé avec
 //                      le secret de la base de test (session simulée) ;
+//   /auth/v1/signup  → inscription gardée ici, en attente de confirmation ; les
+//                      tests la lisent sur /auth-test/signup?email=<adresse>
+//                      (identifiant, jeton du lien, données du compte) ;
+//   /auth/v1/verify  → le jeton du lien de confirmation (token_hash) ouvre une
+//                      session, comme le fait Supabase ;
 //   /auth/v1/logout  → déconnexion acceptée ;
 //   /upstash         → limites de débit qui laissent toujours passer : elles ont
 //                      leurs propres tests, et ici toutes les requêtes viennent
@@ -20,6 +25,8 @@ const SECRET    = process.env.JWT_SECRET ?? 'integration-test-secret-integration
 
 /** Emails « envoyés » par l'app, du premier au dernier. */
 const emails = [];
+/** Inscriptions en attente de confirmation, par adresse. */
+const signups = new Map();
 
 /** Revendications d'un jeton HS256 valide et non expiré, sinon null. */
 function verify(token) {
@@ -29,6 +36,23 @@ function verify(token) {
   if (expected.length !== signature.length || !crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature))) return null;
   const claims = JSON.parse(Buffer.from(payload, 'base64url').toString());
   return claims.exp && claims.exp * 1000 < Date.now() ? null : claims;
+}
+
+/** Jeton de session HS256, comme ceux de Supabase (user_metadata compris). */
+function sign(claims) {
+  const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');
+  const body = `${b64({ alg: 'HS256', typ: 'JWT' })}.${b64(claims)}`;
+  return `${body}.${crypto.createHmac('sha256', SECRET).update(body).digest('base64url')}`;
+}
+
+/** Utilisateur au format de Supabase Auth. */
+function authUser({ id, email, metadata = {}, confirmed = true }) {
+  return {
+    id, aud: 'authenticated', role: 'authenticated', email,
+    ...(confirmed ? { email_confirmed_at: '2026-01-01T00:00:00Z', confirmed_at: '2026-01-01T00:00:00Z' } : {}),
+    app_metadata: { provider: 'email', providers: ['email'] }, user_metadata: metadata, identities: [],
+    created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z', is_anonymous: false,
+  };
 }
 
 /** Upstash : les scripts de limite répondent « autorisé » (fenêtre glissante :
@@ -85,12 +109,30 @@ http.createServer(async (req, res) => {
     if (url.pathname === '/auth/v1/user') {
       const claims = verify((req.headers.authorization ?? '').replace(/^Bearer /, ''));
       if (!claims?.sub) return json(401, { code: 401, error_code: 'bad_jwt', msg: 'invalid JWT' });
+      return json(200, authUser({ id: claims.sub, email: claims.email, metadata: claims.user_metadata ?? {} }));
+    }
+    // Inscription : confirmation de l'adresse exigée, donc pas de session.
+    if (url.pathname === '/auth/v1/signup' && req.method === 'POST') {
+      const { email, data } = JSON.parse(body.toString());
+      const signup = { id: crypto.randomUUID(), email, metadata: data ?? {}, tokenHash: crypto.randomBytes(20).toString('hex') };
+      signups.set(email, signup);
+      return json(200, authUser({ ...signup, confirmed: false }));
+    }
+    // Lien de confirmation (token_hash) : ouvre une session, d'où qu'il soit ouvert.
+    if (url.pathname === '/auth/v1/verify' && req.method === 'POST') {
+      const { token_hash: tokenHash } = JSON.parse(body.toString());
+      const signup = [...signups.values()].find((s) => s.tokenHash === tokenHash);
+      if (!signup) return json(403, { code: 403, error_code: 'otp_expired', msg: 'Email link is invalid or has expired' });
+      const now = Math.floor(Date.now() / 1000);
+      const user = authUser(signup);
       return json(200, {
-        id: claims.sub, aud: 'authenticated', role: 'authenticated', email: claims.email,
-        email_confirmed_at: '2026-01-01T00:00:00Z', confirmed_at: '2026-01-01T00:00:00Z',
-        app_metadata: { provider: 'email', providers: ['email'] }, user_metadata: {}, identities: [],
-        created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z', is_anonymous: false,
+        access_token: sign({ sub: signup.id, email: signup.email, role: 'authenticated', aud: 'authenticated', exp: now + 3600, user_metadata: signup.metadata }),
+        token_type: 'bearer', expires_in: 3600, expires_at: now + 3600, refresh_token: 'e2e', user,
       });
+    }
+    if (url.pathname === '/auth-test/signup') {
+      const signup = signups.get(url.searchParams.get('email'));
+      return signup ? json(200, signup) : json(404, {});
     }
     if (url.pathname === '/auth/v1/logout') {
       res.writeHead(204, cors);

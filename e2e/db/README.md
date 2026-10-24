@@ -29,14 +29,18 @@ Les tests de `e2e/db/` parcourent l'app dans un vrai navigateur, devant une
   testeur, qui le voit dans ses réglages (date de fin, rien à payer ni à
   résilier) ; l'arrêt depuis `/admin` le repasse en gratuit ;
 - `qr-admin.spec.ts` : `/admin` → « Voir le QR » ; le QR affiché se lit, et
-  un passant qui le suit arrive sur le profil du porteur.
+  un passant qui le suit arrive sur le profil du porteur ;
+- `emails-compte.spec.ts` : inscription dans un navigateur, lien de
+  confirmation ouvert dans un autre (l'app Gmail, par exemple) : la session
+  s'ouvre là, `/register` retrouve le code d'activation gardé sur le compte,
+  et le profil se crée sans rien ressaisir.
 
 Les tests de fumée de `e2e/` (`npm run test:e2e`), eux, tournent sans base et ne
 voient que les pages publiques.
 
 | Réel | Simulé |
 |---|---|
-| L'app construite comme en production (`next build`, `next start`) | La session Supabase : cookie posé par le test, jeton signé avec le secret de la base de test |
+| L'app construite comme en production (`next build`, `next start`) | La session Supabase : cookie posé par le test, jeton signé avec le secret de la base de test ; l'inscription et le lien de confirmation (`token_hash`), gardés par la passerelle |
 | Chromium complet (`channel: 'chromium'`), et non sa version allégée, qui plantait parfois en CI | Pas de service worker (bloqué) : il préchargeait des pages pendant la fermeture des contextes ; il a ses propres tests |
 | Chromium (Playwright), un contexte par personne : le passant n'est jamais connecté, son appareil se reconnaît à son cookie | Le service de push du navigateur (absent du Chromium de test), quand un test en a besoin |
 | Postgres + PostgREST, migrations du dépôt (`integration/setup-db.sh`) | Les limites de débit (Upstash) : elles laissent tout passer |

@@ -57,6 +57,10 @@ demande plusieurs mois d'abonnement.
       sont confirmées, aucune en brouillon.
 - [ ] `ADMIN_ALERT_EMAIL` sur une boîte lue chaque jour, avec les
       notifications du téléphone : les signalements arrivent là.
+- [ ] Emails de compte : s'inscrire sur `/register` depuis un téléphone,
+      avec un code et une adresse de test, puis ouvrir le lien de
+      confirmation depuis l'app Gmail. L'email est en français, et le lien
+      mène au profil avec le code déjà rempli.
 - [ ] Préparer le questionnaire de fin (section 7) : formulaire en ligne, ou
       de vive voix pendant l'entretien.
 

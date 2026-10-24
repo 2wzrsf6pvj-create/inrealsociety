@@ -935,3 +935,50 @@ export async function sendEmailBatch(emails: EmailParams[]): Promise<number> {
   for (const e of errors) console.error(`[sendEmailBatch] email n°${e.index} refusé : ${e.message}`);
   return emails.length - errors.length;
 }
+
+// ─── Emails de compte, envoyés par Supabase ──────────────────────────────────
+// Supabase envoie lui-même la confirmation d'adresse et le mot de passe oublié.
+// Ces deux modèles gardent la présentation des autres emails ; ils se collent
+// dans Supabase (Authentication → Email Templates). Fichiers prêts à coller :
+// supabase/templates/, régénérés par `npx tsx scripts/supabase-email-templates.mts`.
+// Leurs liens passent par /auth/confirm, qui vérifie le jeton côté serveur : ils
+// marchent dans n'importe quel navigateur, y compris celui de l'app Gmail. Le
+// lien par défaut de Supabase (PKCE) échoue hors du navigateur de l'inscription.
+
+/** Modèle Supabase « Confirm signup ». Le code d'activation n'est pas dans le
+ *  lien : /register le retrouve sur le compte (user_metadata). */
+export function supabaseConfirmSignup(): { subject: string; html: string } {
+  return {
+    subject: 'Confirmez votre adresse email',
+    html: layout(`
+      <h1 style="font-size:26px;font-weight:300;letter-spacing:0.04em;margin:0 0 8px;text-align:center;">Une dernière vérification.</h1>
+      <p style="font-size:15px;font-weight:300;color:rgba(255,255,255,0.7);line-height:1.7;text-align:center;margin:0 0 8px;">
+        Confirmez votre adresse pour finaliser votre profil. Le lien vous y
+        ramène, sur ce téléphone ou un autre, avec votre code d'activation.
+      </p>
+      ${cta('Confirmer mon adresse', '{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/register')}
+      <p style="font-family:system-ui,sans-serif;font-size:12px;color:rgba(255,255,255,0.4);line-height:1.6;text-align:center;margin:24px 0 0;">
+        Vous n'avez pas créé de compte ? Ignorez cet email.
+      </p>
+    `),
+  };
+}
+
+/** Modèle Supabase « Reset Password ». */
+export function supabaseResetPassword(): { subject: string; html: string } {
+  return {
+    subject: 'Réinitialisez votre mot de passe',
+    html: layout(`
+      <h1 style="font-size:26px;font-weight:300;letter-spacing:0.04em;margin:0 0 8px;text-align:center;">Un nouveau mot de passe.</h1>
+      <p style="font-size:15px;font-weight:300;color:rgba(255,255,255,0.7);line-height:1.7;text-align:center;margin:0 0 8px;">
+        Le lien ci-dessous vous permet d'en choisir un, sur ce téléphone ou un
+        autre.
+      </p>
+      ${cta('Choisir un mot de passe', '{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=recovery&next=/auth/reset-password')}
+      <p style="font-family:system-ui,sans-serif;font-size:12px;color:rgba(255,255,255,0.4);line-height:1.6;text-align:center;margin:24px 0 0;">
+        Vous n'avez rien demandé ? Ignorez cet email : votre mot de passe ne
+        change pas.
+      </p>
+    `),
+  };
+}

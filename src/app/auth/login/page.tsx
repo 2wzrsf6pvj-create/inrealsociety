@@ -20,8 +20,10 @@ export default function LoginPage() {
   // aucune explication, mot de passe changé = aucune confirmation).
   const resetOk     = searchParams.get('reset') === 'success';
   const urlError    = searchParams.get('error');
+  // Un lien de confirmation ouvert dans un autre navigateur que celui de
+  // l'inscription échoue ici alors que l'adresse est bien confirmée.
   const urlErrorMsg = urlError === 'auth_failed'
-    ? 'Ce lien a expiré ou a déjà été utilisé. Réessayez.'
+    ? 'Ce lien n’a pas pu être ouvert ici. Si vous veniez de confirmer votre adresse, c’est sans doute fait : connectez-vous. Sinon, demandez un nouveau lien.'
     : urlError === 'missing_code'
     ? 'Lien de connexion incomplet. Réessayez.'
     : '';
