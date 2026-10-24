@@ -4,6 +4,7 @@
 // rechargement (« Actualiser »), pour que le résultat reste lisible.
 
 import React, { useId, useState } from 'react';
+import { requestErrorMessage, SEND_TIMEOUT_MS, timeoutSignal } from '@/lib/request';
 
 export default function AdminAction({ label, payload, ask, notifyReporter = false, danger = false }: {
   label:   string;
@@ -41,6 +42,7 @@ export default function AdminAction({ label, payload, ask, notifyReporter = fals
           ...(ask ? { [ask.field]: text.trim() } : {}),
           ...(notifyReporter ? { notifyReporter: notify } : {}),
         }),
+        signal:  timeoutSignal(SEND_TIMEOUT_MS),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(typeof data.error === 'string' ? data.error : `Erreur ${res.status}`);
@@ -55,7 +57,7 @@ export default function AdminAction({ label, payload, ask, notifyReporter = fals
         data.buyerNotified === false ? 'Code non envoyé : envoi impossible, réessayer plus tard.' : '',
       ].filter(Boolean).join(' '));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur.');
+      setError(requestErrorMessage(err, 'Erreur.'));
     } finally {
       setBusy(false);
     }

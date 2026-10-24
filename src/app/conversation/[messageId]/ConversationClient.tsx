@@ -9,6 +9,8 @@ import { MAX_THREAD_MESSAGES as MAX_THREAD, MODERATION_REFUSAL_NOTICE } from '@/
 import ReportProfile from '@/app/components/ReportProfile';
 import { haptic } from '@/lib/haptics';
 import { isIOS, isStandaloneWebApp, subscribePush } from '@/lib/push-client';
+import { isOffline, offlineMessage, requestErrorMessage, SEND_TIMEOUT_MS, timeoutSignal } from '@/lib/request';
+import { useDraft } from '@/lib/use-draft';
 
 interface ConversationMessage {
   id: string; member_id: string; content: string; sender_contact: string | null;
@@ -91,19 +93,23 @@ function PushPrompt({ pushAsked, pushGranted, pushLoading, onSubscribe, hasConta
 
 // ─── Formulaire de réponse (membre OU scanner) ──────────────────────────────
 
-function ThreadReplyForm({ messageId, author, onSent, onClosed }: {
+function ThreadReplyForm({ messageId, author, onSent, onClosed, onAlreadySent }: {
   messageId: string;
   author: 'scanner' | 'member';
   onSent: (reply: ThreadReply) => void;
   onClosed: (code: 'blocked' | 'thread_limit') => void;
+  /** La réponse est déjà partie (réponse du serveur perdue en route) : recharger le fil. */
+  onAlreadySent: () => void;
 }) {
-  const [text, setText]       = useState('');
+  // Gardée si la page se recharge (réseau qui flanche), effacée à l'envoi.
+  const [text, setText, clearDraft] = useDraft(`draft:reply:${messageId}:${author}`);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!text.trim()) return;
+    if (isOffline()) { setError(offlineMessage('Votre message est gardé.')); return; }
     setLoading(true);
     setError('');
     haptic('light');
@@ -112,6 +118,7 @@ function ThreadReplyForm({ messageId, author, onSent, onClosed }: {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messageId, content: text.trim(), author }),
+        signal: timeoutSignal(SEND_TIMEOUT_MS),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -121,6 +128,14 @@ function ThreadReplyForm({ messageId, author, onSent, onClosed }: {
           onClosed(data.code);
           return;
         }
+        // Pas son tour : le plus souvent, la réponse est déjà partie et c'est
+        // la confirmation qui s'est perdue (4G qui décroche). Le fil rechargé
+        // la montre ; le brouillon n'a plus lieu d'être.
+        if (data.code === 'not_your_turn') {
+          clearDraft();
+          onAlreadySent();
+          return;
+        }
         throw new Error(data.error || 'Erreur.');
       }
       if (data.moderated) {
@@ -128,10 +143,10 @@ function ThreadReplyForm({ messageId, author, onSent, onClosed }: {
         return;
       }
       onSent({ id: data.replyId, content: text.trim(), author, created_at: new Date().toISOString() });
-      setText('');
+      clearDraft();
       haptic('success');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur serveur.');
+      setError(requestErrorMessage(err, 'Erreur serveur.', 'Votre message est gardé.'));
     } finally {
       setLoading(false);
     }
@@ -212,6 +227,7 @@ export default function ConversationClient({
 
   const setBlock = async (action: 'block' | 'unblock') => {
     if (action === 'block' && !window.confirm('Bloquer cette personne ? Elle ne pourra plus vous écrire, ici comme ailleurs.')) return;
+    if (isOffline()) { setBlockError(offlineMessage()); return; }
     setBlockLoading(true);
     setBlockError('');
     try {
@@ -219,6 +235,7 @@ export default function ConversationClient({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messageId: message.id, memberId: message.member_id, action }),
+        signal: timeoutSignal(SEND_TIMEOUT_MS),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Erreur.');
@@ -226,7 +243,7 @@ export default function ConversationClient({
       if (action === 'block') haptic('warning'); // action lourde / irréversible
 
     } catch (err) {
-      setBlockError(err instanceof Error ? err.message : 'Erreur serveur.');
+      setBlockError(requestErrorMessage(err, 'Erreur serveur.'));
     } finally {
       setBlockLoading(false);
     }
@@ -499,6 +516,7 @@ export default function ConversationClient({
               author={myRole}
               onSent={handleThreadReply}
               onClosed={(code) => code === 'blocked' ? setIsBlocked(true) : setLimitReached(true)}
+              onAlreadySent={refetchThread}
             />
           ) : (
             /* En attente de l'autre */

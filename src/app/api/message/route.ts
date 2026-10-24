@@ -18,6 +18,7 @@ import { notifyMemberSubscribers } from '@/lib/push-notify';
 import { captureServerEvent } from '@/lib/posthog-server';
 import { APP_URL, BANNED_DEVICE_NOTICE } from '@/lib/constants';
 import { reportError } from '@/lib/report-error';
+import { waitUntil } from '@/lib/wait-until';
 
 const QUICK_REPLIES = new Set<string>(QUICK_REPLIES_LIST);
 
@@ -58,8 +59,9 @@ export async function POST(req: NextRequest) {
     const { memberId, content, senderContact, senderName, isQuickReply } = body.data;
     const ip = getIp(req);
 
-    // Jeton device du scanneur (cookie httpOnly). `existingToken` n'existe que
-    // s'il a déjà écrit auparavant — seul un device connu peut être bloqué.
+    // Jeton device du scanneur (cookie httpOnly). `existingToken` existe dès
+    // l'ouverture du formulaire (cf. proxy) ou après un premier message ; neuf,
+    // il n'a ni historique ni blocage — seul un device qui a écrit peut être bloqué.
     const existingToken = getSenderToken(req);
     const senderToken = existingToken ?? createSenderToken();
 
@@ -174,6 +176,7 @@ export async function POST(req: NextRequest) {
       if (activeConvs >= MAX_CONVERSATIONS[plan]) {
         // Le porteur apprend qu'il a manqué quelqu'un, une fois par semaine au
         // plus (choix de Clément, migration 059). Rien sur la personne refusée.
+        // Envoi après la réponse, comme les notifications plus bas.
         if (member.email && await claimCapEmail(memberId)) {
           const { subject, html } = emailConversationLimit({
             name:             member.name,
@@ -181,8 +184,8 @@ export async function POST(req: NextRequest) {
             windowDays:       CONVERSATION_WINDOW_DAYS,
             dashboardUrl:     `${APP_URL}/dashboard?tab=inbox`,
           });
-          await sendEmail({ to: member.email, subject, html })
-            .catch((err) => console.error('[api/message] Échec email plafond:', err));
+          waitUntil(sendEmail({ to: member.email, subject, html })
+            .catch((err) => console.error('[api/message] Échec email plafond:', err)));
         }
         return NextResponse.json(
           { error: 'Nombre maximum de conversations atteint pour ce profil.', code: 'conversation_limit' },
@@ -279,10 +282,11 @@ export async function POST(req: NextRequest) {
     });
 
     // ─── Notifications du porteur ─────────────────────────────────────────
-    // Attendues plus bas, pas en tâche de fond : une fonction serverless peut
-    // s'arrêter dès la réponse envoyée, et l'envoi se perdrait (cf. /api/report).
-    // Chacune rattrape sa propre erreur : un échec ne bloque ni les autres ni la
-    // réponse.
+    // Parties après la réponse : le passant, souvent sur une 4G faible, n'attend
+    // ni Resend ni les services de push (son message est déjà enregistré).
+    // waitUntil garde la fonction serverless en vie jusqu'au bout des envois,
+    // sinon elle pourrait s'arrêter dès la réponse et les perdre. Chacune
+    // rattrape sa propre erreur : un échec ne bloque pas les autres.
     const notifications: Promise<unknown>[] = [
       // Rétention (P0) : signal reçu par le PORTEUR (distinctId = member_id)
       captureServerEvent({
@@ -329,7 +333,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    await Promise.all(notifications);
+    waitUntil(Promise.allSettled(notifications));
 
     // Pose/rafraîchit le cookie de jeton device (httpOnly) — permet au porteur
     // de bloquer ce scanneur plus tard, même sur une autre conversation.

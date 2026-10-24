@@ -3,6 +3,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
 import { FROM_APP } from '@/lib/constants';
+import { createSenderToken, getSenderToken, setSenderTokenCookie } from '@/lib/sender-token';
 
 const PUBLIC_PAGES = new Set([
   '/',
@@ -131,6 +132,14 @@ export async function proxy(req: NextRequest) {
   const res = NextResponse.next({ request: { headers: req.headers } });
   // Header RÉPONSE enforçant : le navigateur bloque ce qui n'est pas noncé.
   res.headers.set('Content-Security-Policy', csp);
+
+  // Formulaire du passant : le jeton de l'appareil (cf. lib/sender-token) est
+  // posé dès l'ouverture, plus seulement par la réponse au premier message. Si
+  // cette réponse se perd (4G qui décroche), le nouvel essai est reconnu
+  // (« C'est déjà lancé ») au lieu de créer un second message.
+  if (pathname === '/message' && !getSenderToken(req)) {
+    setSenderTokenCookie(res, createSenderToken());
+  }
 
   if (!SUPABASE_CONFIGURED) {
     return res;

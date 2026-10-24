@@ -11,6 +11,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { sendEmail, emailContactVerification } from '@/lib/email-templates';
 import { checkContactVerifyRateLimit } from '@/lib/ratelimit';
 import { APP_URL } from '@/lib/constants';
+import { waitUntil } from '@/lib/wait-until';
 
 /** Durée de validité du lien de confirmation. */
 export const CONTACT_VERIFY_TTL_DAYS = 7;
@@ -18,9 +19,12 @@ export const CONTACT_VERIFY_TTL_DAYS = 7;
 const hashToken = (token: string) => crypto.createHash('sha256').update(token).digest('hex');
 
 /**
- * Crée la vérification d'un message racine et envoie le lien de confirmation.
- * `false` si rien n'est parti (plafond par adresse atteint, envoi échoué) : le
- * message reste envoyé, seules les réponses par email sont perdues.
+ * Crée la vérification d'un message racine et lance l'envoi du lien de
+ * confirmation, sans l'attendre : le passant a sa réponse tout de suite, et
+ * waitUntil mène l'envoi au bout. `false` si rien ne part (plafond par adresse
+ * atteint). Un envoi qui échoue ensuite est signalé dans les logs et Sentry
+ * (cf. sendEmail) : le message reste envoyé, seules les réponses par email sont
+ * perdues.
  */
 export async function startContactVerification(params: {
   messageId:  string;
@@ -41,7 +45,8 @@ export async function startContactVerification(params: {
     verifyUrl:  `${APP_URL}/api/contact/verify?token=${token}`,
     ttlDays:    CONTACT_VERIFY_TTL_DAYS,
   });
-  return sendEmail({ to: email, subject, html });
+  waitUntil(sendEmail({ to: email, subject, html }));
+  return true;
 }
 
 export type ConfirmResult =

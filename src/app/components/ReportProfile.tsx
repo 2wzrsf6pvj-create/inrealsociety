@@ -4,6 +4,7 @@
 // signalement part à l'équipe, qui décide (cf. /api/profile/report). Avec un
 // email, son auteur reçoit un accusé de réception, puis la décision.
 import React, { useState } from 'react';
+import { isOffline, offlineMessage, requestErrorMessage, SEND_TIMEOUT_MS, timeoutSignal } from '@/lib/request';
 
 export default function ReportProfile({ memberId, messageId }: {
   memberId:   string;
@@ -24,6 +25,7 @@ export default function ReportProfile({ memberId, messageId }: {
     e.preventDefault();
     if (reason.trim().length < 5) { setError('Décrivez le problème en quelques mots.'); return; }
     if (!goodFaith) { setError('Cochez la case pour confirmer votre signalement.'); return; }
+    if (isOffline()) { setError(offlineMessage('Votre texte est gardé.')); return; }
     setSending(true);
     setError('');
     try {
@@ -31,13 +33,14 @@ export default function ReportProfile({ memberId, messageId }: {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
         body:    JSON.stringify({ memberId, messageId, reason: reason.trim(), contact: contact.trim() || null, goodFaith }),
+        signal:  timeoutSignal(SEND_TIMEOUT_MS),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(typeof data.error === 'string' ? data.error : 'Erreur lors de l’envoi.');
       setReceiptSent(data.receiptSent === true);
       setSent(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erreur lors de l’envoi.');
+      setError(requestErrorMessage(err, 'Erreur lors de l’envoi.', 'Votre texte est gardé.'));
     } finally {
       setSending(false);
     }

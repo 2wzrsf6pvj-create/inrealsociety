@@ -10,6 +10,9 @@
 import webpush from 'web-push';
 import { supabaseAdmin } from '@/lib/supabase-admin';
 
+/** Délai d'un envoi au service de push (Apple, Google, Mozilla…). */
+export const PUSH_TIMEOUT_MS = 8_000;
+
 let vapidInitialized = false;
 
 function initVapid(): boolean {
@@ -53,6 +56,8 @@ async function sendToSubs(
       await webpush.sendNotification(
         { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
         payload,
+        // Un service de push qui ne répond pas ne retient pas la fonction.
+        { timeout: PUSH_TIMEOUT_MS },
       );
       sent++;
     } catch (err) {

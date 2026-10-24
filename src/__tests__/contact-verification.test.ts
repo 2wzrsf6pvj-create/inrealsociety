@@ -9,6 +9,9 @@ vi.mock('@/lib/email-templates', () => ({
   sendEmail: vi.fn().mockResolvedValue(true),
   emailContactVerification: vi.fn((p: { verifyUrl: string }) => ({ subject: 's', html: p.verifyUrl })),
 }));
+// Tâches confiées à waitUntil (envoi après la réponse).
+const handedOver = vi.hoisted(() => [] as Promise<unknown>[]);
+vi.mock('@/lib/wait-until', () => ({ waitUntil: (p: Promise<unknown>) => { handedOver.push(p); } }));
 
 import { startContactVerification, confirmContactToken, isContactVerified, CONTACT_VERIFY_TTL_DAYS } from '@/lib/contact-verification';
 import { supabaseAdmin } from '@/lib/supabase-admin';
@@ -19,7 +22,7 @@ const sha256 = (t: string) => crypto.createHash('sha256').update(t).digest('hex'
 const from = supabaseAdmin.from as ReturnType<typeof vi.fn>;
 
 describe('startContactVerification', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => { vi.clearAllMocks(); handedOver.length = 0; });
 
   it('plafond par adresse atteint : rien n’est créé ni envoyé', async () => {
     (checkContactVerifyRateLimit as ReturnType<typeof vi.fn>).mockResolvedValue(false);
@@ -42,6 +45,16 @@ describe('startContactVerification', () => {
     expect(token).toMatch(/^[A-Za-z0-9_-]{43}$/);
     expect(inserted[0].token_hash).toBe(sha256(token));   // jamais le jeton en clair
     expect(inserted[0].token_hash).not.toContain(token);
+  });
+
+  it('n’attend pas Resend : l’envoi est confié à waitUntil, le passant a sa réponse tout de suite', async () => {
+    (checkContactVerifyRateLimit as ReturnType<typeof vi.fn>).mockResolvedValue(true);
+    from.mockReturnValue({ insert: () => Promise.resolve({ error: null }) });
+    const pending = new Promise<boolean>(() => {});   // Resend qui ne répond pas
+    (sendEmail as ReturnType<typeof vi.fn>).mockReturnValueOnce(pending);
+
+    expect(await startContactVerification({ messageId: 'm', email: 'a@b.fr', memberName: 'Camille' })).toBe(true);
+    expect(handedOver).toEqual([pending]);
   });
 });
 
