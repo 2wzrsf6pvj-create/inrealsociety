@@ -14,7 +14,6 @@ vi.mock('@/lib/ratelimit', () => ({
   rateLimitHeaders:   vi.fn(() => ({})),
 }));
 vi.mock('@/lib/audit', () => ({ audit: vi.fn() }));
-vi.mock('@/lib/posthog-server', () => ({ captureServerEvent: vi.fn().mockResolvedValue(undefined) }));
 vi.mock('@/lib/email-templates', () => ({
   sendEmail:        vi.fn().mockResolvedValue(true),
   emailNouveauScan: vi.fn(() => ({ subject: '', html: '' })),

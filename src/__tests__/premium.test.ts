@@ -23,7 +23,6 @@ function chain(table: string): unknown {
 }
 
 vi.mock('@/lib/supabase-admin', () => ({ supabaseAdmin: { from: (table: string) => chain(table) } }));
-vi.mock('@/lib/posthog-server', () => ({ captureServerEvent: vi.fn().mockResolvedValue(undefined) }));
 const sent: { to: string; subject: string; html: string }[] = [];
 vi.mock('@/lib/email-templates', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/email-templates')>()),

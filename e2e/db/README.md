@@ -17,7 +17,11 @@ Les tests de `e2e/db/` parcourent l'app dans un vrai navigateur, devant une
   au retour du réseau ; la réponse à un envoi se perd alors que le serveur l'a
   reçu : le nouvel essai ne crée pas de doublon, ni dans la conversation ; le
   texte tapé survit au rechargement ; une coupure à la connexion n'est pas
-  « Email ou mot de passe incorrect ».
+  « Email ou mot de passe incorrect » ;
+- `test-terrain.spec.ts` : ce que l'équipe suit dans `/admin` pendant le test
+  terrain. « Votre avis », écrit depuis « Mon espace », arrive avec le prénom
+  du porteur connecté ; sa fiche de suivi donne ses chiffres, jamais le
+  contenu des messages ; « Semaine par semaine » compte la semaine en cours.
 
 Les tests de fumée de `e2e/` (`npm run test:e2e`), eux, tournent sans base et ne
 voient que les pages publiques.

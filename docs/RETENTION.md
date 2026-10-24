@@ -37,7 +37,7 @@ C'est le levier n°1 : instrumenter AVANT de construire, sinon on parie à l'ave
 - **Push** (member-level + thread) + emails transactionnels + **cron**
   (`scan-reminders`) — l'infra de ré-engagement existe déjà.
 - **Graphe de scans premium** (`getScansByDay`).
-- **PostHog** (capture client + serveur).
+- **PostHog** (navigateur, avec consentement) ; les chiffres de `/admin`, depuis la base.
 - **Newsletter** (envoi désormais implémenté) — canal de ré-engagement de masse.
 
 ## 4. Paris de rétention (rangés par ROI / fit IRL)
@@ -80,37 +80,33 @@ amorcer.
 
 ---
 
-## 8. P0 — Instrumentation (livré)
+## 8. P0 — Mesure (mise à jour du 24 octobre 2026)
 
-### Ce qui est désormais capté (events SERVEUR, distinctId = member_id)
-- **`member_scanned`** (`api/scan`) — le porteur a reçu un scan neuf. C'est LE
-  signal de rétention porteur : « est-il encore scanné N semaines après son
-  achat ? ». `scan_submitted` (existant) est côté scanner → ne le mesure pas.
-- **`member_signal_received`** (`api/message`) — le porteur a reçu un message non
-  modéré (valeur reçue). Cadence d'engagement dans le temps.
+### Dans `/admin`, depuis la base
+Les quatre événements que le serveur envoyait à PostHog (`member_scanned`,
+`member_signal_received`, `subscription_active`, `subscription_cancelled`)
+sont retirés : ils partaient avec l'identifiant du porteur sans son
+consentement, alors que la politique de confidentialité fonde la mesure
+d'audience sur le consentement. La base a les mêmes informations :
+- **Semaine par semaine** (8 semaines, heure de Paris) : porteurs scannés,
+  scans, messages, réponses. C'est la courbe de rétention porteur : « est-il
+  encore scanné N semaines après ? ».
+- **Suivi des porteurs** : pour chaque porteur activé ces 60 derniers jours,
+  scans (dont ces 7 derniers jours), dernier scan, messages, réponses,
+  notifications. Chiffres seulement, jamais le contenu.
+- **Chiffres** : scannés dans leurs 14 premiers jours, encore scannés après
+  un mois, premium.
+- Durée des abonnements premium : dans Stripe (abonnements, résiliations).
 
-### Ce qui était DÉJÀ dérivable (rien à coder, juste à exploiter dans PostHog)
-- **Courbe de retour dashboard** : `member_dashboard_viewed` (client, membre
-  identifié) → PostHog ▸ Retention, event de départ ET de retour =
-  `member_dashboard_viewed`.
-- **Tenure premium** : `subscription_active` → `subscription_cancelled` (serveur,
-  distinctId = member_id) → PostHog ▸ Funnel ou « time between events ».
+### Dans PostHog, avec consentement seulement
+Ces courbes ne voient que les visiteurs qui ont accepté les mesures :
+- retour sur « Mon espace » : Insight ▸ Retention, `member_dashboard_viewed`
+  au départ et au retour ;
+- conversion premium : `upgrade_cta_viewed` → `upgrade_clicked` ;
+- achats venus d'un scan : `wearer_cta_viewed` → `wearer_cta_clicked`.
 
-### Vues PostHog à créer (setup, ~30 min)
-1. **Rétention porteur** : Insight ▸ Retention, « performed `member_scanned` » →
-   « performed `member_scanned` », granularité semaine. La courbe de churn réelle.
-2. **Activation→rétention** : Funnel `scan_submitted` (1er) → `member_scanned`
-   (récurrent) → segmente free vs premium.
-3. **Cohorte « porteur actif »** : membres ayant ≥1 `member_scanned` sur 30j
-   glissants → suivre sa taille semaine après semaine.
-4. **Tenure premium** : distribution du temps `subscription_active`→`cancelled`.
-
-### P0b — funnel notif → clic (reste à câbler, spec)
-Pour mesurer si le ré-engagement marche, taguer les URLs des notifs PORTEUR puis
-capter le clic :
-- Ajouter `?src=email|push&n=scan|message` aux URLs : `api/scan` (email scan),
-  `api/message` (email + push), `api/conversation/reply` (email + push).
-- Capter `notification_clicked` (nouvel event client) sur `/dashboard` et
-  `/conversation/[messageId]` quand `?src` est présent (lire le param, capture,
-  nettoyer l'URL). Optionnel : `notification_sent` serveur aux points d'envoi.
-- L'ouverture d'EMAIL nécessite le tracking d'ouverture Resend (pixel) — séparé.
+### P0b — notification → clic
+Pas pour le test terrain : avec 10 porteurs, le questionnaire et les chiffres
+de notifications de `/admin` suffisent (`TEST_TERRAIN.md`). Plus tard, si
+besoin : compter les clics en base, sans identifiant (`?src=email|push` et
+le type de notification dans l'adresse), plutôt que dans PostHog.

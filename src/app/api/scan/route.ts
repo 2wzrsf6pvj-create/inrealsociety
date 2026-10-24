@@ -7,7 +7,6 @@ import { sendEmail, emailNouveauScan } from '@/lib/email-templates';
 import { scanEmailsOptOutUrl } from '@/lib/unsubscribe-token';
 import { checkScanRateLimit, isNewScan, releaseScanDedup, getIp, rateLimitHeaders } from '@/lib/ratelimit';
 import { audit } from '@/lib/audit';
-import { captureServerEvent } from '@/lib/posthog-server';
 import { moderateContent } from '@/lib/moderation';
 import { isValidFirstName } from '@/lib/validators';
 import { reportError } from '@/lib/report-error';
@@ -149,16 +148,7 @@ export async function POST(req: NextRequest) {
     // ─── Notifications ────────────────────────────────────────────────────
     // Attendues, pas en tâche de fond : une fonction serverless peut s'arrêter
     // dès la réponse envoyée, et l'envoi se perdrait (cf. /api/report).
-    const notifications: Promise<unknown>[] = [
-      // Rétention (P0) : event keyé sur le PORTEUR (distinctId = member_id).
-      // Mesure « le porteur est-il encore scanné N semaines après ? » dans PostHog,
-      // seulement sur un scan NEUF (les doublons sont déjà filtrés).
-      captureServerEvent({
-        distinctId: memberId,
-        event:      'member_scanned',
-        properties: { member_id: memberId, has_location: latitude != null && longitude != null },
-      }).catch(() => {}),
-    ];
+    const notifications: Promise<unknown>[] = [];
 
     // Un email au premier scan de la journée seulement (choix de Clément,
     // migration 059) ; les suivants sont dans le tableau de bord. Le porteur
