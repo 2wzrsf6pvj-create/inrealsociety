@@ -5,6 +5,40 @@
 
 ---
 
+## 2026-10-24 (suite) — Tester de A à Z (#48)
+
+### Pourquoi
+Clément veut tester lui-même tout le parcours, en admin. Il ne pouvait rien
+tester : le site sur Vercel n'a encore ni base ni clés. Tout peut pourtant se
+tester dès maintenant, en mode test et gratuitement, sans statut ni domaine.
+
+### Fait
+- **PR #48 fusionnée** (`710e007`) :
+  - `docs/TESTER_DE_A_A_Z.md` :
+    - les comptes (tous gratuits), puis Supabase (`fresh-setup.sql`,
+      compte admin créé à la main), Upstash, Stripe en test, Resend,
+      variables Vercel ;
+    - le parcours complet, avec un ordinateur et un téléphone ;
+    - les pièges : Resend sans domaine vérifié n'écrit qu'à l'adresse du
+      compte, Supabase n'écrit qu'à l'équipe du projet, la production
+      Vercel doit rester publique pour le webhook Stripe.
+
+    Ce sont les étapes 5 à 9 du « Chemin vers J0 », faites plus tôt.
+  - `/admin` → recherche : « Voir le QR » sur chaque porteur, noir sur
+    blanc avec sa marge, à scanner depuis l'écran (en test, rien n'est
+    imprimé). Il encode l'adresse du QR imprimé.
+- Vérifié :
+  - 881 tests unitaires, dont le décodage réel du QR à 240 px ;
+  - E2E 25/25 : le QR affiché se lit et mène au profil ; axe-core sur
+    `/admin` avec l'aperçu ouvert ;
+  - CI verte.
+
+### À faire — côté Clément
+- [ ] Suivre `docs/TESTER_DE_A_A_Z.md` (1 h 30 de réglages, 30 minutes de
+      parcours), en me disant ce que tu vois si quelque chose bloque.
+
+---
+
 ## 2026-10-24 (suite) — Décisions de Clément, liste des clés à jour (#47)
 
 ### Décisions de Clément
