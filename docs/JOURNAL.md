@@ -5,6 +5,44 @@
 
 ---
 
+## 2026-10-24 (suite) — Emails de compte à J0 (#49)
+
+### Analyse
+Supabase envoie lui-même la confirmation d'adresse et le mot de passe
+oublié :
+- ses modèles par défaut sont en anglais ;
+- leur lien (PKCE) ne marche que dans le navigateur de l'inscription.
+  Ouvert depuis l'app Gmail, il affiche « Ce lien a expiré » alors que
+  l'adresse est confirmée, et le testeur doit ressaisir son code
+  d'activation.
+
+### Fait
+- **PR #49 fusionnée** (`531b0b0`) :
+  - deux modèles en français, avec la présentation des autres emails
+    (`supabase/templates/`, générés depuis `src/lib/email-templates.ts`) ;
+    leur lien passe par `/auth/confirm` (`token_hash`, vérifié côté
+    serveur) et marche dans n'importe quel navigateur ;
+  - le code d'activation est gardé sur le compte à l'inscription et
+    retrouvé par `/register` après la confirmation, d'où qu'elle soit
+    ouverte ;
+  - message plus juste sur `/auth/login` quand un lien échoue malgré tout ;
+  - docs : où coller les deux modèles, *Site URL* sans « / » final,
+    vérification à J-14.
+- Vérifié :
+  - 888 tests unitaires ;
+  - E2E 26/26, dont l'inscription dans un navigateur et la confirmation
+    dans un autre, profil créé sans ressaisir le code ;
+  - mutation détectée, intégration 68/68, CI verte.
+
+### À faire — côté Clément
+- [ ] Supabase → *Authentication → Email Templates* : coller
+      `supabase/templates/confirmation.html` (« Confirm signup », sujet
+      « Confirmez votre adresse email ») et `recovery.html` (« Reset
+      Password », sujet « Réinitialisez votre mot de passe »).
+      Indispensable pour J0.
+
+---
+
 ## 2026-10-24 (suite) — Tester de A à Z (#48)
 
 ### Pourquoi
