@@ -5,7 +5,7 @@ import { buildOrderRecap, formatEuros } from '@/lib/order-recap';
 import { emailActivation } from '@/lib/email-templates';
 
 const ADDRESS = { name: 'Jeanne Test', address1: '1 rue de Rivoli', zip: '75001', city: 'Paris', country_code: 'FR' };
-const FULL = { color: 'dark', size: 'L', taglineId: 'un-message-une-chance', totalCents: 5400, shippingCents: 500, address: ADDRESS };
+const FULL = { color: 'dark', size: 'L', taglineId: 'un-message-une-chance', totalCents: 4900, shippingCents: 0, address: ADDRESS };
 
 describe('formatEuros', () => {
   it('formate des centimes en euros, à la française', () => {
@@ -19,15 +19,15 @@ describe('buildOrderRecap', () => {
     const r = buildOrderRecap(FULL);
     expect(r.article).toBe('T-shirt Noir · L');
     expect(r.tagline).toBe('Un message ? Une chance.');
-    expect(r.shipping).toMatch(/^Standard · 5,00\s€$/);
-    expect(r.total).toMatch(/^54,00\s€$/);
+    expect(r.shipping).toBe('Offerte');
+    expect(r.total).toMatch(/^49,00\s€$/);
     expect(r.address).toBe('Jeanne Test, 1 rue de Rivoli, 75001 Paris, France');
   });
 
-  it('un autre montant que le tarif standard est affiché sans mode', () => {
+  it('un port payé (commande passée avant la livraison offerte) est affiché en euros', () => {
     const base = { color: 'light', size: 'M', taglineId: null };
+    expect(buildOrderRecap({ ...base, shippingCents: 500 }).shipping).toMatch(/^5,00\s€$/);
     expect(buildOrderRecap({ ...base, shippingCents: 1200 }).shipping).toMatch(/^12,00\s€$/);
-    expect(buildOrderRecap({ ...base, shippingCents: 0 }).shipping).toMatch(/^0,00\s€$/);
   });
 
   it('QR seul, taille invalide ignorée, données absentes à null', () => {
@@ -50,9 +50,9 @@ describe('emailActivation : récapitulatif', () => {
     expect(html).toContain('Votre commande');
     expect(html).toContain('T-shirt Noir · L');
     expect(html).toContain('« Un message ? Une chance. »');
-    expect(html).toMatch(/Standard · 5,00\s€/);
+    expect(html).toMatch(/Livraison[\s\S]*Offerte/);
     // Franchise de TVA : le total payé, sans « TTC ».
-    expect(html).toMatch(/Total payé[\s\S]*54,00\s€/);
+    expect(html).toMatch(/Total payé[\s\S]*49,00\s€/);
     expect(html).not.toContain('TTC');
     expect(html).toContain('1 rue de Rivoli');
     expect(html).toContain('/cgv');

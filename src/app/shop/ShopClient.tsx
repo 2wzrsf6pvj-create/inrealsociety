@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
 import { captureEvent } from '@/lib/posthog-client';
 import { rememberCheckoutEmail } from '@/lib/checkout-email';
-import { TSHIRT_PRICE_EUR, SHIPPING_STANDARD_CENTS } from '@/lib/constants';
+import { TSHIRT_PRICE_EUR } from '@/lib/constants';
 import type { BakedTagline } from '@/lib/taglines.generated';
 import TaglinePicker from '@/app/components/ui/TaglinePicker';
 import { BrandMark } from '@/app/components/ui/BrandMark';
@@ -18,7 +18,6 @@ type TshirtColor = 'dark' | 'light';
 type TshirtSize  = 'S' | 'M' | 'L' | 'XL' | 'XXL';
 
 const SIZES: TshirtSize[] = ['S', 'M', 'L', 'XL', 'XXL'];
-const SHIPPING_STANDARD_EUR = SHIPPING_STANDARD_CENTS / 100;
 
 // ─── Galerie produit ──────────────────────────────────────────────────────────
 // Placeholder abstrait (logo ( • )) — fallback tant qu'aucune vraie image n'est
@@ -471,7 +470,7 @@ export default function ShopClient() {
               </div>
               <div className="flex flex-col items-end gap-1 shrink-0">
                 <span className="font-display text-3xl font-light">{TSHIRT_PRICE_EUR}&nbsp;€</span>
-                <span className="font-ui text-xxs text-brand-gray/55 whitespace-nowrap">+ livraison {SHIPPING_STANDARD_EUR}&nbsp;€</span>
+                <span className="font-ui text-xxs text-brand-gray/55 whitespace-nowrap">livraison offerte</span>
               </div>
             </div>
 
@@ -566,8 +565,8 @@ export default function ShopClient() {
                   <span className="font-ui text-xs text-brand-gray/60">5-10 j. ouvrés</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="font-ui text-xxs text-brand-gray/50 tracking-[0.15em] uppercase">Frais</span>
-                  <span className="font-ui text-xs text-brand-gray/60">{SHIPPING_STANDARD_EUR}&nbsp;€</span>
+                  <span className="font-ui text-xxs text-brand-gray/50 tracking-[0.15em] uppercase">Frais de port</span>
+                  <span className="font-ui text-xs text-brand-gray/60">Offerts</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-ui text-xxs text-brand-gray/50 tracking-[0.15em] uppercase">Zones</span>
@@ -620,12 +619,12 @@ export default function ShopClient() {
                   className="animate-shimmer w-full py-4 mt-1 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.15em] min-[390px]:tracking-[0.3em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ minHeight: '44px' }}
                 >
-                  {/* Espace insécable : plus étroit que 360 px, « — 49€ » passe ensemble à la ligne. */}
+                  {/* Espace insécable : plus étroit que 360 px, « — 49 € » passe ensemble à la ligne. */}
                   {loading ? 'Redirection…' : `Commander en ${colorLabel} —\u00a0${TSHIRT_PRICE_EUR}\u00a0€`}
                 </button>
 
                 <p className="font-ui text-xxs md:text-xs text-brand-gray/50 text-center leading-relaxed">
-                  Paiement sécurisé par Stripe · Livraison choisie à l’étape suivante
+                  Paiement sécurisé par Stripe · Adresse de livraison à l’étape suivante
                 </p>
                 <Link href="/faq" className="font-ui text-xxs text-brand-gray/50 text-center underline underline-offset-4 hover:text-brand-white/80 transition-colors">
                   Comment ça marche&nbsp;?
@@ -689,26 +688,28 @@ export default function ShopClient() {
       </div>
 
       {/* Barre d'achat fixe — mobile/tablette uniquement, masquée quand le formulaire
-          est à l'écran. Sous le bandeau cookies (z-[100]) tant qu'il est affiché. */}
+          est à l'écran. Sous le bandeau cookies (z-[100]) tant qu'il est affiché.
+          Plus serrée sous 400 px : « Blanc · XXL · livraison offerte » et le
+          bouton tiennent à 360 px. */}
       {!formInView && (
         <div
           data-sticky-bottom
           role="region"
           aria-label="Commander"
-          className="fixed inset-x-0 bottom-0 z-40 lg:hidden border-t border-brand-gray/15 bg-brand-black/95 backdrop-blur-sm px-6 pt-3 animate-fade-in"
+          className="fixed inset-x-0 bottom-0 z-40 lg:hidden border-t border-brand-gray/15 bg-brand-black/95 backdrop-blur-sm px-4 min-[400px]:px-6 pt-3 animate-fade-in"
           style={{ paddingBottom: 'calc(0.75rem + env(safe-area-inset-bottom, 0px))' }}
         >
           <div className="max-w-lg mx-auto flex items-center justify-between gap-4">
             <div className="flex flex-col">
               <span className="font-display text-2xl font-light leading-none">{TSHIRT_PRICE_EUR}&nbsp;€</span>
               <span className="font-ui text-xxs text-brand-gray/55 mt-1 whitespace-nowrap">
-                {colorLabel} · {tshirtSize} · livraison {SHIPPING_STANDARD_EUR}&nbsp;€
+                {colorLabel} · {tshirtSize} · livraison offerte
               </span>
             </div>
             <button
               type="button"
               onClick={goToForm}
-              className="px-6 py-3 bg-brand-white text-brand-black font-ui font-bold text-xs tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200"
+              className="px-4 min-[400px]:px-6 py-3 bg-brand-white text-brand-black font-ui font-bold text-xs tracking-[0.15em] min-[400px]:tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200"
               style={{ minHeight: '44px' }}
             >
               Commander

@@ -4,7 +4,6 @@
 // Montants en centimes, tels que payés (franchise de TVA : sans TVA).
 
 import { getTagline } from '@/lib/taglines';
-import { SHIPPING_STANDARD_CENTS } from '@/lib/constants';
 
 const SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
 const EUR = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' });
@@ -12,8 +11,8 @@ const EUR = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' 
 export interface OrderRecap {
   article:  string;          // « T-shirt Noir · L »
   tagline:  string | null;   // texte imprimé sous le QR ; null = QR seul
-  shipping: string | null;   // « Standard · 5,00 € » ; null = inconnu
-  total:    string | null;   // « 59,00 € » (port inclus) ; null = inconnu
+  shipping: string | null;   // « Offerte » ; null = inconnu
+  total:    string | null;   // « 49,00 € » ; null = inconnu
   address:  string | null;   // adresse de livraison sur une ligne ; null = inconnue
 }
 
@@ -27,14 +26,15 @@ export interface RecapAddress {
   country_code: string;
 }
 
-/** 5900 → « 59,00 € » */
+/** 4900 → « 49,00 € » */
 export function formatEuros(cents: number): string {
   return EUR.format(cents / 100);
 }
 
-// Le mode se déduit du montant : le tarif est fixe (api/shop/checkout).
+// Livraison offerte (api/shop/checkout) : 0 € s'écrit « Offerte ». Un port payé
+// (commande passée avant la livraison offerte) s'affiche en euros.
 function shippingText(cents: number): string {
-  return cents === SHIPPING_STANDARD_CENTS ? `Standard · ${formatEuros(cents)}` : formatEuros(cents);
+  return cents === 0 ? 'Offerte' : formatEuros(cents);
 }
 
 function countryName(code: string): string {

@@ -1,7 +1,8 @@
 // Sessions de paiement Stripe : ce que le client choisit doit être ce qui est
 // livré et facturé. L'option express (12 €) partait chez Printful en livraison
-// standard ; en franchise de TVA, Stripe ne calcule aucune TVA et n'a pas besoin
-// d'adresse de facturation ; seuls les pays prévus sont proposés.
+// standard ; la livraison est offerte, comme l'écrivent la boutique, la FAQ et
+// les CGV ; en franchise de TVA, Stripe ne calcule aucune TVA
+// et n'a pas besoin d'adresse de facturation ; seuls les pays prévus sont proposés.
 
 import { describe, it, expect, vi, beforeAll, beforeEach, afterAll } from 'vitest';
 import { NextRequest } from 'next/server';
@@ -78,12 +79,12 @@ async function shopSession(): Promise<SessionParams> {
 }
 
 describe('session de paiement du t-shirt', () => {
-  it('une seule livraison : la standard à 5 €, celle que Printful expédie', async () => {
+  it('une seule livraison, offerte : 0 € de port', async () => {
     const { shipping_options } = await shopSession();
     expect(shipping_options).toHaveLength(1);
     expect(shipping_options?.[0].shipping_rate_data).toMatchObject({
-      display_name: 'Livraison standard',
-      fixed_amount: { amount: 500, currency: 'eur' },
+      display_name: 'Livraison offerte',
+      fixed_amount: { amount: 0, currency: 'eur' },
     });
   });
 

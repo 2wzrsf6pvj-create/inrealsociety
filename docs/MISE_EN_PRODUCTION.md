@@ -281,9 +281,10 @@ QR ».
 Pour vérifier une impression réelle, confirmer un brouillon à la main dans
 Printful (il est alors facturé).
 
-- [ ] Commander un t-shirt : le paiement ne propose que la livraison standard
-      (5 €) vers la France, la Belgique, le Luxembourg et l'Allemagne, et
-      l'email avec le code d'activation arrive.
+- [ ] Commander un t-shirt : 49 € en tout, le paiement ne propose qu'une
+      livraison (« Livraison offerte », à 0 €) vers la France, la
+      Belgique, le Luxembourg et l'Allemagne, et l'email avec le code
+      d'activation arrive.
 - [ ] Activer le profil avec ce code (case 18 ans comprise).
 - [ ] Scanner le QR code avec un autre téléphone : le profil s'ouvre.
 - [ ] Domaine court : sur un téléphone, ouvrir `inreal.me/<code>` (le code

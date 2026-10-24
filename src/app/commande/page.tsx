@@ -164,7 +164,7 @@ function CommandeContent() {
               <p className="font-ui text-sm text-brand-white/85">T-shirt In Real Society</p>
               <p className="font-ui text-xs text-brand-gray/50">{COLOR_LABEL[o.color] ?? o.color} · Taille {o.size}</p>
             </div>
-            <p className="font-ui text-sm text-brand-gray/55 tabular-nums">{(o.amount / 100).toFixed(2)}&nbsp;€</p>
+            <p className="font-ui text-sm text-brand-gray/55 tabular-nums">{(o.amount / 100).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' })}</p>
           </div>
 
           {/* Timeline */}

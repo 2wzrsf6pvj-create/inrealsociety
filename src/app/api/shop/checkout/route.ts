@@ -149,14 +149,15 @@ export async function POST(req: NextRequest) {
         ? { discounts: [{ coupon: process.env.STRIPE_REFERRAL_COUPON_ID }] }
         : {}),
 
-      // tax_behavior « inclusive » : si la TVA s'applique un jour, le port affiché
-      // (« 5€ ») reste le prix payé. Non précisé, Stripe appliquerait le réglage par
-      // défaut du compte et pourrait ajouter la TVA par-dessus (5 € → 6 €).
+      // Livraison offerte : une seule option, à 0 €, avec le délai
+      // de livraison. tax_behavior « inclusive » : si le port redevenait payant et
+      // la TVA applicable, le port affiché resterait le prix payé (non précisé,
+      // Stripe pourrait ajouter la TVA par-dessus).
       shipping_options: [
         {
           shipping_rate_data: {
             type:         'fixed_amount',
-            display_name: 'Livraison standard',
+            display_name: 'Livraison offerte',
             fixed_amount: { amount: SHIPPING_STANDARD_CENTS, currency: 'eur' },
             tax_behavior: 'inclusive',
             delivery_estimate: {

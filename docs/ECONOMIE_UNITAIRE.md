@@ -3,14 +3,16 @@
 > Ce que rapportent un t-shirt et un abonnement premium, ce que coûte le site
 > chaque mois, et combien de ventes couvrent ces frais. Les coûts Printful sont
 > des estimations publiques : les remplacer par ceux du compte (section 1), puis
-> refaire les calculs. État au 23 octobre 2026.
+> refaire les calculs. État au 24 octobre 2026.
 
 ## Choix de lancement (Clément, octobre 2026)
 
 | Choix | Pourquoi | Réglage |
 |---|---|---|
 | Franchise en base de TVA (art. 293 B du CGI) | statut choisi : aucune TVA facturée | `VAT_EXEMPT` |
-| Livraison standard seulement, 5 € | l'express (12 €) partait quand même en standard chez Printful : la commande ne précisait pas la méthode | `SHIPPING_STANDARD_CENTS` |
+| Livraison standard seulement | l'express (12 €) partait quand même en standard chez Printful : la commande ne précisait pas la méthode | option unique dans `api/shop/checkout` |
+| Livraison offerte, 49 € en tout | un prix rond, sans frais ajoutés au paiement ; le port est pris sur la marge | `SHIPPING_STANDARD_CENTS` (0) |
+| Logo poitrine gardé | choix de marque, à revoir avec les vraies factures Printful | `PRINT_FRONT_LOGO` |
 | France métropolitaine, Belgique, Luxembourg, Allemagne | hors UE : port forfaitaire insuffisant, droits et TVA à payer par le client à la livraison, TVA britannique due dès la première vente | `SHIPPING_COUNTRIES` |
 
 Les réglages sont dans `src/lib/constants.ts`. Les montants débités viennent
@@ -32,17 +34,17 @@ Le plus sûr : passer une commande test et lire la facture Printful.
 
 ## 2. Marge par t-shirt
 
-France, livraison standard, sans remise de parrainage :
+France, livraison offerte, sans remise de parrainage :
 
 | | Montant |
 |---|---|
-| Payé par le client (49 € + 5 € de port) | 54,00 € |
-| Stripe (1,5 % × 54 € + 0,25 €) | −1,06 € |
+| Payé par le client (49 €, livraison offerte) | 49,00 € |
+| Stripe (1,5 % × 49 € + 0,25 €) | −0,99 € |
 | Printful, TVA comprise ((13 + 4,50 + 4,79) × 1,2) | −26,75 € |
-| **Marge** | **≈ 26 €** |
+| **Marge** | **≈ 21 €** |
 
 En franchise, la TVA payée à Printful n'est pas récupérable : elle fait partie
-du coût.
+du coût. Avec 5 € de port facturés en plus, la marge serait d'environ 26 €.
 
 Non compté : la remise de parrainage (elle se déduit telle quelle), un
 t-shirt remboursé après impression (perdu), le coût d'acquisition des clients.
@@ -75,18 +77,19 @@ consommation (obligatoire, souvent payant).
 
 ## 5. Seuil de rentabilité
 
-Frais fixes ÷ marge par t-shirt = 60 € ÷ 26 € ≈ 2,3 : **3 t-shirts par mois**
+Frais fixes ÷ marge par t-shirt = 60 € ÷ 21 € ≈ 2,9 : **3 t-shirts par mois**
 couvrent les frais fixes.
 
 Le premium y contribue aussi : 23 abonnés couvrent à eux seuls les frais fixes,
-et 2 t-shirts plus 3 abonnés suffisent (52 € + 8 €).
+et 2 t-shirts plus 7 abonnés suffisent (42 € + 19 €).
 
 ## 6. Leviers (aucun n'est appliqué)
 
-- **Logo poitrine** : ≈ 5,40 € TVA comprise par t-shirt, un cinquième de la
-  marge. C'est un choix de marque.
-- **Port** : 5 € facturés pour ≈ 5,75 € payés à Printful (4,79 € plus la
-  TVA), soit ≈ 0,75 € perdu par commande. À 6 €, il serait couvert.
+- **Logo poitrine** : ≈ 5,40 € TVA comprise par t-shirt, un quart de la
+  marge. C'est un choix de marque, gardé au lancement.
+- **Port** : offert, il coûte ≈ 5,75 € (4,79 € plus la TVA),
+  pris sur la marge. Facturé 5 € à part, il rendrait ≈ 5 € par t-shirt, mais
+  le client paierait 54 €.
 - **Premium annuel**, par exemple à 29 € :
   - 12 mensualités : 35,88 € payés, 3,79 € de frais, 32,09 € nets ;
   - 29 € en une fois : 0,89 € de frais, 28,11 € nets, encaissés d'avance ;
@@ -140,7 +143,7 @@ et 2 t-shirts plus 3 abonnés suffisent (52 € + 8 €).
    retirer la mention 293 B du pied de facture.
 5. Les abonnements premium en cours ne passent pas seuls à la TVA : les mettre
    à jour dans Stripe.
-6. Marge : ≈ 21 € par t-shirt au lieu de 26 €, ≈ 2,16 € par abonné et par
+6. Marge : ≈ 17 € par t-shirt au lieu de 21 €, ≈ 2,16 € par abonné et par
    mois au lieu de 2,67 €.
 
 Sources, consultées en octobre 2026 (estimations à revérifier) :
