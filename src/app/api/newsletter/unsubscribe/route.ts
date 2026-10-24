@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
   const token = req.nextUrl.searchParams.get('t') ?? '';
 
   if (!verifyUnsubscribe(email, token)) {
-    return page('Lien invalide', "Ce lien de désinscription n'est pas valide ou a expiré.");
+    return page('Lien invalide', "Ce lien de désinscription n’est pas valide ou a expiré.");
   }
 
   // ⚠️ Le GET NE MUTE PAS : les scanners anti-malware et prefetchers de messagerie
@@ -77,7 +77,7 @@ export async function GET(req: NextRequest) {
   // page de CONFIRMATION dont le bouton POST déclenche la désinscription réelle.
   const q = `?e=${encodeURIComponent(email)}&t=${encodeURIComponent(token)}`;
   const form = `<form method="POST" action="${q}"><button type="submit">Me désinscrire</button></form>`;
-  return page('Se désinscrire ?', 'Confirmez que vous ne souhaitez plus recevoir la newsletter In Real Society.', form);
+  return page('Se désinscrire\u00a0?', 'Confirmez que vous ne souhaitez plus recevoir la newsletter In Real Society.', form);
 }
 
 // One-click (RFC 8058) : le client mail POST `List-Unsubscribe=One-Click` sur la

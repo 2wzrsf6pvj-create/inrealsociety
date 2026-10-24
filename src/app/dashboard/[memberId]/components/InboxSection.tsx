@@ -38,7 +38,7 @@ function UpgradeBanner({ memberId, source, headline, sublabel, onUpgrade }: {
         <span className="font-ui text-xxs text-brand-gray/50">{sublabel}</span>
       </div>
       <span className="font-ui text-xxs text-[#C5A059]/85 tracking-[0.15em] uppercase">
-        Voir l&apos;offre<span aria-hidden="true"> ✦</span>
+        Voir l’offre<span aria-hidden="true"> ✦</span>
       </span>
     </button>
   );
@@ -115,9 +115,9 @@ export default function InboxSection({ messages: initialMessages, memberId, plan
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
           </svg>
         </div>
-        <p className="animate-stagger-1 font-display text-lg md:text-xl font-light italic text-brand-gray/50">Aucun message pour l&apos;instant.</p>
+        <p className="animate-stagger-1 font-display text-lg md:text-xl font-light italic text-brand-gray/50">Aucun message pour l’instant.</p>
         <p className="animate-stagger-2 font-ui text-xs md:text-sm text-brand-gray/55 leading-relaxed">
-          Quand quelqu&apos;un scannera votre QR code<br />et vous enverra un message, il appara&icirc;tra ici.
+          Quand quelqu’un scannera votre QR code<br />et vous enverra un message, il appara&icirc;tra ici.
         </p>
         <div className="animate-stagger-3 w-px h-6 bg-gradient-to-b from-transparent via-brand-white/10 to-transparent" />
         <p className="animate-stagger-4 font-ui text-xxs text-brand-gray/50 leading-relaxed">

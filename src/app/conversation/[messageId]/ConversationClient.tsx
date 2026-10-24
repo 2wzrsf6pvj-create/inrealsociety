@@ -72,9 +72,9 @@ function PushPrompt({ pushAsked, pushGranted, pushLoading, onSubscribe, hasConta
   if (iosNotPwa) {
     return (
       <p className="font-ui text-xxs text-brand-gray/60 leading-relaxed">
-        Sur iPhone : ajoutez d&apos;abord la page à l&apos;écran d&apos;accueil
+        Sur iPhone&nbsp;: ajoutez d’abord la page à l’écran d’accueil
         (<span className="text-brand-white/50">Partager</span>, sous ⋯ depuis iOS 26, puis{' '}
-        <span className="text-brand-white/50">Sur l&apos;écran d&apos;accueil</span>) et
+        <span className="text-brand-white/50">Sur l’écran d’accueil</span>) et
         ouvrez-la depuis son icône pour activer les notifications.
       </p>
     );
@@ -85,7 +85,7 @@ function PushPrompt({ pushAsked, pushGranted, pushLoading, onSubscribe, hasConta
       <button onClick={onSubscribe} disabled={pushLoading}
         className="w-full py-3 border border-brand-gray/15 text-center font-ui text-xs font-light tracking-[0.1em] hover:border-brand-gray/35 transition-colors disabled:opacity-40"
         style={{ minHeight: '44px' }}>
-        {pushLoading ? 'Activation...' : 'Me notifier de sa réponse'}
+        {pushLoading ? 'Activation…' : 'Me notifier de sa réponse'}
       </button>
     </div>
   );
@@ -160,7 +160,7 @@ function ThreadReplyForm({ messageId, author, onSent, onClosed, onAlreadySent }:
         maxLength={2000}
         rows={3}
         aria-label={author === 'member' ? 'Votre réponse' : 'Votre message'}
-        placeholder={author === 'member' ? 'Votre réponse...' : 'Répondre...'}
+        placeholder={author === 'member' ? 'Votre réponse…' : 'Répondre…'}
         className="w-full bg-transparent border border-brand-gray/20 focus:border-brand-white/50 text-brand-white font-ui font-light text-base p-3 outline-none transition-colors placeholder:text-brand-gray/50 rounded-[2px] resize-none"
       />
       {error && <p className="animate-fade-in font-ui text-sm text-red-400" role="alert">{error}</p>}
@@ -169,7 +169,7 @@ function ThreadReplyForm({ messageId, author, onSent, onClosed, onAlreadySent }:
         disabled={loading || !text.trim()}
         className="w-full py-3 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {loading ? 'Envoi...' : 'Répondre'}
+        {loading ? 'Envoi…' : 'Répondre'}
       </button>
     </form>
   );
@@ -184,7 +184,7 @@ function ChatBubble({ content, date, isRight, animate }: {
     <div className={`max-w-[85%] ${isRight ? 'self-end ml-auto' : 'self-start'} ${animate ? 'animate-slide-right' : ''}`}>
       <div className={`p-4 border rounded-[2px] ${isRight ? 'border-brand-white/20 rounded-tr-none' : 'bg-brand-white/5 border-brand-gray/15 rounded-tl-none'}`}>
         <p className="font-display text-base font-light italic leading-relaxed text-brand-white/85">
-          &ldquo;{content}&rdquo;
+          «&nbsp;{content}&nbsp;»
         </p>
       </div>
       <p className={`font-ui text-xxs text-brand-gray/50 mt-1 ${isRight ? 'text-right' : ''}`}>{formatDate(date)}</p>
@@ -226,7 +226,7 @@ export default function ConversationClient({
   const [limitReached, setLimitReached] = useState(false);
 
   const setBlock = async (action: 'block' | 'unblock') => {
-    if (action === 'block' && !window.confirm('Bloquer cette personne ? Elle ne pourra plus vous écrire, ici comme ailleurs.')) return;
+    if (action === 'block' && !window.confirm('Bloquer cette personne\u00a0? Elle ne pourra plus vous écrire, ici comme ailleurs.')) return;
     if (isOffline()) { setBlockError(offlineMessage()); return; }
     setBlockLoading(true);
     setBlockError('');
@@ -462,7 +462,7 @@ export default function ConversationClient({
                   <button onClick={() => setBlock('unblock')} disabled={blockLoading}
                     className="font-ui text-xs text-brand-gray/55 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray transition-colors py-2 disabled:opacity-40"
                     style={{ minHeight: '44px' }}>
-                    {blockLoading ? '...' : 'Débloquer'}
+                    {blockLoading ? '…' : 'Débloquer'}
                   </button>
                 </>
               )}
@@ -489,10 +489,10 @@ export default function ConversationClient({
             /* Lien ouvert ailleurs : le passant sur un autre appareil, ou le porteur déconnecté */
             <div className="flex flex-col gap-3 py-2">
               <p className="font-ui text-xs text-brand-gray/55 leading-relaxed">
-                Vous avez écrit ce message ? Pour répondre, ouvrez cette page sur l&apos;appareil d&apos;où vous l&apos;avez envoyé.
+                Vous avez écrit ce message&nbsp;? Pour répondre, ouvrez cette page sur l’appareil d’où vous l’avez envoyé.
               </p>
               <p className="font-ui text-xs text-brand-gray/55 leading-relaxed">
-                Vous êtes {memberName} ?{' '}
+                Vous êtes {memberName}&nbsp;?{' '}
                 <Link href={`/auth/login?redirect=${encodeURIComponent(`/conversation/${message.id}`)}`}
                   className="text-brand-white/80 underline underline-offset-4 hover:text-brand-white transition-colors">
                   Connectez-vous pour répondre
@@ -538,7 +538,7 @@ export default function ConversationClient({
               />
               {!isOwner && !message.sender_contact && (
                 <p className="font-ui text-xxs text-brand-gray/50 italic mt-1">
-                  Vous n&apos;avez pas laissé de contact — la notification push est le seul moyen d&apos;être prévenu.
+                  Vous n’avez pas laissé de contact — la notification push est le seul moyen d’être prévenu.
                 </p>
               )}
             </div>
@@ -549,7 +549,7 @@ export default function ConversationClient({
         {!canReply && !feedbackSent && (
           <div className="flex flex-col items-center gap-2">
             <p className="font-ui text-xxs text-brand-gray/55 tracking-[0.15em] uppercase">
-              Comment s&apos;est passé cet échange ?
+              Comment s’est passé cet échange&nbsp;?
             </p>
             <div className="flex items-center gap-4">
               {[
@@ -596,7 +596,7 @@ export default function ConversationClient({
             <button onClick={() => setBlock('block')} disabled={blockLoading}
               className="font-ui text-xxs text-brand-gray/50 tracking-[0.15em] uppercase hover:text-red-400/80 transition-colors text-center py-2 disabled:opacity-40"
               style={{ minHeight: '44px' }}>
-              {blockLoading ? '...' : 'Bloquer cette personne'}
+              {blockLoading ? '…' : 'Bloquer cette personne'}
             </button>
           )}
           {isOwner && !isBlocked && blockError && (

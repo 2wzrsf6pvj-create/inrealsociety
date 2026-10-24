@@ -13,7 +13,7 @@ test('/admin → Configuration : ce qui reste à régler, sans aucun secret', as
   await page.goto('/admin');
 
   // Environnement de test : pas de Stripe, domaine local.
-  await expect(page.getByText(/^Configuration : \d+ points? à régler/)).toBeVisible();
+  await expect(page.getByText(/^Configuration\s:\s\d+ points? à régler/)).toBeVisible();
   const section = page.locator('#configuration');
   await expect(section).toContainText('Paiements : STRIPE_SECRET_KEY manquante');
   await expect(section).toContainText('Domaine : localhost:3100 : domaine provisoire');

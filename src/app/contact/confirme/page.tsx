@@ -18,11 +18,11 @@ const STATES = {
   },
   expire: {
     title: 'Lien expiré.',
-    text:  `Ce lien de confirmation avait plus de ${CONTACT_VERIFY_TTL_DAYS} jours. Vous pouvez toujours suivre la conversation depuis l'appareil d'où vous avez écrit.`,
+    text:  `Ce lien de confirmation avait plus de ${CONTACT_VERIFY_TTL_DAYS} jours. Vous pouvez toujours suivre la conversation depuis l’appareil d’où vous avez écrit.`,
   },
   invalide: {
     title: 'Lien invalide.',
-    text:  "Ce lien de confirmation n'est pas reconnu. Vérifiez qu'il est complet, ou suivez la conversation depuis l'appareil d'où vous avez écrit.",
+    text:  "Ce lien de confirmation n’est pas reconnu. Vérifiez qu’il est complet, ou suivez la conversation depuis l’appareil d’où vous avez écrit.",
   },
   reessayer: {
     title: 'Un instant.',

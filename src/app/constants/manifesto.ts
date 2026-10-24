@@ -2,44 +2,44 @@ export const MANIFESTO_BLOCKS = [
   {
     label: null,
     title: "Vous êtes fatigué.",
-    body: "Fatigué des profils qui s'accumulent. Des matchs qui ne mènent nulle part. Du scroll infini qui remplace la vie réelle. Vous avez raison d'être fatigué.",
+    body: "Fatigué des profils qui s’accumulent. Des matchs qui ne mènent nulle part. Du scroll infini qui remplace la vie réelle. Vous avez raison d’être fatigué.",
   },
   {
     label: "Le problème",
-    title: "L'application a tué le hasard.",
-    body: "Il y a dix ans, on se rencontrait dans la rue, dans un café, dans une salle de concert. Par accident. Par destin. Ces rencontres-là avaient une texture que l'écran ne peut pas reproduire.",
+    title: "L’application a tué le hasard.",
+    body: "Il y a dix ans, on se rencontrait dans la rue, dans un café, dans une salle de concert. Par accident. Par destin. Ces rencontres-là avaient une texture que l’écran ne peut pas reproduire.",
   },
   {
     label: "Notre réponse",
     title: "Un vêtement comme seule interface.",
-    body: "In Real Society n'est pas une application de rencontres. C'est un vêtement. Un tissu. Quelque chose que vous portez sur vous quand vous sortez dans le monde réel.",
+    body: "In Real Society n’est pas une application de rencontres. C’est un vêtement. Un tissu. Quelque chose que vous portez sur vous quand vous sortez dans le monde réel.",
   },
   {
     label: "Comment ça marche",
-    title: "Un QR code. L'antidote au regret.",
-    body: "Quelqu'un vous remarque dans la rue, mais le rythme de la ville vous sépare. Avant, c'était une rencontre manquée, un regret de plus. Aujourd'hui, un scan suffit. Vous êtes déjà loin, mais l'opportunité est capturée dans son téléphone, prête à commencer quand vous en aurez tous les deux le temps.",
+    title: "Un QR code. L’antidote au regret.",
+    body: "Quelqu’un vous remarque dans la rue, mais le rythme de la ville vous sépare. Avant, c’était une rencontre manquée, un regret de plus. Aujourd’hui, un scan suffit. Vous êtes déjà loin, mais l’opportunité est capturée dans son téléphone, prête à commencer quand vous en aurez tous les deux le temps.",
   },
   {
     label: "L'authenticité",
     title: "La fin des mirages.",
-    body: "Sur un écran, tout se falsifie. Les filtres, les bots, les impostures. Ici, la vérification d'identité est implacable : pour scanner un profil, vous devez d'abord voir la personne en chair et en os. Impossible de tricher quand l'interface, c'est la réalité.",
+    body: "Sur un écran, tout se falsifie. Les filtres, les bots, les impostures. Ici, la vérification d’identité est implacable\u00a0: pour scanner un profil, vous devez d’abord voir la personne en chair et en os. Impossible de tricher quand l’interface, c’est la réalité.",
   },
   {
     label: "L'Évidence",
     title: "Si vous cherchez la quantité, restez sur votre canapé.",
-    body: "Si vous cherchez l'évidence, sortez dans la rue.\n\nNous ne proposons pas 50 matchs par jour. Nous proposons zéro algorithme et une seule promesse : chaque scan que vous recevrez sera une véritable intersection du destin. Pas un clic de confort. Une rencontre.",
+    body: "Si vous cherchez l’évidence, sortez dans la rue.\n\nNous ne proposons pas 50 matchs par jour. Nous proposons zéro algorithme et une seule promesse\u00a0: chaque scan que vous recevrez sera une véritable intersection du destin. Pas un clic de confort. Une rencontre.",
     highlight: true,
   },
   {
     label: "Le pacte",
     title: "Vous êtes le profil.",
-    body: "Ici, rien à remplir. Pas de bio à fignoler, pas de photos retouchées. Votre présence dans la rue, c'est votre profil. Votre démarche, votre regard, votre façon de prendre la lumière du jour — c'est ce que l'autre verra avant de scanner. Tout le reste est superflu.\n\nCe n'est pas un gadget. C'est un engagement à exister dans l'espace public avec l'intention d'être vu — pas par un algorithme, mais par un autre regard.",
+    body: "Ici, rien à remplir. Pas de bio à fignoler, pas de photos retouchées. Votre présence dans la rue, c’est votre profil. Votre démarche, votre regard, votre façon de prendre la lumière du jour — c’est ce que l’autre verra avant de scanner. Tout le reste est superflu.\n\nCe n’est pas un gadget. C’est un engagement à exister dans l’espace public avec l’intention d’être vu — pas par un algorithme, mais par un autre regard.",
   },
   {
     // ⚠️ À COMPLÉTER : remplis les placeholders ci-dessous avec ta vraie histoire.
     // Sans visage derrière la voix, le manifeste reste anonyme et perd en confiance.
     label: "Qui parle",
     title: "[Prénom], fondateur.",
-    body: "[À COMPLÉTER — 2 phrases : qui tu es, où tu vis, et la rencontre manquée concrète qui t'a poussé à créer In Real Society. Un vrai souvenir, pas une généralité.]\n\n[À COMPLÉTER — 1 phrase d'intention : ce que tu veux que la personne ressente quand elle porte le vêtement et croise un regard.]",
+    body: "[À COMPLÉTER — 2 phrases\u00a0: qui tu es, où tu vis, et la rencontre manquée concrète qui t’a poussé à créer In Real Society. Un vrai souvenir, pas une généralité.]\n\n[À COMPLÉTER — 1 phrase d’intention\u00a0: ce que tu veux que la personne ressente quand elle porte le vêtement et croise un regard.]",
   },
 ];

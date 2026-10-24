@@ -51,11 +51,11 @@ export default function AdminAction({ label, payload, ask, notifyReporter = fals
       setResult([
         'Fait.',
         data.memberNotified === true  ? 'Porteur prévenu par email.' : '',
-        data.memberNotified === false ? 'Porteur non prévenu (pas d’adresse ou envoi impossible) : le prévenir à la main.' : '',
+        data.memberNotified === false ? 'Porteur non prévenu (pas d’adresse ou envoi impossible)\u00a0: le prévenir à la main.' : '',
         data.reporterNotified === true  ? 'Auteur du signalement prévenu.' : '',
-        data.reporterNotified === false ? 'Auteur du signalement non prévenu : pas d’email laissé, ou envoi impossible.' : '',
+        data.reporterNotified === false ? 'Auteur du signalement non prévenu\u00a0: pas d’email laissé, ou envoi impossible.' : '',
         data.buyerNotified === true  ? 'Code renvoyé par email.' : '',
-        data.buyerNotified === false ? 'Code non envoyé : envoi impossible, réessayer plus tard.' : '',
+        data.buyerNotified === false ? 'Code non envoyé\u00a0: envoi impossible, réessayer plus tard.' : '',
         typeof data.premiumUntil === 'string' ? `Premium offert jusqu’au ${formatDayFr(data.premiumUntil)}.` : '',
       ].filter(Boolean).join(' '));
     } catch (err) {

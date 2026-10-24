@@ -176,7 +176,7 @@ describe('premium offert depuis /admin', () => {
     db.member = { ...PAID };
     const paid = await post({ action: 'gift_premium', memberId: MEMBER });
     expect(paid.status).toBe(409);
-    expect((await paid.json()).error).toBe('Abonné : il paie son premium.');
+    expect((await paid.json()).error).toBe('Abonné\u00a0: il paie son premium.');
 
     db.member = { ...GIFTED };
     const twice = await post({ action: 'gift_premium', memberId: MEMBER });

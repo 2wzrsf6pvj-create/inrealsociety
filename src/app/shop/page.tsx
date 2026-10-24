@@ -21,7 +21,7 @@ const productJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Product',
   name: 'T-shirt In Real Society',
-  description: 'Stanley/Stella Creator 2.0 en coton bio, QR code imprimé dans le dos : quelqu’un vous remarque, scanne et vous écrit. Noir ou blanc, du S au XXL.',
+  description: 'Stanley/Stella Creator 2.0 en coton bio, QR code imprimé dans le dos\u00a0: quelqu’un vous remarque, scanne et vous écrit. Noir ou blanc, du S au XXL.',
   brand: { '@type': 'Brand', name: 'In Real Society' },
   image: ['tee-noir-dos', 'tee-blanc-dos', 'tee-noir-face', 'tee-blanc-face'].map((f) => `${APP_URL}/shop/${f}.png`),
   offers: {

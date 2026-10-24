@@ -42,7 +42,7 @@ export default function MentionsLegalesPage() {
             Mentions légales
           </h1>
           <p className="font-ui text-sm text-brand-gray/50 tracking-wide">
-            Conforme à la LCEN (art. 6) — Dernière mise à jour : 2026
+            Conforme à la LCEN (art. 6) — Dernière mise à jour&nbsp;: 2026
           </p>
         </div>
 
@@ -51,14 +51,14 @@ export default function MentionsLegalesPage() {
             1 — Éditeur du site
           </h2>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
-            <strong>Raison sociale :</strong> In Real Society — [À COMPLÉTER : forme juridique (SAS, SARL, micro-entreprise…), capital social si applicable].<br />
-            <strong>Siège social :</strong> [À COMPLÉTER : adresse postale complète].<br />
-            <strong>Immatriculation :</strong> RCS [À COMPLÉTER : ville d&apos;immatriculation et numéro], SIRET [À COMPLÉTER].<br />
+            <strong>Raison sociale&nbsp;:</strong> In Real Society — [À COMPLÉTER&nbsp;: forme juridique (SAS, SARL, micro-entreprise…), capital social si applicable].<br />
+            <strong>Siège social&nbsp;:</strong> [À COMPLÉTER&nbsp;: adresse postale complète].<br />
+            <strong>Immatriculation&nbsp;:</strong> RCS [À COMPLÉTER&nbsp;: ville d’immatriculation et numéro], SIRET [À COMPLÉTER].<br />
             {VAT_EXEMPT
-              ? <><strong>TVA :</strong> franchise en base ({VAT_EXEMPT_NOTICE}).<br /></>
-              : <><strong>TVA intracommunautaire :</strong> [À COMPLÉTER].<br /></>}
-            <strong>Email de contact :</strong> <span className="text-brand-white/70">hello@inrealsociety.com</span><br />
-            <strong>Téléphone :</strong> [À COMPLÉTER].
+              ? <><strong>TVA&nbsp;:</strong> franchise en base ({VAT_EXEMPT_NOTICE}).<br /></>
+              : <><strong>TVA intracommunautaire&nbsp;:</strong> [À COMPLÉTER].<br /></>}
+            <strong>Email de contact&nbsp;:</strong> <span className="text-brand-white/70">hello@inrealsociety.com</span><br />
+            <strong>Téléphone&nbsp;:</strong> [À COMPLÉTER].
           </p>
         </section>
 
@@ -67,7 +67,7 @@ export default function MentionsLegalesPage() {
             2 — Directeur de la publication
           </h2>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
-            [À COMPLÉTER : nom et prénom de la personne physique responsable des contenus publiés sur le site].
+            [À COMPLÉTER&nbsp;: nom et prénom de la personne physique responsable des contenus publiés sur le site].
           </p>
         </section>
 
@@ -76,12 +76,12 @@ export default function MentionsLegalesPage() {
             3 — Hébergeur
           </h2>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
-            <strong>Hébergeur :</strong> Vercel Inc.<br />
-            <strong>Adresse :</strong> 340 S Lemon Ave #4133, Walnut, CA 91789, États-Unis.<br />
-            <strong>Site :</strong> <a href="https://vercel.com" target="_blank" rel="noopener" className="underline underline-offset-4 hover:text-brand-white">vercel.com</a>
+            <strong>Hébergeur&nbsp;:</strong> Vercel Inc.<br />
+            <strong>Adresse&nbsp;:</strong> 340 S Lemon Ave #4133, Walnut, CA 91789, États-Unis.<br />
+            <strong>Site&nbsp;:</strong> <a href="https://vercel.com" target="_blank" rel="noopener" className="underline underline-offset-4 hover:text-brand-white">vercel.com</a>
           </p>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
-            <strong>Base de données :</strong> Supabase (Frankfurt, Allemagne — région EU).
+            <strong>Base de données&nbsp;:</strong> Supabase (Frankfurt, Allemagne — région EU).
           </p>
         </section>
 
@@ -90,8 +90,8 @@ export default function MentionsLegalesPage() {
             4 — Propriété intellectuelle
           </h2>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
-            L&apos;ensemble du site (textes, graphismes, logo, code, vidéos, illustrations, photographies)
-            est protégé par le droit d&apos;auteur. Toute reproduction, totale ou partielle, sans
+            L’ensemble du site (textes, graphismes, logo, code, vidéos, illustrations, photographies)
+            est protégé par le droit d’auteur. Toute reproduction, totale ou partielle, sans
             autorisation expresse de In Real Society est interdite et constituerait une contrefaçon
             sanctionnée par les articles L335-2 et suivants du Code de la propriété intellectuelle.
           </p>
@@ -105,9 +105,9 @@ export default function MentionsLegalesPage() {
             Le traitement des données personnelles est détaillé dans notre{' '}
             <Link href="/confidentialite" className="underline underline-offset-4 hover:text-brand-white">
               politique de confidentialité
-            </Link>. Conformément au RGPD, vous disposez d&apos;un droit d&apos;accès, de
-            rectification, de suppression, d&apos;opposition et de portabilité de vos données.
-            Contact : <span className="text-brand-white/70">hello@inrealsociety.com</span>.
+            </Link>. Conformément au RGPD, vous disposez d’un droit d’accès, de
+            rectification, de suppression, d’opposition et de portabilité de vos données.
+            Contact&nbsp;: <span className="text-brand-white/70">hello@inrealsociety.com</span>.
           </p>
         </section>
 
@@ -117,16 +117,16 @@ export default function MentionsLegalesPage() {
           </h2>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
             Conformément aux articles L611-1 à L616-3 du Code de la consommation, In Real Society
-            adhère à un médiateur de la consommation :
+            adhère à un médiateur de la consommation&nbsp;:
           </p>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed pl-4 border-l border-brand-gray/10">
-            <strong>[À COMPLÉTER : nom du médiateur, ex. CM2C — Centre de la Médiation de la Consommation de Conciliateurs de Justice]</strong><br />
+            <strong>[À COMPLÉTER&nbsp;: nom du médiateur, ex. CM2C — Centre de la Médiation de la Consommation de Conciliateurs de Justice]</strong><br />
             [Adresse postale du médiateur]<br />
-            [URL : https://cm2c.net ou autre]
+            [URL&nbsp;: https://cm2c.net ou autre]
           </p>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
             Le consommateur peut également recourir à la plateforme européenne de règlement
-            en ligne des litiges (ODR) : {' '}
+            en ligne des litiges (ODR)&nbsp;: {' '}
             <a href="https://ec.europa.eu/consumers/odr" target="_blank" rel="noopener" className="underline underline-offset-4 hover:text-brand-white">
               ec.europa.eu/consumers/odr
             </a>.
@@ -139,7 +139,7 @@ export default function MentionsLegalesPage() {
           </h2>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
             Le site utilise des cookies essentiels (authentification, panier) sans recueillir de
-            consentement préalable, et des cookies de mesure d&apos;audience soumis à votre consentement
+            consentement préalable, et des cookies de mesure d’audience soumis à votre consentement
             via le bandeau affiché à la première visite. Détails dans la{' '}
             <Link href="/confidentialite" className="underline underline-offset-4 hover:text-brand-white">
               politique de confidentialité
@@ -167,15 +167,15 @@ export default function MentionsLegalesPage() {
           </h2>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
             Point de contact unique des utilisateurs et des autorités (règlement européen sur les
-            services numériques, articles 11 et 12) :{' '}
+            services numériques, articles 11 et 12)&nbsp;:{' '}
             <span className="text-brand-white/70">{CONTACT_EMAIL}</span>, en français ou en anglais.
           </p>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
-            Pour signaler un contenu : « Signaler ce profil » sur la page d&apos;un profil, « Signaler
-            cette conversation » dans une conversation, ou la même adresse. Les règles de modération
-            figurent à l&apos;article 9 des{' '}
+            Pour signaler un contenu&nbsp;: «&nbsp;Signaler ce profil&nbsp;» sur la page d’un profil, «&nbsp;Signaler
+            cette conversation&nbsp;» dans une conversation, ou la même adresse. Les règles de modération
+            figurent à l’article 9 des{' '}
             <Link href="/cgv" className="underline underline-offset-4 hover:text-brand-white">CGV</Link>.
-            Une personne est en danger ? Appelez le 17 ou le 112.
+            Une personne est en danger&nbsp;? Appelez le 17 ou le 112.
           </p>
         </section>
 
@@ -184,7 +184,7 @@ export default function MentionsLegalesPage() {
             href="/"
             className="font-ui text-sm text-brand-gray/50 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white transition-colors"
           >
-            ← Retour à l&apos;accueil
+            ← Retour à l’accueil
           </Link>
           <span className="font-ui text-xs text-brand-gray/50 tracking-wide">
             In Real Society © {new Date().getFullYear()}

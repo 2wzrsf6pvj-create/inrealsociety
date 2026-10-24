@@ -134,11 +134,11 @@ function LandingContent() {
               )}
               <button
                 onClick={() => { localStorage.removeItem('scannerName'); localStorage.removeItem('memberId'); setScannerName(''); setHasMemberId(false); }}
-                aria-label="Changer d'identité — ce n'est pas vous"
+                aria-label="Changer d’identité — ce n’est pas vous"
                 className="font-ui text-xs text-brand-gray/55 tracking-[0.1em] underline underline-offset-4 py-2"
                 style={{ minHeight: '44px' }}
               >
-                Ce n&apos;est pas vous ?
+                Ce n’est pas vous&nbsp;?
               </button>
             </div>
           ) : (
@@ -151,7 +151,7 @@ function LandingContent() {
                     <span className="text-brand-gray/50">scanner un t-shirt.</span>
                   </h1>
                   <p className="font-ui text-sm lg:text-base font-light text-brand-gray/50 leading-relaxed">
-                    C&apos;est exactement ça, l&apos;idée. Croisez quelqu&apos;un qui le porte,
+                    C’est exactement ça, l’idée. Croisez quelqu’un qui le porte,
                     scannez, écrivez-lui — une seule fois.
                   </p>
                 </>

@@ -39,7 +39,7 @@ test('du profil à la boutique : le porteur suit la commande, 30 jours sur le m�
 
   await test.step('le lien discret en bas du profil mène à la boutique', async () => {
     await page.goto(`/profil/${wearer.memberId}`);
-    await page.getByRole('link', { name: 'C\'est quoi ce t-shirt ?' }).click();
+    await page.getByRole('link', { name: 'C’est quoi ce t-shirt\u00a0?' }).click();
     await expect(page).toHaveURL(new RegExp(`/shop\\?from=${wearer.memberId}$`));
   });
 

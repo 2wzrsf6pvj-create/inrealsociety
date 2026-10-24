@@ -30,7 +30,7 @@ export default function UnlockPage() {
   }, []);
 
   const validate = (value: string): string => {
-    if (!value.trim()) return "L'audace commence par donner son prénom.";
+    if (!value.trim()) return "L’audace commence par donner son prénom.";
     // Même règle que le serveur (/api/scan) : un prénom refusé y serait ignoré.
     if (!isValidFirstName(value.trim())) return 'Lettres uniquement, merci.';
     return '';
@@ -70,7 +70,7 @@ export default function UnlockPage() {
           <button onClick={() => router.push('/')}
             className="font-ui text-sm text-brand-gray/55 tracking-[0.15em] uppercase underline underline-offset-4 py-3"
             style={{ minHeight: '44px' }}>
-            ← retour à l&apos;accueil
+            ← retour à l’accueil
           </button>
         </div>
       </main>
@@ -86,15 +86,15 @@ export default function UnlockPage() {
 
         <div className="text-center flex flex-col gap-3 animate-stagger-1">
           <h1 className="font-display text-3xl md:text-4xl font-light tracking-[0.08em]">
-            {savedName ? `C'est bien vous ?` : 'Qui êtes-vous ?'}
+            {savedName ? `C’est bien vous\u00a0?` : 'Qui êtes-vous\u00a0?'}
           </h1>
           {savedName
-            ? <p className="font-display text-2xl font-semibold">{savedName} ?</p>
+            ? <p className="font-display text-2xl font-semibold">{savedName}&nbsp;?</p>
             : (
               <div className="flex flex-col gap-1">
-                <p className="font-ui text-sm font-light text-brand-gray/50">À qui ai-je l&apos;honneur ?</p>
+                <p className="font-ui text-sm font-light text-brand-gray/50">À qui ai-je l’honneur&nbsp;?</p>
                 <p className="font-ui text-xs text-brand-gray/55 tracking-[0.05em] leading-relaxed mt-1">
-                  Votre prénom apparaîtra sur son profil.<br />Rien d&apos;autre n&apos;est demandé.
+                  Votre prénom apparaîtra sur son profil.<br />Rien d’autre n’est demandé.
                 </p>
               </div>
             )
@@ -103,7 +103,7 @@ export default function UnlockPage() {
 
         <form onSubmit={handleUnlock} className="w-full flex flex-col gap-6 animate-stagger-2" noValidate>
           <div className="flex flex-col gap-2">
-            <input ref={inputRef} type="text" placeholder="votre prénom..." value={firstName}
+            <input ref={inputRef} type="text" placeholder="votre prénom…" value={firstName}
               maxLength={30} autoComplete="given-name" autoFocus
               aria-label="Votre prénom"
               aria-invalid={!!error}
@@ -129,7 +129,7 @@ export default function UnlockPage() {
               className="font-ui text-sm text-brand-gray/55 tracking-[0.1em] underline underline-offset-4 py-2"
               style={{ minHeight: '44px' }}
             >
-              Ce n&apos;est pas moi
+              Ce n’est pas moi
             </button>
           )}
         </form>

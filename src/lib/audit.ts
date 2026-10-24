@@ -73,31 +73,31 @@ interface AuditParams {
 export const MONEY_ALERTS: Partial<Record<AuditAction, { title: string; todo: string }>> = {
   'order.payment_unmatched': {
     title: 'Paiement reçu sans commande',
-    todo:  'Retrouver la session dans Stripe (Paiements) : créer la commande à la main, ou rembourser.',
+    todo:  'Retrouver la session dans Stripe (Paiements)\u00a0: créer la commande à la main, ou rembourser.',
   },
   'order.email_missing': {
-    title: 'Commande payée sans email : code non envoyé',
-    todo:  "Retrouver l'acheteur dans Stripe et lui transmettre son code (page /commande).",
+    title: 'Commande payée sans email\u00a0: code non envoyé',
+    todo:  "Retrouver l’acheteur dans Stripe et lui transmettre son code (page /commande).",
   },
   'order.email_failed': {
-    title: "Code d'activation non envoyé",
-    todo:  "L'acheteur peut le renvoyer depuis /register (« Code perdu ? »). La raison est dans Sentry ([sendEmail]).",
+    title: "Code d’activation non envoyé",
+    todo:  "L’acheteur peut le renvoyer depuis /register («\u00a0Code perdu ?\u00a0»). La raison est dans Sentry ([sendEmail]).",
   },
   'order.fulfillment_failed': {
     title: 'T-shirt payé non transmis à Printful',
-    todo:  'Nouvel essai chaque jour à 5 h UTC (fulfillment-reconcile). Vérifier Printful : variantes, facturation.',
+    todo:  'Nouvel essai chaque jour à 5 h UTC (fulfillment-reconcile). Vérifier Printful\u00a0: variantes, facturation.',
   },
   'order.printful_draft': {
     title: 'T-shirt payé resté en brouillon chez Printful',
-    todo:  'Printful → Commandes : confirmer la commande à la main. Tant qu’elle est en brouillon, rien n’est imprimé.',
+    todo:  'Printful → Commandes\u00a0: confirmer la commande à la main. Tant qu’elle est en brouillon, rien n’est imprimé.',
   },
   'member.suspension_failed': {
-    title: 'Remboursement : profil non suspendu',
+    title: 'Remboursement\u00a0: profil non suspendu',
     todo:  'Suspendre le profil à la main (members.suspended_at), sinon le QR remboursé reste actif.',
   },
   'webhook.failed': {
     title: 'Webhook Stripe en échec',
-    todo:  "Stripe réessaie pendant 3 jours, puis abandonne. Voir l'erreur dans Sentry et l'onglet « Failed » des webhooks Stripe.",
+    todo:  "Stripe réessaie pendant 3 jours, puis abandonne. Voir l’erreur dans Sentry et l’onglet «\u00a0Failed\u00a0» des webhooks Stripe.",
   },
 };
 

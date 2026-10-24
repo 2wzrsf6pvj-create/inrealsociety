@@ -214,7 +214,7 @@ export default function ProfilClient({
           <div className="w-full bg-[#0a0a08] border border-[#C5A059]/25 rounded-[2px] px-4 py-3 flex flex-col gap-1 text-center">
             <p className="font-ui text-xxs text-[#C5A059]/80 tracking-[0.18em] uppercase"><span aria-hidden="true">✦ </span>Aperçu</p>
             <p className="font-ui text-xs text-brand-gray/50 leading-relaxed">
-              Voici ce qu&apos;un scanneur voit en vous scannant. Portez votre t-shirt pour que ça arrive en vrai.
+              Voici ce qu’un scanneur voit en vous scannant. Portez votre t-shirt pour que ça arrive en vrai.
             </p>
           </div>
         )}
@@ -265,7 +265,7 @@ export default function ProfilClient({
           <div className="flex flex-col items-center gap-4 animate-stagger-3">
             <p className="font-ui text-xs text-brand-gray/55 tracking-[0.2em] uppercase">Votre profil public</p>
             <p className="font-display text-lg md:text-xl font-light italic text-brand-gray/75 text-center leading-relaxed">
-              &ldquo;{member.pitch}&rdquo;
+              «&nbsp;{member.pitch}&nbsp;»
             </p>
             {instagramHandle && (
               <p className="font-ui text-xs text-brand-gray/55">@{instagramHandle}</p>
@@ -276,11 +276,11 @@ export default function ProfilClient({
             <h1 className="font-display text-2xl md:text-3xl font-light tracking-[0.04em] text-center leading-snug">
               {scannerName
                 ? <>Nos chemins se sont croisés,<br /><span className="font-semibold italic">{scannerName}</span>.</>
-                : <>Quelque chose vous a arrêté.<br /><span className="text-brand-gray/65">C&apos;est rare.</span></>
+                : <>Quelque chose vous a arrêté.<br /><span className="text-brand-gray/65">C’est rare.</span></>
               }
             </h1>
             <p className="font-display text-lg md:text-xl font-light italic text-brand-gray/75 text-center leading-relaxed">
-              &ldquo;{member.pitch}&rdquo;
+              «&nbsp;{member.pitch}&nbsp;»
             </p>
             {!scannerName && (
               <p className="font-ui text-sm font-light text-brand-gray/75 text-center leading-relaxed tracking-wide">
@@ -306,7 +306,7 @@ export default function ProfilClient({
           /* ─── Actions propriétaire ─────────────────────────────────────── */
           <div className="w-full flex flex-col gap-3 animate-stagger-4">
             <p className="font-ui text-xxs text-brand-gray/55 text-center leading-relaxed">
-              C&apos;est ce que les scanneurs voient quand ils scannent votre QR code.
+              C’est ce que les scanneurs voient quand ils scannent votre QR code.
             </p>
             <Link href="/dashboard"
               className="animate-shimmer w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 text-center block"
@@ -429,7 +429,7 @@ export default function ProfilClient({
               onClick={() => captureEvent('wearer_cta_clicked', { source: 'profile' })}
               className="font-ui text-xxs text-brand-gray/50 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white/80 transition-colors py-2"
               style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}>
-              C&apos;est quoi ce t-shirt ?
+              C’est quoi ce t-shirt&nbsp;?
             </Link>
             <ReportProfile memberId={member.id} />
             <Link href="/confidentialite"

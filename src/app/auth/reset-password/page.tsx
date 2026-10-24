@@ -92,7 +92,7 @@ export default function ResetPasswordPage() {
             </>
           ) : (
             <p className="font-ui text-sm font-light text-brand-gray/50 tracking-wide">
-              Vérification du lien en cours...
+              Vérification du lien en cours…
             </p>
           )}
         </div>
@@ -158,7 +158,7 @@ export default function ResetPasswordPage() {
             className="animate-shimmer w-full py-4 mt-2 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 disabled:opacity-50"
             style={{ minHeight: '44px' }}
           >
-            {loading ? 'Mise à jour...' : 'Réinitialiser'}
+            {loading ? 'Mise à jour…' : 'Réinitialiser'}
           </button>
         </form>
 

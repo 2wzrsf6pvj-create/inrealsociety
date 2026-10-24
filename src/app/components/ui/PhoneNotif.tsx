@@ -10,7 +10,7 @@ export function PhoneNotif({
   className = '',
   time = '22:47',
   date = 'Vendredi 17 juillet',
-  title = 'Un inconnu vous a remarqué·e',
+  title = 'Un regard s’est posé sur vous',
   body = 'Tu étais devant moi à ce concert. Je n’ai pas osé te parler…',
   animate = false,
 }: {
@@ -28,7 +28,7 @@ export function PhoneNotif({
     // relatives à CETTE largeur.
     <div
       role="img"
-      aria-label="Notification In Real Society sur un écran verrouillé : un inconnu vous a remarqué·e"
+      aria-label="Notification In Real Society sur un écran verrouillé&nbsp;: un regard s’est posé sur vous"
       className={`[container-type:inline-size] rounded-[14.6cqw] border border-white/10 bg-[#0a0a0c] p-[2.7cqw] shadow-[0_40px_120px_-20px_rgba(0,0,0,0.9)] ${className}`}
     >
       {/* écran */}

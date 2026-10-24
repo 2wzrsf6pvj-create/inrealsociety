@@ -94,6 +94,7 @@ npm run dev
 | `npm run test:e2e:ui` | Playwright en mode UI interactive |
 | `npm run test:e2e:db` | E2E connecté, devant une vraie base (`e2e/db/README.md`) |
 | `npm run analyze` | Build avec bundle analyzer (3 rapports HTML) |
+| `node scripts/typo-fr.mjs` | Typographie française du texte affiché : espaces insécables, apostrophe ’, « … », guillemets « » (vérifiée par `npm test`) |
 
 Pour les tests E2E du tunnel achat complet (Stripe test mode + Supabase test) :
 

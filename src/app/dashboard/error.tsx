@@ -24,7 +24,7 @@ export default function DashboardError({ error, reset }: { error: Error & { dige
           </button>
           <Link href="/" className="font-ui text-xs text-brand-gray/55 tracking-[0.15em] uppercase underline underline-offset-4 py-2"
             style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}>
-            ← retour à l&apos;accueil
+            ← retour à l’accueil
           </Link>
         </div>
       </div>

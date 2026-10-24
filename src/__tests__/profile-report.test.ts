@@ -98,7 +98,7 @@ describe('POST /api/profile/report', () => {
   it('depuis une conversation de ce porteur → lien de la conversation dans l’alerte', async () => {
     wireMember({ id: MEMBER_ID, name: 'Camille' }, { id: MESSAGE_ID });
     expect((await report({ memberId: MEMBER_ID, messageId: MESSAGE_ID, reason: 'Réponses insistantes.' })).status).toBe(200);
-    expect(mails()[0].subject).toBe('Signalement : une conversation a été signalée');
+    expect(mails()[0].subject).toBe('Signalement\u00a0: une conversation a été signalée');
     expect(mails()[0].html).toContain(`/conversation/${MESSAGE_ID}`);
     expect(audit).toHaveBeenCalledWith(expect.objectContaining({
       metadata: expect.objectContaining({ messageId: MESSAGE_ID }),
@@ -108,7 +108,7 @@ describe('POST /api/profile/report', () => {
   it('conversation d’un autre porteur → ignorée, le profil reste signalé', async () => {
     wireMember({ id: MEMBER_ID, name: 'Camille' }, null);
     expect((await report({ memberId: MEMBER_ID, messageId: MESSAGE_ID, reason: 'Réponses insistantes.' })).status).toBe(200);
-    expect(mails()[0].subject).toBe('Signalement : un profil a été signalé');
+    expect(mails()[0].subject).toBe('Signalement\u00a0: un profil a été signalé');
     expect(mails()[0].html).not.toContain('/conversation/');
   });
 

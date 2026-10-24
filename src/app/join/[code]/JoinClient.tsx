@@ -61,7 +61,7 @@ export default function JoinClient({ code, referrerName }: { code: string | null
         </div>
 
         <p className="font-ui text-xxs text-brand-gray/50 leading-relaxed animate-stagger-3">
-          Votre lien d&apos;invitation est actif.<br />
+          Votre lien d’invitation est actif.<br />
           Il sera associé à votre commande.
         </p>
       </div>

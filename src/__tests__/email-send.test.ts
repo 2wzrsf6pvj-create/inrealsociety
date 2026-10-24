@@ -124,7 +124,7 @@ describe('sendEmail', () => {
   it('ne lève jamais d’exception, même Resend injoignable à chaque essai', async () => {
     replies = [new Error('a'), new Error('b'), new Error('c')];
     expect(await settle(sendEmail(EMAIL))).toBe(false);
-    expect(logged()).toContain('Resend injoignable : c');
+    expect(logged()).toContain('Resend injoignable\u00a0: c');
   });
 });
 
@@ -187,7 +187,7 @@ describe('liens écrits par un passant ou un porteur', () => {
     });
     expect(html).not.toContain('arnaque');
     expect(html).toContain(LINK_PLACEHOLDER);
-    expect(html).toContain("répondre à cet email écrit à l'équipe In Real Society");
+    expect(html).toContain('répondre à cet email écrit à l’équipe In Real Society');
   });
 
   it('email au passant : réponse du porteur masquée de même', () => {

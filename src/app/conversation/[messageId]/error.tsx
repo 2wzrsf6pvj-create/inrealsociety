@@ -15,7 +15,7 @@ export default function ConversationError({ error, reset }: { error: Error & { d
         <div className="flex flex-col gap-2">
           <p className="font-display text-2xl font-light">Conversation indisponible.</p>
           <p className="font-ui text-sm text-brand-gray/55 leading-relaxed">
-            Ce message n&apos;existe plus ou une erreur est survenue.
+            Ce message n’existe plus ou une erreur est survenue.
           </p>
         </div>
         <div className="flex flex-col items-center gap-3">
@@ -26,7 +26,7 @@ export default function ConversationError({ error, reset }: { error: Error & { d
           </button>
           <Link href="/" className="font-ui text-xs text-brand-gray/55 tracking-[0.15em] uppercase underline underline-offset-4 py-2"
             style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}>
-            &larr; retour &agrave; l&apos;accueil
+            &larr; retour &agrave; l’accueil
           </Link>
         </div>
       </div>

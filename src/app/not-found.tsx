@@ -24,7 +24,7 @@ export default function NotFound() {
             Erreur 404
           </p>
           <h1 className="font-display text-3xl font-light tracking-[0.06em]">
-            Ce profil n&apos;existe pas.
+            Ce profil n’existe pas.
           </h1>
           <p className="font-ui text-sm font-light text-brand-gray/50 leading-relaxed">
             Le QR code est invalide ou ce membre<br />a quitté le club.
@@ -41,7 +41,7 @@ export default function NotFound() {
           href="/"
           className="animate-shimmer animate-stagger-4 w-full py-4 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.25em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 block text-center"
         >
-          Retour à l&apos;accueil
+          Retour à l’accueil
         </Link>
 
       </div>

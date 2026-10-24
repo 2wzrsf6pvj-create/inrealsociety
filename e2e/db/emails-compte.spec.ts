@@ -39,7 +39,7 @@ test('confirmation ouverte dans un autre navigateur : le code revient seul, le p
     const page = await context.newPage();
     await page.goto(`/auth/confirm?token_hash=${signup.tokenHash}&type=email&next=/register`);
     await expect(page).toHaveURL(/\/register$/);
-    await expect(page.getByLabel('Code d\'activation')).toHaveValue(code);
+    await expect(page.getByLabel('Code d’activation')).toHaveValue(code);
 
     await page.getByLabel('Prénom ou pseudo').fill(`Lina${tag}`);
     await page.getByLabel(/Qui êtes-vous/).fill('Quelqu’un qui aime les rencontres.');

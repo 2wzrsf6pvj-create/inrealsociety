@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
         // conversationId : la conversation de CE device (même jeton), pour l'y
         // renvoyer même si son lien n'est plus en localStorage.
         return NextResponse.json(
-          { error: 'Vous avez déjà écrit à ce membre : la suite se passe dans votre conversation.', code: 'already_messaged', conversationId: priorRoot.id },
+          { error: 'Vous avez déjà écrit à ce membre\u00a0: la suite se passe dans votre conversation.', code: 'already_messaged', conversationId: priorRoot.id },
           { status: 409 },
         );
       }

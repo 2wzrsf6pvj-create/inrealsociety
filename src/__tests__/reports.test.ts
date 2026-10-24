@@ -48,7 +48,7 @@ describe('recordReport', () => {
     wire({ reporters: REPORT_BAN_THRESHOLD });
     const out = await recordReport({ messageId: 'm', memberId: 'p', senderToken: TOKEN });
     expect(out.banned).toBe(true);
-    expect(calls.upsert).toEqual([{ sender_token: TOKEN, reason: `auto : signalé par ${REPORT_BAN_THRESHOLD} porteurs` }]);
+    expect(calls.upsert).toEqual([{ sender_token: TOKEN, reason: `auto\u00a0: signalé par ${REPORT_BAN_THRESHOLD} porteurs` }]);
   });
 
   it('même porteur, même appareil (23505) : pas d’erreur, compté une fois', async () => {

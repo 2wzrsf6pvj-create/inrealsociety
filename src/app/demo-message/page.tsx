@@ -25,7 +25,7 @@ export default function DemoMessagePage() {
 
         {/* contexte : quelqu'un vous a remarqué */}
         <div className="flex flex-col items-center gap-2 text-center">
-          <p className="font-ui text-xs text-brand-gray/50 tracking-[0.3em] uppercase">Un inconnu vous a remarqué·e</p>
+          <p className="font-ui text-xs text-brand-gray/50 tracking-[0.3em] uppercase">Un regard s’est posé sur vous</p>
           <div className="flex items-center gap-3">
             <span className="font-ui text-xxs text-brand-gray/55 tracking-[0.2em] uppercase">Anonyme</span>
             <span aria-hidden="true" className="text-brand-gray/15">·</span>
@@ -40,8 +40,8 @@ export default function DemoMessagePage() {
           <div className="max-w-[92%] self-start animate-slide-right">
             <div className="p-5 border bg-brand-white/5 border-brand-gray/15 rounded-[2px] rounded-tl-none">
               <p className="font-display text-lg md:text-xl font-light italic leading-relaxed text-brand-white/90">
-                Tu étais devant moi à ce concert. Je n&apos;ai pas osé te parler.
-                Alors j&apos;ai scanné, et voilà mon seul message : tu m&apos;as marqué·e.
+                Tu étais devant moi à ce concert. Je n’ai pas osé te parler.
+                Alors j’ai scanné, et voilà mon seul message&nbsp;: tu m’as donné le sourire.
               </p>
             </div>
             <p className="font-ui text-xxs text-brand-gray/50 mt-2">il y a 2 minutes</p>

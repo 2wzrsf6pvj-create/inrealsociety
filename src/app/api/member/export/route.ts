@@ -109,7 +109,7 @@ export async function GET(req: NextRequest) {
       $schema:       'inrealsociety/member-export-v1',
       exported_at:   new Date().toISOString(),
       exported_for:  auth.user.email,
-      gdpr_notice:   'Ce fichier contient vos données personnelles stockées par In Real Society, conformément à votre droit à la portabilité (RGPD art. 20). Il inclut les contacts, prénoms et noms que des tiers (scanneurs) ont choisi de partager avec vous. Il exclut les identifiants techniques internes (jetons d\'appareil tiers, IDs internes). Pour demander la suppression de votre compte, utilisez le bouton "Supprimer mon compte" du dashboard.',
+      gdpr_notice:   'Ce fichier contient vos données personnelles stockées par In Real Society, conformément à votre droit à la portabilité (RGPD art. 20). Il inclut les contacts, prénoms et noms que des tiers (scanneurs) ont choisi de partager avec vous. Il exclut les identifiants techniques internes (jetons d’appareil tiers, IDs internes). Pour demander la suppression de votre compte, utilisez le bouton "Supprimer mon compte" du dashboard.',
       profile:       member,
       messages:      messages ?? [],
       scans:         scans ?? [],

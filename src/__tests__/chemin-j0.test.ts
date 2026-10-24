@@ -33,8 +33,8 @@ const check = (env: Record<string, string | undefined>, label: string, migration
 describe('configuration vue de /admin', () => {
   it('tout est en place : rien à régler, paiements réels', () => {
     expect(checks(COMPLETE).filter((c) => !c.ok)).toEqual([]);
-    expect(check(COMPLETE, 'Paiements').detail).toBe('réels : une commande payée part à l’impression');
-    expect(check(COMPLETE, 'Domaine').detail).toBe('inrealsociety.com : liens des emails et pages des profils.');
+    expect(check(COMPLETE, 'Paiements').detail).toBe('réels\u00a0: une commande payée part à l’impression');
+    expect(check(COMPLETE, 'Domaine').detail).toBe('inrealsociety.com\u00a0: liens des emails et pages des profils.');
     // Sans domaine court : le domaine principal est celui des QR.
     expect(check({ ...COMPLETE, SHORT_DOMAIN: '' }, 'Domaine').detail).toContain('https://inrealsociety.com/r/<code>');
   });
@@ -56,7 +56,7 @@ describe('configuration vue de /admin', () => {
     const c = check(provisional, 'Domaine');
     expect(c.ok).toBe(false);
     expect(c.detail).toContain('domaine provisoire, à remplacer');
-    expect(check({ ...provisional, SHORT_DOMAIN: '' }, 'Domaine').detail).toContain('Les QR imprimés l\'encoderaient pour toujours');
+    expect(check({ ...provisional, SHORT_DOMAIN: '' }, 'Domaine').detail).toContain('Les QR imprimés l’encoderaient pour toujours');
   });
 
   it('domaine court des QR (choix de Clément : inreal.me) : à renseigner, et distinct du domaine principal', () => {
@@ -71,7 +71,7 @@ describe('configuration vue de /admin', () => {
   });
 
   it('variantes Printful incomplètes : combien, et lesquelles', () => {
-    const c = check({ ...COMPLETE, PRINTFUL_VARIANT_ID_LIGHT_XXL: '', PRINTFUL_VARIANT_ID_DARK_S: undefined }, 'Printful : tailles et couleurs');
+    const c = check({ ...COMPLETE, PRINTFUL_VARIANT_ID_LIGHT_XXL: '', PRINTFUL_VARIANT_ID_DARK_S: undefined }, 'Printful\u00a0: tailles et couleurs');
     expect(c.ok).toBe(false);
     expect(c.detail).toMatch(/^8 variantes sur 10/);
     expect(c.detail).toContain('PRINTFUL_VARIANT_ID_DARK_S, PRINTFUL_VARIANT_ID_LIGHT_XXL');

@@ -690,7 +690,7 @@ describe.skipIf(!ENABLED)('Emails du porteur : un par jour pour les scans, un pa
       expect((await res.json()).code).toBe('conversation_limit');
     }
     expect(toWearer().length - before).toBe(1);
-    expect(toWearer().at(-1)!.subject).toContain('quelqu\'un a essayé de vous écrire');
+    expect(toWearer().at(-1)!.subject).toContain('quelqu’un a essayé de vous écrire');
   });
 });
 
@@ -941,7 +941,7 @@ describe.skipIf(!ENABLED)('Premium : CGV avant paiement, emails une seule fois, 
     stripeState.failCancel = true;
     const res = await remove.DELETE(req('/api/member/delete', { method: 'DELETE' }));
     expect(res.status).toBe(502);
-    expect((await res.json()).error).toContain('votre compte n\'a pas été supprimé');
+    expect((await res.json()).error).toContain('votre compte n’a pas été supprimé');
     expect(member('name')).toBe('Camille');
   });
 
