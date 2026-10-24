@@ -14,6 +14,8 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { composeBackPrintSVG, generateBrandMonogramSVG } from '@/lib/generate-qr-svg';
 import { QR_STYLE_CORNER, DEFAULT_QR_STYLE, PRINT_FRONT_LOGO, FULFILLMENT_PROVIDER, type QrStyleKey } from '@/lib/constants';
 import { createGelatoOrder } from '@/lib/gelato';
+import { livePayments } from '@/lib/payments-mode';
+import { audit } from '@/lib/audit';
 import { buildShortUrl, generateUniqueShortCode } from '@/lib/short-code';
 import type { PrintfulOrderPayload, PrintfulOrderResponse, PrintfulAddress } from '@/lib/printful.types';
 
@@ -351,7 +353,11 @@ export async function fulfillOrder({ orderId, memberId, tshirtColor, tshirtSize 
       }],
     };
 
-    const res = await fetch('https://api.printful.com/orders', {
+    // Paiement réel : la commande part à l'impression (confirm=true). En test
+    // (recette), elle reste en brouillon chez Printful, ni imprimée ni facturée.
+    // Sans confirm, TOUTES restaient en brouillon : rien n'était imprimé.
+    const confirm = livePayments();
+    const res = await fetch(`https://api.printful.com/orders${confirm ? '?confirm=true' : ''}`, {
       method:  'POST',
       headers: {
         'Content-Type':  'application/json',
@@ -367,6 +373,11 @@ export async function fulfillOrder({ orderId, memberId, tshirtColor, tshirtSize 
 
     const printfulData = await res.json() as PrintfulOrderResponse;
     providerOrderId = String(printfulData.result?.id ?? '');
+    // Coût calculé en différé : Printful garde la commande en brouillon malgré
+    // confirm=true. Sans confirmation à la main, rien n'est imprimé.
+    if (confirm && printfulData.result?.status === 'draft') {
+      audit({ action: 'order.printful_draft', metadata: { orderId, printfulOrderId: providerOrderId } });
+    }
   }
 
   // ─── 6. Mark fulfilled ─────────────────────────────────────────────────────

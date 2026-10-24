@@ -21,7 +21,10 @@ Les tests de `e2e/db/` parcourent l'app dans un vrai navigateur, devant une
 - `test-terrain.spec.ts` : ce que l'équipe suit dans `/admin` pendant le test
   terrain. « Votre avis », écrit depuis « Mon espace », arrive avec le prénom
   du porteur connecté ; sa fiche de suivi donne ses chiffres, jamais le
-  contenu des messages ; « Semaine par semaine » compte la semaine en cours.
+  contenu des messages ; « Semaine par semaine » compte la semaine en cours ;
+- `configuration.spec.ts` : `/admin` → « Configuration » dit ce qui reste à
+  régler avant J0 (variables, paiements, domaine des QR), sans jamais
+  afficher un secret.
 
 Les tests de fumée de `e2e/` (`npm run test:e2e`), eux, tournent sans base et ne
 voient que les pages publiques.
