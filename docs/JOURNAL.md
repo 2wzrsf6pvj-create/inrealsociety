@@ -5,6 +5,55 @@
 
 ---
 
+## 2026-10-24 (suite) — Avant J0 : QR en inreal.me, premium offert (#46)
+
+### Analyse
+- Rien ne routait `inreal.me/<code>` : `SHORT_DOMAIN` renseigné aurait
+  rendu morts tous les QR imprimés.
+- Un passant qui scanne un testeur peut lui écrire, puis acheter son propre
+  t-shirt depuis la boutique. Mais les testeurs auraient été au plafond du
+  gratuit (3 conversations sur 7 jours, 24 h pour écrire après un scan) :
+  le test aurait mesuré ces limites plutôt que l'expérience.
+
+### Décisions de Clément
+- QR en `inreal.me/<code>` : Clément est propriétaire du domaine.
+- Premium offert aux testeurs pendant les 4 semaines, depuis `/admin`,
+  tracé, avec une fin automatique.
+
+### Fait
+- **PR #46 fusionnée** (`e875703`) :
+  - domaine court : `inreal.me/<code>` réécrit vers `/r/<code>` (un seul
+    aller-retour jusqu'au profil) ; le reste d'`inreal.me` mène au site ;
+  - premium offert, sans migration (premium sans abonnement Stripe, avec
+    une date de fin) :
+    - dans `/admin`, « Offrir le premium 4 semaines » et « Arrêter le
+      premium offert », tracés, jamais sur un abonné payant ;
+    - la tâche quotidienne de 4 h UTC le termine à sa date, sans Stripe ;
+    - les réglages du testeur affichent la date, sans rien à payer ni à
+      résilier ;
+    - les chiffres comptent les abonnés payants et les premium offerts à
+      part ;
+  - docs : `inreal.me` ajouté au même projet Vercel sans redirection,
+    `SHORT_DOMAIN` indispensable, recette de `inreal.me/<code>`, premium
+    offert à J0 (`TEST_TERRAIN.md`).
+- Vérifié :
+  - 875 tests unitaires, 4 mutations détectées sur 4 ;
+  - intégration 68/68, dont 5 nouveaux tests sur PostgREST ;
+  - E2E 24/24 ; fumée 11/11 ; CI verte.
+
+### À faire — côté Clément
+- [ ] Vercel → *Settings → Domains* : ajouter `inreal.me` au projet, **sans**
+      « Redirect to… », avec les DNS indiqués par Vercel.
+- [ ] `SHORT_DOMAIN=https://inreal.me`, puis *Redeploy*. `/admin` →
+      « Configuration » doit afficher le domaine court sans point à régler.
+- [ ] Recette : ouvrir `inreal.me/<code>` d'un porteur sur un téléphone,
+      **avant** de commander les t-shirts du test (le QR garde l'adresse du
+      moment).
+- [ ] J0 : « Offrir le premium 4 semaines » sur chaque testeur, et le lui
+      dire.
+
+---
+
 ## 2026-10-24 (suite) — Chemin vers J0 (#45)
 
 ### Analyse
