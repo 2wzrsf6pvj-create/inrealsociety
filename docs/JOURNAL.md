@@ -5,6 +5,84 @@
 
 ---
 
+## 2026-10-24 — Réseau faible (#42)
+
+### Analyse
+Le passant écrit dans la rue, souvent sur une 4G faible. Lecture du code des
+envois (navigateur et serveur), puis essais dans un vrai navigateur : réseau
+coupé, réponse perdue en route alors que le serveur a reçu, page rechargée.
+
+**Déjà en ordre** : l'inscription se relance sans doublon (profil reconnu,
+`alreadyExists`) ; un email réessayé chez Resend garde sa clé d'idempotence ;
+le scan part en arrière-plan sans bloquer le profil ; un appareil connu
+n'envoie qu'un message par porteur.
+
+**Constats** :
+1. Un envoi échoué affichait le texte du navigateur (« Load failed », « Failed
+   to fetch ») ou « Unexpected token… » quand l'hébergeur renvoyait une page
+   d'erreur.
+2. Aucun délai : un envoi pouvait tourner indéfiniment.
+3. Le serveur attendait Resend et les services de push avant de répondre au
+   passant, sans délai non plus.
+4. Le jeton de l'appareil n'était posé que par la réponse au premier
+   message : si elle se perdait, le nouvel essai créait un second message.
+5. Dans une conversation, le nouvel essai d'une réponse déjà partie
+   affichait « Attendez sa réponse avant d'écrire à nouveau ».
+6. Une coupure pendant la connexion affichait « Email ou mot de passe
+   incorrect » ; pendant le changement de mot de passe, « Recommencez depuis
+   le début ».
+7. Recharger la page, réflexe courant quand le réseau flanche, faisait perdre
+   le texte tapé.
+
+### Décisions de Clément
+- Sujet : le réseau faible, parmi les axes proposés.
+- Brouillons : gardés le temps de l'onglet (sessionStorage), effacés à
+  l'envoi. Rien ne part au serveur.
+
+### Fait
+- **PR #42 fusionnée** (`6313f6d`) :
+  - envois du navigateur (message, réponse, blocage, signalement,
+    inscription, /admin) : délai d'abandon de 20 s, 60 s pour une photo ;
+    messages en français selon l'échec (« Pas de réseau pour le moment… »,
+    « Le réseau ne répond pas… », « Le service ne répond pas… »), suivis de
+    « Votre message est gardé. » ; hors ligne, la page le dit avant
+    d'essayer ;
+  - connexion, inscription, mot de passe oublié ou à changer : une coupure
+    n'est plus une erreur d'identifiants ;
+  - sans doublon : le jeton de l'appareil est posé dès l'ouverture de la page
+    message. Après une réponse perdue, le nouvel essai mène à « C'est déjà
+    lancé » et à la conversation, retenue sur l'appareil. Dans une
+    conversation, le fil rechargé montre la réponse déjà partie, une fois ;
+  - brouillons de la page message et des réponses ;
+  - serveur : emails et notifications partent après la réponse (`waitUntil`),
+    y compris le lien de confirmation et l'email de plafond ; délai de 8 s
+    par essai chez Resend et par envoi push ;
+  - E2E `e2e/db/reseau.spec.ts` ; essai en mode avion ajouté à la recette de
+    `MISE_EN_PRODUCTION.md`.
+- À savoir : « nous venons de vous écrire » (lien de confirmation de l'email
+  du passant) s'affiche dès l'envoi lancé, sans attendre l'accord de Resend.
+  Un refus reste visible dans les logs et Sentry.
+- Vérifié :
+  - lint et typage ; 825 tests unitaires ; intégration 59/59 ;
+  - E2E avec base 21/21 ; fumée 11/11 ;
+  - par mutation : sans le jeton posé à l'ouverture, la réponse perdue crée
+    deux messages en base et le test échoue ; même chose pour le fil et la
+    connexion ;
+  - CI verte.
+
+### À faire — côté Clément
+- [ ] Après le déploiement, la recette en mode avion (1 minute, sur iPhone de
+      préférence : les tests automatiques tournent dans Chromium, pas dans
+      Safari).
+- [ ] Toujours en attente : l'essai au lecteur d'écran (#41).
+
+### Ensuite
+- Prochain sujet au choix : préparation du test terrain, liste de mise en
+  production consolidée, accessibilité des emails, polices servies depuis le
+  dépôt.
+
+---
+
 ## 2026-10-23 (suite) — Lecteur d'écran : guide d'essai et corrections (#41)
 
 ### Contexte
