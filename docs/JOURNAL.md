@@ -5,6 +5,46 @@
 
 ---
 
+## 2026-10-24 (suite) — Chemin vers J0 (#45)
+
+### Analyse
+Choix de Clément : une liste ordonnée de ce qui reste avant le test. Rien
+n'est encore en place côté production. Trois points auraient bloqué J0 :
+1. **Aucun t-shirt imprimé** : les commandes Printful étaient créées sans
+   confirmation, donc restaient en brouillon ; `/admin` les comptait comme
+   imprimées.
+2. **Comptes impossibles à confirmer** : sans SMTP personnalisé, Supabase
+   n'envoie qu'aux membres de l'équipe du projet, 2 emails par heure.
+3. **QR morts** : `SHORT_DOMAIN` renseigné encode `inreal.me/<code>`, que
+   rien ne redirigeait vers les profils.
+
+### Décisions de Clément
+- Commandes Printful confirmées automatiquement en paiement réel ; en
+  brouillon pendant la recette (paiement de test).
+- QR en `inreal.me/<code>` : Clément est propriétaire du domaine. La
+  redirection vient dans une PR séparée.
+
+### Fait
+- **PR #45 fusionnée** (`0f52a41`) :
+  - Printful : `confirm=true` avec une clé Stripe réelle, brouillon en test ;
+    alerte « argent » si une commande payée reste en brouillon ; Gelato
+    suit la même règle ;
+  - `/admin` → « Configuration » : ce que l'app voit de sa configuration,
+    sans jamais un secret, et un bandeau tant qu'il reste des points ;
+  - `MISE_EN_PRODUCTION.md` commence par « Chemin vers J0 » : 13 étapes,
+    du plus long à obtenir (statut, juridique, domaine, DNS) aux réglages ;
+    clés de notifications et emails de Supabase par Resend marqués
+    indispensables.
+- Vérifié : 860 tests unitaires, intégration 63/63, E2E 23/23, fumée 11/11 ;
+  mutation sur « jamais un secret » détectée ; CI verte.
+
+### À faire — côté Clément
+- [ ] Suivre le chemin vers J0 (`docs/MISE_EN_PRODUCTION.md`), en commençant
+      par le statut, le juridique et le domaine. Compter deux à trois
+      semaines.
+
+---
+
 ## 2026-10-24 (suite) — Sécurité : zod 4.6.7 (#44)
 
 ### Fait
