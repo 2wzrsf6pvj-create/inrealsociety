@@ -16,11 +16,11 @@ test.describe('Pages publiques', () => {
     await expect(page.locator('text=The IRL Social Club').first()).toBeVisible();
   });
 
-  test('shop rend avec le produit + prix, livraison comprise', async ({ page }) => {
+  test('shop rend avec le produit + prix, livraison offerte', async ({ page }) => {
     await page.goto('/shop');
     await expect(page).toHaveTitle(/In Real Society/);
     await expect(page.getByText(/^49\s€$/).first()).toBeVisible();
-    await expect(page.getByText('livraison comprise', { exact: true }).first()).toBeVisible();
+    await expect(page.getByText('livraison offerte', { exact: true }).first()).toBeVisible();
   });
 
   test('manifeste rend avec sommaire + tous les blocs', async ({ page }) => {
@@ -96,12 +96,12 @@ test.describe('Petits écrans (360 px)', () => {
     expect(box!.height).toBeLessThan(60);   // une ligne : 54 px ; deux : 75
   });
 
-  test('boutique : la barre d’achat du bas tient dans l’écran (« Blanc · XXL · livraison comprise »)', async ({ page }) => {
+  test('boutique : la barre d’achat du bas tient dans l’écran (« Blanc · XXL · livraison offerte »)', async ({ page }) => {
     await page.goto('/shop');
     await page.getByRole('button', { name: 'Couleur Blanc' }).click();
     await page.getByRole('button', { name: 'Taille XXL' }).click();
     const bar = page.getByRole('region', { name: 'Commander' });
-    await expect(bar).toContainText('Blanc · XXL · livraison comprise');
+    await expect(bar).toContainText('Blanc · XXL · livraison offerte');
     const fit = await bar.evaluate((el) => {
       const text = el.querySelector('span.whitespace-nowrap')!.getBoundingClientRect();
       const button = el.querySelector('button')!.getBoundingClientRect();

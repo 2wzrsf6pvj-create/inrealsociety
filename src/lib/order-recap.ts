@@ -11,7 +11,7 @@ const EUR = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' 
 export interface OrderRecap {
   article:  string;          // « T-shirt Noir · L »
   tagline:  string | null;   // texte imprimé sous le QR ; null = QR seul
-  shipping: string | null;   // « Comprise » ; null = inconnu
+  shipping: string | null;   // « Offerte » ; null = inconnu
   total:    string | null;   // « 49,00 € » ; null = inconnu
   address:  string | null;   // adresse de livraison sur une ligne ; null = inconnue
 }
@@ -31,10 +31,10 @@ export function formatEuros(cents: number): string {
   return EUR.format(cents / 100);
 }
 
-// Livraison comprise dans le prix (api/shop/checkout) : 0 € s'écrit « Comprise ».
-// Un port payé (commande passée avant la livraison comprise) s'affiche en euros.
+// Livraison offerte (api/shop/checkout) : 0 € s'écrit « Offerte ». Un port payé
+// (commande passée avant la livraison offerte) s'affiche en euros.
 function shippingText(cents: number): string {
-  return cents === 0 ? 'Comprise' : formatEuros(cents);
+  return cents === 0 ? 'Offerte' : formatEuros(cents);
 }
 
 function countryName(code: string): string {

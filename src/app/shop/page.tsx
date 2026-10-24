@@ -17,7 +17,7 @@ export const metadata: Metadata = {
 
 // Données produit pour les moteurs (prix, disponibilité, photos) : résultats
 // enrichis possibles. Prix = celui affiché, cf. TSHIRT_PRICE_EUR ; port = celui
-// facturé (livraison comprise), vers les pays livrés.
+// facturé (livraison offerte), vers les pays livrés.
 const productJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Product',

@@ -139,9 +139,9 @@ export const TSHIRT_PRICE_EUR   = 49;
 export const TSHIRT_PRICE_CENTS = 4900;
 
 /** Port facturé en plus du t-shirt — source UNIQUE : option Stripe Checkout
- *  (api/shop/checkout) et données produit de la boutique. 0 : la livraison est
- *  comprise dans les 49 € (choix de Clément, octobre 2026) ; la boutique, la FAQ,
- *  les CGV et le récapitulatif de commande l'écrivent. Un prix affiché doit
+ *  (api/shop/checkout) et données produit de la boutique. 0 : livraison offerte,
+ *  49 € en tout (choix de Clément, octobre 2026) ; la boutique, la FAQ, les CGV
+ *  et le récapitulatif de commande l'écrivent. Un prix affiché doit
  *  toujours être le prix facturé : changer ces textes avec. Pas d'express
  *  (choix de Clément) : Printful recevait toujours la livraison standard, même
  *  payée en express. */

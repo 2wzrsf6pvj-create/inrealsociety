@@ -19,12 +19,12 @@ describe('buildOrderRecap', () => {
     const r = buildOrderRecap(FULL);
     expect(r.article).toBe('T-shirt Noir · L');
     expect(r.tagline).toBe('Un message ? Une chance.');
-    expect(r.shipping).toBe('Comprise');
+    expect(r.shipping).toBe('Offerte');
     expect(r.total).toMatch(/^49,00\s€$/);
     expect(r.address).toBe('Jeanne Test, 1 rue de Rivoli, 75001 Paris, France');
   });
 
-  it('un port payé (commande passée avant la livraison comprise) est affiché en euros', () => {
+  it('un port payé (commande passée avant la livraison offerte) est affiché en euros', () => {
     const base = { color: 'light', size: 'M', taglineId: null };
     expect(buildOrderRecap({ ...base, shippingCents: 500 }).shipping).toMatch(/^5,00\s€$/);
     expect(buildOrderRecap({ ...base, shippingCents: 1200 }).shipping).toMatch(/^12,00\s€$/);
@@ -50,7 +50,7 @@ describe('emailActivation : récapitulatif', () => {
     expect(html).toContain('Votre commande');
     expect(html).toContain('T-shirt Noir · L');
     expect(html).toContain('« Un message ? Une chance. »');
-    expect(html).toMatch(/Livraison[\s\S]*Comprise/);
+    expect(html).toMatch(/Livraison[\s\S]*Offerte/);
     // Franchise de TVA : le total payé, sans « TTC ».
     expect(html).toMatch(/Total payé[\s\S]*49,00\s€/);
     expect(html).not.toContain('TTC');

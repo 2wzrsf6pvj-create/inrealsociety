@@ -86,7 +86,7 @@ export default function CGVPage() {
           </h2>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
             {VAT_EXEMPT ? `Les prix sont indiqués en euros. ${VAT_EXEMPT_NOTICE}.` : 'Les prix sont indiqués en euros TTC.'}
-            {' '}Le prix du t-shirt comprend la livraison&nbsp;: il n’y a pas de frais de port.
+            {' '}La livraison est offerte&nbsp;: il n’y a pas de frais de port.
             Le Vendeur se réserve le droit de modifier ses prix
             à tout moment, étant entendu que le prix applicable est celui en vigueur au moment de la
             commande.

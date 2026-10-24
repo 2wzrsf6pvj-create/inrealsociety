@@ -470,7 +470,7 @@ export default function ShopClient() {
               </div>
               <div className="flex flex-col items-end gap-1 shrink-0">
                 <span className="font-display text-3xl font-light">{TSHIRT_PRICE_EUR}&nbsp;€</span>
-                <span className="font-ui text-xxs text-brand-gray/55 whitespace-nowrap">livraison comprise</span>
+                <span className="font-ui text-xxs text-brand-gray/55 whitespace-nowrap">livraison offerte</span>
               </div>
             </div>
 
@@ -566,7 +566,7 @@ export default function ShopClient() {
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-ui text-xxs text-brand-gray/50 tracking-[0.15em] uppercase">Frais de port</span>
-                  <span className="font-ui text-xs text-brand-gray/60">Compris</span>
+                  <span className="font-ui text-xs text-brand-gray/60">Offerts</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="font-ui text-xxs text-brand-gray/50 tracking-[0.15em] uppercase">Zones</span>
@@ -689,7 +689,7 @@ export default function ShopClient() {
 
       {/* Barre d'achat fixe — mobile/tablette uniquement, masquée quand le formulaire
           est à l'écran. Sous le bandeau cookies (z-[100]) tant qu'il est affiché.
-          Plus serrée sous 400 px : « Blanc · XXL · livraison comprise » et le
+          Plus serrée sous 400 px : « Blanc · XXL · livraison offerte » et le
           bouton tiennent à 360 px. */}
       {!formInView && (
         <div
@@ -703,7 +703,7 @@ export default function ShopClient() {
             <div className="flex flex-col">
               <span className="font-display text-2xl font-light leading-none">{TSHIRT_PRICE_EUR}&nbsp;€</span>
               <span className="font-ui text-xxs text-brand-gray/55 mt-1 whitespace-nowrap">
-                {colorLabel} · {tshirtSize} · livraison comprise
+                {colorLabel} · {tshirtSize} · livraison offerte
               </span>
             </div>
             <button

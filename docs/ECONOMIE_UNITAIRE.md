@@ -11,7 +11,7 @@
 |---|---|---|
 | Franchise en base de TVA (art. 293 B du CGI) | statut choisi : aucune TVA facturée | `VAT_EXEMPT` |
 | Livraison standard seulement | l'express (12 €) partait quand même en standard chez Printful : la commande ne précisait pas la méthode | option unique dans `api/shop/checkout` |
-| Livraison comprise dans les 49 € | un prix rond, sans frais ajoutés au paiement ; le port est pris sur la marge | `SHIPPING_STANDARD_CENTS` (0) |
+| Livraison offerte, 49 € en tout | un prix rond, sans frais ajoutés au paiement ; le port est pris sur la marge | `SHIPPING_STANDARD_CENTS` (0) |
 | Logo poitrine gardé | choix de marque, à revoir avec les vraies factures Printful | `PRINT_FRONT_LOGO` |
 | France métropolitaine, Belgique, Luxembourg, Allemagne | hors UE : port forfaitaire insuffisant, droits et TVA à payer par le client à la livraison, TVA britannique due dès la première vente | `SHIPPING_COUNTRIES` |
 
@@ -34,11 +34,11 @@ Le plus sûr : passer une commande test et lire la facture Printful.
 
 ## 2. Marge par t-shirt
 
-France, livraison comprise, sans remise de parrainage :
+France, livraison offerte, sans remise de parrainage :
 
 | | Montant |
 |---|---|
-| Payé par le client (49 €, livraison comprise) | 49,00 € |
+| Payé par le client (49 €, livraison offerte) | 49,00 € |
 | Stripe (1,5 % × 49 € + 0,25 €) | −0,99 € |
 | Printful, TVA comprise ((13 + 4,50 + 4,79) × 1,2) | −26,75 € |
 | **Marge** | **≈ 21 €** |
@@ -87,7 +87,7 @@ et 2 t-shirts plus 7 abonnés suffisent (42 € + 19 €).
 
 - **Logo poitrine** : ≈ 5,40 € TVA comprise par t-shirt, un quart de la
   marge. C'est un choix de marque, gardé au lancement.
-- **Port** : compris dans les 49 €, il coûte ≈ 5,75 € (4,79 € plus la TVA),
+- **Port** : offert, il coûte ≈ 5,75 € (4,79 € plus la TVA),
   pris sur la marge. Facturé 5 € à part, il rendrait ≈ 5 € par t-shirt, mais
   le client paierait 54 €.
 - **Premium annuel**, par exemple à 29 € :

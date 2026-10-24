@@ -282,7 +282,7 @@ Pour vérifier une impression réelle, confirmer un brouillon à la main dans
 Printful (il est alors facturé).
 
 - [ ] Commander un t-shirt : 49 € en tout, le paiement ne propose qu'une
-      livraison (« Livraison comprise », gratuite) vers la France, la
+      livraison (« Livraison offerte », à 0 €) vers la France, la
       Belgique, le Luxembourg et l'Allemagne, et l'email avec le code
       d'activation arrive.
 - [ ] Activer le profil avec ce code (case 18 ans comprise).

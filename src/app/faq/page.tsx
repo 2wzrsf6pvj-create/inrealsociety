@@ -45,7 +45,7 @@ const FAQ_GROUPS: FaqGroup[] = [
       { q: 'C’est quel t-shirt\u00a0?',
         a: 'Un Stanley/Stella Creator 2.0 en coton bio, coupe droite, avec le QR code premium imprimé dans le dos (impression DTF durable). En noir ou blanc, du S au XXL.' },
       { q: 'Combien ça coûte\u00a0?',
-        a: `${TSHIRT_PRICE_EUR}\u00a0€ le t-shirt, livraison comprise, en ${SHIPPING_COUNTRIES_LABEL}.` },
+        a: `${TSHIRT_PRICE_EUR}\u00a0€ le t-shirt, livraison offerte en ${SHIPPING_COUNTRIES_LABEL}.` },
       { q: 'Quels sont les délais de livraison\u00a0?',
         a: 'Production à la demande (2 à 5 jours), puis expédition (5 à 10 jours ouvrés). Vous pouvez suivre votre commande à tout moment depuis «\u00a0Ma commande\u00a0».' },
       { q: 'Comment j’active mon profil\u00a0?',
