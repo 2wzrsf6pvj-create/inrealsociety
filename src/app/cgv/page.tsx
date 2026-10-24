@@ -86,7 +86,8 @@ export default function CGVPage() {
           </h2>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
             {VAT_EXEMPT ? `Les prix sont indiqués en euros. ${VAT_EXEMPT_NOTICE}.` : 'Les prix sont indiqués en euros TTC.'}
-            {' '}Le Vendeur se réserve le droit de modifier ses prix
+            {' '}Le prix du t-shirt comprend la livraison&nbsp;: il n’y a pas de frais de port.
+            Le Vendeur se réserve le droit de modifier ses prix
             à tout moment, étant entendu que le prix applicable est celui en vigueur au moment de la
             commande.
           </p>
@@ -176,7 +177,8 @@ export default function CGVPage() {
             Article 7 — Livraison
           </h2>
           <p className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed">
-            Les commandes sont livrées en {SHIPPING_COUNTRIES_LABEL}. Chaque article étant
+            Les commandes sont livrées en {SHIPPING_COUNTRIES_LABEL}, sans frais de port
+            (article&nbsp;3). Chaque article étant
             fabriqué à la demande via Printful, le délai se décompose en deux
             temps&nbsp;: <span className="text-brand-white/80">production sous 2 à 5 jours ouvrés</span> après
             validation du paiement, puis <span className="text-brand-white/80">expédition de 5 à 10 jours

@@ -44,7 +44,7 @@ import { POST as webhook } from '@/app/api/webhook/stripe/route';
 function paid(metadata: Record<string, string> = {}): NextRequest {
   const event = { id: 'evt_1', type: 'checkout.session.completed', data: { object: {
     id: 'cs_1', mode: 'payment', metadata, customer_details: { email: 'jeanne@example.com' },
-    payment_intent: 'pi_1', amount_total: 5400,
+    payment_intent: 'pi_1', amount_total: 4900,
   } } };
   return {
     text:    async () => JSON.stringify(event),

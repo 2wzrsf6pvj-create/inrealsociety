@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { headers } from 'next/headers';
 import ShopClient from './ShopClient';
-import { APP_URL, OG_IMAGE, TSHIRT_PRICE_EUR } from '@/lib/constants';
+import { APP_URL, OG_IMAGE, TSHIRT_PRICE_EUR, SHIPPING_STANDARD_CENTS, SHIPPING_COUNTRIES } from '@/lib/constants';
 
 export const metadata: Metadata = {
   title: 'Boutique',
@@ -16,7 +16,8 @@ export const metadata: Metadata = {
 };
 
 // Données produit pour les moteurs (prix, disponibilité, photos) : résultats
-// enrichis possibles. Prix = celui affiché, cf. TSHIRT_PRICE_EUR.
+// enrichis possibles. Prix = celui affiché, cf. TSHIRT_PRICE_EUR ; port = celui
+// facturé (livraison comprise), vers les pays livrés.
 const productJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Product',
@@ -30,6 +31,11 @@ const productJsonLd = {
     priceCurrency: 'EUR',
     availability: 'https://schema.org/InStock',
     url: `${APP_URL}/shop`,
+    shippingDetails: {
+      '@type': 'OfferShippingDetails',
+      shippingRate: { '@type': 'MonetaryAmount', value: SHIPPING_STANDARD_CENTS / 100, currency: 'EUR' },
+      shippingDestination: SHIPPING_COUNTRIES.map((addressCountry) => ({ '@type': 'DefinedRegion', addressCountry })),
+    },
   },
 };
 

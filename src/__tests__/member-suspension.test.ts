@@ -68,7 +68,7 @@ function patchReq(body: Record<string, unknown>): NextRequest {
 
 function refundReq(): NextRequest {
   const event = { type: 'charge.refunded', data: { object: {
-    payment_intent: 'pi_1', refunded: true, amount: 5400, amount_refunded: 5400,
+    payment_intent: 'pi_1', refunded: true, amount: 4900, amount_refunded: 4900,
   } } };
   return {
     text:    async () => JSON.stringify(event),

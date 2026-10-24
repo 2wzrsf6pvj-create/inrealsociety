@@ -174,7 +174,7 @@ s'essouffle (`RETENTION.md`, pari P1).
 6. Qu'est-ce qui t'a donné envie, ou pas, de le porter ?
 7. Le porteras-tu encore le mois prochain ? (oui, peut-être, non)
 8. De 0 à 10, le recommanderais-tu à quelqu'un de ton entourage ?
-9. L'aurais-tu acheté 54 €, livraison comprise ? Le premium, offert pendant
+9. L'aurais-tu acheté 49 €, livraison comprise ? Le premium, offert pendant
    le test : le prendrais-tu à 2,99 € par mois, et pour quoi ?
 10. Qu'est-ce qui t'a manqué ou gêné dans l'app ?
 

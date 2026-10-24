@@ -132,17 +132,20 @@ export const FULFILL_ON_PAYMENT: boolean = process.env.FULFILL_ON_PAYMENT !== 'f
 /** Prix du t-shirt — source UNIQUE côté app (affichage + `orders.amount` initial).
  *  ⚠️ Le montant réellement débité vient du Stripe Price (STRIPE_PRICE_ID) ; le
  *  webhook réécrit `orders.amount` avec le vrai total (`session.amount_total`,
- *  port inclus). Garder ces valeurs alignées avec le Stripe Price.
+ *  remise déduite). Garder ces valeurs alignées avec le Stripe Price.
  *  ⚠️ Si VAT_EXEMPT passe à false : Price Stripe en tax_behavior « inclusive »,
- *  sinon `automatic_tax` ajoute la TVA par-dessus et l'affichage « 49€ » devient faux. */
+ *  sinon `automatic_tax` ajoute la TVA par-dessus et l'affichage « 49 € » devient faux. */
 export const TSHIRT_PRICE_EUR   = 49;
 export const TSHIRT_PRICE_CENTS = 4900;
 
-/** Frais de livraison — source UNIQUE : option Stripe Checkout (api/shop/checkout,
- *  en tax_behavior « inclusive ») ET affichage (boutique, FAQ). Un prix affiché doit
- *  toujours être le prix facturé. Pas d'express au lancement (choix de Clément) :
- *  Printful recevait toujours la livraison standard, même payée en express. */
-export const SHIPPING_STANDARD_CENTS = 500;
+/** Port facturé en plus du t-shirt — source UNIQUE : option Stripe Checkout
+ *  (api/shop/checkout) et données produit de la boutique. 0 : la livraison est
+ *  comprise dans les 49 € (choix de Clément, octobre 2026) ; la boutique, la FAQ,
+ *  les CGV et le récapitulatif de commande l'écrivent. Un prix affiché doit
+ *  toujours être le prix facturé : changer ces textes avec. Pas d'express
+ *  (choix de Clément) : Printful recevait toujours la livraison standard, même
+ *  payée en express. */
+export const SHIPPING_STANDARD_CENTS = 0;
 
 /** Pays livrés : l'UE seulement au lancement (choix de Clément). Hors UE, le port
  *  forfaitaire couvrait mal l'expédition, le client risquait droits et TVA à la
