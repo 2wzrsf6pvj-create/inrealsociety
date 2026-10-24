@@ -167,7 +167,7 @@ plus exécuter `create_member_with_code` (service_role oui).
 - `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST` → analytics off
 - `CRON_SECRET` → crons (cleanup, scan-reminders) non protégés/non déclenchés
 - `INTERNAL_SECRET` → `/api/push/notify` + `/api/newsletter/send` (endpoints externes) fail-closed
-- `SHORT_DOMAIN` (optionnel) → sinon les QR utilisent `${APP_URL}/r/<code>`. ⚠️ À laisser vide tant que rien ne redirige le domaine court vers `/r/<code>` : renseignée, chaque QR imprimé mène à une page introuvable
+- `SHORT_DOMAIN` (`https://inreal.me`, indispensable pour le test terrain) → sinon les QR utilisent `${APP_URL}/r/<code>`, lisibles de moins loin. Le domaine doit être ajouté au même projet Vercel **sans redirection** vers le domaine principal : `src/proxy.ts` réécrit `inreal.me/<code>` vers `/r/<code>` et renvoie le reste vers le site. À renseigner avant toute impression : le QR garde l'adresse du moment
 
 ---
 

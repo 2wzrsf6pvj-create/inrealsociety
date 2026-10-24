@@ -9,7 +9,8 @@ const NOW = new Date('2026-10-23T12:00:00Z');
 const daysAgo = (d: number) => new Date(NOW.getTime() - d * 86_400_000).toISOString();
 
 const member = (id: string, days: number, plan = 'free') =>
-  ({ id, created_at: daysAgo(days), plan, name: id, short_code: null, is_paused: false, suspended_at: null });
+  ({ id, created_at: daysAgo(days), plan, name: id, short_code: null, is_paused: false, suspended_at: null,
+     stripe_subscription_id: plan === 'premium' ? `sub_${id}` : null, plan_expires_at: null });
 
 describe('computeFieldStats', () => {
   const members = [

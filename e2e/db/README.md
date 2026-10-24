@@ -24,7 +24,10 @@ Les tests de `e2e/db/` parcourent l'app dans un vrai navigateur, devant une
   contenu des messages ; « Semaine par semaine » compte la semaine en cours ;
 - `configuration.spec.ts` : `/admin` → « Configuration » dit ce qui reste à
   régler avant J0 (variables, paiements, domaine des QR), sans jamais
-  afficher un secret.
+  afficher un secret ;
+- `premium-offert.spec.ts` : `/admin` offre le premium 4 semaines à un
+  testeur, qui le voit dans ses réglages (date de fin, rien à payer ni à
+  résilier) ; l'arrêt depuis `/admin` le repasse en gratuit.
 
 Les tests de fumée de `e2e/` (`npm run test:e2e`), eux, tournent sans base et ne
 voient que les pages publiques.

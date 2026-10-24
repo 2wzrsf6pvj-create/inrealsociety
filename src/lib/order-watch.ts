@@ -9,6 +9,7 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { FULFILL_ON_PAYMENT } from '@/lib/constants';
 import { isMissingColumn } from '@/lib/phone';
 import { pushService, type PushService } from '@/lib/push-service';
+import { premiumState, type PremiumState } from '@/lib/subscription';
 import type { PhoneOs } from '@/lib/types';
 
 const HOUR = 3_600_000;
@@ -85,7 +86,7 @@ export async function loadOrderWatch(now = new Date()): Promise<OrderWatch> {
 
 export interface MemberHit {
   id: string; name: string | null; email: string | null; createdAt: string;
-  plan: string | null; paused: boolean; suspended: boolean; shortCode: string | null;
+  premium: PremiumState; paused: boolean; suspended: boolean; shortCode: string | null;
   /** Services de notifications de ses appareils abonnés ; vide : pas activées. */
   pushServices: PushService[];
   /** Téléphone relevé à l'ouverture de « Mon espace » (cf. lib/phone) ; absent
@@ -100,9 +101,10 @@ export function cleanQuery(raw: string): string {
   return raw.replace(/[%*\\]/g, '').trim().slice(0, 100);
 }
 
-const MEMBER_COLUMNS = 'id, name, email, created_at, plan, is_paused, suspended_at, short_code';
+const MEMBER_COLUMNS = 'id, name, email, created_at, plan, stripe_subscription_id, plan_expires_at, is_paused, suspended_at, short_code';
 type MemberRow = {
   id: string; name: string | null; email: string | null; created_at: string; plan: string | null;
+  stripe_subscription_id: string | null; plan_expires_at: string | null;
   is_paused: boolean | null; suspended_at: string | null; short_code: string | null;
 };
 
@@ -128,7 +130,7 @@ async function withNotifications(rows: MemberRow[]): Promise<MemberHit[]> {
   return rows.map((m) => {
     const phone = phoneById.get(m.id);
     return {
-      id: m.id, name: m.name, email: m.email, createdAt: m.created_at, plan: m.plan,
+      id: m.id, name: m.name, email: m.email, createdAt: m.created_at, premium: premiumState(m),
       paused: !!m.is_paused, suspended: !!m.suspended_at, shortCode: m.short_code,
       pushServices: [...(services.get(m.id) ?? [])].sort(),
       ...(phoneRows ? { phone: { os: phone?.phone_os ?? null, appInstalledAt: phone?.app_installed_at ?? null } } : {}),

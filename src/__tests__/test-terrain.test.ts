@@ -55,7 +55,8 @@ import { POST as feedback } from '@/app/api/feedback/route';
 const NOW = new Date('2026-10-23T12:00:00Z');   // vendredi, 14 h à Paris
 const daysAgo = (d: number) => new Date(NOW.getTime() - d * 86_400_000).toISOString();
 const member = (id: string, createdAt: string, over: Record<string, unknown> = {}) => ({
-  id, created_at: createdAt, plan: 'free', name: id, short_code: `qr-${id}`, is_paused: false, suspended_at: null, ...over,
+  id, created_at: createdAt, plan: 'free', name: id, short_code: `qr-${id}`, is_paused: false, suspended_at: null,
+  stripe_subscription_id: null as string | null, plan_expires_at: null as string | null, ...over,
 });
 const input = (over: Partial<Parameters<typeof computeFieldStats>[0]> = {}) => ({
   members: [], scans: [], roots: [], replyParents: [], paidOrders: 0, subscriptions: [], phones: null, ...over,
@@ -115,7 +116,7 @@ describe('suivi des porteurs : chiffres seulement, les plus récents d’abord',
     members: [
       member('ancien', daysAgo(70)),                                    // hors des 60 jours
       member('calme', daysAgo(20)),
-      member('nouveau', daysAgo(2), { plan: 'premium' }),
+      member('nouveau', daysAgo(2), { plan: 'premium', stripe_subscription_id: 'sub_1' }),
       member('pause', daysAgo(10), { is_paused: true }),
       member('suspendu', daysAgo(12), { is_paused: true, suspended_at: daysAgo(1) }),
     ],
@@ -141,7 +142,7 @@ describe('suivi des porteurs : chiffres seulement, les plus récents d’abord',
   it('scans, dont 7 derniers jours, dernier scan, messages et réponses, notifications, téléphone', () => {
     expect(stats.followUp[0]).toEqual({
       id: 'nouveau', name: 'nouveau', shortCode: 'qr-nouveau', activatedAt: daysAgo(2), days: 2,
-      state: 'active', premium: true,
+      state: 'active', premium: { gift: false, until: null },
       scans: 2, recentScans: 2, lastScanAt: daysAgo(0.5),
       messages: 2, replied: 1,
       notified: true, phone: { os: 'ios', appInstalled: true },

@@ -2,7 +2,7 @@
 
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
-import { FROM_APP } from '@/lib/constants';
+import { APP_URL, FROM_APP } from '@/lib/constants';
 import { createSenderToken, getSenderToken, setSenderTokenCookie } from '@/lib/sender-token';
 
 const PUBLIC_PAGES = new Set([
@@ -117,8 +117,25 @@ function buildCsp(nonce: string): string {
   ].join('; ');
 }
 
+// Domaine court des QR imprimés (SHORT_DOMAIN, choix de Clément : inreal.me) :
+// inreal.me/<code> mène au profil comme <site>/r/<code>. Ajouté au même projet
+// Vercel, sans redirection Vercel vers le domaine principal.
+const SHORT_HOST = (() => {
+  try { return process.env.SHORT_DOMAIN ? new URL(process.env.SHORT_DOMAIN).host.toLowerCase() : null; }
+  catch { return null; }
+})();
+const SHORT_CODE_PATH = /^\/([a-z0-9]{2,6})$/i;
+
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
+  if (SHORT_HOST && req.headers.get('host')?.toLowerCase() === SHORT_HOST) {
+    const code = SHORT_CODE_PATH.exec(pathname)?.[1];
+    // Réécrit, pas redirigé : un seul aller-retour jusqu'au profil (4G faible).
+    if (code) return NextResponse.rewrite(new URL(`/r/${code.toLowerCase()}`, req.url));
+    // Tout le reste du domaine court : le site principal.
+    return NextResponse.redirect(new URL(`${pathname}${req.nextUrl.search}`, APP_URL));
+  }
 
   // Nonce unique par requête (Web Crypto). On le pose sur les headers de
   // REQUÊTE : x-nonce (lu par le root layout) + Content-Security-Policy (lue par

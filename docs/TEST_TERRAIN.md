@@ -18,6 +18,10 @@
 En plus : les notifications arrivent-elles (sur iPhone, seulement avec l'app
 installée) ? Les testeurs paieraient-ils ?
 
+Les testeurs ont le premium offert pendant les 4 semaines (choix de Clément) :
+le test mesure l'expérience complète (48 h pour écrire après un scan,
+conversations illimitées), pas les limites du gratuit.
+
 Quatre semaines répondent à l'hypothèse (a) de `RETENTION.md` (section 7) :
 « ils arrêtent de porter ». L'hypothèse (b), « ils résilient le premium »,
 demande plusieurs mois d'abonnement.
@@ -40,7 +44,8 @@ demande plusieurs mois d'abonnement.
 
 - [ ] Recette complète (`MISE_EN_PRODUCTION.md`, section 7), paiements réels
       activés : `/admin` → « Configuration » dit « Paiements : réels », et
-      rien à régler.
+      rien à régler, domaine court des QR compris (`inreal.me`) : le QR est
+      imprimé avec l'adresse du moment, pour toujours.
 - [ ] Commander les 10 t-shirts sur la boutique, **une commande par
       t-shirt** (taille et couleur de chaque testeur), livrés chez toi ou chez
       le testeur. Chaque commande t'envoie un code d'activation : les garder,
@@ -59,6 +64,10 @@ demande plusieurs mois d'abonnement.
 
 - [ ] Activer le profil avec le code (case 18 ans comprise) : prénom, une
       présentation qui donne envie d'aborder, photo facultative.
+- [ ] Premium offert : `/admin` → « Suivi des porteurs » → « Offrir le
+      premium 4 semaines » sur sa fiche. Il s'arrête seul 4 semaines plus
+      tard, sans rien à payer ni à résilier ; ses réglages affichent la date.
+      Le lui dire.
 - [ ] Notifications : sur iPhone, installer l'app sur l'écran d'accueil (« Mon
       espace » montre comment) puis les activer ; sur Android, les activer.
       Sans elles, un message n'est vu qu'en ouvrant le site.
@@ -102,7 +111,9 @@ heures pour un cas grave, sans attendre en cas d'urgence).
 
 **J14** : premier relevé de « Scannés dans leurs 14 premiers jours ».
 
-**J28** : questionnaire, entretiens, décision.
+**J28** : questionnaire, entretiens, décision. Le premium offert s'arrête
+seul dans la nuit qui suit (tâche de 4 h UTC). Pour refaire 4 semaines : le
+réoffrir depuis `/admin` une fois arrêté.
 
 ## 5. Les chiffres, et où les lire
 
@@ -156,8 +167,8 @@ s'essouffle (`RETENTION.md`, pari P1).
 6. Qu'est-ce qui t'a donné envie, ou pas, de le porter ?
 7. Le porteras-tu encore le mois prochain ? (oui, peut-être, non)
 8. De 0 à 10, le recommanderais-tu à quelqu'un de ton entourage ?
-9. L'aurais-tu acheté 54 €, livraison comprise ? Prendrais-tu le premium à
-   2,99 € par mois, et pour quoi ?
+9. L'aurais-tu acheté 54 €, livraison comprise ? Le premium, offert pendant
+   le test : le prendrais-tu à 2,99 € par mois, et pour quoi ?
 10. Qu'est-ce qui t'a manqué ou gêné dans l'app ?
 
 Pendant l'entretien, demander une histoire précise : le scan ou la
@@ -167,4 +178,5 @@ conversation la plus marquante.
 
 - Remplir le tableau des seuils ; garder trois citations par question.
 - Décider, et noter la décision dans `docs/JOURNAL.md`.
-- Dire aux testeurs ce qui change. Ils gardent leur t-shirt et leur profil.
+- Dire aux testeurs ce qui change. Ils gardent leur t-shirt et leur profil ;
+  le premium offert s'arrête à sa date, ils peuvent ensuite s'abonner.
