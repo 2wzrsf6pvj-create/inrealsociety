@@ -19,7 +19,7 @@ test.describe('Pages publiques', () => {
   test('shop rend avec le produit + prix', async ({ page }) => {
     await page.goto('/shop');
     await expect(page).toHaveTitle(/In Real Society/);
-    await expect(page.locator('text=49€').first()).toBeVisible();
+    await expect(page.getByText(/^49\s€$/).first()).toBeVisible();
   });
 
   test('manifeste rend avec sommaire + tous les blocs', async ({ page }) => {
@@ -89,7 +89,7 @@ test.describe('Petits écrans (360 px)', () => {
     }
   });
 
-  test('boutique : « Commander en … — 49€ » sur une ligne', async ({ page }) => {
+  test('boutique : « Commander en … — 49 € » sur une ligne', async ({ page }) => {
     await page.goto('/shop');
     const box = await page.getByRole('button', { name: /^Commander en/ }).boundingBox();
     expect(box!.height).toBeLessThan(60);   // une ligne : 54 px ; deux : 75

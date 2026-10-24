@@ -45,7 +45,7 @@ test.describe('Tunnel achat → activation → premier scan', () => {
 
   test('shop : formulaire d\'achat soumet vers Stripe Checkout', async ({ page }) => {
     await page.goto('/shop');
-    await expect(page.locator('text=49€').first()).toBeVisible();
+    await expect(page.getByText(/^49\s€$/).first()).toBeVisible();
 
     // Remplit email + sélectionne taille/couleur (defaults M + dark)
     const testEmail = `test-${Date.now()}@example.com`;
