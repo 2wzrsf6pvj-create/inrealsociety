@@ -59,7 +59,7 @@ const member = (id: string, createdAt: string, over: Record<string, unknown> = {
   stripe_subscription_id: null as string | null, plan_expires_at: null as string | null, ...over,
 });
 const input = (over: Partial<Parameters<typeof computeFieldStats>[0]> = {}) => ({
-  members: [], scans: [], roots: [], replyParents: [], paidOrders: 0, subscriptions: [], phones: null, ...over,
+  members: [], scans: [], roots: [], replyParents: [], paidOrders: 0, scanOrders: [], subscriptions: [], phones: null, ...over,
 });
 
 describe('semaines : du lundi au dimanche, heure de Paris', () => {
@@ -144,7 +144,7 @@ describe('suivi des porteurs : chiffres seulement, les plus récents d’abord',
       id: 'nouveau', name: 'nouveau', shortCode: 'qr-nouveau', activatedAt: daysAgo(2), days: 2,
       state: 'active', premium: { gift: false, until: null },
       scans: 2, recentScans: 2, lastScanAt: daysAgo(0.5),
-      messages: 2, replied: 1,
+      messages: 2, replied: 1, purchases: 0,
       notified: true, phone: { os: 'ios', appInstalled: true },
     });
     expect(stats.followUp[3]).toEqual(expect.objectContaining({

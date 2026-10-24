@@ -24,6 +24,7 @@ import { loadOrderWatch, searchAdmin, NOT_ACTIVATED_AFTER_DAYS, type WatchedOrde
 import { PUSH_SERVICE_LABELS } from '@/lib/push-service';
 import { PREMIUM_GIFT_DAYS, type PremiumState } from '@/lib/subscription';
 import { adminQr } from '@/lib/admin-qr';
+import { SCAN_ORIGIN_DAYS } from '@/lib/scan-origin';
 import AdminAction from './AdminAction';
 
 export const dynamic = 'force-dynamic';
@@ -53,6 +54,7 @@ const STATUS_LABELS: Record<string, string> = { pending: 'en attente de paiement
 const pct = (hit: number, total: number) => (total === 0 ? '—' : `${Math.round((hit / total) * 100)} %`);
 const plural = (n: number, word: string) => `${n} ${word}${n > 1 ? 's' : ''}`;
 const PHONES_MISSING = 'migration 062 à appliquer';
+const ORIGIN_MISSING = 'migration 063 à appliquer';
 const PHONE_LABELS = { ios: 'iPhone', android: 'Android' } as const;
 
 /** « · premium », payé ou offert, et jusqu'à quand. */
@@ -209,6 +211,7 @@ function FollowUpCard({ wearer: w, phonesKnown }: { wearer: WearerFollowUp; phon
         {w.scans} · {w.recentScans} ces {RECENT_DAYS} derniers jours · {w.lastScanAt ? `dernier le ${when(w.lastScanAt)}` : 'aucun pour l’instant'}
       </Line>
       <Line label="Messages">{w.messages} · {w.replied} avec réponse</Line>
+      {w.purchases > 0 && <Line label="Achats venus de son profil">{w.purchases}</Line>}
       <Line label="Notifications">{w.notified ? 'activées' : 'non activées'}{phone}</Line>
       {idle && <p className="font-ui text-xs text-[#C5A059]/85">Aucun scan depuis {RECENT_DAYS} jours.</p>}
       {(!w.premium || w.premium.gift) && (
@@ -245,7 +248,7 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
   ]);
   const notif = stats.notifications;
   const phones = notif.phones;
-  const setup = setupStatus(process.env, { migration062: phones !== null });
+  const setup = setupStatus(process.env, { migration062: phones !== null, migration063: stats.fromScan !== null });
   const toSettle = setup.flatMap((g) => g.checks).filter((c) => !c.ok).length;
 
   return (
@@ -311,10 +314,14 @@ export default async function AdminPage({ searchParams }: { searchParams: Promis
               detail={`${stats.funnel.replied} conversations où le porteur a répondu`} />
             <Stat label="Abonnés premium" value={`${stats.premium}`}
               detail={`sur ${plural(stats.wearers, 'porteur')}${stats.giftedPremium > 0 ? ` · plus ${stats.giftedPremium} premium offert${stats.giftedPremium > 1 ? 's' : ''}` : ''}`} />
+            <Stat label="Achats venus d’un scan" value={stats.fromScan ? `${stats.fromScan.recent}` : '—'}
+              detail={!stats.fromScan ? ORIGIN_MISSING
+                : `sur ${stats.paidOrders} commande${stats.paidOrders > 1 ? 's' : ''} payée${stats.paidOrders > 1 ? 's' : ''} ces ${STATS_WINDOW_DAYS} jours · ${stats.fromScan.total} depuis le début`} />
           </div>
           <p className="font-ui text-xs text-brand-gray/55 leading-relaxed">
-            Achats venus d&apos;un scan : dans PostHog (événement wearer_cta_clicked, avec consentement). Déroulé du test
-            et seuils pour continuer, ajuster ou arrêter : docs/TEST_TERRAIN.md.
+            Achat venu d&apos;un scan : commande payée sur l&apos;appareil qui a vu le profil d&apos;un porteur et suivi
+            son lien vers la boutique, dans les {SCAN_ORIGIN_DAYS} jours ; le porteur est noté sur la commande (suivi
+            par porteur ci-dessous). Déroulé du test et seuils pour continuer, ajuster ou arrêter : docs/TEST_TERRAIN.md.
           </p>
 
           <h3 className="font-ui text-sm font-bold tracking-[0.2em] uppercase pt-4">Semaine par semaine</h3>

@@ -25,8 +25,8 @@ const COMPLETE: Record<string, string> = {
   VAPID_PRIVATE_KEY:            'SECRET-vapid',
   NEXT_PUBLIC_VAPID_PUBLIC_KEY: 'BPUB',
 };
-const checks = (env: Record<string, string | undefined>, migration062 = true) =>
-  setupStatus(env, { migration062 }).flatMap((g) => g.checks);
+const checks = (env: Record<string, string | undefined>, migration062 = true, migration063 = true) =>
+  setupStatus(env, { migration062, migration063 }).flatMap((g) => g.checks);
 const check = (env: Record<string, string | undefined>, label: string, migration062 = true) =>
   checks(env, migration062).find((c) => c.label === label)!;
 
@@ -40,7 +40,7 @@ describe('configuration vue de /admin', () => {
   });
 
   it('jamais la valeur d’un secret', () => {
-    const shown = JSON.stringify(setupStatus({ ...COMPLETE, STRIPE_PRICE_ID: '' }, { migration062: true }));
+    const shown = JSON.stringify(setupStatus({ ...COMPLETE, STRIPE_PRICE_ID: '' }, { migration062: true, migration063: true }));
     const secrets = Object.values(COMPLETE).filter((value) => value.includes('SECRET'));
     expect(secrets).toHaveLength(8);
     for (const value of secrets) expect(shown).not.toContain(value);
@@ -90,5 +90,12 @@ describe('configuration vue de /admin', () => {
 
   it('migration 062 absente : signalée', () => {
     expect(check(COMPLETE, 'Base', false)).toEqual({ label: 'Base', ok: false, detail: expect.stringContaining('062') });
+  });
+
+  it('migration 063 absente : signalée avec ce qu’elle apporte ; les deux absentes : toutes deux nommées', () => {
+    const base = (m062: boolean, m063: boolean) => checks(COMPLETE, m062, m063).find((c) => c.label === 'Base');
+    expect(base(true, false)).toEqual({ label: 'Base', ok: false, detail: 'migration 063 (origine des achats) à appliquer' });
+    expect(base(false, false)?.detail).toBe('migrations 062 (téléphone des porteurs), 063 (origine des achats) à appliquer');
+    expect(base(true, true)).toEqual({ label: 'Base', ok: true, detail: 'migrations à jour (063)' });
   });
 });

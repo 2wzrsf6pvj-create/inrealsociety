@@ -4,6 +4,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { captureEvent } from '@/lib/posthog-client';
+import { forgetScanOrigin } from '@/lib/scan-origin';
 import { haptic } from '@/lib/haptics';
 import type { OrderRecap } from '@/lib/order-recap';
 
@@ -45,6 +46,7 @@ function SuccessContent() {
     // L'achat est fait → le parrainage est consommé. On purge le ref pour qu'il
     // ne crédite/remise pas des commandes futures sans rapport (single-use).
     localStorage.removeItem('referral_code');
+    forgetScanOrigin();
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout>;
 

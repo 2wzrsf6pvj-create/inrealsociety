@@ -17,6 +17,7 @@ import { QR_STYLES, DEFAULT_QR_STYLE } from '@/lib/constants';
 import { isValidTaglineId } from '@/lib/taglines';
 import { TSHIRT_PRICE_CENTS, SHIPPING_STANDARD_CENTS, SHIPPING_COUNTRIES, VAT_EXEMPT } from '@/lib/constants';
 import { reportError } from '@/lib/report-error';
+import { isMissingColumn } from '@/lib/phone';
 
 const schema = z.object({
   // `.toLowerCase()` : orders.email sert de clé de lookup (renvoi de code, match
@@ -33,6 +34,10 @@ const schema = z.object({
   // résolu côté serveur. referrerId : page de boutique ouverte avant la 060.
   referral:    z.string().max(64).optional(),
   referrerId:  z.string().uuid().optional(),
+  // Profil vu après un scan, gardé 30 jours sur l'appareil (lib/scan-origin) :
+  // origine de l'achat, comptée dans /admin (063). Illisible → ignorée, jamais
+  // un achat refusé pour elle.
+  fromMemberId: z.string().uuid().optional().catch(undefined),
 });
 
 const TSHIRT_PRICE_ID = process.env.STRIPE_PRICE_ID!;
@@ -91,24 +96,36 @@ export async function POST(req: NextRequest) {
     // un membre se parrainer lui-même pour décrocher la remise.
     if (referrer && referrer.email?.toLowerCase() !== email.toLowerCase()) validReferrerId = referrer.id;
 
-    // ─── Crée une commande en BDD (statut pending) ────────────────────────
-    const { data: order, error: orderError } = await supabaseAdmin
-      .from('orders')
-      .insert({
-        email,
-        tshirt_color:  tshirtColor,
-        tshirt_size:   tshirtSize,
-        qr_style:      qrStyle,
-        tagline_id:    taglineId ?? null,
-        status:        'pending',
-        // Placeholder : le webhook réécrit avec le vrai total Stripe (port inclus).
-        amount:        TSHIRT_PRICE_CENTS,
-        referrer_id:   validReferrerId,
-      })
-      .select('id')
-      .single();
+    // ─── Origine : le profil vu après un scan (063) ───────────────────────
+    // Gardée si le porteur existe et n'est pas l'acheteur lui-même.
+    let fromMemberId: string | null = null;
+    if (body.data.fromMemberId) {
+      const { data: from } = await supabaseAdmin
+        .from('members').select('id, email').eq('id', body.data.fromMemberId).maybeSingle();
+      if (from && from.email?.toLowerCase() !== email) fromMemberId = from.id as string;
+    }
 
-    if (orderError) {
+    // ─── Crée une commande en BDD (statut pending) ────────────────────────
+    const row = {
+      email,
+      tshirt_color:  tshirtColor,
+      tshirt_size:   tshirtSize,
+      qr_style:      qrStyle,
+      tagline_id:    taglineId ?? null,
+      status:        'pending',
+      // Placeholder : le webhook réécrit avec le vrai total Stripe (port inclus).
+      amount:        TSHIRT_PRICE_CENTS,
+      referrer_id:   validReferrerId,
+    };
+    const insertOrder = (values: typeof row & { from_member_id?: string }) =>
+      supabaseAdmin.from('orders').insert(values).select('id').single();
+    let { data: order, error: orderError } = await insertOrder(fromMemberId ? { ...row, from_member_id: fromMemberId } : row);
+    // Migration 063 pas encore appliquée : la commande passe, sans son origine.
+    if (orderError && fromMemberId && isMissingColumn(orderError)) {
+      ({ data: order, error: orderError } = await insertOrder(row));
+    }
+
+    if (orderError || !order) {
       reportError('api/shop/checkout', orderError, { step: 'Order insert error' });
       return NextResponse.json({ error: 'Erreur création commande.' }, { status: 500 });
     }

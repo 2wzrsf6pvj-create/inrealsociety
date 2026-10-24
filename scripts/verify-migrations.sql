@@ -95,6 +95,14 @@ SELECT (SELECT prosrc LIKE '%member_id IS NULL AND created_at%' FROM pg_proc WHE
        has_column_privilege('anon', 'members', 'phone_os', 'SELECT') AS anon_select,
        has_column_privilege('authenticated', 'members', 'app_installed_at', 'SELECT') AS authd_select;
 
+\echo '=== 063 — origine des achats : effacée avec le compte du porteur et par la purge (24 mois) ; commandes invisibles côté client, RLS sans politique (attendu: 1 ligne  SET NULL | t | t | 0) ==='
+SELECT (SELECT rc.delete_rule FROM information_schema.referential_constraints rc
+        JOIN information_schema.key_column_usage k ON k.constraint_name = rc.constraint_name
+        WHERE k.table_name = 'orders' AND k.column_name = 'from_member_id') AS suppression,
+       (SELECT prosrc LIKE '%SET from_member_id = NULL%' FROM pg_proc WHERE proname = 'cleanup_old_data') AS purge,
+       (SELECT relrowsecurity FROM pg_class WHERE relname = 'orders') AS rls,
+       (SELECT count(*) FROM pg_policy WHERE polrelid = 'orders'::regclass) AS politiques;
+
 \echo '=== Rappel : RLS activée sur les tables sensibles (attendu: tous t) ==='
 SELECT relname, relrowsecurity
 FROM pg_class

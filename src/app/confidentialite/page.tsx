@@ -56,6 +56,7 @@ export default function ConfidentialitePage() {
           <ul className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed list-disc pl-5 flex flex-col gap-2">
             <li><strong>Compte et profil :</strong> email, mot de passe (chiffré), prénom/pseudo, pitch, lien Instagram (optionnel), photo (optionnelle).</li>
             <li><strong>Achat :</strong> email, adresse de livraison, taille et couleur du t-shirt, identifiants Stripe (paiement, abonnement).</li>
+            <li><strong>Origine d&apos;un achat :</strong> si vous commandez après avoir vu le profil d&apos;un porteur (le lien vers la boutique depuis ce profil est gardé 30 jours sur votre appareil), ou par un lien de parrainage, ce porteur est noté sur la commande. Il sert à compter les achats venus d&apos;un scan ; le parrain, à appliquer la remise.</li>
             <li><strong>Activité :</strong> scans reçus, ville du scan (si le passant l&apos;autorise), messages envoyés et reçus.</li>
             <li><strong>Passant (sans compte) :</strong> votre message et, si vous les laissez, votre prénom et votre contact (email ou @instagram). Un email laissé ne sert qu&apos;après sa confirmation par le lien que nous vous envoyons. Si vous partagez votre ville, la position de votre appareil, arrondie à environ 1 km, sert uniquement à trouver le nom de la ville : seule la ville est conservée.</li>
             <li><strong>Technique :</strong> adresse IP (rate limiting, logs de sécurité), user-agent, identifiants de session.</li>
@@ -73,8 +74,8 @@ export default function ConfidentialitePage() {
             3 — Finalités et bases légales
           </h2>
           <ul className="font-ui text-sm md:text-base font-light text-brand-gray/70 leading-relaxed list-disc pl-5 flex flex-col gap-2">
-            <li><strong>Exécution du contrat (art. 6.1.b RGPD) :</strong> création du compte, gestion des commandes, envoi du t-shirt, gestion de l&apos;abonnement premium, transmission des messages entre passant et porteur, par notification si vous l&apos;activez.</li>
-            <li><strong>Intérêt légitime (art. 6.1.f) :</strong> sécurité du service (rate limiting, audit logs, modération), traitement des signalements, blocage des comportements abusifs (anti-harcèlement), prévention de la fraude, vérification que les notifications parviennent aux porteurs (type de téléphone), suivi de l&apos;utilisation du service par l&apos;équipe pour l&apos;améliorer (pour chaque porteur, le nombre de scans, de messages et de réponses, jamais leur contenu ; vos avis).</li>
+            <li><strong>Exécution du contrat (art. 6.1.b RGPD) :</strong> création du compte, gestion des commandes (dont la remise d&apos;un parrainage), envoi du t-shirt, gestion de l&apos;abonnement premium, transmission des messages entre passant et porteur, par notification si vous l&apos;activez.</li>
+            <li><strong>Intérêt légitime (art. 6.1.f) :</strong> sécurité du service (rate limiting, audit logs, modération), traitement des signalements, blocage des comportements abusifs (anti-harcèlement), prévention de la fraude, vérification que les notifications parviennent aux porteurs (type de téléphone), suivi de l&apos;utilisation du service par l&apos;équipe pour l&apos;améliorer (pour chaque porteur, le nombre de scans, de messages, de réponses et d&apos;achats venus de son profil, jamais le contenu des messages ; vos avis).</li>
             <li><strong>Consentement (art. 6.1.a) :</strong> mesure d&apos;audience (PostHog), cookies non essentiels, ville du scan.</li>
             <li><strong>Obligation légale (art. 6.1.c) :</strong> conservation des factures (10 ans).</li>
           </ul>
@@ -117,6 +118,7 @@ export default function ConfidentialitePage() {
             <li>Jeton d&apos;un appareil bloqué ou banni pour abus : tant que la mesure est en vigueur.</li>
             <li>Abonnement aux notifications : celui d&apos;un passant, 90 jours après son dernier abonnement ; celui d&apos;un porteur, jusqu&apos;à sa déconnexion sur cet appareil, la suppression du compte, ou dès que le service de notifications le dit expiré (notifications désactivées, par exemple).</li>
             <li>Téléphone du porteur (iPhone ou Android, première ouverture de l&apos;app) : tant que le compte existe.</li>
+            <li>Porteur noté sur une commande venue de son profil : 24 mois, ou jusqu&apos;à la suppression de son compte. Parrain noté sur une commande : avec la commande, ou jusqu&apos;à la suppression de son compte.</li>
             <li>Analytics (PostHog) : 13 mois (recommandation CNIL).</li>
           </ul>
         </section>

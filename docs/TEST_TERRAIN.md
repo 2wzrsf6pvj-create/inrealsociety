@@ -129,12 +129,15 @@ réoffrir depuis `/admin` une fois arrêté.
 | L'envie tient | porteurs scannés en semaine 4, et en semaine 1 | Semaine par semaine |
 | Qui a décroché | aucun scan depuis 7 jours | Suivi des porteurs |
 | Notifications | porteurs prévenus ; iPhone : app installée | Chiffres → Notifications |
+| Le t-shirt donne envie | achats venus d'un scan, et de quel porteur | Chiffres ; Suivi des porteurs |
 | Sécurité | signalements, blocages, bannissements | À traiter ; Mesures en cours |
 | Ressenti, rencontres, prix | — | questionnaire et entretiens |
 
 Tous ces chiffres viennent de la base : ils ne dépendent pas du consentement
-aux mesures d'audience. PostHog ne compte que les visiteurs qui l'ont accepté
-(par exemple les achats venus d'un scan, `wearer_cta_clicked`).
+aux mesures d'audience. Un achat venu d'un scan : payé sur l'appareil qui a
+vu le profil d'un porteur et suivi son lien vers la boutique, dans les 30
+jours. PostHog ne compte que les visiteurs qui l'ont accepté (par exemple les
+clics vers la boutique, `wearer_cta_clicked`).
 
 ## 6. Seuils, à J28
 
