@@ -5,6 +5,59 @@
 
 ---
 
+## 2026-10-24 (suite) — Espaces et écriture (#52)
+
+### Relevé
+Le texte affiché de 23 pages, sur téléphone et ordinateur.
+
+**En ordre** : les polices (Montserrat pour 92 % du texte, Cormorant pour
+les titres), les tailles (rien sous 11 px), l'espacement des lettres (les
+capitales espacées sont le style de la marque).
+
+**À reprendre** :
+- des espaces normales avant « ? ! : ; » et dans les guillemets : 5 signes
+  tombaient seuls en début de ligne sur téléphone (CGV, confidentialité,
+  mentions légales) ;
+- « 49€ » dans la boutique, « 49 € » dans la FAQ ;
+- trois sortes de guillemets, deux apostrophes, « ... » et « … » ;
+- 13 formes en « ·e », mal lues par les lecteurs d'écran.
+
+### Décisions de Clément
+- Tout corriger.
+- Des tournures neutres à la place des « ·e » : le porteur reste non genré.
+
+### Fait
+- **PR #52 fusionnée** (`051f6a1`) :
+  - `scripts/typo-fr.mjs` corrige le texte affiché (espaces insécables,
+    apostrophe ’, points de suspension, guillemets « ») sans toucher au
+    code ; `typographie.test.ts` fait échouer `npm test` si une espace
+    normale revient avant un « ? » ;
+  - 489 morceaux de texte dans 61 fichiers, emails compris ; le QR et les
+    accroches imprimés n'ont pas bougé ;
+  - 11 phrases reformulées (« Un regard s'est posé sur vous », « On vous
+    préviendra », « Pas encore le moment ? »…) ; « Choisissez votre
+    phrase » dans la boutique, qui vouvoie partout ailleurs.
+- Vérifié : 917 tests unitaires, intégration 72/72, E2E 28/28, fumée
+  14 réussis ; à 360 et 390 px, plus aucun signe seul en début de ligne ;
+  CI verte.
+
+### À faire (Clément)
+- Si les modèles d'emails sont déjà collés dans Supabase : recoller
+  `supabase/templates/confirmation.html` et `recovery.html`.
+
+### Décisions pour la suite
+- Prix : **49 € livraison comprise**, au lieu de 49 € plus 5 € de port. La
+  marge passe d'environ 26 € à 21 € par t-shirt ; 3 t-shirts par mois
+  couvrent toujours les frais fixes.
+- Logo poitrine gardé (≈ 5,40 € par t-shirt), à revoir avec les vraies
+  factures Printful.
+
+### En cours
+- Lot prix : paiement Stripe, boutique, FAQ, CGV, récapitulatif de
+  commande, docs.
+
+---
+
 ## 2026-10-24 (suite) — Revue du visuel, finitions (#51)
 
 ### Revue
