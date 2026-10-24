@@ -5,6 +5,20 @@
 
 ---
 
+## 2026-10-24 (suite) — Sécurité : zod 4.6.7 (#44)
+
+### Fait
+- **PR #44 fusionnée** (`6c1aa70`) : zod, qui valide toutes les données
+  reçues par l'API, passe de 4.3.6 à 4.6.7. Avant 4.6.6, une collection
+  démesurée pouvait épuiser la mémoire du serveur (faille haute,
+  GHSA-mrhx-c7xc-m3w5). `npm audit` ne signale plus que les 3 failles
+  modérées de Tailwind 3, à la construction seulement (Tailwind 4 : en
+  attente).
+- Vérifié : 844 tests unitaires, intégration 63/63, E2E 22/22, fumée 11/11,
+  CI verte.
+
+---
+
 ## 2026-10-24 (suite) — Test terrain : protocole et suivi (#43)
 
 ### Analyse
