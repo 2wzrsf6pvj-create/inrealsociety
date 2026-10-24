@@ -107,8 +107,8 @@ export async function DELETE(req: NextRequest) {
     // seule PII qu'elles contiennent — `email` — par un placeholder. La facture
     // identifiante complète (nom + adresse) est conservée par Stripe ; la
     // réconciliation comptable reste possible via amount/created_at/stripe_*_id.
-    // Les commandes où il est referrer_id (= achats de tiers) gardent l'email du
-    // tiers (referrer_id est nullé par la FK ON DELETE SET NULL).
+    // Les commandes où il est referrer_id ou from_member_id (= achats de tiers)
+    // gardent l'email du tiers (les deux sont nullés par la FK ON DELETE SET NULL).
     const ANONYMIZED_EMAIL = 'deleted@anonymized.invalid';
 
     // Lien fiable membre → orders : l'email de checkout Stripe (orders.email) peut

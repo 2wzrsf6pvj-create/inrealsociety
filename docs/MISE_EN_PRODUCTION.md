@@ -32,7 +32,7 @@ statut ni domaine : [TESTER_DE_A_A_Z.md](TESTER_DE_A_A_Z.md). Ce sont les
    régler.
 4. **Offres payantes** (une heure) : Vercel Pro, Supabase Pro, Resend Pro
    (sections 0, 2 et 4).
-5. **Base** (une heure) : migrations jusqu'à 062, vérification, réglages de
+5. **Base** (une heure) : migrations jusqu'à 063, vérification, réglages de
    l'authentification (section 2).
 6. **Emails** (une heure, puis jusqu'à 48 h de propagation DNS) : domaine
    d'envoi vérifié chez Resend, puis **l'envoi des emails de Supabase par
@@ -135,7 +135,7 @@ liste dans ses logs les variables recommandées qui manquent.
 
 - [ ] Offre **Pro** (25 $/mois) avant l'ouverture : l'offre gratuite met le
       projet en pause après une semaine sans activité.
-- [ ] Appliquer les migrations jusqu'à **062**, dans l'ordre
+- [ ] Appliquer les migrations jusqu'à **063**, dans l'ordre
       (`DEPLOY_CHECKLIST.md`, section 1 ; avec la CLI : `docs/SUPABASE_CLI.md`).
 - [ ] Vérifier : SQL Editor → `scripts/verify-migrations.sql`, chaque résultat
       conforme à « attendu ».
@@ -264,7 +264,12 @@ Détail : `docs/MONITORING.md`.
     aux particuliers, le vendeur doit s'engager sur une date (L216-1 :
     30 jours à défaut) ;
   - le reste des CGV (âge, modération) et la politique de confidentialité,
-    dont les transferts hors UE (Vercel, Sentry, OpenStreetMap).
+    dont les transferts hors UE (Vercel, Sentry, OpenStreetMap) ;
+  - l'origine d'un achat (063) : le porteur dont le profil a mené à la
+    commande, noté dessus (24 mois), et le lien gardé 30 jours sur l'appareil
+    du visiteur sans demander son consentement, au titre du suivi du service
+    (`src/lib/scan-origin.ts`). À confirmer, ou à passer sous le bandeau des
+    cookies ; même question pour le parrainage.
 
 ## 7. Recette : un parcours complet avant d'ouvrir
 

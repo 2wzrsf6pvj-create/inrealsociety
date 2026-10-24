@@ -1,6 +1,7 @@
 // src/lib/field-stats.ts — Chiffres du test terrain, pour /admin (choix de
 // Clément) : porteurs activés et scannés, scans → messages → réponses,
-// porteurs encore scannés après un mois, premium, commandes, notifications ;
+// porteurs encore scannés après un mois, premium, commandes et achats venus
+// d'un scan, notifications ;
 // semaine par semaine, et porteur par porteur (chiffres seulement, jamais le
 // contenu des messages). Calculés depuis la base, sans PostHog : ils ne
 // dépendent pas du consentement aux mesures. SERVEUR UNIQUEMENT.
@@ -90,6 +91,8 @@ export interface WearerFollowUp {
   /** Premiers messages reçus, et ceux auxquels il a répondu. */
   messages:    number;
   replied:     number;
+  /** Commandes payées venues de son profil (063). */
+  purchases:   number;
   /** Au moins un appareil abonné aux notifications. */
   notified:    boolean;
   /** null : téléphone pas encore relevé (ou migration 062 absente). */
@@ -104,6 +107,11 @@ export interface FieldStats {
   /** Premium offert depuis /admin (testeurs). */
   giftedPremium: number;
   paidOrders: number;
+  /** Commandes payées venues d'un scan (le profil d'un porteur vu sur
+   *  l'appareil de l'acheteur dans les 30 jours, cf. lib/scan-origin) : sur la
+   *  fenêtre, et depuis le début ; null tant que la migration 063 n'est pas
+   *  appliquée. */
+  fromScan:   { recent: number; total: number } | null;
   /** Activés entre J-120 et J-14 : scannés dans leurs 14 premiers jours. */
   firstScan:  Ratio;
   /** Activés depuis plus de 30 jours : scannés ces 14 derniers jours. */
@@ -123,6 +131,7 @@ type MemberRow = {
   stripe_subscription_id: string | null; plan_expires_at: string | null;
 };
 type RootRow = { id: string; member_id: string; created_at: string };
+type ScanOrderRow = { from_member_id: string; created_at: string };
 
 const PARIS_DAY = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Paris', year: 'numeric', month: '2-digit', day: '2-digit' });
 
@@ -164,6 +173,8 @@ export function computeFieldStats(input: {
   /** parent_id des réponses de porteurs, sur MESSAGES_DAYS. */
   replyParents: (string | null)[];
   paidOrders:   number;
+  /** Commandes payées venues d'un scan ; null sans la migration 063. */
+  scanOrders:   ScanOrderRow[] | null;
   /** Abonnements aux notifications : d'un porteur (member_id) ou d'un passant
    *  à sa conversation (message_id). */
   subscriptions: { member_id: string | null; message_id: string | null; endpoint: string }[];
@@ -203,6 +214,10 @@ export function computeFieldStats(input: {
     premium:    input.members.filter((m) => m.plan === 'premium' && !isGiftedPremium(m)).length,
     giftedPremium: input.members.filter(isGiftedPremium).length,
     paidOrders: input.paidOrders,
+    fromScan:   input.scanOrders && {
+      recent: input.scanOrders.filter((o) => Date.parse(o.created_at) >= ago(STATS_WINDOW_DAYS)).length,
+      total:  input.scanOrders.length,
+    },
     firstScan,
     stillWorn,
     funnel: {
@@ -212,7 +227,7 @@ export function computeFieldStats(input: {
     },
     notifications: notificationStats(input.subscriptions, input.phones, rootIds),
     weeks:    weekStats(input.members, input.scans, input.roots, answered, now),
-    followUp: followUp(input.members, scansByMember, input.roots, answered, input.subscriptions, input.phones, now),
+    followUp: followUp(input.members, scansByMember, input.roots, answered, input.scanOrders ?? [], input.subscriptions, input.phones, now),
   };
 }
 
@@ -259,6 +274,7 @@ function followUp(
   scansByMember: Map<string, number[]>,
   roots: RootRow[],
   answered: Set<string>,
+  scanOrders: ScanOrderRow[],
   subscriptions: { member_id: string | null }[],
   phones: { id: string; phone_os: PhoneOs; app_installed_at: string | null }[] | null,
   now: Date,
@@ -267,6 +283,8 @@ function followUp(
   const recentSince = now.getTime() - RECENT_DAYS * DAY;
   const notified = new Set(subscriptions.map((s) => s.member_id).filter((id): id is string => !!id));
   const phoneById = new Map((phones ?? []).map((p) => [p.id, p]));
+  const purchasesByMember = new Map<string, number>();
+  for (const o of scanOrders) purchasesByMember.set(o.from_member_id, (purchasesByMember.get(o.from_member_id) ?? 0) + 1);
   const rootsByMember = new Map<string, RootRow[]>();
   for (const r of roots) {
     const list = rootsByMember.get(r.member_id);
@@ -292,6 +310,7 @@ function followUp(
         lastScanAt:  times.length ? new Date(times.reduce((a, b) => Math.max(a, b))).toISOString() : null,
         messages:    received.length,
         replied:     received.filter((r) => answered.has(r.id)).length,
+        purchases:   purchasesByMember.get(m.id) ?? 0,
         notified:    notified.has(m.id),
         phone:       phone ? { os: phone.phone_os, appInstalled: !!phone.app_installed_at } : null,
       };
@@ -358,6 +377,19 @@ async function allRows<T>(
 
 type PhoneRow = { id: string; phone_os: PhoneOs; app_installed_at: string | null };
 
+/** Commandes payées venues d'un scan ; null tant que la migration 063 n'est
+ *  pas appliquée (/admin le dit au lieu d'échouer). */
+async function loadScanOrders(): Promise<ScanOrderRow[] | null> {
+  try {
+    return await allRows<ScanOrderRow>((from, to) =>
+      supabaseAdmin.from('orders').select('from_member_id, created_at')
+        .eq('status', 'paid').not('from_member_id', 'is', null).order('id').range(from, to));
+  } catch (err) {
+    if (isMissingColumn(err)) return null;
+    throw err;
+  }
+}
+
 /** Porteurs dont le téléphone est connu ; null tant que la migration 062 n'est
  *  pas appliquée (/admin le dit au lieu d'échouer). */
 async function loadPhones(): Promise<PhoneRow[] | null> {
@@ -373,7 +405,7 @@ async function loadPhones(): Promise<PhoneRow[] | null> {
 
 export async function loadFieldStats(now = new Date()): Promise<FieldStats> {
   const since = (days: number) => new Date(now.getTime() - days * DAY).toISOString();
-  const [members, scans, roots, replies, paid, subscriptions, phones] = await Promise.all([
+  const [members, scans, roots, replies, paid, scanOrders, subscriptions, phones] = await Promise.all([
     allRows<MemberRow>((from, to) =>
       supabaseAdmin.from('members').select('id, created_at, plan, name, short_code, is_paused, suspended_at, stripe_subscription_id, plan_expires_at')
         .order('id').range(from, to)),
@@ -388,6 +420,7 @@ export async function loadFieldStats(now = new Date()): Promise<FieldStats> {
         .gte('created_at', since(MESSAGES_DAYS)).order('id').range(from, to)),
     supabaseAdmin.from('orders').select('id', { count: 'exact', head: true })
       .eq('status', 'paid').gte('created_at', since(STATS_WINDOW_DAYS)),
+    loadScanOrders(),
     allRows<{ member_id: string | null; message_id: string | null; endpoint: string }>((from, to) =>
       supabaseAdmin.from('push_subscriptions').select('member_id, message_id, endpoint').order('id').range(from, to)),
     loadPhones(),
@@ -398,6 +431,7 @@ export async function loadFieldStats(now = new Date()): Promise<FieldStats> {
     members, scans, roots,
     replyParents: replies.map((r) => r.parent_id),
     paidOrders:   paid.count ?? 0,
+    scanOrders,
     subscriptions,
     phones,
   }, now);

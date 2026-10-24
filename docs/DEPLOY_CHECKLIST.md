@@ -8,7 +8,7 @@
 
 ## 1. Migrations SQL — ordre & application
 
-Les migrations sont numérotées et **doivent s'appliquer dans l'ordre** (`supabase/migrations/001 … 062`).
+Les migrations sont numérotées et **doivent s'appliquer dans l'ordre** (`supabase/migrations/001 … 063`).
 
 ### Nouveautés de ce lot de durcissement
 | # | Effet | Critique ? |
@@ -42,13 +42,14 @@ Les migrations sont numérotées et **doivent s'appliquer dans l'ordre** (`supab
 | `060` | `members.referral_code` rempli (colonne de 015 jamais utilisée) + défaut `gen_referral_code()`, non nul, unique | 🟡 lien de parrainage `/join/<code>` qui ne révèle plus l'identifiant du profil. Sans elle, le tableau de bord garde l'ancien lien à identifiant, qui continue de donner la remise |
 | `061` | `members.scan_emails` (défaut : activé) + `claim_scan_email` qui le respecte | 🟡 le porteur peut couper l'email de scan (réglages, lien en un clic dans l'email). Sans elle, rien ne casse : l'interrupteur n'apparaît pas dans les réglages, et le lien de l'email affiche « Impossible pour le moment » |
 | `062` | `cleanup_old_data()` ne purge plus que les abonnements aux notifications des **passants** + `members.phone_os` / `members.app_installed_at` (téléphone relevé à l'ouverture de « Mon espace », cf. `src/lib/phone.ts`) | 🟠 sans elle, un porteur qui n'ouvre pas « Mon espace » pendant 90 jours cesse d'être notifié, sans le savoir. Le reste ne casse pas : le téléphone n'est pas relevé, et /admin affiche « migration 062 à appliquer » |
+| `063` | `orders.from_member_id` : le porteur dont le profil, vu après un scan, a mené à l'achat (même appareil, 30 jours ; cf. `src/lib/scan-origin.ts`), effacé avec son compte (`ON DELETE SET NULL`) et au bout de 24 mois (`cleanup_old_data()`, comme les scans) | 🟡 /admin compte les achats venus d'un scan, et par porteur. Sans elle, rien ne casse : la commande passe sans son origine, et /admin affiche « migration 063 à appliquer » |
 
 ### Base NEUVE (staging / nouveau projet) — recommandé (Option A)
-⚠️ **L'ordre 001→062 naïf ÉCHOUE** : `001_enable_rls` fait `ALTER TABLE members …`
+⚠️ **L'ordre 001→063 naïf ÉCHOUE** : `001_enable_rls` fait `ALTER TABLE members …`
 alors que `members` n'est créée qu'en `015`. L'ordre correct est **015 D'ABORD**,
-puis 001-014, puis 016-062.
+puis 001-014, puis 016-063.
 
-Utiliser le bundle pré-généré **et validé** (57/57 migrations — schéma identique, grants et policies compris, à l'application une par une ; vérifié sur PG16) :
+Utiliser le bundle pré-généré **et validé** (63/63 migrations — schéma identique, grants et policies compris, à l'application une par une ; appliqué sur PG16 à chaque CI par `integration/setup-db.sh`) :
 ```
 scripts/fresh-setup.sql   ← à coller intégralement dans le Supabase SQL Editor d'un
                             projet NEUF (auth + storage + rôles déjà présents) → Run.
@@ -77,7 +78,7 @@ for f in 033_rls_hardening_views 034_record_scan 035_secure_create_member_rpc 03
          053_close_definer_rpcs_to_authenticated 054_member_suspension \
          055_order_activation_reminders 056_message_reports 057_contact_verifications \
          058_rgpd_retention_city_only 059_notification_throttles 060_referral_code \
-         061_scan_email_opt_out 062_push_porteurs_telephone; do
+         061_scan_email_opt_out 062_push_porteurs_telephone 063_origine_achats; do
   psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -1 -f "supabase/migrations/$f.sql"
 done
 # 021 a été édité (guard idempotent) : sûr à ré-exécuter si tu veux l'aligner.

@@ -789,6 +789,61 @@ describe.skipIf(!ENABLED)('Parrainage : code dédié, ancien lien toujours valab
   });
 });
 
+// ─── Origine d'un achat (063) ────────────────────────────────────────────────
+describe.skipIf(!ENABLED)('Origine d’un achat : le porteur du profil vu après un scan, noté sur la commande', () => {
+  let checkout: typeof import('@/app/api/shop/checkout/route');
+  let stats:    typeof import('@/lib/field-stats');
+  const wearer = crypto.randomUUID();
+  const tag = wearer.slice(0, 8);
+  const wearerEmail = `origine-${tag}@example.com`;
+  let paidOrder = '';
+
+  beforeAll(async () => {
+    checkout = await import('@/app/api/shop/checkout/route');
+    stats    = await import('@/lib/field-stats');
+    sql(`INSERT INTO members (id, name, email) VALUES ('${wearer}', 'Origine${tag}', '${wearerEmail}')`);
+  });
+
+  const buy = async (email: string, fromMemberId: string) => {
+    const res = await checkout.POST(req('/api/shop/checkout', {
+      body: { email, tshirtColor: 'light', tshirtSize: 'S', taglineId: null, fromMemberId },
+    }));
+    expect(res.status).toBe(200);
+    return (sent.stripeSessions.at(-1)!.metadata as Record<string, string>).orderId;
+  };
+  const origin = (orderId: string) => sql(`SELECT coalesce(from_member_id::text, 'aucune') FROM orders WHERE id = '${orderId}'`);
+
+  it('profil d’un porteur : noté sur la commande ; le porteur lui-même, ou un porteur inconnu : rien', async () => {
+    paidOrder = await buy(`passant-a-${tag}@example.com`, wearer);
+    expect(origin(paidOrder)).toBe(wearer);
+    expect(origin(await buy(wearerEmail, wearer))).toBe('aucune');
+    expect(origin(await buy(`passant-b-${tag}@example.com`, crypto.randomUUID()))).toBe('aucune');
+  });
+
+  it('/admin : comptée une fois payée, en tout et pour ce porteur', async () => {
+    const before = (await stats.loadFieldStats()).fromScan!;
+    sql(`UPDATE orders SET status = 'paid' WHERE id = '${paidOrder}'`);
+    const after = await stats.loadFieldStats();
+    expect(after.fromScan).toEqual({ recent: before.recent + 1, total: before.total + 1 });
+    expect(after.followUp.find((w) => w.id === wearer)?.purchases).toBe(1);
+  });
+
+  it('purge : l’origine part au bout de 24 mois, la commande reste', async () => {
+    const old = await buy(`passant-c-${tag}@example.com`, wearer);
+    sql(`UPDATE orders SET status = 'paid', created_at = now() - interval '25 months' WHERE id = '${old}'`);
+    sql(`SELECT count(*) FROM cleanup_old_data()`);
+    expect(origin(old)).toBe('aucune');
+    expect(sql(`SELECT status FROM orders WHERE id = '${old}'`)).toBe('paid');
+    expect(origin(paidOrder)).toBe(wearer);
+  });
+
+  it('compte du porteur supprimé : l’origine part avec lui, la commande reste', () => {
+    sql(`DELETE FROM members WHERE id = '${wearer}'`);
+    expect(origin(paidOrder)).toBe('aucune');
+    expect(sql(`SELECT status FROM orders WHERE id = '${paidOrder}'`)).toBe('paid');
+  });
+});
+
 // ─── Premium : CGV, emails une seule fois, suppression qui résilie ───────────
 describe.skipIf(!ENABLED)('Premium : CGV avant paiement, emails une seule fois, compte supprimé = abonnement résilié', () => {
   let subscribe: typeof import('@/app/api/subscription/checkout/route');

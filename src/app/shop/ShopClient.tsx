@@ -12,6 +12,7 @@ import TaglinePicker from '@/app/components/ui/TaglinePicker';
 import { BrandMark } from '@/app/components/ui/BrandMark';
 import ModalDialog, { closeDialog } from '@/app/components/ui/ModalDialog';
 import { isReferralToken } from '@/lib/referral-code';
+import { scanOrigin } from '@/lib/scan-origin';
 
 type TshirtColor = 'dark' | 'light';
 type TshirtSize  = 'S' | 'M' | 'L' | 'XL' | 'XXL';
@@ -312,6 +313,8 @@ export default function ShopClient() {
   const [error, setError]             = useState('');
   // Lien de parrainage : code dédié, ou ancien lien à identifiant de profil.
   const [referral, setReferral]       = useState<string | null>(null);
+  // Porteur dont le profil, vu après un scan, a mené ici (30 jours, cet appareil).
+  const [fromMemberId, setFromMemberId] = useState<string | null>(null);
   // Barre d'achat mobile : visible tant que le formulaire de commande n'est PAS à
   // l'écran. `true` au départ (rendu serveur) → pas de barre avant l'hydratation.
   const formRef = useRef<HTMLFormElement>(null);
@@ -343,6 +346,7 @@ export default function ShopClient() {
       // eslint-disable-next-line react-hooks/set-state-in-effect -- parrain lu dans l'URL ou localStorage
       setReferral(ref);
     }
+    setFromMemberId(scanOrigin(searchParams.get('from')));
   }, [searchParams]);
 
   const handleBuy = async (e: React.FormEvent) => {
@@ -360,7 +364,10 @@ export default function ShopClient() {
       const res = await fetch('/api/shop/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), tshirtColor, tshirtSize, taglineId, referral: referral || undefined }),
+        body: JSON.stringify({
+          email: email.trim(), tshirtColor, tshirtSize, taglineId,
+          referral: referral || undefined, fromMemberId: fromMemberId || undefined,
+        }),
       });
       const data = await res.json();
       if (!res.ok || !data.url) throw new Error(data.error);
@@ -369,6 +376,7 @@ export default function ShopClient() {
         tshirt_size:  tshirtSize,
         has_tagline:  !!taglineId,
         has_referrer: !!referral,
+        from_scan:    !!fromMemberId,
       });
       // Pré-remplira l'email du compte à l'activation (même onglet après Stripe).
       // En minuscules, comme l'enregistre l'API (clé de rapprochement commande ↔ membre).

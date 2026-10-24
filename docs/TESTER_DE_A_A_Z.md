@@ -142,23 +142,29 @@ privée, pour le passant.
    veux un email de contact (le lien de confirmation n'arrive qu'à l'adresse
    de ton compte Resend). « Envoyer » : « Signal envoyé. ». Garder la page
    ouverte par « Voir la conversation ».
-5. **Répondre, en porteur** : « Mon espace » → « Messages » → la
+5. **Acheter depuis ton profil, en passant** : sur le téléphone, en bas du
+   profil, « C'est quoi ce t-shirt ? » mène à la boutique ; commander avec
+   une autre adresse que celle de ton compte (l'email de commande n'arrive
+   pas : en test, Resend n'écrit qu'à ton adresse) et la carte de test. Ton
+   profil est noté sur cette commande.
+6. **Répondre, en porteur** : « Mon espace » → « Messages » → la
    conversation → répondre. Le passant voit la réponse dans la conversation.
-6. **Signaler et modérer** : en porteur, « Signaler » le message ; en
+7. **Signaler et modérer** : en porteur, « Signaler » le message ; en
    passant, « Signaler ce profil ». Dans `/admin` → « À traiter » : bannir
    l'appareil, suspendre le profil, ou clore. Lever ensuite la suspension
    (« Mesures en cours »).
-7. **Premium offert** : `/admin` → « Suivi des porteurs » → « Offrir le
+8. **Premium offert** : `/admin` → « Suivi des porteurs » → « Offrir le
    premium 4 semaines ». Dans « Mon espace », les réglages affichent
    « Premium offert jusqu'au … ». Puis « Arrêter le premium offert ».
-8. **Premium payant** : « Mon espace » → réglages → case des CGV → « Passer
+9. **Premium payant** : « Mon espace » → réglages → case des CGV → « Passer
    premium », carte de test. Puis « Gérer ou résilier mon abonnement » →
    résilier : la date de fin s'affiche, l'email de confirmation arrive.
-9. **Chiffres** : `/admin` → « Chiffres » et « Semaine par semaine » comptent
-   ton scan et ton message.
-10. **Rembourser** : Stripe, en mode test → *Paiements* → le paiement du
-    t-shirt → *Rembourser*. Le profil passe en suspendu : il apparaît dans
-    `/admin` → « Mesures en cours ».
+10. **Chiffres** : `/admin` → « Chiffres » et « Semaine par semaine » comptent
+    ton scan et ton message ; « Achats venus d'un scan » compte l'achat de
+    l'étape 5, et « Suivi des porteurs » le met à ton nom.
+11. **Rembourser** : Stripe, en mode test → *Paiements* → le paiement de ton
+    t-shirt (étape 1) → *Rembourser*. Le profil passe en suspendu : il
+    apparaît dans `/admin` → « Mesures en cours ».
 
 ## 9. Avant d'ouvrir
 

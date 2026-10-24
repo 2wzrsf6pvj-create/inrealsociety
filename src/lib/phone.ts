@@ -34,10 +34,13 @@ export function phoneUpdate(
   return Object.keys(patch).length > 0 ? patch : null;
 }
 
-/** Erreur Postgres « colonne inconnue » : la migration 062 n'est pas encore
- *  appliquée. /admin l'affiche au lieu d'échouer. */
+/** Erreur « colonne inconnue » : une migration (062, 063) n'est pas encore
+ *  appliquée. /admin l'affiche au lieu d'échouer ; la commande passe sans son
+ *  origine. */
 export function isMissingColumn(error: unknown): boolean {
-  return (error as { code?: string } | null)?.code === '42703';
+  // 42703 : lecture (Postgres) ; PGRST204 : écriture (cache de schéma de PostgREST).
+  const code = (error as { code?: string } | null)?.code;
+  return code === '42703' || code === 'PGRST204';
 }
 
 /** Écrit le changement sans retarder la page : un échec n'empêche jamais

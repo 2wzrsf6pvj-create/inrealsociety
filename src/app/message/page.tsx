@@ -12,6 +12,7 @@ import ScreenTitle from '@/app/components/ui/ScreenTitle';
 import { BANNED_DEVICE_NOTICE, MODERATION_REFUSAL_NOTICE } from '@/lib/constants';
 import { isOffline, offlineMessage, requestErrorMessage, SEND_TIMEOUT_MS, timeoutSignal } from '@/lib/request';
 import { useDraft } from '@/lib/use-draft';
+import { shopFromProfile } from '@/lib/scan-origin';
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -19,7 +20,8 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // (signal envoyé / profil très demandé / fenêtre ratée) : c'est l'instant idéal
 // pour retourner la perspective (« et si c'était toi qu'on scannait ? ») et le
 // pousser vers la boutique. Vue + clic sont trackés pour mesurer la boucle.
-function BecomeWearerCTA({ source, hook }: { source: string; hook: React.ReactNode }) {
+// shopHref : /shop?from=<porteur> hors aperçu → l'achat garde son origine (063).
+function BecomeWearerCTA({ source, hook, shopHref }: { source: string; hook: React.ReactNode; shopHref: string }) {
   const router = useRouter();
 
   // Note : en dev, React StrictMode double-invoque cet effet → 2 events. Sans
@@ -31,7 +33,7 @@ function BecomeWearerCTA({ source, hook }: { source: string; hook: React.ReactNo
 
   const goShop = () => {
     captureEvent('wearer_cta_clicked', { source });
-    router.push('/shop');
+    router.push(shopHref);
   };
 
   return (
@@ -58,6 +60,7 @@ function MessageForm() {
   // preview=1 → le porteur découvre le flow depuis l'aperçu : envoi désactivé
   // (pas de message à soi-même, pas de fausse donnée).
   const isPreview = searchParams.get('preview') === '1';
+  const shopHref = memberId && !isPreview ? shopFromProfile(memberId) : '/shop';
 
   // Gardé si la page se recharge (réseau qui flanche), effacé à l'envoi.
   const [message, setMessage, clearDraft] = useDraft(`draft:message:${memberId}`);
@@ -240,7 +243,7 @@ function MessageForm() {
           La prochaine occasion sera la bonne.
         </p>
         <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
-        <BecomeWearerCTA source="window_expired" hook={<>La prochaine fois,<br />sois de l&apos;autre côté.</>} />
+        <BecomeWearerCTA source="window_expired" shopHref={shopHref} hook={<>La prochaine fois,<br />sois de l&apos;autre côté.</>} />
         <button onClick={() => memberId ? router.push(`/profil/${memberId}`) : router.push('/')}
           className="font-ui text-sm text-brand-gray/55 tracking-[0.15em] uppercase underline underline-offset-4 py-3"
           style={{ minHeight: '44px' }}>
@@ -263,7 +266,7 @@ function MessageForm() {
           Revenez plus tard, ou croisez-la à nouveau.
         </p>
         <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
-        <BecomeWearerCTA source="conversation_limit" hook={<>Toi aussi,<br />fais tourner les têtes.</>} />
+        <BecomeWearerCTA source="conversation_limit" shopHref={shopHref} hook={<>Toi aussi,<br />fais tourner les têtes.</>} />
         <button onClick={() => memberId ? router.push(`/profil/${memberId}`) : router.push('/')}
           className="font-ui text-sm text-brand-gray/55 tracking-[0.15em] uppercase underline underline-offset-4 py-3"
           style={{ minHeight: '44px' }}>
@@ -300,7 +303,7 @@ function MessageForm() {
           Peut-être une prochaine fois.
         </p>
         <div className="w-px h-8 bg-gradient-to-b from-transparent via-brand-white/15 to-transparent" />
-        <BecomeWearerCTA source="paused" hook={<>Et toi,<br />tu te montrerais ?</>} />
+        <BecomeWearerCTA source="paused" shopHref={shopHref} hook={<>Et toi,<br />tu te montrerais ?</>} />
         <button onClick={() => memberId ? router.push(`/profil/${memberId}`) : router.push('/')}
           className="font-ui text-sm text-brand-gray/55 tracking-[0.15em] uppercase underline underline-offset-4 py-3"
           style={{ minHeight: '44px' }}>
@@ -391,7 +394,7 @@ function MessageForm() {
           </p>
         </div>
         <div className="w-full h-px bg-brand-gray/10" />
-        <BecomeWearerCTA source="message_sent" hook={<>Et si c&apos;était toi<br />qu&apos;on scannait ?</>} />
+        <BecomeWearerCTA source="message_sent" shopHref={shopHref} hook={<>Et si c&apos;était toi<br />qu&apos;on scannait ?</>} />
         <button onClick={() => memberId ? router.push(`/profil/${memberId}`) : router.push('/')}
           className="font-ui text-xs text-brand-gray/55 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-gray transition-colors py-2"
           style={{ minHeight: '44px' }}>

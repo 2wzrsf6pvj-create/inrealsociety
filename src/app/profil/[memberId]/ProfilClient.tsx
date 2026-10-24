@@ -18,6 +18,7 @@ import { SCAN_WINDOW_MS } from '@/lib/constants';
 import type { MemberPlan } from '@/lib/types';
 import { BrandMark } from '@/app/components/ui/BrandMark';
 import ReportProfile from '@/app/components/ReportProfile';
+import { shopFromProfile } from '@/lib/scan-origin';
 
 function useCountdown(firstScanAt: string | null, plan?: MemberPlan) {
   const safePlan = (plan === 'premium' ? 'premium' : 'free') as keyof typeof SCAN_WINDOW_MS;
@@ -420,9 +421,16 @@ export default function ProfilClient({
           {preview ? '← quitter l’aperçu' : isOwner ? '← retour au dashboard' : '← retour'}
         </Link>
 
-        {/* Passant : ses données (géolocalisation, message) et le signalement. */}
+        {/* Passant : le t-shirt (achat rattaché à ce porteur, 063), le
+            signalement et ses données (géolocalisation, message). */}
         {!isOwner && (
           <div className="w-full flex flex-col items-center">
+            <Link href={shopFromProfile(member.id)}
+              onClick={() => captureEvent('wearer_cta_clicked', { source: 'profile' })}
+              className="font-ui text-xxs text-brand-gray/50 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white/80 transition-colors py-2"
+              style={{ minHeight: '44px', display: 'flex', alignItems: 'center' }}>
+              C&apos;est quoi ce t-shirt ?
+            </Link>
             <ReportProfile memberId={member.id} />
             <Link href="/confidentialite"
               className="font-ui text-xxs text-brand-gray/50 tracking-[0.15em] uppercase underline underline-offset-4 hover:text-brand-white/80 transition-colors py-2"

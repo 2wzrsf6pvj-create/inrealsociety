@@ -36,6 +36,7 @@ describe('computeFieldStats', () => {
     replyParents: ['m1', 'm1', 'm3', 'm0', 'ailleurs', null],
     paidOrders:   4,
     subscriptions: [],
+    scanOrders:   null,
     phones:       null,
   }, NOW);
 

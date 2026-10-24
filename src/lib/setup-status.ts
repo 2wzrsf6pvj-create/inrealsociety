@@ -18,7 +18,7 @@ export interface SetupGroup { title: string; checks: SetupCheck[] }
 
 type Env = Record<string, string | undefined>;
 
-export function setupStatus(env: Env, { migration062 }: { migration062: boolean }): SetupGroup[] {
+export function setupStatus(env: Env, { migration062, migration063 }: { migration062: boolean; migration063: boolean }): SetupGroup[] {
   const absent = (keys: string[]) => keys.filter((k) => !env[k]?.trim());
   const vars = (label: string, keys: string[], ok: string, without: string): SetupCheck => {
     const missing = absent(keys);
@@ -42,6 +42,10 @@ export function setupStatus(env: Env, { migration062 }: { migration062: boolean 
   // La clé publique sert deux fois : au serveur et au navigateur. Différentes,
   // les abonnements ne correspondent pas à la clé d'envoi : rien n'arrive.
   const pushKeysDiffer = push.ok && env.VAPID_PUBLIC_KEY?.trim() !== env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim();
+  const migrations = [
+    ...(migration062 ? [] : ['062 (téléphone des porteurs)']),
+    ...(migration063 ? [] : ['063 (origine des achats)']),
+  ];
 
   return [
     { title: 'Site et base', checks: [
@@ -51,8 +55,9 @@ export function setupStatus(env: Env, { migration062 }: { migration062: boolean 
           : provisional ? `${host} : domaine provisoire. Les QR imprimés l'encoderaient pour toujours.`
           : shortOk ? `${host} : liens des emails et pages des profils.`
           : `${host} : encodé dans les QR imprimés (${appUrl.replace(/\/$/, '')}/r/<code>).` },
-      { label: 'Base', ok: migration062,
-        detail: migration062 ? 'migrations à jour (062)' : 'migration 062 à appliquer (téléphone des porteurs)' },
+      { label: 'Base', ok: migrations.length === 0,
+        detail: migrations.length === 0 ? 'migrations à jour (063)'
+          : `${migrations.length > 1 ? 'migrations' : 'migration'} ${migrations.join(', ')} à appliquer` },
       vars('Limites de débit', ['UPSTASH_REDIS_REST_URL', 'UPSTASH_REDIS_REST_TOKEN'], 'Upstash configuré',
         'scanner un QR, écrire, signaler : erreur'),
     ] },

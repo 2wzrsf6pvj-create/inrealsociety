@@ -282,7 +282,7 @@ describe('premium payé ou offert', () => {
         row('testeur', { plan: 'premium', plan_expires_at: '2026-11-21T09:00:00Z' }),
         row('gratuit', {}),
       ],
-      scans: [], roots: [], replyParents: [], paidOrders: 0, subscriptions: [], phones: null,
+      scans: [], roots: [], replyParents: [], paidOrders: 0, scanOrders: [], subscriptions: [], phones: null,
     }, NOW);
     expect(stats).toEqual(expect.objectContaining({ premium: 1, giftedPremium: 1 }));
     expect(Object.fromEntries(stats.followUp.map((w) => [w.id, w.premium]))).toEqual({
