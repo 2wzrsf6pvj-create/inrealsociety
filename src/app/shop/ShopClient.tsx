@@ -401,8 +401,8 @@ export default function ShopClient() {
       <nav className="relative z-10 flex items-center justify-between px-6 py-6 border-b border-brand-gray/10">
         <Link href="/" className="font-display text-xl font-light tracking-[0.1em]"><BrandMark label="In Real Society — accueil" /></Link>
         <span className="font-ui text-xs text-brand-gray/55 tracking-[0.3em] uppercase">In Real Society</span>
-        {/* Emplacement réservé au bouton global « Connexion » (AuthIndicator, position
-            fixe en haut à droite) — un lien ici passait dessous et se chevauchait. */}
+        {/* Emplacement réservé au bouton global « Connexion » (AuthIndicator, en
+            haut à droite) — un lien ici passait dessous et se chevauchait. */}
         <span aria-hidden="true" className="w-32" />
       </nav>
 
@@ -431,13 +431,15 @@ export default function ShopClient() {
             Vous affichez votre ouverture, sans un mot.<br />
             Le contrôle reste à qui ose scanner.
           </p>
-          <div className="flex items-center gap-4">
-            <span className="font-ui text-xs text-brand-gray/50 tracking-[0.2em] uppercase">Anonyme</span>
+          {/* Sur une ligne dès 360 px ; plus étroit, « Sans swipe » passe entier
+              à la ligne, jamais coupé en deux. */}
+          <div className="flex flex-wrap items-center justify-center gap-x-2.5 sm:gap-x-4 gap-y-1">
+            <span className="font-ui text-xs text-brand-gray/50 tracking-[0.1em] sm:tracking-[0.2em] uppercase whitespace-nowrap">Anonyme</span>
             <span aria-hidden="true" className="text-brand-gray/15">·</span>
-            <span className="font-ui text-xs text-brand-gray/50 tracking-[0.2em] uppercase">Éphémère</span>
+            <span className="font-ui text-xs text-brand-gray/50 tracking-[0.1em] sm:tracking-[0.2em] uppercase whitespace-nowrap">Éphémère</span>
             <span aria-hidden="true" className="text-brand-gray/15">·</span>
             {/* Pas « Sans compte » : vrai pour qui scanne, faux pour l'acheteur (il crée un compte à l'activation). */}
-            <span className="font-ui text-xs text-brand-gray/50 tracking-[0.2em] uppercase">Sans swipe</span>
+            <span className="font-ui text-xs text-brand-gray/50 tracking-[0.1em] sm:tracking-[0.2em] uppercase whitespace-nowrap">Sans swipe</span>
           </div>
         </section>
 
@@ -615,10 +617,11 @@ export default function ShopClient() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="animate-shimmer w-full py-4 mt-1 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.3em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="animate-shimmer w-full py-4 mt-1 bg-brand-white text-brand-black font-ui font-bold text-sm tracking-[0.15em] min-[390px]:tracking-[0.3em] uppercase rounded-[1px] hover:bg-gray-100 active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{ minHeight: '44px' }}
                 >
-                  {loading ? 'Redirection...' : `Commander en ${colorLabel} — ${TSHIRT_PRICE_EUR}€`}
+                  {/* Espace insécable : plus étroit que 360 px, « — 49€ » passe ensemble à la ligne. */}
+                  {loading ? 'Redirection...' : `Commander en ${colorLabel} —\u00a0${TSHIRT_PRICE_EUR}€`}
                 </button>
 
                 <p className="font-ui text-xxs md:text-xs text-brand-gray/50 text-center leading-relaxed">

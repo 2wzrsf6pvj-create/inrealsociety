@@ -7,7 +7,7 @@
 //   - Conversation : /profil/{id} → scan → message → réponse → push notif
 //   - Premium : dashboard → upgrade → Stripe test → premium activé
 
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 
 test.describe('Pages publiques', () => {
   test('homepage rend et affiche le pitch', async ({ page }) => {
@@ -64,6 +64,43 @@ test.describe('Pages publiques', () => {
     await page.reload();
     await expect(banner).toHaveCount(1);
     await expect(banner).toBeHidden();
+  });
+});
+
+// Finitions visuelles : sur un téléphone de 360 px de large (un Android
+// courant), rien ne se coupe en deux et rien ne passe sur le contenu.
+test.describe('Petits écrans (360 px)', () => {
+  test.use({ viewport: { width: 360, height: 780 } });
+
+  /** « Anonyme · Éphémère · … » : chaque mot sur une ligne, tous sur la même. */
+  const triade = (page: Page) => page.locator('span', { hasText: /^Anonyme$/ }).first().locator('..').evaluate((row) => {
+    const words = [...row.children].filter((c) => !c.getAttribute('aria-hidden'));
+    return {
+      lignes: new Set(words.map((w) => Math.round(w.getBoundingClientRect().top))).size,
+      coupés: words.filter((w) => w.getBoundingClientRect().height > 24).length,
+    };
+  });
+
+  test('accueil et boutique : la triade sur une ligne, sans défilement horizontal', async ({ page }) => {
+    for (const url of ['/', '/shop']) {
+      await page.goto(url);
+      expect(await triade(page), url).toEqual({ lignes: 1, coupés: 0 });
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), url).toBe(true);
+    }
+  });
+
+  test('boutique : « Commander en … — 49€ » sur une ligne', async ({ page }) => {
+    await page.goto('/shop');
+    const box = await page.getByRole('button', { name: /^Commander en/ }).boundingBox();
+    expect(box!.height).toBeLessThan(60);   // une ligne : 54 px ; deux : 75
+  });
+
+  test('« Connexion » reste en haut de la page, sans suivre le défilement', async ({ page }) => {
+    await page.goto('/shop');
+    const link = page.getByRole('navigation', { name: 'Compte' }).getByRole('link');
+    await expect(link).toBeVisible();
+    await page.evaluate(() => window.scrollTo(0, 1200));
+    await expect.poll(async () => (await link.boundingBox())?.y ?? 0).toBeLessThan(0);
   });
 });
 
