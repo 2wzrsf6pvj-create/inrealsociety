@@ -160,13 +160,15 @@ plus exécuter `create_member_with_code` (service_role oui).
 
 ### 🟡 Features dégradées si absentes (warning, pas crash)
 - `OPENAI_API_KEY` → modération tombe sur le regex (fallback, faux négatifs possibles)
-- `ADMIN_ALERT_EMAIL` → adresse qui reçoit une alerte à chaque signalement de message (contenu, appareil, bannissement auto). Sans elle, personne n'est prévenu
-- `ADMIN_EMAILS` → emails autorisés sur `/admin` (modération), séparés par des virgules ; compte existant et adresse confirmée exigés
+- `ADMIN_ALERT_EMAIL` → adresse qui reçoit les signalements (messages, profils), les bannissements automatiques et les alertes « argent » (`MONEY_ALERTS` de `src/lib/audit.ts` : paiement sans commande, code non envoyé, t-shirt non transmis ou resté en brouillon chez Printful, webhook en échec…). Sans elle, personne n'est prévenu
+- `ADMIN_EMAILS` → emails autorisés sur `/admin` (modération, chiffres et suivi du test terrain, premium offert, commandes, configuration), séparés par des virgules ; compte existant et adresse confirmée exigés
 - `RESEND_API_KEY` + **DNS SPF/DKIM/DMARC** → emails (codes, replies) non délivrés
 - `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `NEXT_PUBLIC_VAPID_PUBLIC_KEY` → push no-op (indispensables pour le test terrain)
 - `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST` → analytics off
-- `CRON_SECRET` → crons (cleanup, scan-reminders) non protégés/non déclenchés
-- `INTERNAL_SECRET` → `/api/push/notify` + `/api/newsletter/send` (endpoints externes) fail-closed
+- `CRON_SECRET` → les 5 crons de `vercel.json` refusés (`isAuthorizedCron` échoue fermé) : purge RGPD, relances de scan et d'activation, `premium-reconcile` (dont la fin du premium offert), `fulfillment-reconcile`
+- `INTERNAL_SECRET` → `/api/push/notify` + `/api/newsletter/send` (endpoints externes) fail-closed ; signe aussi les liens de désinscription des emails (`CRON_SECRET` en secours)
+- `EMAIL_FROM` (optionnel) → expéditeur des emails, défaut `In Real Society <noreply@mail.inrealsociety.com>`
+- `VAPID_SUBJECT` (optionnel) → contact transmis aux services de push, défaut `mailto:hello@inrealsociety.com`
 - `SHORT_DOMAIN` (`https://inreal.me`, indispensable pour le test terrain) → sinon les QR utilisent `${APP_URL}/r/<code>`, lisibles de moins loin. Le domaine doit être ajouté au même projet Vercel **sans redirection** vers le domaine principal : `src/proxy.ts` réécrit `inreal.me/<code>` vers `/r/<code>` et renvoie le reste vers le site. À renseigner avant toute impression : le QR garde l'adresse du moment
 
 ---

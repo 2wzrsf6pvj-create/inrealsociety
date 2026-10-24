@@ -125,7 +125,8 @@ export const PRINT_FRONT_LOGO = true;
  *    short_code réservé → le QR déjà imprimé pointe vers son profil.
  *  - `false` : ancien modèle — impression déclenchée seulement à l'ACTIVATION
  *    (création du profil). Un acheteur qui n'active pas ne reçoit rien.
- *  Rollback sans redéploiement : poser `FULFILL_ON_PAYMENT=false` en env. */
+ *  Retour en arrière sans changer le code : `FULFILL_ON_PAYMENT=false`, puis
+ *  redéployer (une variable ne compte qu'au déploiement suivant). */
 export const FULFILL_ON_PAYMENT: boolean = process.env.FULFILL_ON_PAYMENT !== 'false';
 
 /** Prix du t-shirt — source UNIQUE côté app (affichage + `orders.amount` initial).
