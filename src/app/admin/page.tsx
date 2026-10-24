@@ -23,6 +23,7 @@ import { setupStatus } from '@/lib/setup-status';
 import { loadOrderWatch, searchAdmin, NOT_ACTIVATED_AFTER_DAYS, type WatchedOrder, type MemberHit } from '@/lib/order-watch';
 import { PUSH_SERVICE_LABELS } from '@/lib/push-service';
 import { PREMIUM_GIFT_DAYS, type PremiumState } from '@/lib/subscription';
+import { adminQr } from '@/lib/admin-qr';
 import AdminAction from './AdminAction';
 
 export const dynamic = 'force-dynamic';
@@ -114,6 +115,27 @@ function GiftPremium({ memberId, premium }: { memberId: string; premium: Premium
   return null;
 }
 
+/** « Voir le QR » : à scanner depuis l'écran avec un téléphone, comme un
+ *  passant (tester de A à Z ; en mode test, rien n'est imprimé). */
+function QrPreview({ code, name }: { code: string; name: string | null }) {
+  const qr = adminQr(code);
+  return (
+    <details className="font-ui text-sm text-brand-gray/80">
+      <summary className="cursor-pointer underline underline-offset-4 w-fit flex items-center" style={{ minHeight: '44px' }}>
+        Voir le QR
+      </summary>
+      <div className="mt-2 flex flex-col gap-2">
+        {/* eslint-disable-next-line @next/next/no-img-element -- QR généré à la volée (data:), hors next/image */}
+        <img src={qr.image} alt={`QR de ${name ?? 'ce porteur'}`} width={240} height={240} className="bg-white rounded-[2px]" />
+        <p className="text-xs text-brand-gray/55 leading-relaxed break-words">
+          {qr.url} : à scanner avec un téléphone, comme un passant. Le QR imprimé garde l&apos;adresse du moment
+          de l&apos;impression.
+        </p>
+      </div>
+    </details>
+  );
+}
+
 /** Commande : état, t-shirt, code ; renvoi du code s'il n'a pas servi. */
 function OrderCard({ order }: { order: WatchedOrder }) {
   const canResend = order.status === 'paid' && !!order.code && !order.codeUsed;
@@ -149,6 +171,7 @@ function MemberCard({ member }: { member: MemberHit }) {
           ? `activées · ${member.pushServices.map((s) => PUSH_SERVICE_LABELS[s]).join(', ')}`
           : 'non activées'}
       </Line>
+      {member.shortCode && <QrPreview code={member.shortCode} name={member.name} />}
       {member.phone && (
         <Line label="Téléphone">
           {member.phone.os ? PHONE_LABELS[member.phone.os] : 'pas encore relevé'}

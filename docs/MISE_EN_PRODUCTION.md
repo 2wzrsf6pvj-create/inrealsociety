@@ -14,6 +14,10 @@ section. `/admin` →
 « Configuration » montre ce que l'app voit déjà : variables présentes ou
 manquantes, paiements réels ou de test, domaines encodés dans les QR.
 
+Pour tout tester soi-même dès maintenant, en mode test et gratuitement, sans
+statut ni domaine : [TESTER_DE_A_A_Z.md](TESTER_DE_A_A_Z.md). Ce sont les
+étapes 5 à 9 ci-dessous, faites plus tôt.
+
 1. **Statut et SIRET**, si ce n'est pas fait (quelques jours à deux
    semaines) : Stripe en paiement réel, les mentions légales et le médiateur
    le demandent.
@@ -253,6 +257,9 @@ Détail : `docs/MONITORING.md`.
 
 En mode test Stripe (carte `4242 4242 4242 4242`). Les commandes de la
 recette restent en brouillon chez Printful : rien n'est imprimé ni facturé.
+Pas à pas, réglages compris : [TESTER_DE_A_A_Z.md](TESTER_DE_A_A_Z.md).
+Pour scanner un QR sans t-shirt imprimé : `/admin` → recherche → « Voir le
+QR ».
 Pour vérifier une impression réelle, confirmer un brouillon à la main dans
 Printful (il est alors facturé).
 

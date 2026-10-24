@@ -176,6 +176,7 @@ Avant lancement public :
 - [docs/PERFORMANCE.md](docs/PERFORMANCE.md) — Lighthouse + bundle budget
 - [docs/ECONOMIE_UNITAIRE.md](docs/ECONOMIE_UNITAIRE.md) — marges, frais fixes, TVA (franchise), seuils
 - [docs/MODERATION.md](docs/MODERATION.md) — signalements : délais, gestes, modèles d'email, autorités
+- [docs/TESTER_DE_A_A_Z.md](docs/TESTER_DE_A_A_Z.md) — tout tester soi-même, en mode test et gratuitement
 
 ---
 
