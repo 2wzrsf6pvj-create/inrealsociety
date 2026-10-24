@@ -5,6 +5,58 @@
 
 ---
 
+## 2026-10-24 (suite) — Point d'étape : décisions en attente, liste des clés (#47)
+
+### Réponses enregistrées sans Clément
+Deux réponses de l'outil de questions ne venaient pas de Clément : chaque
+fois, l'option recommandée est revenue comme s'il l'avait choisie.
+- « Quelle offre pour les 10 testeurs ? » → « Premium offert » : le premium
+  offert a été codé (#46).
+- « Je fusionne #46 ? » → « Oui » : #46 a été fusionnée, son journal poussé.
+
+Les ajouts de #46 restent sans effet tant qu'ils ne servent pas : sans
+`SHORT_DOMAIN`, pas de redirection ; personne n'a de premium offert sans un
+clic dans `/admin`. Une troisième série de réponses, revenue sous la même
+forme, n'a pas été retenue. Désormais, une décision passe par un message
+écrit de Clément avant toute fusion.
+
+### Décisions en attente (réponse écrite de Clément)
+1. Offre des testeurs : premium offert, ou offre gratuite (avec, dans
+   `/admin`, le compte des messages refusés à cause du plafond) ?
+2. Achat après un scan : origine en base (`/admin` compte les commandes
+   venues d'un scan, et de quel testeur), parrainage du testeur, ou rien ?
+3. #46, déjà fusionnée : la garder, retirer le premium offert (la
+   redirection `inreal.me` reste), ou tout annuler ?
+4. Fusion de #47 (liste des clés à jour, ci-dessous).
+5. Prochain sujet. Proposé : les emails de compte à J0 (risque ci-dessous).
+
+### Risque repéré pour J0 : l'email de confirmation de compte
+- Supabase l'envoie en anglais par défaut.
+- Son lien suit le flux PKCE (`?code=`) : ouvert dans un autre navigateur
+  que celui de l'inscription (l'app Gmail, par exemple), l'échange échoue
+  et la page dit « Ce lien a expiré ou a déjà été utilisé ». L'email est
+  pourtant confirmé : le testeur doit se connecter et ressaisir son code
+  d'activation.
+- Piste : un modèle « Confirm signup » en français, vers `/auth/confirm`
+  (`token_hash`, sans PKCE), qui garde le code d'activation ; un message plus
+  juste sur `/auth/login`.
+
+### Liste des clés et API (#47, en attente)
+`.env.example`, qui liste toutes les clés, contrôlé variable par variable :
+`EMAIL_FROM` manquait, plusieurs commentaires dataient (alertes, `/admin`,
+parrainage, tâches planifiées, redéploiement). Un test l'empêche désormais de
+vieillir. La liste lisible, `MISE_EN_PRODUCTION.md` section 1, était à jour.
+
+### À faire — côté Clément
+- [ ] Répondre par écrit aux décisions en attente.
+- [ ] Suivre le « Chemin vers J0 » (`docs/MISE_EN_PRODUCTION.md`) : statut
+      et SIRET, juridique, domaines (dont `inreal.me` sans redirection, et
+      `SHORT_DOMAIN`), offres payantes, base, emails, variables, Stripe et
+      Printful, recette, paiement réel, J-14, J0. Rien n'est encore en place
+      côté production.
+
+---
+
 ## 2026-10-24 (suite) — Avant J0 : QR en inreal.me, premium offert (#46)
 
 ### Analyse
@@ -15,13 +67,15 @@
   gratuit (3 conversations sur 7 jours, 24 h pour écrire après un scan) :
   le test aurait mesuré ces limites plutôt que l'expérience.
 
-### Décisions de Clément
+### Décisions
 - QR en `inreal.me/<code>` : Clément est propriétaire du domaine.
 - Premium offert aux testeurs pendant les 4 semaines, depuis `/admin`,
-  tracé, avec une fin automatique.
+  tracé, avec une fin automatique : réponse enregistrée sans que Clément ait
+  répondu (point d'étape ci-dessus), à confirmer.
 
 ### Fait
-- **PR #46 fusionnée** (`e875703`) :
+- **PR #46 fusionnée** (`e875703`), sur un accord que Clément n'avait pas
+  donné (point d'étape ci-dessus) :
   - domaine court : `inreal.me/<code>` réécrit vers `/r/<code>` (un seul
     aller-retour jusqu'au profil) ; le reste d'`inreal.me` mène au site ;
   - premium offert, sans migration (premium sans abonnement Stripe, avec
