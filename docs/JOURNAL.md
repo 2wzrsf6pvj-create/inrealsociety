@@ -5,6 +5,67 @@
 
 ---
 
+## 2026-10-24 (suite) — Test terrain : protocole et suivi (#43)
+
+### Analyse
+Ce qu'il faut pour mener le test, et ce que l'app en montre.
+
+**Déjà en ordre** : chiffres du test dans `/admin`, calculés depuis la base ;
+notifications mesurées ; modération ; relances (code non utilisé, aucun
+scan) ; avis recueillis (« Votre avis », note de fin de conversation).
+
+**Constats** :
+1. Quatre événements partaient du serveur vers PostHog avec l'identifiant du
+   porteur, sans son consentement (porteur scanné, message reçu, premium
+   souscrit ou résilié), alors que la politique de confidentialité fonde la
+   mesure d'audience sur le consentement.
+2. Les avis étaient enregistrés mais lus par personne.
+3. Aucune évolution dans le temps : des totaux sur 30 jours, rien semaine
+   par semaine ni porteur par porteur.
+4. Pas de protocole écrit : qui, quand, quoi regarder, seuils.
+5. Un avis « app » se rattachait à l'identifiant envoyé par le navigateur :
+   n'importe qui pouvait écrire au nom d'un porteur.
+
+### Décisions de Clément
+- 10 porteurs, 4 semaines.
+- T-shirts achetés par lui sur la boutique : toute la chaîne est testée.
+- Les 4 événements serveur retirés ; la rétention se lit dans `/admin`.
+- Suivi porteur par porteur dans `/admin`, chiffres seulement, testeurs
+  informés.
+
+### Fait
+- **PR #43 fusionnée** (`99ba435`) :
+  - `docs/TEST_TERRAIN.md` : objectifs, qui, J-14 (recette, 10 commandes,
+    ≈ 280 € de coût réel), J0 (activation, notifications, consignes,
+    sécurité, ce qui est suivi), points quotidien et hebdomadaire, où lire
+    chaque chiffre, seuils proposés, questionnaire de fin ;
+  - `/admin` : semaine par semaine (8 semaines, heure de Paris), suivi des
+    porteurs (activés ces 60 jours ; « aucun scan depuis 7 jours » pour un
+    porteur actif), avis ;
+  - « Votre avis » rattaché au porteur connecté ;
+  - PostHog : événements serveur et `posthog-node` retirés ;
+  - confidentialité : les avis, et le suivi par porteur (chiffres, jamais
+    le contenu).
+- Vérifié :
+  - 844 tests unitaires ; intégration 63/63 ; E2E 22/22 ; fumée 11/11 ;
+  - mutations : semaines calculées en UTC, avis rattaché à l'identifiant
+    envoyé, tous deux détectés ;
+  - captures de `/admin` sur une base de démonstration envoyées à Clément ;
+  - CI verte.
+- Remarqué : une faille « haute » dans zod (4.3.6), présente avant ce lot.
+  Correctif mineur, en PR séparée (accord de Clément).
+
+### À faire — côté Clément
+- [ ] Avant J0 : relire les seuils de `docs/TEST_TERRAIN.md` (section 6).
+- [ ] Ajouter à la relecture de l'avocat les deux lignes de confidentialité
+      (avis, suivi par porteur).
+
+### Ensuite
+- La PR zod, puis le chemin vers J0 (choix de Clément) : une seule liste
+  ordonnée de ce qui reste avant le test.
+
+---
+
 ## 2026-10-24 — Réseau faible (#42)
 
 ### Analyse
